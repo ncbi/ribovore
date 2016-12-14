@@ -1,6 +1,11 @@
 use strict;
-# expects sorted output, sorted by column 1, the 'target name' column
-# will detect if file is not sorted
+
+my $usage = "perl ribotyper-parse.pl <esl-seqstat file> <tabular search results> <output file name>";
+if(scalar(@ARGV) != 3) { 
+  die $usage;
+}
+
+my ($seqstat_file, $tbl_file, $out_file) = (@ARGV);
 
 my %one_model_H;
 my %one_score_H;
@@ -29,14 +34,27 @@ $domain_H{"SSU_rRNA_archaea"}  = "Archaea";
 $domain_H{"SSU_rRNA_bacteria"} = "Bacteria";
 $domain_H{"SSU_rRNA_eukarya"}  = "Eukarya";
 
-my %already_output_H = ();
 my $prv_target = undef; # initialize 
 my $clan = undef;
+
+my %seqlen_H = (); # key: sequence name, value: length of sequence, 
+                   # value set to -1 after we output info for this sequence
+                   # and then serves as flag for: "we output this sequence 
+                   # already, if we see it again we know the tbl file was not
+                   # sorted properly.
+parse_seqstat_file($seqstat_file, \%seqlen_H); 
+
+# expects sorted output, sorted by column 1, the 'target name' column
+# will detect if file is not sorted
+open(IN, $tbl_file) || die "ERROR unable to open $tbl_file for reading";
+my $longout_FH;
+open($longout_FH, ">", $out_file) || die "ERROR unable to open $out_file for writing";
+my $shortout_FH = \*STDOUT;
 
 init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
 init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
 
-while(my $line = <>) { 
+while(my $line = <IN>) { 
   chomp $line;
 ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
 ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
@@ -57,18 +75,26 @@ while(my $line = <>) {
     die "ERROR unrecognized model $model";
   }
 
+  # two sanity checks:
+  # make sure we have sequence length information for this sequence
+  if(! exists $seqlen_H{$target}) { 
+    die "ERROR found sequence $target we didn't read length information for in $seqstat_file";
+  }
   # make sure we haven't output information for this sequence already
-  if(exists $already_output_H{$target}) { 
+  if($seqlen_H{$target} == -1) { 
     die "ERROR found line with target previously output, did you sort by first column?";
   }
 
   # Are we now finished with the previous sequence? Yes, if target sequence we just read is different from it
   if((defined $prv_target) && ($prv_target ne $target)) { 
     # if so, output its current info
-    output(\%domain_H, $prv_target, 
+    output($longout_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
            \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
            \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-    $already_output_H{$prv_target} = 1;
+    output($shortout_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
+           \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+           \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+    $seqlen_H{$prv_target} = -1; # serves as a flag that we output info for this sequence
     # reset vars
     init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
     init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
@@ -106,9 +132,17 @@ while(my $line = <>) {
   }
 }
 # output data for final sequence
-output(\%domain_H, $prv_target, \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+output($longout_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target},
+       \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
        \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-$already_output_H{$prv_target} = 1;
+output($shortout_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target},
+       \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+       \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+
+
+$seqlen_H{$prv_target} = -1; # not really necessary, since we're done
+
+close $longout_FH;
 
 #################################################################
 # Subroutine : init_vars()
@@ -200,11 +234,15 @@ sub set_vars {
 # Subroutine : output()
 # Incept:      EPN, Tue Dec 13 15:30:12 2016
 #
-# Purpose:     Output current infromation. 
+# Purpose:     Output information for current sequence in either
+#              long or short mode. Short mode if $do_short is true.
 #              
 # Arguments: 
+#   $FH:            file handle to output to
+#   $do_short:      TRUE to output in 'short' concise mode, else do long mode
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
+#   $seqlen:        length of target sequence
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -224,20 +262,22 @@ sub set_vars {
 #
 ################################################################# 
 sub output { 
-  my $nargs_expected = 14;
+  my $nargs_expected = 17;
   my $sub_name = "output";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($domain_HR, $target, $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+  my ($FH, $do_short, $domain_HR, $target, $seqlen, $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
+  my $diff_thresh = 100.;
+
   # determine the winning clan
-  my $winning_clan = undef;
+  my $wclan = undef;
   foreach my $clan (keys %{$one_model_HR}) { 
-    if((! defined $winning_clan) || # we don't yet have a winning clan, set it to this one
-       ($one_model_HR->{$clan} < $one_model_HR->{$winning_clan}) || # this E-value is better than (less than) our current winning E-value
-       ($one_evalue_HR->{$clan} eq $one_evalue_HR->{$winning_clan} && $one_score_HR->{$clan} > $one_score_HR->{$winning_clan})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
-      $winning_clan = $clan;
+    if((! defined $wclan) || # we don't yet have a winning clan, set it to this one
+       ($one_model_HR->{$clan} < $one_model_HR->{$wclan}) || # this E-value is better than (less than) our current winning E-value
+       ($one_evalue_HR->{$clan} eq $one_evalue_HR->{$wclan} && $one_score_HR->{$clan} > $one_score_HR->{$wclan})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
+      $wclan = $clan;
     }
   }
 
@@ -245,7 +285,7 @@ sub output {
   my $extra_string = "";
   my $nhits = 1;
   foreach my $clan (keys %{$one_model_HR}) { 
-    if($clan ne $winning_clan) { 
+    if($clan ne $wclan) { 
       if(exists($one_model_HR->{$clan})) { 
         if($extra_string ne "") { $extra_string .= ","; }
         $extra_string .= sprintf("%s:%10g:%10.2f/%d-%d:%s",
@@ -255,29 +295,81 @@ sub output {
       }
     }
   }
+  my $coverage = (abs($one_stop_H{$wclan} - $one_start_H{$wclan}) + 1) / $seqlen;
+  
+  my $score_diff = (exists $two_score_HR->{$wclan}) ? ($one_score_HR->{$wclan} - $two_score_HR->{$wclan}) : $one_score_HR->{$wclan};
+  my $pass_fail = (($score_diff > $diff_thresh) && ($nhits == 1)) ? "PASS" : "FAIL";
 
-  my $seqlen = "?";
-  my $coverage = "?";
-
-  printf("%-30s  %10s  %3d  %3s  %-15s  %-15s  %10g  %10.2f  %10d  %s  %5s  %10d  %10d  ", 
-         $target, $seqlen, $nhits, $clan, $domain_HR->{$one_model_HR->{$clan}}, $one_model_HR->{$clan}, 
-         $one_evalue_HR->{$clan}, $one_score_HR->{$clan}, $one_strand_HR->{$clan}, $coverage, 
-         $one_start_HR->{$clan}, $one_stop_HR->{$clan});
-
-  if(defined $two_model_HR->{$winning_clan}) { 
-    printf("%10.2f  %-15s  %10g  %10.2f  ", 
-           $one_score_HR->{$clan} - $two_score_HR->{$clan}, $two_model_HR->{$clan}, $two_evalue_HR->{$clan}, $two_score_HR->{$clan});
+  if($do_short) { 
+    printf $FH ("%-30s  %10s  %s\n", 
+           $target, $clan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
   }
   else { 
-    printf("%10s  %-15s  %10s  %10.2s  ", 
-           "-" , "-", "-", "-");
+    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-15s  %10g  %10.2f  %s  %5.3f  %10d  %10d  ", 
+           $target, $seqlen, $nhits, $clan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
+           $one_evalue_HR->{$wclan}, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
+           $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
+    
+    if(defined $two_model_HR->{$wclan}) { 
+      printf $FH ("%10.2f  %-15s  %10g  %10.2f  ", 
+             $one_score_HR->{$wclan} - $two_score_HR->{$wclan}, $two_model_HR->{$wclan}, $two_evalue_HR->{$wclan}, $two_score_HR->{$wclan});
+    }
+    else { 
+      printf $FH ("%10s  %-15s  %10s  %10.2s  ", 
+             "-" , "-", "-", "-");
+    }
+    
+    if($extra_string eq "") { 
+      $extra_string = "-";
+    }
+    
+    print $FH ("$extra_string\n");
   }
 
-  if($extra_string eq "") { 
-    $extra_string = "-";
+  return;
+}
+
+#################################################################
+# Subroutine : parse_seqstat_file()
+# Incept:      EPN, Wed Dec 14 16:16:22 2016
+#
+# Purpose:     Parse an esl-seqstat -a output file.
+#              
+# Arguments: 
+#   $seqstat_file:  file to parse
+#   $seqlen_HR:     REF to hash of sequence lengths to fill here
+#
+# Returns:     Nothing. Fills %{$seqlen_HR}.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub parse_seqstat_file { 
+  my $nargs_expected = 2;
+  my $sub_name = "parse_seqstat_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($seqstat_file, $seqlen_HR) = @_;
+
+  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+
+  my $nread = 0;
+
+  while(my $line = <IN>) { 
+  # = lcl|dna_BP331_0.3k:467     1232 
+  # = lcl|dna_BP331_0.3k:10     1397 
+  # = lcl|dna_BP331_0.3k:1052     1414 
+    chomp $line;
+    print $line . "\n";
+    if($line =~ /^\=\s+(\S+)\s+(\d+)\s*$/) { 
+      $seqlen_HR->{$1} = $2;
+      $nread++;
+    }
   }
-  
-  print("$extra_string\n");
+  close(IN);
+  if($nread == 0) { 
+    die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
+  }
 
   return;
 }
