@@ -427,3 +427,4 @@ sub parse_clan_file {
 
   return;
 }
+
