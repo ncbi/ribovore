@@ -1,11 +1,11 @@
 use strict;
 
-my $usage = "perl ribotyper-parse.pl <esl-seqstat file> <tabular search results> <output file name>";
-if(scalar(@ARGV) != 3) { 
+my $usage = "perl ribotyper-parse.pl <esl-seqstat file> <clan/domain info input file> <tabular search results> <output file name>";
+if(scalar(@ARGV) != 4) { 
   die $usage;
 }
 
-my ($seqstat_file, $tbl_file, $out_file) = (@ARGV);
+my ($seqstat_file, $clan_file, $tbl_file, $out_file) = (@ARGV);
 
 my %one_model_H;
 my %one_score_H;
@@ -20,19 +20,12 @@ my %two_start_H;
 my %two_stop_H;
 my %two_strand_H;
 
-my @clan_names_A = ("SSU", "LSU");
-my %clan_H = ();
-$clan_H{"SSU_rRNA_archaea"}  = "SSU";
-$clan_H{"SSU_rRNA_bacteria"} = "SSU";
-$clan_H{"SSU_rRNA_eukarya"}  = "SSU";
-$clan_H{"LSU_rRNA_archaea"}  = "LSU";
-$clan_H{"LSU_rRNA_bacteria"} = "LSU";
-$clan_H{"LSU_rRNA_eukarya"}  = "LSU";
+my @clan_names_A = ();   # array of clan names,   all values in clan_H,   in order they are read from $clan_file
+my @domain_names_A = (); # array of domain names, all values in domain_H, in order they are read from $clan_file
+my %clan_H = ();   # hash of clans,   key: model name, value: name of clan model belongs to (e.g. SSU)
+my %domain_H = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
 
-my %domain_H = ();
-$domain_H{"SSU_rRNA_archaea"}  = "Archaea";
-$domain_H{"SSU_rRNA_bacteria"} = "Bacteria";
-$domain_H{"SSU_rRNA_eukarya"}  = "Eukarya";
+parse_clan_file($clan_file, \@clan_names_A, \%clan_H, \@domain_names_A, \%domain_H);
 
 my $prv_target = undef; # initialize 
 my $clan = undef;
@@ -360,7 +353,7 @@ sub parse_seqstat_file {
   # = lcl|dna_BP331_0.3k:10     1397 
   # = lcl|dna_BP331_0.3k:1052     1414 
     chomp $line;
-    print $line . "\n";
+    #print $line . "\n";
     if($line =~ /^\=\s+(\S+)\s+(\d+)\s*$/) { 
       $seqlen_HR->{$1} = $2;
       $nread++;
@@ -370,6 +363,67 @@ sub parse_seqstat_file {
   if($nread == 0) { 
     die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
   }
+
+  return;
+}
+
+#################################################################
+# Subroutine : parse_clan_file()
+# Incept:      EPN, Mon Dec 19 10:01:32 2016
+#
+# Purpose:     Parse a clan input file.
+#              
+# Arguments: 
+#   $clan_file:       file to parse
+#   $clan_names_AR:   ref to array of clan names, values in %{$clan_H} in order read
+#   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
+#   $domain_names_AR: ref to array of domain names, values in %{$clan_H} in order read
+#   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
+#
+# Returns:     Nothing. Fills @{$clan_names_AR}, %{$clan_H}, @{$domain_names_AR}, %{$domain_HR}
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub parse_clan_file { 
+  my $nargs_expected = 5;
+  my $sub_name = "parse_clan_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($clan_file, $clan_names_AR, $clan_HR, $domain_names_AR, $domain_HR) = @_;
+
+  open(IN, $clan_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+
+# example line:
+# SSU_rRNA_archaea SSU Archaea
+
+  my %clan_exists_H   = ();
+  my %domain_exists_H = ();
+
+  open(IN, $clan_file) || die "ERROR unable to open $clan_file for reading"; 
+  while(my $line = <IN>) { 
+    chomp $line;
+    my @el_A = split(/\s+/, $line);
+    if(scalar(@el_A) != 3) { 
+      die "ERROR didn't read 3 tokens in clan input file $clan_file, line $line"; 
+    }
+    my($model, $clan, $domain) = (@el_A);
+
+    if(! exists $clan_exists_H{$clan}) { 
+      push(@{$clan_names_AR}, $clan); 
+      $clan_exists_H{$clan} = 1;
+    }
+    if(! exists $domain_exists_H{$domain}) { 
+      push(@{$domain_names_AR}, $domain); 
+      $domain_exists_H{$domain} = 1;
+    }
+    if(exists $clan_HR->{$model}) { 
+      die "ERROR read model $model twice in $clan_file"; 
+    }
+    $clan_HR->{$model}   = $clan;
+    $domain_HR->{$model} = $domain;
+  }
+  close(IN);
 
   return;
 }
