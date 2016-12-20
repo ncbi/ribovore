@@ -1,18 +1,56 @@
 use strict;
 
-my $usage = "perl ribotyper-parse.pl <esl-seqstat file> <clan/domain info input file> <tabular search results> <output file name>";
-if(scalar(@ARGV) != 4) { 
+my $usage = "grep -v \^# <tabular output> | sort | perl ribotyper-parse.pl\n";
+$usage   .= "\t<method: 'fast', 'cmsearch', 'cmscan', 'nhmmer', or 'ssu-align'>\n";
+$usage   .= "\t<esl-seqstat file>\n";
+$usage   .= "\t<clan/domain info input file>\n";
+$usage   .= "\t<tabular output, sorted by sequence name with # lines removed>\n";
+$usage   .= "\t<long output file name>\n";
+$usage   .= "\t<short output file name>\n\n";
+
+if(scalar(@ARGV) != 6) { 
   die $usage;
 }
 
-my ($seqstat_file, $clan_file, $tbl_file, $out_file) = (@ARGV);
+my ($method, $seqstat_file, $clan_file, $sorted_tbl_file, $long_out_file, $short_out_file) = (@ARGV);
 
-my %one_model_H;
-my %one_score_H;
-my %one_evalue_H;
-my %one_start_H;
-my %one_stop_H;
-my %one_strand_H;
+######################################################
+# What this script does:
+#
+# This script reads in a sorted list of hits, sorted by sequence (such that all hits to the 
+# same sequence are in contiguous lines of the input), and determines for each sequence
+# and each clan (e.g. SSU or LSU)
+#
+# - the top hit and corresponding model to any part of the sequence 
+#   (this data is stored in the 'one' data structures below)
+#
+# - the second best hit and corresponding model that overlaps with the top-scoring hit
+#   (this data is stored in the 'two' data structures below)
+#
+# - any other hits that DO NOT overlap with the top-scoring hit, and reports this as 
+#   additional information
+#
+# And then outputs that information to two output files:
+# Long output file  <$long_out_file>:  many column file
+# Short output file <$short_out_file>: few column file
+#
+#########################
+# Main data structures: 
+# 'one': current top scoring model for current sequence
+# 'two': current second best scoring model for current sequence 
+#        that overlaps with hit in 'one' data structures
+# 
+# keys for all below are clans (e.g. 'SSU' or 'LSU')
+# values are for the best scoring hit in this clan to current sequence
+my %one_model_H;  
+my %one_score_H;  
+my %one_evalue_H; 
+my %one_start_H;  
+my %one_stop_H;   
+my %one_strand_H; 
+
+# same as for 'one' data structures, but values are for second best scoring hit
+# in this clan to current sequence that overlaps with hit in 'one' data structures
 my %two_model_H;
 my %two_score_H;
 my %two_evalue_H;
@@ -20,15 +58,30 @@ my %two_start_H;
 my %two_stop_H;
 my %two_strand_H;
 
-my @clan_names_A = ();   # array of clan names,   all values in clan_H,   in order they are read from $clan_file
+# variables related to clans and domains
+my @clan_names_A   = (); # array of clan names,   all values in clan_H,   in order they are read from $clan_file
 my @domain_names_A = (); # array of domain names, all values in domain_H, in order they are read from $clan_file
-my %clan_H = ();   # hash of clans,   key: model name, value: name of clan model belongs to (e.g. SSU)
-my %domain_H = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
+my %clan_H         = (); # hash of clans,   key: model name, value: name of clan model belongs to (e.g. SSU)
+my %domain_H       = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
+
+# make sure method is valid
+my $do_fast     = 0;
+my $do_cmsearch = 0;
+my $do_cmscan   = 0;
+my $do_nhmmer   = 0;
+my $do_ssualign = 0;
+
+if   ($method eq "fast")     { $do_fast     = 1; }
+elsif($method eq "cmsearch") { $do_cmsearch = 1; }
+elsif($method eq "cmscan")   { $do_cmscan   = 1; }
+elsif($method eq "nhmmer")   { $do_nhmmer   = 1; }
+elsif($method eq "ssualign") { $do_ssualign = 1; }
+else                         { die "ERROR invalid method, got $method, expected \'fast\', \'cmsearch\', \'cmscan\', \'nhmmer\', or \'ssualign\'"; }
 
 parse_clan_file($clan_file, \@clan_names_A, \%clan_H, \@domain_names_A, \%domain_H);
 
 my $prv_target = undef; # initialize 
-my $clan = undef;
+my $clan       = undef; # initialize
 
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value set to -1 after we output info for this sequence
@@ -37,35 +90,78 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # sorted properly.
 parse_seqstat_file($seqstat_file, \%seqlen_H); 
 
-# expects sorted output, sorted by column 1, the 'target name' column
-# will detect if file is not sorted
-open(IN, $tbl_file) || die "ERROR unable to open $tbl_file for reading";
-my $longout_FH;
-open($longout_FH, ">", $out_file) || die "ERROR unable to open $out_file for writing";
-my $shortout_FH = \*STDOUT;
+my $long_out_FH;
+my $short_out_FH;
+open($long_out_FH,  ">", $long_out_file) || die "ERROR unable to open $long_out_file for writing";
+open($short_out_FH, ">", $short_out_file) || die "ERROR unable to open $short_out_file for writing";
+# expects sorted tabular file in $sorted_tbl_file, sorted by sequence name, we will 
+# detect if the file is not sorted
+open(TBLIN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file for reading";
 
 init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
 init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
 
-while(my $line = <IN>) { 
+while(my $line = <TBLIN>) { 
   chomp $line;
-##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
-##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
-#lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
+  $line =~ s/^\s+//; # remove leading whitespace
 
   if($line =~ m/^\#/) { 
     die "ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.";
   }
   my @el_A = split(/\s+/, $line);
-  if(scalar(@el_A) < 18) { 
-    die "ERROR found less than 18 columns at line: $line";
+  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue);
+
+  if($do_fast) { 
+    if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast tabular output at line: $line"; }
+    # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
+    ($target, $model, $score, $seqfrom, $seqto, $strand) = 
+        ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+  }    
+  elsif($do_cmsearch) { 
+     ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
+     ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
+     #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
+    if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmsearch tabular output at line: $line"; }
+    ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+        ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
   }
-  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-      ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
+  elsif($do_cmscan) { 
+    ##idx target name          accession query name             accession clan name mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc olp anyidx afrct1 afrct2 winidx wfrct1 wfrct2 description of target
+    ##--- -------------------- --------- ---------------------- --------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- --- ------ ------ ------ ------ ------ ------ ---------------------
+    #  1    SSU_rRNA_bacteria    RF00177   lcl|dna_BP331_0.3k:467 -         -         hmm       37     1301        1     1228      +     -    6 0.53   6.2  974.2  2.8e-296  !   ^       -      -      -      -      -      - -
+    # same as cmsearch but target/query are switched
+    if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmscan tabular output at line: $line"; }
+    ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+        ($el_A[2], $el_A[0], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
+  }
+  elsif($do_nhmmer) { 
+    ## target name            accession  query name           accession  hmmfrom hmm to alifrom  ali to envfrom  env to  sq len strand   E-value  score  bias  description of target
+    ###    ------------------- ---------- -------------------- ---------- ------- ------- ------- ------- ------- ------- ------- ------ --------- ------ ----- ---------------------
+    #  lcl|dna_BP444_24.8k:251  -          SSU_rRNA_archaea     RF01959          3    1443       2    1436       1    1437    1437    +           0 1036.1  18.0  -
+    if(scalar(@el_A) < 16) { die "ERROR found less than 16 columns in nhmmer tabular output at line: $line"; }
+    ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+        ($el_A[0], $el_A[2], $el_A[4], $el_A[5], $el_A[6], $el_A[7], $el_A[11],  $el_A[13], $el_A[12]);
+  }
+  elsif($do_ssualign) { 
+    ##                                                 target coord   query coord                         
+    ##                                       ----------------------  ------------                         
+    ## model name  target name                    start        stop  start   stop    bit sc   E-value  GC%
+    ## ----------  ------------------------  ----------  ----------  -----  -----  --------  --------  ---
+    #  archaea     lcl|dna_BP331_0.3k:467            18        1227      1   1508    478.86         -   53
+    if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in SSU-ALIGN tabular output line: $line"; }
+    ($target, $model, $score, $seqfrom, $seqto, $mdlfrom, $mdlto, $score) = 
+        ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5], $el_A[6]);
+    $strand = "+";
+    if($seqfrom > $seqto) { $strand = "-"; }
+    $evalue = "-";
+  }
+  else { 
+    die "ERROR, not a valid method";
+  }
 
   $clan = $clan_H{$model};
   if(! defined $clan) { 
-    die "ERROR unrecognized model $model";
+    die "ERROR unrecognized model $model, no clan information";
   }
 
   # two sanity checks:
@@ -75,16 +171,20 @@ while(my $line = <IN>) {
   }
   # make sure we haven't output information for this sequence already
   if($seqlen_H{$target} == -1) { 
-    die "ERROR found line with target previously output, did you sort by first column?";
+    die "ERROR found line with target $target previously output, did you sort by sequence name?";
   }
 
   # Are we now finished with the previous sequence? Yes, if target sequence we just read is different from it
   if((defined $prv_target) && ($prv_target ne $target)) { 
     # if so, output its current info
-    output($longout_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
+    output($long_out_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
            \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
            \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-    output($shortout_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
+    output($short_out_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
+           \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+           \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+    # output short output again to stdout
+    output(\*STDOUT, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
            \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
            \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     $seqlen_H{$prv_target} = -1; # serves as a flag that we output info for this sequence
@@ -92,11 +192,39 @@ while(my $line = <IN>) {
     init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
     init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   }
-  
+
+  # determine if we are a new 'one' or 'two' score, note we can't be both
+  my $better_than_one = (! defined $one_evalue_H{$clan}) ? 1 : 0; # set to '1' below if this E-value/score is better than current 'one'
+  my $better_than_two = (! defined $two_evalue_H{$clan}) ? 1 : 0; # set to '1' below if this E-value/score is better than current 'one'
+  if($do_cmsearch | $do_cmscan | $do_nhmmer) { 
+    if(($evalue < $one_evalue_H{$clan}) || # this E-value is better than (less than) our current 'one' E-value
+       ($evalue eq $one_evalue_H{$clan} && $score > $one_score_H{$clan})) { # this E-value equals current 'one' E-value, 
+                                                                             # but this score is better than current 'one' score
+      $better_than_one = 1;
+    }
+  }
+  elsif($do_fast || $do_ssualign) { # no E-values
+    if($score > $one_score_H{$clan}) { # score is better than current 'one' score
+      $better_than_one = 1;
+    }
+  }
+  if((! $better_than_one) && (! $better_than_two)) { # determine if we're a new 'two' score
+    if($do_cmsearch | $do_cmscan | $do_nhmmer) { 
+      if(($evalue < $two_evalue_H{$clan}) || # this E-value is better than (less than) our current 'two' E-value
+         ($evalue eq $two_evalue_H{$clan} && $score > $two_score_H{$clan})) { # this E-value equals current 'two' E-value, 
+        # but this score is better than current 'two' score
+        $better_than_two = 1;
+      }
+    }
+    elsif($do_fast || $do_ssualign) { # no E-values
+      if($score > $two_score_H{$clan}) { # score is better than current 'one' score
+        $better_than_two = 1;
+      }
+    }
+  }
+
   # is this a new 'one' hit (top scoring model)?
-  if((! defined $one_evalue_H{$clan}) || # we don't yet have a 'one' model, use this one
-     ($evalue < $one_evalue_H{$clan}) || # this E-value is better than (less than) our current 'one' E-value
-     ($evalue eq $one_evalue_H{$clan} && $score > $one_score_H{$clan})) { # this E-value equals current 'one' E-value, but this score is better than current 'one' score
+  if($better_than_one) { 
     # new 'one' hit, update 'one' variables, 
     # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
     if(defined $one_model_H{$clan} && $one_model_H{$clan} ne $model) { 
@@ -107,15 +235,10 @@ while(my $line = <IN>) {
     set_vars($clan, \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
              $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
   }
-  else { # not a new 'one' hit
-    # is this a new 'two' hit (second-best scoring model)?
-    if(($model ne $one_model_H{$clan}) &&   # this is not the same model as model one
-       (($evalue < $two_evalue_H{$clan}) || # this E-value is better than (less than) our current 'two' E-value
-        ($evalue eq $two_evalue_H{$clan} && $score > $two_score_H{$clan}))) { # this E-value equals current 'two' E-value, but this score is better than current 'two' score
-      # new 'two' hit, set it
-      set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
-               $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
-    }
+  elsif($better_than_two) { 
+    # new 'two' hit, set it
+    set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+             $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
   }
   $prv_target = $target;
 
@@ -125,17 +248,22 @@ while(my $line = <IN>) {
   }
 }
 # output data for final sequence
-output($longout_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target},
+output($long_out_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target},
        \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
        \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-output($shortout_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target},
+output($short_out_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target},
        \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
        \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-
-
 $seqlen_H{$prv_target} = -1; # not really necessary, since we're done
 
-close $longout_FH;
+# close file handles and exit
+close(TBLIN);
+close $long_out_FH;
+close $short_out_FH;
+
+#################################################################
+# SUBROUTINES
+#################################################################
 
 #################################################################
 # Subroutine : init_vars()
