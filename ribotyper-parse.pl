@@ -101,7 +101,15 @@ open(TBLIN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file f
 init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
 init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
 
+my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue);
+my $better_than_one; # set to true for each hit if it is better than our current 'one' hit
+my $better_than_two; # set to true for each hit if it is better than our current 'two' hit
+
 while(my $line = <TBLIN>) { 
+
+  ######################################################
+  # Parse the data on this line, this differs depending
+  # on our annotation method
   chomp $line;
   $line =~ s/^\s+//; # remove leading whitespace
 
@@ -109,7 +117,6 @@ while(my $line = <TBLIN>) {
     die "ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.";
   }
   my @el_A = split(/\s+/, $line);
-  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue);
 
   if($do_fast) { 
     if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast tabular output at line: $line"; }
@@ -173,8 +180,14 @@ while(my $line = <TBLIN>) {
   if($seqlen_H{$target} == -1) { 
     die "ERROR found line with target $target previously output, did you sort by sequence name?";
   }
+  # finished parsing data for this line
+  ######################################################
 
-  # Are we now finished with the previous sequence? Yes, if target sequence we just read is different from it
+  ##############################################################
+  # Are we now finished with the previous sequence? 
+  # Yes, if target sequence we just read is different from it
+  # If yes, output info for it, and re-initialize data structures
+  # for new sequence just read
   if((defined $prv_target) && ($prv_target ne $target)) { 
     # if so, output its current info
     output($long_out_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
@@ -192,38 +205,55 @@ while(my $line = <TBLIN>) {
     init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
     init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   }
+  # finished outputting info from previous sequence
+  ##############################################################
 
-  # determine if we are a new 'one' or 'two' score, note we can't be both
-  my $better_than_one = (! defined $one_evalue_H{$clan}) ? 1 : 0; # set to '1' below if this E-value/score is better than current 'one'
-  my $better_than_two = (! defined $two_evalue_H{$clan}) ? 1 : 0; # set to '1' below if this E-value/score is better than current 'one'
-  if($do_cmsearch | $do_cmscan | $do_nhmmer) { 
-    if(($evalue < $one_evalue_H{$clan}) || # this E-value is better than (less than) our current 'one' E-value
-       ($evalue eq $one_evalue_H{$clan} && $score > $one_score_H{$clan})) { # this E-value equals current 'one' E-value, 
-                                                                             # but this score is better than current 'one' score
-      $better_than_one = 1;
-    }
+  ##########################################################
+  # Determine if this hit is either a new 'one' or 'two' hit
+  $better_than_one = 0; # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
+  $better_than_two = 0; # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
+  if(! defined $one_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+    $better_than_one = 1; # no current, 'one' this will be it
   }
-  elsif($do_fast || $do_ssualign) { # no E-values
-    if($score > $one_score_H{$clan}) { # score is better than current 'one' score
-      $better_than_one = 1;
-    }
-  }
-  if((! $better_than_one) && (! $better_than_two)) { # determine if we're a new 'two' score
+  else { 
     if($do_cmsearch | $do_cmscan | $do_nhmmer) { 
-      if(($evalue < $two_evalue_H{$clan}) || # this E-value is better than (less than) our current 'two' E-value
-         ($evalue eq $two_evalue_H{$clan} && $score > $two_score_H{$clan})) { # this E-value equals current 'two' E-value, 
-        # but this score is better than current 'two' score
-        $better_than_two = 1;
+      if(($evalue < $one_evalue_H{$clan}) || # this E-value is better than (less than) our current 'one' E-value
+         ($evalue eq $one_evalue_H{$clan} && $score > $one_score_H{$clan})) { # this E-value equals current 'one' E-value, 
+                                                                              # but this score is better than current 'one' score
+        $better_than_one = 1;
       }
     }
     elsif($do_fast || $do_ssualign) { # no E-values
-      if($score > $two_score_H{$clan}) { # score is better than current 'one' score
-        $better_than_two = 1;
+      if($score > $one_score_H{$clan}) { # score is better than current 'one' score
+        $better_than_one = 1;
       }
     }
   }
+  # only possibly set $better_than_two to TRUE if $better_than_one is FALSE
+  if(! $better_than_one) {  
+    if(! defined $two_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+      $better_than_two = 1;
+    }
+    else { 
+      if($do_cmsearch | $do_cmscan | $do_nhmmer) { 
+        if(($evalue < $two_evalue_H{$clan}) || # this E-value is better than (less than) our current 'two' E-value
+           ($evalue eq $two_evalue_H{$clan} && $score > $two_score_H{$clan})) { # this E-value equals current 'two' E-value, 
+          # but this score is better than current 'two' score
+          $better_than_two = 1;
+        }
+      }
+      elsif($do_fast || $do_ssualign) { # no E-values
+        if($score > $two_score_H{$clan}) { # score is better than current 'one' score
+          $better_than_two = 1;
+        }
+      }
+    }
+  }
+  # finished determining if this hit is a new 'one' or 'two' hit
+  ##########################################################
 
-  # is this a new 'one' hit (top scoring model)?
+  ##########################################################
+  # if we have a new hit, update 'one' and/or 'two' data structures
   if($better_than_one) { 
     # new 'one' hit, update 'one' variables, 
     # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
@@ -240,6 +270,9 @@ while(my $line = <TBLIN>) {
     set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
              $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
   }
+  # finished updating 'one' or 'two' data structures
+  ##########################################################
+
   $prv_target = $target;
 
   # sanity check
