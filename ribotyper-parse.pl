@@ -1,7 +1,7 @@
 use strict;
 
 my $usage = "grep -v \^# <tabular output> | sort | perl ribotyper-parse.pl\n";
-$usage   .= "\t<method: 'fast', 'cmsearch', 'cmscan', 'nhmmer', or 'ssu-align'>\n";
+$usage   .= "\t<method: 'fast-cmsearch', 'fast-cmscan', 'cmsearch', 'cmscan', 'nhmmer', or 'ssu-align'>\n";
 $usage   .= "\t<esl-seqstat file>\n";
 $usage   .= "\t<clan/domain info input file>\n";
 $usage   .= "\t<tabular output, sorted by sequence name with # lines removed>\n";
@@ -71,12 +71,13 @@ my $do_cmscan   = 0;
 my $do_nhmmer   = 0;
 my $do_ssualign = 0;
 
-if   ($method eq "fast")     { $do_fast     = 1; }
-elsif($method eq "cmsearch") { $do_cmsearch = 1; }
-elsif($method eq "cmscan")   { $do_cmscan   = 1; }
-elsif($method eq "nhmmer")   { $do_nhmmer   = 1; }
-elsif($method eq "ssualign") { $do_ssualign = 1; }
-else                         { die "ERROR invalid method, got $method, expected \'fast\', \'cmsearch\', \'cmscan\', \'nhmmer\', or \'ssualign\'"; }
+if   ($method eq "fast-cmsearch") { $do_fast     = 1; $do_cmsearch = 1; }
+elsif($method eq "fast-cmscan")   { $do_fast     = 1; $do_cmscan   = 1; }
+elsif($method eq "cmsearch")      { $do_cmsearch = 1; }
+elsif($method eq "cmscan")        { $do_cmscan   = 1; }
+elsif($method eq "nhmmer")        { $do_nhmmer   = 1; }
+elsif($method eq "ssualign")      { $do_ssualign = 1; }
+else                              { die "ERROR invalid method, got $method, expected \'fast-cmsearch\', \'fast-cmscan\', \'cmsearch\', \'cmscan\', \'nhmmer\', or \'ssualign\'"; }
 
 parse_clan_file($clan_file, \@clan_names_A, \%clan_H, \@domain_names_A, \%domain_H);
 
@@ -120,9 +121,19 @@ while(my $line = <TBLIN>) {
 
   if($do_fast) { 
     if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast tabular output at line: $line"; }
-    # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
-    ($target, $model, $score, $seqfrom, $seqto, $strand) = 
-        ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+    if($do_cmsearch) { 
+      # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
+      ($target, $model, $score, $seqfrom, $seqto, $strand) = 
+          ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+    }
+    elsif($do_cmscan) { 
+      # SSU_rRNA_eukarya  lcl|dna_BP101_10.1k:10  391.6      1   1269      +     []  =         1269
+      ($target, $model, $score, $seqfrom, $seqto, $strand) = 
+          ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+    }
+    else { 
+      die "ERROR do_fast but not do_cmsearch or do_cmscan";
+    }
   }    
   elsif($do_cmsearch) { 
      ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
@@ -137,9 +148,9 @@ while(my $line = <TBLIN>) {
     ##--- -------------------- --------- ---------------------- --------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- --- ------ ------ ------ ------ ------ ------ ---------------------
     #  1    SSU_rRNA_bacteria    RF00177   lcl|dna_BP331_0.3k:467 -         -         hmm       37     1301        1     1228      +     -    6 0.53   6.2  974.2  2.8e-296  !   ^       -      -      -      -      -      - -
     # same as cmsearch but target/query are switched
-    if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmscan tabular output at line: $line"; }
+    if(scalar(@el_A) < 27) { die "ERROR found less than 27 columns in cmscan tabular output at line: $line"; }
     ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-        ($el_A[2], $el_A[0], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
+        ($el_A[3], $el_A[1], $el_A[7], $el_A[8], $el_A[9], $el_A[10], $el_A[11],  $el_A[16], $el_A[17]);
   }
   elsif($do_nhmmer) { 
     ## target name            accession  query name           accession  hmmfrom hmm to alifrom  ali to envfrom  env to  sq len strand   E-value  score  bias  description of target
@@ -156,7 +167,7 @@ while(my $line = <TBLIN>) {
     ## ----------  ------------------------  ----------  ----------  -----  -----  --------  --------  ---
     #  archaea     lcl|dna_BP331_0.3k:467            18        1227      1   1508    478.86         -   53
     if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in SSU-ALIGN tabular output line: $line"; }
-    ($target, $model, $score, $seqfrom, $seqto, $mdlfrom, $mdlto, $score) = 
+    ($target, $model, $seqfrom, $seqto, $mdlfrom, $mdlto, $score) = 
         ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5], $el_A[6]);
     $strand = "+";
     if($seqfrom > $seqto) { $strand = "-"; }
@@ -216,8 +227,8 @@ while(my $line = <TBLIN>) {
       }
     }
   }
-  # only possibly set $better_than_two to TRUE if $better_than_one is FALSE
-  if(! $better_than_one) {  
+  # only possibly set $better_than_two to TRUE if $better_than_one is FALSE, and it's not the same model as 'one'
+  if((! $better_than_one) && ($model ne $one_model_H{$clan})) {  
     if(! defined $two_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
       $better_than_two = 1;
     }
