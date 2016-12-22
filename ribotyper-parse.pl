@@ -189,23 +189,10 @@ while(my $line = <TBLIN>) {
   # If yes, output info for it, and re-initialize data structures
   # for new sequence just read
   if((defined $prv_target) && ($prv_target ne $target)) { 
-    # if so, output its current info
-    output($long_out_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
-           \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-           \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-    output($short_out_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
-           \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-           \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-    # output short output again to stdout
-    output(\*STDOUT, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target}, 
-           \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-           \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-    $seqlen_H{$prv_target} = -1; # serves as a flag that we output info for this sequence
-    # reset vars
-    init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
-    init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+    output_wrapper($long_out_FH, $short_out_FH, \%domain_H, $prv_target, \%seqlen_H,
+                   \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                   \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   }
-  # finished outputting info from previous sequence
   ##############################################################
 
   ##########################################################
@@ -281,13 +268,9 @@ while(my $line = <TBLIN>) {
   }
 }
 # output data for final sequence
-output($long_out_FH, 0, \%domain_H, $prv_target, $seqlen_H{$prv_target},
-       \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-       \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-output($short_out_FH, 1, \%domain_H, $prv_target, $seqlen_H{$prv_target},
-       \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-       \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-$seqlen_H{$prv_target} = -1; # not really necessary, since we're done
+output_wrapper($long_out_FH, $short_out_FH, \%domain_H, $prv_target, \%seqlen_H,
+               \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+               \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
 
 # close file handles and exit
 close(TBLIN);
@@ -381,6 +364,63 @@ sub set_vars {
   $stop_HR->{$clan}   = $stop;
   $strand_HR->{$clan} = $strand;
 
+  return;
+}
+
+#################################################################
+# Subroutine : output_wrapper()
+# Incept:      EPN, Thu Dec 22 13:49:53 2016
+#
+# Purpose:     Call function to output information and reset variables.
+#              
+# Arguments: 
+#   $long_FH:       file handle to output long data to
+#   $short_FH:      file handle to output short data to
+#   $domain_HR:     reference to domain hash
+#   $target:        target name
+#   $seqlen_HR:     hash of target sequence lengths
+#   %one_model_HR:  'one' model
+#   %one_score_HR:  'one' bit score
+#   %one_evalue_HR: 'one' E-value
+#   %one_start_HR:  'one' start position
+#   %one_stop_HR:   'one' stop position
+#   %one_strand_HR: 'one' strand 
+#   %two_model_HR:  'two' model
+#   %two_score_HR:  'two' bit score
+#   %two_evalue_HR: 'two' E-value
+#   %two_start_HR:  'two' start position
+#   %two_stop_HR:   'two' stop position
+#   %two_strand_HR: 'two' strand 
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_wrapper { 
+  my $nargs_expected = 17;
+  my $sub_name = "output_wrapper";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($long_FH, $short_FH, $domain_HR, $target, $seqlen_HR, $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+      $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
+
+  # if so, output its current info
+  output($long_FH, 0, $domain_HR, $target, $seqlen_HR->{$target}, 
+         $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+         $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  output($short_FH, 1, $domain_HR, $target, $seqlen_HR->{$target}, 
+         $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+         $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  # output short output again to stdout
+  output(\*STDOUT, 1, $domain_HR, $target, $seqlen_HR->{$target}, 
+         $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+         $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  # reset vars
+  init_vars($one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
+  init_vars($two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  $seqlen_HR->{$target} = -1; # serves as a flag that we output info for this sequence
+  
   return;
 }
 
