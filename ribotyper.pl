@@ -10,6 +10,7 @@ require "epn-options.pm";
 my $inf_exec_dir      = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/bin/";
 my $hmmer_exec_dir    = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/bin/";
 my $esl_exec_dir      = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/bin/";
+my $ribo_exec_dir     = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/ribotyper-v1/";
 
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -129,11 +130,12 @@ my $out_root   = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
 # make sure the required executables are executable
 ###################################################
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmscan"}       = $inf_exec_dir   . "cmscan";
-$execs_H{"cmsearch"}     = $inf_exec_dir   . "cmsearch";
-$execs_H{"nhmmer"}       = $hmmer_exec_dir . "nhmmer";
-$execs_H{"ssu-align"}    = $hmmer_exec_dir . "hmmalign";
-$execs_H{"esl-seqstat"}  = $esl_exec_dir   . "esl-seqstat";
+$execs_H{"cmscan"}          = $inf_exec_dir   . "cmscan";
+$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
+$execs_H{"nhmmer"}          = $hmmer_exec_dir . "nhmmer";
+$execs_H{"ssu-align"}       = $hmmer_exec_dir . "ssu-align";
+$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
+$execs_H{"ribotyper-parse"} = $ribo_exec_dir  . "ribotyper-parse.pl";
 #$execs_H{"esl_ssplit"}    = $esl_ssplit;
 validate_executable_hash(\%execs_H);
 
@@ -145,7 +147,8 @@ run_command("esl-seqstat -a $seq_file > $seqstat_file", 1);
 
 ###########################################################################
 # Step 2: run search algorithm
-# determine which algorithm to use
+# determine which algorithm to use and options to use as well
+# as the command for sorting the output and parsing the output
 # set up defaults
 my $do_cmsearch = 0;
 my $do_nhmmer   = 0;
@@ -164,18 +167,26 @@ elsif(opt_Get("--slow", \%opt_HH))   { $do_slow = 1; }
 
 my $cmsearch_and_cmscan_opts = "";
 my $tblout_file = "";
+my $sorted_tblout_file = "";
 my $searchout_file = "";
 my $search_cmd = "";
+my $sort_cmd = "";
+my $parse_method = "";
 
 if($do_nhmmer) { 
   $tblout_file    = $out_root . ".nhmmer.tbl";
   $searchout_file = $out_root . ".nhmmer.out";
   $search_cmd = $execs_H{"nhmmer"} . " --noali --cpu $ncpu --tblout $tblout_file $model_file $seq_file > $searchout_file";
+  $sort_cmd   = "grep -v ^\# $tblout_file | sort -k1 > sorted_" . $tblout_file;
+  $parse_method = "nhmmer";
 }
 elsif($do_ssualign) { 
-  $tblout_file    = $out_root . $dir_out_tail . ".ribotyper.ssu-align.tab";
-  $searchout_file = $out_root . ".nhmmer.out";
-  $search_cmd = $execs_H{"ssualign"} . " --noalign -m $model_file -f $out_root $seq_file > /dev/null";
+  $tblout_file        = $out_root . "/" . $dir_out_tail . ".ribotyper.tab";
+  $sorted_tblout_file = $out_root . "/" . $dir_out_tail . ".ribotyper.tab.sorted";
+  $searchout_file     = $out_root . ".nhmmer.out";
+  $search_cmd         = $execs_H{"ssu-align"} . " --no-align -m $model_file -f $seq_file $out_root > /dev/null";
+  $sort_cmd           = "grep -v ^\# $tblout_file | awk ' { printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); } ' | sort -k2 > $sorted_tblout_file";
+  $parse_method       = "ssualign";
 }
 elsif(($do_cmsearch) || ($do_cmscan)) { 
   if($do_fast) { 
@@ -191,18 +202,45 @@ elsif(($do_cmsearch) || ($do_cmscan)) {
     $tblout_file    = $out_root . ".cmsearch.tbl";
     $searchout_file = $out_root . ".cmsearch.out";
     $executable = $execs_H{"cmsearch"};
+    $sort_cmd   = "grep -v ^\# $tblout_file | sort -k1 > sorted_" . $tblout_file;
+    if($do_fast) { 
+      $parse_method = "fast-cmsearch";
+    }
+    else { 
+      $parse_method = "cmsearch";
+    }
   }
   else { 
     $tblout_file    = $out_root . ".cmscan.tbl";
     $searchout_file = $out_root . ".cmscan.out";
     $executable = $execs_H{"cmscan"};
+    if($do_fast) { 
+      $sort_cmd     = "grep -v ^\# $tblout_file | awk '{ printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); }' | sort -k2 > sorted_" . $tblout_file;
+      $parse_method = "fast-cmscan";
+    }
+    else { 
+      $sort_cmd     = "grep -v ^\# $tblout_file | sort -k4 > sorted_" . $tblout_file;
+      $parse_method = "cmscan";
+    }
   }
   $search_cmd = $executable . " --noali --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
 }
 run_command($search_cmd, 1);
 
-exit 0;
+###########################################################################
+# Step 3: Sort output
+run_command($sort_cmd, 1);
+###########################################################################
 
+###########################################################################
+# Step 4: Parse sorted output
+my $parse_cmd  = "perl " . $execs_H{"ribotyper-parse"} . " $parse_method $seqstat_file $clan_file $sorted_tblout_file $out_root.long.out $out_root.short.out"; 
+run_command($parse_cmd, 1);
+###########################################################################
+
+
+#####################################################################
+# SUBROUTINES 
 #####################################################################
 # Subroutine: output_banner()
 # Incept:     EPN, Thu Oct 30 09:43:56 2014 (rnavore)
