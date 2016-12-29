@@ -126,6 +126,28 @@ my $dir_out_tail   = $dir_out;
 $dir_out_tail   =~ s/^.+\///; # remove all but last dir
 my $out_root   = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
 
+#############################################
+# output program banner and open output files
+#############################################
+# output preamble
+my @arg_desc_A = ();
+my @arg_A      = ();
+
+push(@arg_desc_A, "target sequence input file");
+push(@arg_A, $seq_file);
+
+push(@arg_desc_A, "query model input file");
+push(@arg_A, $model_file);
+
+push(@arg_desc_A, "clan information input file");
+push(@arg_A, $clan_file);
+
+push(@arg_desc_A, "output directory name");
+push(@arg_A, $dir_out);
+
+output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
+opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
+
 ###################################################
 # make sure the required executables are executable
 ###################################################
@@ -142,7 +164,10 @@ validate_executable_hash(\%execs_H);
 ###########################################################################
 # Step 1: run esl-seqstat to get sequence lengths and validate input file
 my $seqstat_file = $out_root . ".seqstat";
-run_command("esl-seqstat -a $seq_file > $seqstat_file", 1);
+my $progress_w = 85; # the width of the left hand column in our progress output, hard-coded
+my $start_secs = output_progress_prior("Validating target sequence file and determining sequence lengths", $progress_w, undef, *STDOUT);
+run_command("esl-seqstat -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
@@ -150,6 +175,7 @@ run_command("esl-seqstat -a $seq_file > $seqstat_file", 1);
 # determine which algorithm to use and options to use as well
 # as the command for sorting the output and parsing the output
 # set up defaults
+$start_secs = output_progress_prior("Performing search ", $progress_w, undef, *STDOUT);
 my $do_cmsearch = 0;
 my $do_nhmmer   = 0;
 my $do_cmscan   = 0;
@@ -225,17 +251,22 @@ elsif(($do_cmsearch) || ($do_cmscan)) {
   }
   $search_cmd = $executable . " --noali --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
 }
-run_command($search_cmd, 1);
+run_command($search_cmd, opt_Get("-v", \%opt_HH));
+output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 3: Sort output
-run_command($sort_cmd, 1);
+$start_secs = output_progress_prior("Sorting tabular search results", $progress_w, undef, *STDOUT);
+run_command($sort_cmd, opt_Get("-v", \%opt_HH));
+output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
 # Step 4: Parse sorted output
+$start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
 my $parse_cmd  = "perl " . $execs_H{"ribotyper-parse"} . " $parse_method $seqstat_file $clan_file $sorted_tblout_file $out_root.long.out $out_root.short.out"; 
-run_command($parse_cmd, 1);
+run_command($parse_cmd, opt_Get("-v", \%opt_HH));
+output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 
@@ -380,4 +411,106 @@ sub seconds_since_epoch {
 
   my ($seconds, $microseconds) = gettimeofday();
   return ($seconds + ($microseconds / 1000000.));
+}
+
+#################################################################
+# Subroutine : output_progress_prior()
+# Incept:      EPN, Fri Feb 12 17:22:24 2016 [dnaorg.pm]
+#
+# Purpose:      Output to $FH1 (and possibly $FH2) a message indicating
+#               that we're about to do 'something' as explained in
+#               $outstr.  
+#
+#               Caller should call *this* function, then do
+#               the 'something', then call output_progress_complete().
+#
+#               We return the number of seconds since the epoch, which
+#               should be passed into the downstream
+#               output_progress_complete() call if caller wants to
+#               output running time.
+#
+# Arguments: 
+#   $outstr:     string to print to $FH
+#   $progress_w: width of progress messages
+#   $FH1:        file handle to print to, can be undef
+#   $FH2:        another file handle to print to, can be undef
+# 
+# Returns:     Number of seconds and microseconds since the epoch.
+#
+################################################################# 
+sub output_progress_prior { 
+  my $nargs_expected = 4;
+  my $sub_name = "output_progress_prior()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($outstr, $progress_w, $FH1, $FH2) = @_;
+
+  if(defined $FH1) { printf $FH1 ("# %-*s ... ", $progress_w, $outstr); }
+  if(defined $FH2) { printf $FH2 ("# %-*s ... ", $progress_w, $outstr); }
+
+  return seconds_since_epoch();
+}
+
+#################################################################
+# Subroutine : output_progress_complete()
+# Incept:      EPN, Fri Feb 12 17:28:19 2016 [dnaorg.pm]
+#
+# Purpose:     Output to $FH1 (and possibly $FH2) a 
+#              message indicating that we've completed 
+#              'something'.
+#
+#              Caller should call *this* function,
+#              after both a call to output_progress_prior()
+#              and doing the 'something'.
+#
+#              If $start_secs is defined, we determine the number
+#              of seconds the step took, output it, and 
+#              return it.
+#
+# Arguments: 
+#   $start_secs:    number of seconds either the step took
+#                   (if $secs_is_total) or since the epoch
+#                   (if !$secs_is_total)
+#   $extra_desc:    extra description text to put after timing
+#   $FH1:           file handle to print to, can be undef
+#   $FH2:           another file handle to print to, can be undef
+# 
+# Returns:     Number of seconds the step took (if $secs is defined,
+#              else 0)
+#
+################################################################# 
+sub output_progress_complete { 
+  my $nargs_expected = 4;
+  my $sub_name = "output_progress_complete()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($start_secs, $extra_desc, $FH1, $FH2) = @_;
+
+  my $total_secs = undef;
+  if(defined $start_secs) { 
+    $total_secs = seconds_since_epoch() - $start_secs;
+  }
+
+  if(defined $FH1) { printf $FH1 ("done."); }
+  if(defined $FH2) { printf $FH2 ("done."); }
+
+  if(defined $total_secs || defined $extra_desc) { 
+    if(defined $FH1) { printf $FH1 (" ["); }
+    if(defined $FH2) { printf $FH2 (" ["); }
+  }
+  if(defined $total_secs) { 
+    if(defined $FH1) { printf $FH1 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
+    if(defined $FH2) { printf $FH2 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
+  }
+  if(defined $extra_desc) { 
+    if(defined $FH1) { printf $FH1 $extra_desc };
+    if(defined $FH2) { printf $FH2 $extra_desc };
+  }
+  if(defined $total_secs || defined $extra_desc) { 
+    if(defined $FH1) { printf $FH1 ("]"); }
+    if(defined $FH2) { printf $FH2 ("]"); }
+  }
+
+  if(defined $FH1) { printf $FH1 ("\n"); }
+  if(defined $FH2) { printf $FH2 ("\n"); }
+  
+  return (defined $total_secs) ? $total_secs : 0.;
 }

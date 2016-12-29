@@ -97,7 +97,7 @@ open($long_out_FH,  ">", $long_out_file) || die "ERROR unable to open $long_out_
 open($short_out_FH, ">", $short_out_file) || die "ERROR unable to open $short_out_file for writing";
 # expects sorted tabular file in $sorted_tbl_file, sorted by sequence name, we will 
 # detect if the file is not sorted
-open(TBLIN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file for reading";
+open(TBLIN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
 
 init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
 init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
