@@ -148,6 +148,13 @@ push(@arg_A, $dir_out);
 output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
+my $long_out_file  = $out_root . ".long.out";
+my $short_out_file = $out_root . ".short.out";
+my $long_out_FH;  # output file handle for long output file
+my $short_out_FH; # output file handle for short output file
+open($long_out_FH,  ">", $long_out_file)  || die "ERROR unable to open $long_out_file for writing";
+open($short_out_FH, ">", $short_out_file) || die "ERROR unable to open $short_out_file for writing";
+
 ###################################################
 # make sure the required executables are executable
 ###################################################
@@ -161,13 +168,54 @@ $execs_H{"ribotyper-parse"} = $ribo_exec_dir  . "ribotyper-parse.pl";
 #$execs_H{"esl_ssplit"}    = $esl_ssplit;
 validate_executable_hash(\%execs_H);
 
+# determine search method
+my $search_method = undef; # can be any of "cmsearch-hmmonly", "cmscan-hmmonly", 
+#                                          "cmsearch-slow",    "cmscan-slow", 
+#                                          "cmsearch-fast",    "cmscan-fast",
+#                                          "nhmmer",           "ssualign"
+
+if   (opt_Get("--nhmmer", \%opt_HH))   { $search_method = "nhmmer"; }
+elsif(opt_Get("--cmscan", \%opt_HH))   { $search_method = "cmscan-hmmonly"; }
+elsif(opt_Get("--ssualign", \%opt_HH)) { $search_method = "ssualign"; }
+else                                   { $search_method = "cmsearch-hmmonly"; }
+
+if(opt_Get("--fast", \%opt_HH)) { 
+  if   ($search_method eq "cmsearch-hmmonly") { $search_method = "cmsearch-fast"; }
+  elsif($search_method eq "cmscan-hmmonly")   { $search_method = "cmscan-fast"; }
+  else { die "ERROR, --fast used in error, search_method: $search_method"; }
+}
+elsif(opt_Get("--slow", \%opt_HH)) { 
+  if   ($search_method eq "cmsearch-hmmonly") { $search_method = "cmsearch-slow"; }
+  elsif($search_method eq "cmscan-hmmonly")   { $search_method = "cmscan-slow"; }
+  else { die "ERROR, --fast used in error, search_method: $search_method"; }
+}
+
+
 ###########################################################################
-# Step 1: run esl-seqstat to get sequence lengths and validate input file
-my $seqstat_file = $out_root . ".seqstat";
+###########################################################################
+# Step 1: Parse/validate input files and run esl-seqstat to get sequence lengths.
 my $progress_w = 85; # the width of the left hand column in our progress output, hard-coded
-my $start_secs = output_progress_prior("Validating target sequence file and determining sequence lengths", $progress_w, undef, *STDOUT);
+my $start_secs = output_progress_prior("Parsing and validating input files and determining target sequence lengths", $progress_w, undef, *STDOUT);
+###########################################################################
+# parse clan file
+# variables related to clans and domains
+my %clan_H         = (); # hash of clans,   key: model name, value: name of clan model belongs to (e.g. SSU)
+my %domain_H       = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
+parse_clan_file($clan_file, \%clan_H, \%domain_H);
+
+# run esl-seqstat to get sequence lengths
+my $seqstat_file = $out_root . ".seqstat";
 run_command("esl-seqstat -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+my %seqlen_H = (); # key: sequence name, value: length of sequence, 
+                   # value set to -1 after we output info for this sequence
+                   # and then serves as flag for: "we output this sequence 
+                   # already, if we see it again we know the tbl file was not
+                   # sorted properly.
+# parse esl-seqstat file to get lengths
+parse_seqstat_file($seqstat_file, \%seqlen_H); 
+###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
+###########################################################################
 ###########################################################################
 
 ###########################################################################
@@ -176,20 +224,6 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 # as the command for sorting the output and parsing the output
 # set up defaults
 $start_secs = output_progress_prior("Performing search ", $progress_w, undef, *STDOUT);
-my $do_cmsearch = 0;
-my $do_nhmmer   = 0;
-my $do_cmscan   = 0;
-my $do_ssualign = 0;
-my $do_fast     = 0;
-my $do_slow     = 0;
-
-if   (opt_Get("--nhmmer", \%opt_HH))   { $do_nhmmer = 1; }
-elsif(opt_Get("--cmscan", \%opt_HH))   { $do_cmscan = 1; }
-elsif(opt_Get("--ssualign", \%opt_HH)) { $do_ssualign = 1; }
-else                                   { $do_cmsearch = 1; }
-
-if   (opt_Get("--fast", \%opt_HH))   { $do_fast = 1; }
-elsif(opt_Get("--slow", \%opt_HH))   { $do_slow = 1; }
 
 my $cmsearch_and_cmscan_opts = "";
 my $tblout_file = "";
@@ -197,56 +231,49 @@ my $sorted_tblout_file = "";
 my $searchout_file = "";
 my $search_cmd = "";
 my $sort_cmd = "";
-my $parse_method = "";
 
-if($do_nhmmer) { 
-  $tblout_file    = $out_root . ".nhmmer.tbl";
-  $searchout_file = $out_root . ".nhmmer.out";
-  $search_cmd = $execs_H{"nhmmer"} . " --noali --cpu $ncpu --tblout $tblout_file $model_file $seq_file > $searchout_file";
-  $sort_cmd   = "grep -v ^\# $tblout_file | sort -k1 > sorted_" . $tblout_file;
-  $parse_method = "nhmmer";
+if($search_method eq "nhmmer") { 
+  $tblout_file        = $out_root . ".nhmmer.tbl";
+  $sorted_tblout_file = $tblout_file . ".sorted";
+  $searchout_file     = $out_root . ".nhmmer.out";
+  $search_cmd         = $execs_H{"nhmmer"} . " --noali --cpu $ncpu --tblout $tblout_file $model_file $seq_file > $searchout_file";
+  $sort_cmd           = "grep -v ^\# $tblout_file | sort -k1 > " . $sorted_tblout_file;
 }
-elsif($do_ssualign) { 
+elsif($search_method eq "ssualign") { 
   $tblout_file        = $out_root . "/" . $dir_out_tail . ".ribotyper.tab";
-  $sorted_tblout_file = $out_root . "/" . $dir_out_tail . ".ribotyper.tab.sorted";
+  $sorted_tblout_file = $tblout_file . ".sorted";
   $searchout_file     = $out_root . ".nhmmer.out";
   $search_cmd         = $execs_H{"ssu-align"} . " --no-align -m $model_file -f $seq_file $out_root > /dev/null";
-  $sort_cmd           = "grep -v ^\# $tblout_file | awk ' { printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); } ' | sort -k2 > $sorted_tblout_file";
-  $parse_method       = "ssualign";
+  $sort_cmd           = "grep -v ^\# $tblout_file | awk ' { printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); } ' | sort -k2 > " . $sorted_tblout_file;
 }
-elsif(($do_cmsearch) || ($do_cmscan)) { 
-  if($do_fast) { 
+else { 
+  # search_method is "cmsearch-slow", "cmscan-slow', "cmsearch-fast", or "cmscan-slow"
+  if($search_method eq "cmsearch-fast" || $search_method eq "cmscan-fast") { 
     $cmsearch_and_cmscan_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc ";
   }
-  elsif($do_slow) { 
+  elsif($search_method eq "cmsearch-slow" || $search_method eq "cmscan-slow") { 
     $cmsearch_and_cmscan_opts .= " --rfam ";
   }
-  else { 
+  else { # $search_method is either "cmsearch-hmmonly", or "cmscan-hmmonly";
     $cmsearch_and_cmscan_opts .= " --hmmonly ";
   }
-  if($do_cmsearch) { 
-    $tblout_file    = $out_root . ".cmsearch.tbl";
-    $searchout_file = $out_root . ".cmsearch.out";
-    $executable = $execs_H{"cmsearch"};
-    $sort_cmd   = "grep -v ^\# $tblout_file | sort -k1 > sorted_" . $tblout_file;
-    if($do_fast) { 
-      $parse_method = "fast-cmsearch";
-    }
-    else { 
-      $parse_method = "cmsearch";
-    }
+  if(($search_method eq "cmsearch-slow") || ($search_method eq "cmsearch-fast") || ($search_method eq "cmsearch-hmmonly")) { 
+    $tblout_file        = $out_root . ".cmsearch.tbl";
+    $sorted_tblout_file = $tblout_file . ".sorted";
+    $searchout_file     = $out_root . ".cmsearch.out";
+    $executable         = $execs_H{"cmsearch"};
+    $sort_cmd           = "grep -v ^\# $tblout_file | sort -k1 > " . $sorted_tblout_file;
   }
-  else { 
-    $tblout_file    = $out_root . ".cmscan.tbl";
-    $searchout_file = $out_root . ".cmscan.out";
-    $executable = $execs_H{"cmscan"};
-    if($do_fast) { 
-      $sort_cmd     = "grep -v ^\# $tblout_file | awk '{ printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); }' | sort -k2 > sorted_" . $tblout_file;
-      $parse_method = "fast-cmscan";
+  else { # search_method is "cmscan-slow", "cmscan-fast", or "cmscan-hmmonly"
+    $tblout_file        = $out_root . ".cmscan.tbl";
+    $sorted_tblout_file = $tblout_file . ".sorted";
+    $searchout_file     = $out_root . ".cmscan.out";
+    $executable         = $execs_H{"cmscan"};
+    if($search_method eq "cmscan-fast") { 
+      $sort_cmd = "grep -v ^\# $tblout_file | awk '{ printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); }' | sort -k2 > " . $sorted_tblout_file;
     }
     else { 
-      $sort_cmd     = "grep -v ^\# $tblout_file | sort -k4 > sorted_" . $tblout_file;
-      $parse_method = "cmscan";
+      $sort_cmd = "grep -v ^\# $tblout_file | sort -k4 > " . $sorted_tblout_file;
     }
   }
   $search_cmd = $executable . " --noali --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
@@ -264,19 +291,676 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-my $parse_cmd  = "perl " . $execs_H{"ribotyper-parse"} . " $parse_method $seqstat_file $clan_file $sorted_tblout_file $out_root.long.out $out_root.short.out"; 
-run_command($parse_cmd, opt_Get("-v", \%opt_HH));
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
-
 
 #####################################################################
 # SUBROUTINES 
 #####################################################################
+# List of subroutines:
+#
+# Functions for parsing files:
+# parse_clan_file:          parse the clan input file
+# parse_seqstat_file:       parse esl-seqstat -a output file
+# parse_sorted_tbl_file:    parse sorted tabular search results
+#
+# Helper functions for parse_sorted_tbl_file():
+# init_vars:                 initialize variables for parse_sorted_tbl_file()
+# set_vars:                  set variables for parse_sorted_tbl_file()
+# 
+# Functions for output: 
+# output_one_target_wrapper: wrapper function for outputting info on one target sequence
+#                            helper for parse_sorted_tbl_file()
+# output_one_target:         output info on one target sequence
+#                            helper for parse_sorted_tbl_file()
+# output_banner:             output the banner with info on the script and options used
+# output_progress_prior:     output routine for a step, prior to running the step
+# output_progress_complete:  output routine for a step, after the running the step
+#
+# Miscellaneous functions:
+# run_command:              run a command using system()
+# validate_executable_hash: validate executables exist and are executable
+# seconds_since_epoch:      number of seconds since the epoch, for timings
+#
+
+#################################################################
+# Subroutine : parse_clan_file()
+# Incept:      EPN, Mon Dec 19 10:01:32 2016
+#
+# Purpose:     Parse a clan input file.
+#              
+# Arguments: 
+#   $clan_file:       file to parse
+#   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
+#   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
+#
+# Returns:     Nothing. Fills @{$clan_names_AR}, %{$clan_H}, @{$domain_names_AR}, %{$domain_HR}
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub parse_clan_file { 
+  my $nargs_expected = 3;
+  my $sub_name = "parse_clan_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($clan_file, $clan_HR, $domain_HR) = @_;
+
+  open(IN, $clan_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+
+# example line:
+# SSU_rRNA_archaea SSU Archaea
+
+  my %clan_exists_H   = ();
+  my %domain_exists_H = ();
+
+  open(IN, $clan_file) || die "ERROR unable to open $clan_file for reading"; 
+  while(my $line = <IN>) { 
+    chomp $line;
+    my @el_A = split(/\s+/, $line);
+    if(scalar(@el_A) != 3) { 
+      die "ERROR didn't read 3 tokens in clan input file $clan_file, line $line"; 
+    }
+    my($model, $clan, $domain) = (@el_A);
+
+    if(! exists $clan_exists_H{$clan}) { 
+      $clan_exists_H{$clan} = 1;
+    }
+    if(! exists $domain_exists_H{$domain}) { 
+      $domain_exists_H{$domain} = 1;
+    }
+    if(exists $clan_HR->{$model}) { 
+      die "ERROR read model $model twice in $clan_file"; 
+    }
+    $clan_HR->{$model}   = $clan;
+    $domain_HR->{$model} = $domain;
+  }
+  close(IN);
+
+  return;
+}
+
+#################################################################
+# Subroutine : parse_seqstat_file()
+# Incept:      EPN, Wed Dec 14 16:16:22 2016
+#
+# Purpose:     Parse an esl-seqstat -a output file.
+#              
+# Arguments: 
+#   $seqstat_file:  file to parse
+#   $seqlen_HR:     REF to hash of sequence lengths to fill here
+#
+# Returns:     Nothing. Fills %{$seqlen_HR}.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub parse_seqstat_file { 
+  my $nargs_expected = 2;
+  my $sub_name = "parse_seqstat_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($seqstat_file, $seqlen_HR) = @_;
+
+  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+
+  my $nread = 0;
+
+  while(my $line = <IN>) { 
+    # = lcl|dna_BP331_0.3k:467     1232 
+    # = lcl|dna_BP331_0.3k:10     1397 
+    # = lcl|dna_BP331_0.3k:1052     1414 
+    chomp $line;
+    #print $line . "\n";
+    if($line =~ /^\=\s+(\S+)\s+(\d+)\s*$/) { 
+      $seqlen_HR->{$1} = $2;
+      $nread++;
+    }
+  }
+  close(IN);
+  if($nread == 0) { 
+    die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine : parse_sorted_tblout_file()
+# Incept:      EPN, Thu Dec 29 09:52:16 2016
+#
+# Purpose:     Parse a sorted tabular output file.
+#              
+# Arguments: 
+#   $sorted_tbl_file: file with sorted tabular search results
+#   $search_method:   search method (one of "cmsearch-hmmonly", "cmscan-hmmonly"
+#                                           "cmsearch-slow",    "cmscan-slow", 
+#                                           "cmsearch-fast",    "cmscan-fast",
+#                                           "nhmmer",           "ssualign")
+#   $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
+#   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
+#   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
+#   $long_out_FH:     file handle for long output file, already open
+#   $short_out_FH:    file handle for short output file, already open
+#
+# Returns:     Nothing. Fills %{$clan_H}, %{$domain_HR}
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub parse_sorted_tbl_file { 
+  my $nargs_expected = 7;
+  my $sub_name = "parse_sorted_tbl_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($sorted_tbl_file, $search_method, $seqlen_HR, $clan_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
+
+  # validate search method (sanity check) 
+  if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
+     ($search_method ne "cmsearch-slow")    && ($search_method ne "cmscan-slow") &&
+     ($search_method ne "cmsearch-fast")    && ($search_method ne "cmscan-fast") &&      
+     ($search_method ne "nhmmer")           && ($search_method ne "ssualign")) { 
+    die "ERROR in $sub_name, invalid search method $search_method";
+  }
+  
+  # Main data structures: 
+  # 'one': current top scoring model for current sequence
+  # 'two': current second best scoring model for current sequence 
+  #        that overlaps with hit in 'one' data structures
+  # 
+  # keys for all below are clans (e.g. 'SSU' or 'LSU')
+  # values are for the best scoring hit in this clan to current sequence
+  my %one_model_H;  
+  my %one_score_H;  
+  my %one_evalue_H; 
+  my %one_start_H;  
+  my %one_stop_H;   
+  my %one_strand_H; 
+  
+  # same as for 'one' data structures, but values are for second best scoring hit
+  # in this clan to current sequence that overlaps with hit in 'one' data structures
+  my %two_model_H;
+  my %two_score_H;
+  my %two_evalue_H;
+  my %two_start_H;
+  my %two_stop_H;
+  my %two_strand_H;
+
+  my $prv_target = undef; # target name of previous line
+  my $clan       = undef; # clan of current model
+
+  open(IN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
+
+  init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
+  init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+
+  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue);
+  my $better_than_one; # set to true for each hit if it is better than our current 'one' hit
+  my $better_than_two; # set to true for each hit if it is better than our current 'two' hit
+  my $have_evalues = (($search_method eq "cmsearch-hmmonly") || ($search_method eq "cmscan-hmmonly") ||
+                      ($search_method eq "cmsearch-slow")    || ($search_method eq "cmscan-slow")    ||
+                      ($search_method eq "nhmmer")) ? 1 : 0;
+
+  while(my $line = <IN>) { 
+    ######################################################
+    # Parse the data on this line, this differs depending
+    # on our annotation method
+    chomp $line;
+    $line =~ s/^\s+//; # remove leading whitespace
+    
+    if($line =~ m/^\#/) { 
+      die "ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.";
+    }
+    my @el_A = split(/\s+/, $line);
+    
+    if(($search_method eq "cmsearch-fast") || ($search_method eq "cmscan-fast")) { 
+      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast tabular output at line: $line"; }
+      if($search_method eq " cmsearch-fast") {
+        # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
+        ($target, $model, $score, $seqfrom, $seqto, $strand) = 
+            ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+      }
+      else { # $search_method is "cmscan-fast"
+        # SSU_rRNA_eukarya  lcl|dna_BP101_10.1k:10  391.6      1   1269      +     []  =         1269
+        ($target, $model, $score, $seqfrom, $seqto, $strand) = 
+            ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+      }
+    }    
+    elsif($search_method eq "cmsearch") { 
+      ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
+      ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
+      #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
+      if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmsearch tabular output at line: $line"; }
+      ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+          ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
+    }
+    elsif($search_method eq "cmscan") { 
+      ##idx target name          accession query name             accession clan name mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc olp anyidx afrct1 afrct2 winidx wfrct1 wfrct2 description of target
+      ##--- -------------------- --------- ---------------------- --------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- --- ------ ------ ------ ------ ------ ------ ---------------------
+      #  1    SSU_rRNA_bacteria    RF00177   lcl|dna_BP331_0.3k:467 -         -         hmm       37     1301        1     1228      +     -    6 0.53   6.2  974.2  2.8e-296  !   ^       -      -      -      -      -      - -
+      # same as cmsearch but target/query are switched
+      if(scalar(@el_A) < 27) { die "ERROR found less than 27 columns in cmscan tabular output at line: $line"; }
+      ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+          ($el_A[3], $el_A[1], $el_A[7], $el_A[8], $el_A[9], $el_A[10], $el_A[11],  $el_A[16], $el_A[17]);
+    }
+    elsif($search_method eq "nhmmer") { 
+      ## target name            accession  query name           accession  hmmfrom hmm to alifrom  ali to envfrom  env to  sq len strand   E-value  score  bias  description of target
+      ###    ------------------- ---------- -------------------- ---------- ------- ------- ------- ------- ------- ------- ------- ------ --------- ------ ----- ---------------------
+      #  lcl|dna_BP444_24.8k:251  -          SSU_rRNA_archaea     RF01959          3    1443       2    1436       1    1437    1437    +           0 1036.1  18.0  -
+      if(scalar(@el_A) < 16) { die "ERROR found less than 16 columns in nhmmer tabular output at line: $line"; }
+      ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+          ($el_A[0], $el_A[2], $el_A[4], $el_A[5], $el_A[6], $el_A[7], $el_A[11],  $el_A[13], $el_A[12]);
+    }
+    elsif($search_method eq "ssualign") { 
+      ##                                                 target coord   query coord                         
+      ##                                       ----------------------  ------------                         
+      ## model name  target name                    start        stop  start   stop    bit sc   E-value  GC%
+      ## ----------  ------------------------  ----------  ----------  -----  -----  --------  --------  ---
+      #  archaea     lcl|dna_BP331_0.3k:467            18        1227      1   1508    478.86         -   53
+      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in SSU-ALIGN tabular output line: $line"; }
+      ($target, $model, $seqfrom, $seqto, $mdlfrom, $mdlto, $score) = 
+          ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5], $el_A[6]);
+      $strand = "+";
+      if($seqfrom > $seqto) { $strand = "-"; }
+      $evalue = "-";
+    }
+    else { 
+      die "ERROR, $search_method is not a valid method";
+    }
+
+    $clan = $clan_HR->{$model};
+    if(! defined $clan) { 
+      die "ERROR unrecognized model $model, no clan information";
+    }
+
+    # two sanity checks:
+    # make sure we have sequence length information for this sequence
+    if(! exists $seqlen_HR->{$target}) { 
+      die "ERROR found sequence $target we didn't read length information for in $seqstat_file";
+    }
+    # make sure we haven't output information for this sequence already
+    if($seqlen_HR->{$target} == -1) { 
+      die "ERROR found line with target $target previously output, did you sort by sequence name?";
+    }
+    # finished parsing data for this line
+    ######################################################
+
+    ##############################################################
+    # Are we now finished with the previous sequence? 
+    # Yes, if target sequence we just read is different from it
+    # If yes, output info for it, and re-initialize data structures
+    # for new sequence just read
+    if((defined $prv_target) && ($prv_target ne $target)) { 
+      output_one_target_wrapper($long_out_FH, $short_out_FH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
+                                \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                                \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+    }
+    ##############################################################
+    
+    ##########################################################
+    # Determine if this hit is either a new 'one' or 'two' hit
+    $better_than_one = 0; # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
+    $better_than_two = 0; # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
+    if(! defined $one_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+      $better_than_one = 1; # no current, 'one' this will be it
+    }
+    else { 
+      if($have_evalues) { 
+        if(($evalue < $one_evalue_H{$clan}) || # this E-value is better than (less than) our current 'one' E-value
+           ($evalue eq $one_evalue_H{$clan} && $score > $one_score_H{$clan})) { # this E-value equals current 'one' E-value, 
+          # but this score is better than current 'one' score
+        $better_than_one = 1;
+        }
+      }
+      else { # we don't have E-values
+        if($score > $one_score_H{$clan}) { # score is better than current 'one' score
+          $better_than_one = 1;
+        }
+      }
+    }
+    # only possibly set $better_than_two to TRUE if $better_than_one is FALSE, and it's not the same model as 'one'
+    if((! $better_than_one) && ($model ne $one_model_H{$clan})) {  
+      if(! defined $two_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+        $better_than_two = 1;
+      }
+      else { 
+        if($have_evalues) { 
+          if(($evalue < $two_evalue_H{$clan}) || # this E-value is better than (less than) our current 'two' E-value
+             ($evalue eq $two_evalue_H{$clan} && $score > $two_score_H{$clan})) { # this E-value equals current 'two' E-value, 
+            # but this score is better than current 'two' score
+            $better_than_two = 1;
+          }
+        }
+        else { # we don't have E-values
+          if($score > $two_score_H{$clan}) { # score is better than current 'one' score
+            $better_than_two = 1;
+          }
+        }
+      }
+    }
+    # finished determining if this hit is a new 'one' or 'two' hit
+    ##########################################################
+    
+    ##########################################################
+    # if we have a new hit, update 'one' and/or 'two' data structures
+    if($better_than_one) { 
+      # new 'one' hit, update 'one' variables, 
+      # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
+      if(defined $one_model_H{$clan} && $one_model_H{$clan} ne $model) { 
+        set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+                 $one_model_H{$clan},   $one_score_H{$clan},  $one_evalue_H{$clan},  $one_start_H{$clan},  $one_stop_H{$clan},  $one_strand_H{$clan});
+      }
+      # now set new 'one' hit values
+      set_vars($clan, \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+               $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
+    }
+    elsif($better_than_two) { 
+      # new 'two' hit, set it
+      set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+               $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
+    }
+    # finished updating 'one' or 'two' data structures
+    ##########################################################
+
+    $prv_target = $target;
+
+    # sanity check
+    if((defined $one_model_H{$clan} && defined $two_model_H{$clan}) && ($one_model_H{$clan} eq $two_model_H{$clan})) { 
+      die "ERROR, coding error, one_model and two_model are identical for $clan $target";
+    }
+  }
+
+  # output data for final sequence
+  output_one_target_wrapper($long_out_FH, $short_out_FH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
+                            \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                            \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+  
+  # close file handle
+  close(IN);
+  
+  return;
+}
+
+#################################################################
+# Subroutine : init_vars()
+# Incept:      EPN, Tue Dec 13 14:53:37 2016
+#
+# Purpose:     Initialize variables to undefined 
+#              given references to them.
+#              
+# Arguments: 
+#   $model_HR:   REF to $model variable hash, a model name
+#   $score_HR:   REF to $score variable hash, a bit score
+#   $evalue_HR:  REF to $evalue variable hash, an E-value
+#   $start_HR:   REF to $start variable hash, a start position
+#   $stop_HR:    REF to $stop variable hash, a stop position
+#   $strand_HR:  REF to $strand variable hash, a strand
+# 
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub init_vars { 
+  my $nargs_expected = 6;
+  my $sub_name = "init_vars";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR) = @_;
+
+  foreach my $key (keys %{$model_HR}) { 
+    $model_HR->{$key}  = undef;
+    $score_HR->{$key}  = undef;
+    $evalue_HR->{$key} = undef;
+    $start_HR->{$key}  = undef;
+    $stop_HR->{$key}   = undef;
+    $strand_HR->{$key} = undef;
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine : set_vars()
+# Incept:      EPN, Tue Dec 13 14:53:37 2016
+#
+# Purpose:     Set variables defining the top-scoring 'one' 
+#              model. If necessary switch the current
+#              'one' variable values to 'two' variables.
+#              
+# Arguments: 
+#   $clan:      clan, key to hashes
+#   $model_HR:  REF to hash of $model variables, a model name
+#   $score_HR:  REF to hash of $score variables, a bit score
+#   $evalue_HR: REF to hash of $evalue variables, an E-value
+#   $start_HR:  REF to hash of $start variables, a start position
+#   $stop_HR:   REF to hash of $stop variables, a stop position
+#   $strand_HR: REF to hash of $strand variables, a strand
+#   $model:     value to set $model_HR{$clan} to 
+#   $score:     value to set $score_HR{$clan} to 
+#   $evalue:    value to set $evalue_HR{$clan} to 
+#   $start:     value to set $start_HR{$clan} to 
+#   $stop:      value to set $stop_HR{$clan} to 
+#   $strand:    value to set $strand_HR{$clan} to 
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub set_vars { 
+  my $nargs_expected = 13;
+  my $sub_name = "set_vars";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($clan, 
+      $model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR, 
+      $model,    $score,    $evalue,    $start,    $stop,    $strand) = @_;
+
+  $model_HR->{$clan}  = $model;
+  $score_HR->{$clan}  = $score;
+  $evalue_HR->{$clan} = $evalue;
+  $start_HR->{$clan}  = $start;
+  $stop_HR->{$clan}   = $stop;
+  $strand_HR->{$clan} = $strand;
+
+  return;
+}
+
+#################################################################
+# Subroutine : output_one_target_wrapper()
+# Incept:      EPN, Thu Dec 22 13:49:53 2016
+#
+# Purpose:     Call function to output information and reset variables.
+#              
+# Arguments: 
+#   $long_FH:       file handle to output long data to
+#   $short_FH:      file handle to output short data to
+#   $have_evalues:  '1' if we have E-values, '0' if not
+#   $domain_HR:     reference to domain hash
+#   $target:        target name
+#   $seqlen_HR:     hash of target sequence lengths
+#   %one_model_HR:  'one' model
+#   %one_score_HR:  'one' bit score
+#   %one_evalue_HR: 'one' E-value
+#   %one_start_HR:  'one' start position
+#   %one_stop_HR:   'one' stop position
+#   %one_strand_HR: 'one' strand 
+#   %two_model_HR:  'two' model
+#   %two_score_HR:  'two' bit score
+#   %two_evalue_HR: 'two' E-value
+#   %two_start_HR:  'two' start position
+#   %two_stop_HR:   'two' stop position
+#   %two_strand_HR: 'two' strand 
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_one_target_wrapper { 
+  my $nargs_expected = 18;
+  my $sub_name = "output_one_target_wrapper";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($long_FH, $short_FH, $have_evalues, $domain_HR, $target, $seqlen_HR, 
+      $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+      $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
+
+  # if so, output its current info
+  output_one_target($long_FH, 0, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+                    $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+                    $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  output_one_target($short_FH, 1, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+                    $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+                    $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  # output short output again to stdout
+  output_one_target(\*STDOUT, 1, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+                    $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+                    $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  # reset vars
+  init_vars($one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
+  init_vars($two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  $seqlen_HR->{$target} = -1; # serves as a flag that we output info for this sequence
+  
+  return;
+}
+
+#################################################################
+# Subroutine : output_one_target()
+# Incept:      EPN, Tue Dec 13 15:30:12 2016
+#
+# Purpose:     Output information for current sequence in either
+#              long or short mode. Short mode if $do_short is true.
+#              
+# Arguments: 
+#   $FH:            file handle to output to
+#   $do_short:      TRUE to output in 'short' concise mode, else do long mode
+#   $have_evalues:  '1' if we have E-values, '0' if not
+#   $domain_HR:     reference to domain hash
+#   $target:        target name
+#   $seqlen:        length of target sequence
+#   %one_model_HR:  'one' model
+#   %one_score_HR:  'one' bit score
+#   %one_evalue_HR: 'one' E-value
+#   %one_start_HR:  'one' start position
+#   %one_stop_HR:   'one' stop position
+#   %one_strand_HR: 'one' strand 
+#   %two_model_HR:  'two' model
+#   %two_score_HR:  'two' bit score
+#   %two_evalue_HR: 'two' E-value
+#   %two_start_HR:  'two' start position
+#   %two_stop_HR:   'two' stop position
+#   %two_strand_HR: 'two' strand 
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_one_target { 
+  my $nargs_expected = 18;
+  my $sub_name = "output_one_target";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH, $do_short, $have_evalues, $domain_HR, $target, $seqlen, 
+      $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+      $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
+
+  my $diff_thresh = 100.;
+
+  # determine the winning clan
+  my $wclan = undef;
+  my $better_than_winning = 0;
+  foreach my $clan (keys %{$one_model_HR}) { 
+    # determine if this hit is better than our winning clan
+    if(! defined $wclan) { 
+      $better_than_winning = 1; 
+    }
+    elsif($have_evalues) { 
+      if(($one_model_HR->{$clan} < $one_model_HR->{$wclan}) || # this E-value is better than (less than) our current winning E-value
+         ($one_evalue_HR->{$clan} eq $one_evalue_HR->{$wclan} && $one_score_HR->{$clan} > $one_score_HR->{$wclan})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
+        $better_than_winning = 1;
+      }
+    }
+    else { # we don't have E-values
+      if($one_score_HR->{$clan} > $one_score_HR->{$wclan}) { # score is better than current winning score
+        $better_than_winning = 1;
+      }
+    }
+    if($better_than_winning) { 
+      $wclan = $clan;
+    }
+  }
+
+
+  # build up 'extra information' about other hits in other clans, if any
+  my $extra_string = "";
+  my $nhits = 1;
+  foreach my $clan (keys %{$one_model_HR}) { 
+    if($clan ne $wclan) { 
+      if(exists($one_model_HR->{$clan})) { 
+        if($extra_string ne "") { $extra_string .= ","; }
+        if($have_evalues) { 
+          $extra_string .= sprintf("%s:%10g:%10.2f/%d-%d:%s",
+                                   $clan, $one_model_HR->{$clan}, $one_evalue_HR->{$clan}, $one_score_HR->{$clan}, 
+                                   $one_start_HR->{$clan}, $one_stop_HR->{$clan}, $one_strand_HR->{$clan});
+        }
+        else { # we don't have E-values
+          $extra_string .= sprintf("%s:%10.2f/%d-%d:%s",
+                                   $clan, $one_model_HR->{$clan}, $one_evalue_HR->{$clan}, $one_score_HR->{$clan}, 
+                                   $one_start_HR->{$clan}, $one_stop_HR->{$clan}, $one_strand_HR->{$clan});
+        }
+        $nhits++;
+      }
+    }
+  }
+  my $coverage = (abs($one_stop_HR->{$wclan} - $one_start_HR->{$wclan}) + 1) / $seqlen;
+  my $one_evalue2print = ($have_evalues) ? sprintf("%10g", $one_evalue_HR->{$wclan}) : "-";
+  my $two_evalue2print = undef;
+  if(defined $two_model_HR->{$wclan}) { 
+    $two_evalue2print = ($have_evalues) ? sprintf("%10g", $two_evalue_HR->{$wclan}) : "-";
+  }
+  
+  my $score_diff = (exists $two_score_HR->{$wclan}) ? ($one_score_HR->{$wclan} - $two_score_HR->{$wclan}) : $one_score_HR->{$wclan};
+  my $pass_fail = (($score_diff > $diff_thresh) && ($nhits == 1)) ? "PASS" : "FAIL";
+
+  if($do_short) { 
+    printf $FH ("%-30s  %10s  %s\n", 
+                $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
+  }
+  else { 
+    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-15s  %10s  %10.2f  %s  %5.3f  %10d  %10d  ", 
+           $target, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
+           $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
+           $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
+    
+    if(defined $two_model_HR->{$wclan}) { 
+      printf $FH ("%10.2f  %-15s  %10s  %10.2f  ", 
+             $one_score_HR->{$wclan} - $two_score_HR->{$wclan}, $two_model_HR->{$wclan}, $two_evalue2print, $two_score_HR->{$wclan});
+    }
+    else { 
+      printf $FH ("%10s  %-15s  %10s  %10.2s  ", 
+             "-" , "-", "-", "-");
+    }
+    
+    if($extra_string eq "") { 
+      $extra_string = "-";
+    }
+    
+    print $FH ("$extra_string\n");
+  }
+
+  return;
+}
+
+#####################################################################
 # Subroutine: output_banner()
 # Incept:     EPN, Thu Oct 30 09:43:56 2014 (rnavore)
 # 
-# Purpose:    Output the dnaorg banner.
+# Purpose:    Output the banner with info on the script, input arguments
+#             and options used.
 #
 # Arguments: 
 #    $FH:                file handle to print to
@@ -304,6 +988,107 @@ sub output_banner {
   printf $FH ("#\n");
 
   return;
+}
+#################################################################
+# Subroutine : output_progress_prior()
+# Incept:      EPN, Fri Feb 12 17:22:24 2016 [dnaorg.pm]
+#
+# Purpose:      Output to $FH1 (and possibly $FH2) a message indicating
+#               that we're about to do 'something' as explained in
+#               $outstr.  
+#
+#               Caller should call *this* function, then do
+#               the 'something', then call output_progress_complete().
+#
+#               We return the number of seconds since the epoch, which
+#               should be passed into the downstream
+#               output_progress_complete() call if caller wants to
+#               output running time.
+#
+# Arguments: 
+#   $outstr:     string to print to $FH
+#   $progress_w: width of progress messages
+#   $FH1:        file handle to print to, can be undef
+#   $FH2:        another file handle to print to, can be undef
+# 
+# Returns:     Number of seconds and microseconds since the epoch.
+#
+################################################################# 
+sub output_progress_prior { 
+  my $nargs_expected = 4;
+  my $sub_name = "output_progress_prior()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($outstr, $progress_w, $FH1, $FH2) = @_;
+
+  if(defined $FH1) { printf $FH1 ("# %-*s ... ", $progress_w, $outstr); }
+  if(defined $FH2) { printf $FH2 ("# %-*s ... ", $progress_w, $outstr); }
+
+  return seconds_since_epoch();
+}
+
+#################################################################
+# Subroutine : output_progress_complete()
+# Incept:      EPN, Fri Feb 12 17:28:19 2016 [dnaorg.pm]
+#
+# Purpose:     Output to $FH1 (and possibly $FH2) a 
+#              message indicating that we've completed 
+#              'something'.
+#
+#              Caller should call *this* function,
+#              after both a call to output_progress_prior()
+#              and doing the 'something'.
+#
+#              If $start_secs is defined, we determine the number
+#              of seconds the step took, output it, and 
+#              return it.
+#
+# Arguments: 
+#   $start_secs:    number of seconds either the step took
+#                   (if $secs_is_total) or since the epoch
+#                   (if !$secs_is_total)
+#   $extra_desc:    extra description text to put after timing
+#   $FH1:           file handle to print to, can be undef
+#   $FH2:           another file handle to print to, can be undef
+# 
+# Returns:     Number of seconds the step took (if $secs is defined,
+#              else 0)
+#
+################################################################# 
+sub output_progress_complete { 
+  my $nargs_expected = 4;
+  my $sub_name = "output_progress_complete()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($start_secs, $extra_desc, $FH1, $FH2) = @_;
+
+  my $total_secs = undef;
+  if(defined $start_secs) { 
+    $total_secs = seconds_since_epoch() - $start_secs;
+  }
+
+  if(defined $FH1) { printf $FH1 ("done."); }
+  if(defined $FH2) { printf $FH2 ("done."); }
+
+  if(defined $total_secs || defined $extra_desc) { 
+    if(defined $FH1) { printf $FH1 (" ["); }
+    if(defined $FH2) { printf $FH2 (" ["); }
+  }
+  if(defined $total_secs) { 
+    if(defined $FH1) { printf $FH1 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
+    if(defined $FH2) { printf $FH2 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
+  }
+  if(defined $extra_desc) { 
+    if(defined $FH1) { printf $FH1 $extra_desc };
+    if(defined $FH2) { printf $FH2 $extra_desc };
+  }
+  if(defined $total_secs || defined $extra_desc) { 
+    if(defined $FH1) { printf $FH1 ("]"); }
+    if(defined $FH2) { printf $FH2 ("]"); }
+  }
+
+  if(defined $FH1) { printf $FH1 ("\n"); }
+  if(defined $FH2) { printf $FH2 ("\n"); }
+  
+  return (defined $total_secs) ? $total_secs : 0.;
 }
 
 #################################################################
@@ -413,104 +1198,3 @@ sub seconds_since_epoch {
   return ($seconds + ($microseconds / 1000000.));
 }
 
-#################################################################
-# Subroutine : output_progress_prior()
-# Incept:      EPN, Fri Feb 12 17:22:24 2016 [dnaorg.pm]
-#
-# Purpose:      Output to $FH1 (and possibly $FH2) a message indicating
-#               that we're about to do 'something' as explained in
-#               $outstr.  
-#
-#               Caller should call *this* function, then do
-#               the 'something', then call output_progress_complete().
-#
-#               We return the number of seconds since the epoch, which
-#               should be passed into the downstream
-#               output_progress_complete() call if caller wants to
-#               output running time.
-#
-# Arguments: 
-#   $outstr:     string to print to $FH
-#   $progress_w: width of progress messages
-#   $FH1:        file handle to print to, can be undef
-#   $FH2:        another file handle to print to, can be undef
-# 
-# Returns:     Number of seconds and microseconds since the epoch.
-#
-################################################################# 
-sub output_progress_prior { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_progress_prior()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($outstr, $progress_w, $FH1, $FH2) = @_;
-
-  if(defined $FH1) { printf $FH1 ("# %-*s ... ", $progress_w, $outstr); }
-  if(defined $FH2) { printf $FH2 ("# %-*s ... ", $progress_w, $outstr); }
-
-  return seconds_since_epoch();
-}
-
-#################################################################
-# Subroutine : output_progress_complete()
-# Incept:      EPN, Fri Feb 12 17:28:19 2016 [dnaorg.pm]
-#
-# Purpose:     Output to $FH1 (and possibly $FH2) a 
-#              message indicating that we've completed 
-#              'something'.
-#
-#              Caller should call *this* function,
-#              after both a call to output_progress_prior()
-#              and doing the 'something'.
-#
-#              If $start_secs is defined, we determine the number
-#              of seconds the step took, output it, and 
-#              return it.
-#
-# Arguments: 
-#   $start_secs:    number of seconds either the step took
-#                   (if $secs_is_total) or since the epoch
-#                   (if !$secs_is_total)
-#   $extra_desc:    extra description text to put after timing
-#   $FH1:           file handle to print to, can be undef
-#   $FH2:           another file handle to print to, can be undef
-# 
-# Returns:     Number of seconds the step took (if $secs is defined,
-#              else 0)
-#
-################################################################# 
-sub output_progress_complete { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_progress_complete()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($start_secs, $extra_desc, $FH1, $FH2) = @_;
-
-  my $total_secs = undef;
-  if(defined $start_secs) { 
-    $total_secs = seconds_since_epoch() - $start_secs;
-  }
-
-  if(defined $FH1) { printf $FH1 ("done."); }
-  if(defined $FH2) { printf $FH2 ("done."); }
-
-  if(defined $total_secs || defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 (" ["); }
-    if(defined $FH2) { printf $FH2 (" ["); }
-  }
-  if(defined $total_secs) { 
-    if(defined $FH1) { printf $FH1 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
-    if(defined $FH2) { printf $FH2 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
-  }
-  if(defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 $extra_desc };
-    if(defined $FH2) { printf $FH2 $extra_desc };
-  }
-  if(defined $total_secs || defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 ("]"); }
-    if(defined $FH2) { printf $FH2 ("]"); }
-  }
-
-  if(defined $FH1) { printf $FH1 ("\n"); }
-  if(defined $FH2) { printf $FH2 ("\n"); }
-  
-  return (defined $total_secs) ? $total_secs : 0.;
-}
