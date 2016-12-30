@@ -48,10 +48,14 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 $opt_group_desc_H{"2"} = "options for control search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output             help-output    
 opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--fast,--slow",      "annotate with nhmmer",     "using nhmmer for annotation", \%opt_HH, \@opt_order_A);
-opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--fast,--slow",      "annotate with cmsearch",   "using cmscan for annotation", \%opt_HH, \@opt_order_A);
+opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",   "using cmscan for annotation", \%opt_HH, \@opt_order_A);
 opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nhmmer,--cmscan,--fast,--slow",        "annotate with SSU-ALIGN",  "using SSU-ALIGN for annotation", \%opt_HH, \@opt_order_A);
 opt_Add("--fast",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in fast mode",         "run in fast mode, sacrificing accuracy of boundaries", \%opt_HH, \@opt_order_A);
 opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--fast",             "run in slow mode",         "run in slow mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"3"} = "advanced options";
+#       option               type   default                group  requires incompat  preamble-output             help-output    
+opt_Add("--skipsearch",   "boolean", 0,                       3,  undef,   "-f",     "skip search stage",        "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -67,7 +71,9 @@ my $options_okay =
                 'cmscan'       => \$GetOptions_H{"--cmscan"},
                 'ssualign'     => \$GetOptions_H{"--ssualign"},
                 'fast'         => \$GetOptions_H{"--fast"},
-                'slow'         => \$GetOptions_H{"--slow"});
+                'slow'         => \$GetOptions_H{"--slow"},
+# advanced options
+                'skipsearch'   => \$GetOptions_H{"--skipsearch"});
 
 my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
 my $executable    = $0;
@@ -105,23 +111,37 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 my $cmd;
 my $ncpu = 0;
 
-# if $dir_out already exists remove it only if -f also used
-if(-d $dir_out) { 
-  $cmd = "rm -rf $dir_out";
-  if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
-  else                        { die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+# the way we handle the $dir_out differs markedly if we have --skipsearch enabled
+# so we handle that separately
+if(opt_Get("--skipsearch", \%opt_HH)) { 
+  if(-d $dir_out) { 
+    # this is what we expect, do nothing
+  }
+  elsif(-e $dir_out) { 
+    die "ERROR with --skipsearch, $dir_out must already exist as a directory, but it exists as a file, delete it first, then run without --skipsearch";
+  }
+  else { 
+    die "ERROR with --skipsearch, $dir_out must already exist as a directory, but it does not. Run without --skipsearch";
+  }
 }
-if(-e $dir_out) { 
-  $cmd = "rm $dir_out";
-  if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
-  else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+else {  # --skipsearch not used, normal case
+  # if $dir_out already exists remove it only if -f also used
+  if(-d $dir_out) { 
+    $cmd = "rm -rf $dir_out";
+    if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
+    else                        { die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+  }
+  elsif(-e $dir_out) { 
+    $cmd = "rm $dir_out";
+    if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
+    else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+  }
+  # if $dir_out does not exist, create it
+  if(! -d $dir_out) { 
+    $cmd = "mkdir $dir_out";
+    run_command($cmd, opt_Get("-v", \%opt_HH));
+  }
 }
-# if $dir_out does not exist, create it
-if(! -d $dir_out) {
-  $cmd = "mkdir $dir_out";
-  run_command($cmd, opt_Get("-v", \%opt_HH));
-}
-
 my $dir_out_tail   = $dir_out;
 $dir_out_tail   =~ s/^.+\///; # remove all but last dir
 my $out_root   = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
@@ -154,6 +174,8 @@ my $long_out_FH;  # output file handle for long output file
 my $short_out_FH; # output file handle for short output file
 open($long_out_FH,  ">", $long_out_file)  || die "ERROR unable to open $long_out_file for writing";
 open($short_out_FH, ">", $short_out_file) || die "ERROR unable to open $short_out_file for writing";
+output_long_headers($long_out_FH);
+output_short_headers($short_out_FH);
 
 ###################################################
 # make sure the required executables are executable
@@ -194,7 +216,7 @@ elsif(opt_Get("--slow", \%opt_HH)) {
 ###########################################################################
 ###########################################################################
 # Step 1: Parse/validate input files and run esl-seqstat to get sequence lengths.
-my $progress_w = 85; # the width of the left hand column in our progress output, hard-coded
+my $progress_w = 74; # the width of the left hand column in our progress output, hard-coded
 my $start_secs = output_progress_prior("Parsing and validating input files and determining target sequence lengths", $progress_w, undef, *STDOUT);
 ###########################################################################
 # parse clan file
@@ -223,8 +245,6 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 # determine which algorithm to use and options to use as well
 # as the command for sorting the output and parsing the output
 # set up defaults
-$start_secs = output_progress_prior("Performing search ", $progress_w, undef, *STDOUT);
-
 my $cmsearch_and_cmscan_opts = "";
 my $tblout_file = "";
 my $sorted_tblout_file = "";
@@ -250,12 +270,21 @@ else {
   # search_method is "cmsearch-slow", "cmscan-slow', "cmsearch-fast", or "cmscan-slow"
   if($search_method eq "cmsearch-fast" || $search_method eq "cmscan-fast") { 
     $cmsearch_and_cmscan_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc ";
+    if($search_method eq "cmscan-fast") { 
+      $cmsearch_and_cmscan_opts .= " --fmt 2 ";
+    }
   }
   elsif($search_method eq "cmsearch-slow" || $search_method eq "cmscan-slow") { 
     $cmsearch_and_cmscan_opts .= " --rfam ";
+    if($search_method eq "cmscan-slow") { 
+      $cmsearch_and_cmscan_opts .= " --fmt 2 ";
+    }
   }
   else { # $search_method is either "cmsearch-hmmonly", or "cmscan-hmmonly";
     $cmsearch_and_cmscan_opts .= " --hmmonly ";
+    if($search_method eq "cmscan-hmmonly") { 
+      $cmsearch_and_cmscan_opts .= " --fmt 2 ";
+    }
   }
   if(($search_method eq "cmsearch-slow") || ($search_method eq "cmsearch-fast") || ($search_method eq "cmsearch-hmmonly")) { 
     $tblout_file        = $out_root . ".cmsearch.tbl";
@@ -270,7 +299,7 @@ else {
     $searchout_file     = $out_root . ".cmscan.out";
     $executable         = $execs_H{"cmscan"};
     if($search_method eq "cmscan-fast") { 
-      $sort_cmd = "grep -v ^\# $tblout_file | awk '{ printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); }' | sort -k2 > " . $sorted_tblout_file;
+      $sort_cmd = "grep -v ^\# $tblout_file | awk '{ printf(\"%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, \$14, \$15, \$16, \$17); }' | sort -k3 > " . $sorted_tblout_file;
     }
     else { 
       $sort_cmd = "grep -v ^\# $tblout_file | sort -k4 > " . $sorted_tblout_file;
@@ -278,7 +307,20 @@ else {
   }
   $search_cmd = $executable . " --noali --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
 }
-run_command($search_cmd, opt_Get("-v", \%opt_HH));
+if(! opt_Get("--skipsearch", \%opt_HH)) { 
+  $start_secs = output_progress_prior("Performing $search_method search ", $progress_w, undef, *STDOUT);
+}
+else { 
+  $start_secs = output_progress_prior("Skipping $search_method search stage (using results from previous run)", $progress_w, undef, *STDOUT);
+}
+if(! opt_Get("--skipsearch", \%opt_HH)) { 
+  run_command($search_cmd, opt_Get("-v", \%opt_HH));
+}
+else { 
+  if(! -s $tblout_file) { 
+    die "ERROR with --skipsearch, tblout file ($tblout_file) should exist and be non-empty but it's not";
+  }
+}
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
@@ -293,6 +335,9 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
 parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
+# cat the output file
+run_command("cat $short_out_file", opt_Get("-v", \%opt_HH));
+run_command("cat $long_out_file", opt_Get("-v", \%opt_HH));
 ###########################################################################
 
 #####################################################################
@@ -314,6 +359,8 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 #                            helper for parse_sorted_tbl_file()
 # output_one_target:         output info on one target sequence
 #                            helper for parse_sorted_tbl_file()
+# output_short_headers:      output headers for short output file
+# output_long_headers:       output headers for long output file
 # output_banner:             output the banner with info on the script and options used
 # output_progress_prior:     output routine for a step, prior to running the step
 # output_progress_complete:  output routine for a step, after the running the step
@@ -513,21 +560,24 @@ sub parse_sorted_tbl_file {
       die "ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.";
     }
     my @el_A = split(/\s+/, $line);
-    
+
     if(($search_method eq "cmsearch-fast") || ($search_method eq "cmscan-fast")) { 
-      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast tabular output at line: $line"; }
-      if($search_method eq " cmsearch-fast") {
+      if($search_method eq "cmsearch-fast") {
+        if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast cmsearch tabular output at line: $line"; }
         # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
         ($target, $model, $score, $seqfrom, $seqto, $strand) = 
             ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
       }
       else { # $search_method is "cmscan-fast"
-        # SSU_rRNA_eukarya  lcl|dna_BP101_10.1k:10  391.6      1   1269      +     []  =         1269
+        if(scalar(@el_A) != 17) { die "ERROR did not find 9 columns in fast cmscan tabular output at line: $line"; }
+        ##idx target name          query name             clan name  score seq from   seq to strand bounds      seqlen olp anyidx afrct1 afrct2 winidx wfrct1 wfrct2
+        ##--- -------------------- ---------------------- --------- ------ -------- -------- ------ ------ ----------- --- ------ ------ ------ ------ ------ ------
+        # 1    SSU_rRNA_archaea     lcl|dna_BP331_0.3k:467 -          559.8        1     1232      +     []        1232  =       2  1.000  1.000      "      "      "
         ($target, $model, $score, $seqfrom, $seqto, $strand) = 
-            ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+            ($el_A[2], $el_A[1], $el_A[4], $el_A[5], $el_A[6], $el_A[7]);
       }
     }    
-    elsif($search_method eq "cmsearch") { 
+    elsif($search_method eq "cmsearch-hmmonly" || $search_method eq "cmsearch-slow") { 
       ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
       ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
       #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
@@ -535,7 +585,7 @@ sub parse_sorted_tbl_file {
       ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
           ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
     }
-    elsif($search_method eq "cmscan") { 
+    elsif($search_method eq "cmscan-hmmonly" || $search_method eq "cmscan-slow") { 
       ##idx target name          accession query name             accession clan name mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc olp anyidx afrct1 afrct2 winidx wfrct1 wfrct2 description of target
       ##--- -------------------- --------- ---------------------- --------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- --- ------ ------ ------ ------ ------ ------ ---------------------
       #  1    SSU_rRNA_bacteria    RF00177   lcl|dna_BP331_0.3k:467 -         -         hmm       37     1301        1     1228      +     -    6 0.53   6.2  974.2  2.8e-296  !   ^       -      -      -      -      -      - -
@@ -808,17 +858,14 @@ sub output_one_target_wrapper {
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
-  # if so, output its current info
+  # output to short and long output files
   output_one_target($long_FH, 0, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   output_one_target($short_FH, 1, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  # output short output again to stdout
-  output_one_target(\*STDOUT, 1, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
-                    $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
-                    $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+
   # reset vars
   init_vars($one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   init_vars($two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
@@ -927,21 +974,21 @@ sub output_one_target {
   my $pass_fail = (($score_diff > $diff_thresh) && ($nhits == 1)) ? "PASS" : "FAIL";
 
   if($do_short) { 
-    printf $FH ("%-30s  %10s  %s\n", 
+    printf $FH ("%-30s  %-20s  %s\n", 
                 $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
   }
   else { 
-    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-15s  %10s  %10.2f  %s  %5.3f  %10d  %10d  ", 
+    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-20s  %10s  %10.2f  %s  %5.3f  %10d  %10d  ", 
            $target, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
            $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
            $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
     
     if(defined $two_model_HR->{$wclan}) { 
-      printf $FH ("%10.2f  %-15s  %10s  %10.2f  ", 
+      printf $FH ("%10.2f  %-20s  %10s  %10.2f  ", 
              $one_score_HR->{$wclan} - $two_score_HR->{$wclan}, $two_model_HR->{$wclan}, $two_evalue2print, $two_score_HR->{$wclan});
     }
     else { 
-      printf $FH ("%10s  %-15s  %10s  %10.2s  ", 
+      printf $FH ("%10s  %-20s  %10s  %10.2s  ", 
              "-" , "-", "-", "-");
     }
     
@@ -951,6 +998,71 @@ sub output_one_target {
     
     print $FH ("$extra_string\n");
   }
+
+  return;
+}
+
+#################################################################
+# Subroutine : output_short_headers()
+# Incept:      EPN, Fri Dec 30 08:51:01 2016
+#
+# Purpose:     Output column headers to the short output file.
+#              
+# Arguments: 
+#   $FH:      file handle to output to
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_short_headers { 
+  my $nargs_expected = 1;
+  my $sub_name = "output_short_headers";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH) = (@_);
+
+  printf $FH ("%-30s  %-20s  %s\n", "target", "classification", "pass/fail");
+  printf $FH ("%-30s  %-20s  %s\n", "------------------------------", "--------------------", "---------");
+
+  return;
+}
+
+#################################################################
+# Subroutine : output_long_headers()
+# Incept:      EPN, Fri Dec 30 08:51:01 2016
+#
+# Purpose:     Output column headers to the long output file.
+#              
+# Arguments: 
+#   $FH:      file handle to output to
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_long_headers { 
+  my $nargs_expected = 1;
+  my $sub_name = "output_short_headers";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH) = (@_);
+
+  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %-78s  %10s  %-44s  %s\n", 
+              "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
+              "model", "evalue", "score", "extra");
+  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %78s  %10s  %44s  %s\n", 
+              "", "", "", "", "", "------------------------------------------------------------------------------", 
+              "", "--------------------------------------------", "");
+
+  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %-20s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-20s  %10s  %10s  %s\n", 
+              "target", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
+              "model", "evalue", "score", "extra");
+  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %-20s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-20s  %10s  %10s  %s\n", 
+              "------------------------------", "----------", "---", "---", "---------------", "--------------------", "----------", "----------", "-", 
+              "-----", "----------", "----------", "----------", "--------------------", "----------", "----------", "-----");
 
   return;
 }
