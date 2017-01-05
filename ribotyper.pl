@@ -460,7 +460,7 @@ sub parse_seqstat_file {
     # = lcl|dna_BP331_0.3k:1052     1414 
     chomp $line;
     #print $line . "\n";
-    if($line =~ /^\=\s+(\S+)\s+(\d+)\s*$/) { 
+    if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
       $seqlen_HR->{$1} = $2;
       $nread++;
     }
@@ -760,13 +760,14 @@ sub init_vars {
   my ($model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR) = @_;
 
   foreach my $key (keys %{$model_HR}) { 
-    $model_HR->{$key}  = undef;
-    $score_HR->{$key}  = undef;
-    $evalue_HR->{$key} = undef;
-    $start_HR->{$key}  = undef;
-    $stop_HR->{$key}   = undef;
-    $strand_HR->{$key} = undef;
+    delete $model_HR->{$key};
+    delete $score_HR->{$key};
+    delete $evalue_HR->{$key};
+    delete $start_HR->{$key};
+    delete $stop_HR->{$key};
+    delete $strand_HR->{$key};
   }
+  
 
   return;
 }
@@ -917,6 +918,9 @@ sub output_one_target {
 
   my $diff_thresh = 100.;
 
+  # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
+  # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+
   # determine the winning clan
   my $wclan = undef;
   my $better_than_winning = 0;
@@ -926,7 +930,7 @@ sub output_one_target {
       $better_than_winning = 1; 
     }
     elsif($have_evalues) { 
-      if(($one_model_HR->{$clan} < $one_model_HR->{$wclan}) || # this E-value is better than (less than) our current winning E-value
+      if(($one_evalue_HR->{$clan} < $one_evalue_HR->{$wclan}) || # this E-value is better than (less than) our current winning E-value
          ($one_evalue_HR->{$clan} eq $one_evalue_HR->{$wclan} && $one_score_HR->{$clan} > $one_score_HR->{$wclan})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
         $better_than_winning = 1;
       }
@@ -941,7 +945,6 @@ sub output_one_target {
     }
   }
 
-
   # build up 'extra information' about other hits in other clans, if any
   my $extra_string = "";
   my $nhits = 1;
@@ -950,13 +953,13 @@ sub output_one_target {
       if(exists($one_model_HR->{$clan})) { 
         if($extra_string ne "") { $extra_string .= ","; }
         if($have_evalues) { 
-          $extra_string .= sprintf("%s:%10g:%10.2f/%d-%d:%s",
+          $extra_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
                                    $clan, $one_model_HR->{$clan}, $one_evalue_HR->{$clan}, $one_score_HR->{$clan}, 
                                    $one_start_HR->{$clan}, $one_stop_HR->{$clan}, $one_strand_HR->{$clan});
         }
         else { # we don't have E-values
-          $extra_string .= sprintf("%s:%10.2f/%d-%d:%s",
-                                   $clan, $one_model_HR->{$clan}, $one_evalue_HR->{$clan}, $one_score_HR->{$clan}, 
+          $extra_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
+                                   $clan, $one_model_HR->{$clan}, $one_score_HR->{$clan}, 
                                    $one_start_HR->{$clan}, $one_stop_HR->{$clan}, $one_strand_HR->{$clan});
         }
         $nhits++;
@@ -978,13 +981,13 @@ sub output_one_target {
                 $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
   }
   else { 
-    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-20s  %10s  %10.2f  %s  %5.3f  %10d  %10d  ", 
+    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-20s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
            $target, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
            $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
            $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
     
     if(defined $two_model_HR->{$wclan}) { 
-      printf $FH ("%10.2f  %-20s  %10s  %10.2f  ", 
+      printf $FH ("%10.1f  %-20s  %10s  %10.1f  ", 
              $one_score_HR->{$wclan} - $two_score_HR->{$wclan}, $two_model_HR->{$wclan}, $two_evalue2print, $two_score_HR->{$wclan});
     }
     else { 
@@ -1310,3 +1313,49 @@ sub seconds_since_epoch {
   return ($seconds + ($microseconds / 1000000.));
 }
 
+
+#################################################################
+# Subroutine : debug_print()
+# Incept:      EPN, Thu Jan  5 14:11:21 2017
+#
+# Purpose:     Output information for current sequence in either
+#              long or short mode. Short mode if $do_short is true.
+#              
+# Arguments: 
+#   $FH:            file handle to output to
+#   $title:         title to print before any values
+#   %model_HR:  'one' model
+#   %score_HR:  'one' bit score
+#   %evalue_HR: 'one' E-value
+#   %start_HR:  'one' start position
+#   %stop_HR:   'one' stop position
+#   %strand_HR: 'one' strand 
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub debug_print { 
+  my $nargs_expected = 8;
+  my $sub_name = "debug_print";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH, $title, $model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR) = @_;
+
+  printf $FH ("************************************************************\n");
+  printf $FH ("in $sub_name, title: $title\n");
+
+  foreach my $clan (sort keys %{$model_HR}) { 
+    printf("clan: $clan\n");
+    printf("\tmodel:  $model_HR->{$clan}\n");
+    printf("\tscore:  $score_HR->{$clan}\n");
+    printf("\tevalue: $evalue_HR->{$clan}\n");
+    printf("\tstart:  $start_HR->{$clan}\n");
+    printf("\tstop:   $stop_HR->{$clan}\n");
+    printf("\tstrand: $strand_HR->{$clan}\n");
+    printf("--------------------------------\n");
+  }
+
+  return;
+}
