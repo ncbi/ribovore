@@ -978,7 +978,19 @@ sub output_one_target {
   }
   
   my $score_diff = (exists $two_score_HR->{$wclan}) ? ($one_score_HR->{$wclan} - $two_score_HR->{$wclan}) : $one_score_HR->{$wclan};
-  my $pass_fail = (($score_diff > $diff_thresh) && ($nhits == 1)) ? "PASS" : "FAIL";
+  # does the sequence pass or fail? 
+  # FAILs iff: 
+  # - score difference between top two models is exceeds $diff_thresh AND top two models are different domains
+  # OR
+  # - number of hits to different clans is higher than one
+  my $pass_fail = "PASS";
+  if(defined $two_model_HR->{$wclan}) { 
+    if(($score_diff <= $diff_thresh) && 
+       ($domain_HR->{$one_model_HR->{$wclan}} ne $domain_HR->{$two_model_HR->{$wclan}})) { 
+      $pass_fail = "FAIL";
+    }
+  }
+  if($nhits > 1) { $pass_fail = "FAIL"; }
 
   if($do_short) { 
     printf $FH ("%-30s  %-20s  %s\n", 
