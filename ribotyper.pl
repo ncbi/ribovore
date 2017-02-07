@@ -40,10 +40,11 @@ my %opt_group_desc_H = ();
 # Add all options to %opt_HH and @opt_order_A.
 # This section needs to be kept in sync (manually) with the &GetOptions call below
 $opt_group_desc_H{"1"} = "basic options";
-#     option            type       default               group   requires incompat    preamble-output                   help-output    
-opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                           "display this help",                                  \%opt_HH, \@opt_order_A);
-opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",   "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
-opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                    "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
+#     option            type       default               group   requires incompat    preamble-output                                   help-output    
+opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
+opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
+opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
+opt_Add("-d",           "real",    "100.",                   1,    undef, undef,      "set minimum acceptable score difference to <x>", "set minimum acceptable bit score difference between best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for control search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output             help-output    
@@ -66,6 +67,7 @@ my $options_okay =
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
                 'v'            => \$GetOptions_H{"-v"},
+                'd=s'          => \$GetOptions_H{"-d"},
 # algorithm options
                 'nhmmer'       => \$GetOptions_H{"--nhmmer"},
                 'cmscan'       => \$GetOptions_H{"--cmscan"},
@@ -642,7 +644,7 @@ sub parse_sorted_tbl_file {
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
+      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     }
@@ -722,7 +724,7 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
+  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
                             \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                             \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   
@@ -828,6 +830,7 @@ sub set_vars {
 # Arguments: 
 #   $long_FH:       file handle to output long data to
 #   $short_FH:      file handle to output short data to
+#   $opt_HHR:       reference to 2D hash of cmdline options
 #   $have_evalues:  '1' if we have E-values, '0' if not
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
@@ -851,19 +854,19 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 18;
+  my $nargs_expected = 19;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $have_evalues, $domain_HR, $target, $seqlen_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -885,6 +888,7 @@ sub output_one_target_wrapper {
 # Arguments: 
 #   $FH:            file handle to output to
 #   $do_short:      TRUE to output in 'short' concise mode, else do long mode
+#   $opt_HHR:       reference to 2D hash of cmdline options
 #   $have_evalues:  '1' if we have E-values, '0' if not
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
@@ -908,15 +912,15 @@ sub output_one_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 18;
+  my $nargs_expected = 19;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $have_evalues, $domain_HR, $target, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
-  my $diff_thresh = 100.;
+  my $diff_thresh = opt_Get("-d", $opt_HHR);
 
   # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
