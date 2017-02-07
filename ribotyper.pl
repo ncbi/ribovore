@@ -985,17 +985,17 @@ sub output_one_target {
                 $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
   }
   else { 
-    printf $FH ("%-30s  %10d  %3d  %3s  %-15s  %-20s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
-           $target, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
+    printf $FH ("%-30s  %4s  %10d  %3d  %3s  %-15s  %-22s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
+           $target, $pass_fail, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
            $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
            $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
     
     if(defined $two_model_HR->{$wclan}) { 
-      printf $FH ("%10.1f  %-20s  %10s  %10.1f  ", 
+      printf $FH ("%10.1f  %-22s  %10s  %10.1f  ", 
              $one_score_HR->{$wclan} - $two_score_HR->{$wclan}, $two_model_HR->{$wclan}, $two_evalue2print, $two_score_HR->{$wclan});
     }
     else { 
-      printf $FH ("%10s  %-20s  %10s  %10.2s  ", 
+      printf $FH ("%10s  %-22s  %10s  %10.2s  ", 
              "-" , "-", "-", "-");
     }
     
@@ -1031,7 +1031,7 @@ sub output_short_headers {
   my ($FH) = (@_);
 
   printf $FH ("%-30s  %-20s  %s\n", "#target", "classification", "pass/fail");
-  printf $FH ("%-30s  %-20s  %s\n", "#------------------------------", "--------------------", "---------");
+  printf $FH ("%-30s  %-20s  %s\n", "#-----------------------------", "--------------------", "---------");
 
   return;
 }
@@ -1057,19 +1057,19 @@ sub output_long_headers {
 
   my ($FH) = (@_);
 
-  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %-78s  %10s  %-44s  %s\n", 
-              "#", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
+  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %-80s  %10s  %-46s  %s\n", 
+              "#", "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
               "model", "evalue", "score", "extra");
-  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %78s  %10s  %44s  %s\n", 
-              "#", "", "", "", "", "------------------------------------------------------------------------------", 
-              "", "--------------------------------------------", "");
+  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %78s  %10s  %46s  %s\n", 
+              "#", "", "", "", "", "", "--------------------------------------------------------------------------------", 
+              "", "----------------------------------------------", "");
 
-  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %-20s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-20s  %10s  %10s  %s\n", 
-              "#target", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
+  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
+              "#target", "p/f", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
               "model", "evalue", "score", "extra");
-  printf $FH ("%-30s  %10s  %3s  %3s  %-15s  %-20s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-20s  %10s  %10s  %s\n", 
-              "#------------------------------", "----------", "---", "---", "---------------", "--------------------", "----------", "----------", "-", 
-              "-----", "----------", "----------", "----------", "--------------------", "----------", "----------", "-----");
+  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
+              "#-----------------------------", "----", "----------", "---", "---", "---------------", "----------------------", "----------", "----------", "-", 
+              "-----", "----------", "----------", "----------", "----------------------", "----------", "----------", "-----");
 
   return;
 }
