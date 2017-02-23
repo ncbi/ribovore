@@ -7,10 +7,9 @@ require "epn-options.pm";
 
 # first, determine the paths to all modules, scripts and executables that we'll need
 # we currently use hard-coded-paths for Infernal, HMMER and easel executables:
-my $inf_exec_dir      = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/bin/";
-my $hmmer_exec_dir    = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/bin/";
-my $esl_exec_dir      = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/bin/";
-my $ribo_exec_dir     = "/panfs/pan1/infernal/notebook/16_1213_ssu_ieb_tool/ribotyper-v1/";
+my $inf_exec_dir      = "/usr/local/infernal/1.1.2/bin/";
+my $hmmer_exec_dir    = "/usr/local/hmmer/3.1b2/bin/";
+my $esl_exec_dir      = "/usr/local/infernal/1.1.2/bin/";
 
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -44,7 +43,7 @@ $opt_group_desc_H{"1"} = "basic options";
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-d",           "real",    "100.",                   1,    undef, undef,      "set minimum acceptable score difference to <x>", "set minimum acceptable bit score difference between best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("-d",           "real",    "50.",                    1,    undef, undef,      "set minimum acceptable score difference to <x>", "set minimum acceptable bit score difference between best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for control search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output             help-output    
@@ -110,8 +109,9 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-my $cmd;
-my $ncpu = 0;
+my $cmd;                       # a command to be run by run_command()
+my $ncpu = 0;                  # number of CPUs to use with search command
+my $max_targetname_length = 0; # maximum length of any target name
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -176,23 +176,10 @@ my $long_out_FH;  # output file handle for long output file
 my $short_out_FH; # output file handle for short output file
 open($long_out_FH,  ">", $long_out_file)  || die "ERROR unable to open $long_out_file for writing";
 open($short_out_FH, ">", $short_out_file) || die "ERROR unable to open $short_out_file for writing";
-output_long_headers($long_out_FH);
-output_short_headers($short_out_FH);
 
-###################################################
-# make sure the required executables are executable
-###################################################
-my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmscan"}          = $inf_exec_dir   . "cmscan";
-$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
-$execs_H{"nhmmer"}          = $hmmer_exec_dir . "nhmmer";
-$execs_H{"ssu-align"}       = $hmmer_exec_dir . "ssu-align";
-$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
-$execs_H{"ribotyper-parse"} = $ribo_exec_dir  . "ribotyper-parse.pl";
-#$execs_H{"esl_ssplit"}    = $esl_ssplit;
-validate_executable_hash(\%execs_H);
-
+##########################
 # determine search method
+##########################
 my $search_method = undef; # can be any of "cmsearch-hmmonly", "cmscan-hmmonly", 
 #                                          "cmsearch-slow",    "cmscan-slow", 
 #                                          "cmsearch-fast",    "cmscan-fast",
@@ -214,6 +201,21 @@ elsif(opt_Get("--slow", \%opt_HH)) {
   else { die "ERROR, --fast used in error, search_method: $search_method"; }
 }
 
+###################################################
+# make sure the required executables are executable
+###################################################
+my %execs_H = (); # hash with paths to all required executables
+$execs_H{"cmscan"}          = $inf_exec_dir   . "cmscan";
+$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
+$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
+if($search_method eq "nhmmer") { 
+  $execs_H{"nhmmer"}          = $hmmer_exec_dir . "nhmmer";
+}
+if($search_method eq "ssualign") { 
+  $execs_H{"ssu-align"}       = $hmmer_exec_dir . "ssu-align";
+}
+#$execs_H{"esl_ssplit"}    = $esl_ssplit;
+validate_executable_hash(\%execs_H);
 
 ###########################################################################
 ###########################################################################
@@ -236,7 +238,11 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # already, if we see it again we know the tbl file was not
                    # sorted properly.
 # parse esl-seqstat file to get lengths
-parse_seqstat_file($seqstat_file, \%seqlen_H); 
+parse_seqstat_file($seqstat_file, \$max_targetname_length, \%seqlen_H); 
+
+# now that we know the max sequence name length, we can output headers to the output files
+output_long_headers($long_out_FH, $max_targetname_length);
+output_short_headers($short_out_FH, $max_targetname_length);
 ###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
@@ -335,11 +341,25 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, $max_targetname_length, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
+###########################################################################
+
+###########################################################################
+# Add tails to output files and exit.
+# now that we know the max sequence name length, we can output headers to the output files
+output_long_tail($long_out_FH);
+output_short_tail($short_out_FH);
+
+close($short_out_FH);
+close($long_out_FH);
+printf("#\n# Short (3 column) output saved to file $short_out_file.\n");
+printf("# Long (14 column) output saved to file $long_out_file.\n");
+printf("#\n#[RIBO-SUCCESS]\n");
+
 # cat the output file
-run_command("cat $short_out_file", opt_Get("-v", \%opt_HH));
-run_command("cat $long_out_file", opt_Get("-v", \%opt_HH));
+#run_command("cat $short_out_file", opt_Get("-v", \%opt_HH));
+#run_command("cat $long_out_file", opt_Get("-v", \%opt_HH));
 ###########################################################################
 
 #####################################################################
@@ -437,8 +457,9 @@ sub parse_clan_file {
 # Purpose:     Parse an esl-seqstat -a output file.
 #              
 # Arguments: 
-#   $seqstat_file:  file to parse
-#   $seqlen_HR:     REF to hash of sequence lengths to fill here
+#   $seqstat_file:            file to parse
+#   $max_targetname_length_R: REF to the maximum length of any target name, updated here
+#   $seqlen_HR:               REF to hash of sequence lengths to fill here
 #
 # Returns:     Nothing. Fills %{$seqlen_HR}.
 # 
@@ -446,15 +467,18 @@ sub parse_clan_file {
 #
 ################################################################# 
 sub parse_seqstat_file { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "parse_seqstat_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($seqstat_file, $seqlen_HR) = @_;
+  my ($seqstat_file, $max_targetname_length_R, $seqlen_HR) = @_;
 
   open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
 
   my $nread = 0;
+  my $targetname_length;
+  my $targetname;
+  my $length;
 
   while(my $line = <IN>) { 
     # = lcl|dna_BP331_0.3k:467     1232 
@@ -463,7 +487,14 @@ sub parse_seqstat_file {
     chomp $line;
     #print $line . "\n";
     if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
-      $seqlen_HR->{$1} = $2;
+      ($targetname, $length) = ($1, $2);
+      $seqlen_HR->{$targetname} = $length;
+
+      $targetname_length = length($targetname);
+      if($targetname_length > $$max_targetname_length_R) { 
+        $$max_targetname_length_R = $targetname_length;
+      }
+
       $nread++;
     }
   }
@@ -479,7 +510,7 @@ sub parse_seqstat_file {
 # Subroutine : parse_sorted_tblout_file()
 # Incept:      EPN, Thu Dec 29 09:52:16 2016
 #
-# Purpose:     Parse a sorted tabular output file.
+# Purpose:     Parse a sorted tabular output file and generate output.
 #              
 # Arguments: 
 #   $sorted_tbl_file: file with sorted tabular search results
@@ -487,6 +518,7 @@ sub parse_seqstat_file {
 #                                           "cmsearch-slow",    "cmscan-slow", 
 #                                           "cmsearch-fast",    "cmscan-fast",
 #                                           "nhmmer",           "ssualign")
+#   $max_targetname_length: max length of any target name
 #   $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
 #   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
@@ -499,11 +531,11 @@ sub parse_seqstat_file {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $search_method, $seqlen_HR, $clan_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $search_method, $max_targetname_length, $seqlen_HR, $clan_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
@@ -644,7 +676,7 @@ sub parse_sorted_tbl_file {
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
+      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $max_targetname_length, $domain_HR, $prv_target, $seqlen_HR,
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     }
@@ -724,7 +756,7 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $domain_HR, $prv_target, $seqlen_HR,
+  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $max_targetname_length, $domain_HR, $prv_target, $seqlen_HR,
                             \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                             \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   
@@ -832,6 +864,7 @@ sub set_vars {
 #   $short_FH:      file handle to output short data to
 #   $opt_HHR:       reference to 2D hash of cmdline options
 #   $have_evalues:  '1' if we have E-values, '0' if not
+#   $target_width:  maximum length of any target name
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
 #   $seqlen_HR:     hash of target sequence lengths
@@ -854,19 +887,19 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 19;
+  my $nargs_expected = 20;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -890,6 +923,7 @@ sub output_one_target_wrapper {
 #   $do_short:      TRUE to output in 'short' concise mode, else do long mode
 #   $opt_HHR:       reference to 2D hash of cmdline options
 #   $have_evalues:  '1' if we have E-values, '0' if not
+#   $target_width:  maximum length of any target name
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
 #   $seqlen:        length of target sequence
@@ -912,11 +946,11 @@ sub output_one_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 19;
+  my $nargs_expected = 20;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $have_evalues, $domain_HR, $target, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -993,14 +1027,14 @@ sub output_one_target {
   if($nhits > 1) { $pass_fail = "FAIL"; }
 
   if($do_short) { 
-    printf $FH ("%-30s  %-20s  %s\n", 
-                $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
+    printf $FH ("%-*s  %-20s  %s\n", 
+                $target_width, $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
   }
   else { 
-    printf $FH ("%-30s  %4s  %10d  %3d  %3s  %-15s  %-22s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
-           $target, $pass_fail, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
-           $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
-           $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
+    printf $FH ("%-*s  %4s  %10d  %3d  %3s  %-15s  %-22s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
+                $target_width, $target, $pass_fail, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
+                $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
+                $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
     
     if(defined $two_model_HR->{$wclan}) { 
       printf $FH ("%10.1f  %-22s  %10s  %10.1f  ", 
@@ -1028,7 +1062,8 @@ sub output_one_target {
 # Purpose:     Output column headers to the short output file.
 #              
 # Arguments: 
-#   $FH:      file handle to output to
+#   $FH:            file handle to output to
+#   $target_width:  maximum length of any target name
 #
 # Returns:     Nothing.
 # 
@@ -1036,14 +1071,14 @@ sub output_one_target {
 #
 ################################################################# 
 sub output_short_headers { 
-  my $nargs_expected = 1;
+  my $nargs_expected = 2;
   my $sub_name = "output_short_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH) = (@_);
+  my ($FH, $target_width) = (@_);
 
-  printf $FH ("%-30s  %-20s  %s\n", "#target", "classification", "pass/fail");
-  printf $FH ("%-30s  %-20s  %s\n", "#-----------------------------", "--------------------", "---------");
+  printf $FH ("%-*s  %-20s  %s\n", $target_width, "#target", "classification", "pass/fail");
+  printf $FH ("%-*s  %-20s  %s\n", $target_width, "#-----------------------------", "--------------------", "---------");
 
   return;
 }
@@ -1055,7 +1090,8 @@ sub output_short_headers {
 # Purpose:     Output column headers to the long output file.
 #              
 # Arguments: 
-#   $FH:      file handle to output to
+#   $FH:            file handle to output to
+#   $target_width:  maximum length of any target name
 #
 # Returns:     Nothing.
 # 
@@ -1063,28 +1099,88 @@ sub output_short_headers {
 #
 ################################################################# 
 sub output_long_headers { 
-  my $nargs_expected = 1;
+  my $nargs_expected = 2;
   my $sub_name = "output_short_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH) = (@_);
+  my ($FH, $target_width) = (@_);
 
-  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %-80s  %10s  %-46s  %s\n", 
-              "#", "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
+  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-80s  %10s  %-46s  %s\n", 
+              $target_width, "#", "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
               "model", "evalue", "score", "extra");
-  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %78s  %10s  %46s  %s\n", 
-              "#", "", "", "", "", "", "--------------------------------------------------------------------------------", 
+  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %78s  %10s  %46s  %s\n", 
+              $target_width, "#", "", "", "", "", "", "--------------------------------------------------------------------------------", 
               "", "----------------------------------------------", "");
 
-  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
-              "#target", "p/f", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
+  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
+              $target_width, "#target", "p/f", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
               "model", "evalue", "score", "extra");
-  printf $FH ("%-30s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
-              "#-----------------------------", "----", "----------", "---", "---", "---------------", "----------------------", "----------", "----------", "-", 
+  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
+              $target_width, "#-----------------------------", "----", "----------", "---", "---", "---------------", "----------------------", "----------", "----------", "-", 
               "-----", "----------", "----------", "----------", "----------------------", "----------", "----------", "-----");
 
   return;
 }
+
+#################################################################
+# Subroutine : output_short_tail()
+# Incept:      EPN, Thu Feb 23 15:29:21 2017
+#
+# Purpose:     Output explanation of columns to short output file.
+#              
+# Arguments: 
+#   $FH:       file handle to output to
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_short_tail { 
+  my $nargs_expected = 1;
+  my $sub_name = "output_short_tail";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH) = (@_);
+
+#  printf $FH ("# Explanation of columns:\n");
+#  printf $FH ("# Column 1: name of target sequence\n");
+#  printf $FH ("# Column 2: classification of sequence\n");
+#  printf $FH ("# Column 3: PASS/FAIL\n");
+
+  return;
+}
+
+
+#################################################################
+# Subroutine : output_long_tail()
+# Incept:      EPN, Thu Feb 23 15:33:25 2017
+#
+# Purpose:     Output explanation of columns to long output file.
+#              
+# Arguments: 
+#   $FH:       file handle to output to
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_long_tail { 
+  my $nargs_expected = 1;
+  my $sub_name = "output_long_tail";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH) = (@_);
+
+#  printf $FH ("# Explanation of columns:\n");
+#  printf $FH ("# Column 1: name of target sequence\n");
+#  printf $FH ("# Column 2: classification of sequence\n");
+#  printf $FH ("# Column 3: PASS/FAIL\n");
+
+  return;
+}
+
 
 #####################################################################
 # Subroutine: output_banner()
