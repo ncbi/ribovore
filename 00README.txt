@@ -75,75 +75,23 @@ Short file:
 01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria          PASS
 01710::Oryza_sativa.::X00755                   SSU.Eukarya           PASS
 
+The Long file is not shown because it is so wide. 
+An example is in testfiles/example.long.txt.
 
-Long file:
+Currently, PASS/FAIL is determined as follows:
 
-First 14 columns:
+A sequence passes if it has 1 hit to any SSU or LSU model (but not to
+both) and the score difference between the top scoring and second top
+scoring model is < 50 bits, otherwise the sequence FAILs. The higher
+the score difference between the top top scoring models, the more
+confident the classification is.
 
-#                                                                                                                   best-scoring model                                
-#                                                                                           ------------------------------------------------------------------------
-#target                                         p/f   targetlen  #ht  fam  domain           model               evalue       score  s    cov       start        stop
-#-----------------------------                 ----  ----------  ---  ---  ---------------  ------------------  ------  ----------  -  -----  ----------  ----------
-00004::Nanoarchaeum_equitans::AJ318041         PASS         867    1  SSU  Archaea          SSU_rRNA_archaea         -       658.5  +  1.000           1         867
-00013::Methanobacterium_formicicum::M36508     PASS        1476    1  SSU  Archaea          SSU_rRNA_archaea         -      1237.8  +  1.000           1        1476
-00035::Bacteroides_fragilis::M61006|g143965    PASS        1537    1  SSU  Bacteria         SSU_rRNA_bacteria        -      1123.0  +  1.000           1        1537
-00052::Halobacterium_sp.::AE005128             PASS        1473    1  SSU  Archaea          SSU_rRNA_archaea         -      1216.7  +  1.000           1        1473
-00072::Chlamydia_trachomatis.::AE001345        PASS         887    1  SSU  Bacteria         SSU_rRNA_bacteria        -       638.1  +  1.000           1         887
-00115::Pyrococcus_furiosus::U20163|g643670     PASS         922    1  SSU  Archaea          SSU_rRNA_archaea         -       782.5  -  1.000         922           1
-00121::Thermococcus_celer::M21529              PASS        1780    1  SSU  Archaea          SSU_rRNA_archaea         -      1251.7  +  1.000           1        1780
-00220::Euplotes_aediculatus.::M14590           PASS        1082    1  SSU  Eukarya          SSU_rRNA_eukarya         -       623.4  +  1.000           1        1082
-00224::Rickettsia_prowazekii.::AJ235272        PASS        1620    1  SSU  Bacteria         SSU_rRNA_bacteria        -      1195.7  +  1.000           1        1620
-00229::Oxytricha_granulifera.::AF164122        PASS         600    1  SSU  Eukarya          SSU_rRNA_eukarya         -       405.5  -  1.000         600           1
-01106::Bacillus_subtilis::K00637               PASS        1552    1  SSU  Bacteria         SSU_rRNA_bacteria        -      1266.4  +  1.000           1        1552
-01223::Audouinella_hermannii.::AF026040        PASS        1771    1  SSU  Eukarya          SSU_rRNA_eukarya         -      1254.3  +  1.000           1        1771
-01240::Batrachospermum_gelatinosum.::AF026045  PASS        1765    1  SSU  Eukarya          SSU_rRNA_eukarya         -      1250.3  +  1.000           1        1765
-01351::Mycoplasma_gallisepticum::M22441        PASS         881    1  SSU  Bacteria         SSU_rRNA_bacteria        -       584.2  -  1.000         881           1
-01710::Oryza_sativa.::X00755                   PASS        2046    1  SSU  Eukarya          SSU_rRNA_eukarya         -      1320.8  +  1.000           1        2046
-
-Final 4 columns (with first column included):
-
-#                                             ...                        second-best-scoring model              
-#                                             ...               ----------------------------------------------  
-#target                                       ...       scdiff  model                       evalue       score  extra
-#-----------------------------                ...   ----------  ----------------------  ----------  ----------  -----
-00004::Nanoarchaeum_equitans::AJ318041        ...        201.0  SSU_rRNA_bacteria                -       457.5  -
-00013::Methanobacterium_formicicum::M36508    ...        441.7  SSU_rRNA_bacteria                -       796.1  -
-00035::Bacteroides_fragilis::M61006|g143965   ...        179.1  SSU_rRNA_chloroplast             -       943.9  -
-00052::Halobacterium_sp.::AE005128            ...        486.6  SSU_rRNA_bacteria                -       730.1  -
-00072::Chlamydia_trachomatis.::AE001345       ...         66.4  SSU_rRNA_chloroplast             -       571.7  -
-00115::Pyrococcus_furiosus::U20163|g643670    ...        270.8  SSU_rRNA_bacteria                -       511.7  -
-00121::Thermococcus_celer::M21529             ...        442.5  SSU_rRNA_bacteria                -       809.2  -
-00220::Euplotes_aediculatus.::M14590          ...        287.1  SSU_rRNA_microsporidia           -       336.3  -
-00224::Rickettsia_prowazekii.::AJ235272       ...        124.7  SSU_rRNA_chloroplast             -      1071.0  -
-00229::Oxytricha_granulifera.::AF164122       ...        198.7  SSU_rRNA_microsporidia           -       206.8  -
-01106::Bacillus_subtilis::K00637              ...        117.2  SSU_rRNA_cyanobacteria           -      1149.2  -
-01223::Audouinella_hermannii.::AF026040       ...        599.5  SSU_rRNA_microsporidia           -       654.8  -
-01240::Batrachospermum_gelatinosum.::AF026045 ...        595.9  SSU_rRNA_microsporidia           -       654.4  -
-01351::Mycoplasma_gallisepticum::M22441       ...         69.3  SSU_rRNA_chloroplast             -       514.9  -
-01710::Oryza_sativa.::X00755                  ...        649.5  SSU_rRNA_microsporidia           -       671.3  -
+We expect the definition of PASS and FAIL will change as testing
+continues and we get feedback from indexers.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Further development:
---------------------
+Possible future development:
+----------------------------
 - Test different modes (default, slow, fast) on several diverse SSU
   datasets and compare results to determine if default setting is 
   the best choice. 
@@ -156,11 +104,3 @@ Further development:
   o observed per-position score differences between models versus
     expected (much more complicated than current, but probably best)
 
-
-
-Possible improvements:
-----------------------
-
-
-
-perl $DOD/ssudetection/code/ribotyper-v1/ribotyper.pl --fast -f $DOD/ssudetection/code/ribotyper-v1/testfiles/seed-15.fa $DOD/ssudetection/code/ribotyper-v1/models/ssu.7.lsu.3.170222.cm $DOD/ssudetection/code/ribotyper-v1/models/ssu.7.lsu.3.170222.clans test
