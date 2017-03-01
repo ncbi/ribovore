@@ -53,9 +53,13 @@ opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nh
 opt_Add("--fast",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in fast mode",         "run in fast mode, sacrificing accuracy of boundaries", \%opt_HH, \@opt_order_A);
 opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--fast",             "run in slow mode",         "run in slow mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "advanced options";
+$opt_group_desc_H{"3"} = "optional input files";
+#       option               type   default                group  requires incompat  preamble-output                     help-output    
+opt_Add("--inaccept",     "string",  undef,                   3,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"4"} = "advanced options";
 #       option               type   default                group  requires incompat  preamble-output             help-output    
-opt_Add("--skipsearch",   "boolean", 0,                       3,  undef,   "-f",     "skip search stage",        "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       4,  undef,   "-f",     "skip search stage",        "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -73,6 +77,8 @@ my $options_okay =
                 'ssualign'     => \$GetOptions_H{"--ssualign"},
                 'fast'         => \$GetOptions_H{"--fast"},
                 'slow'         => \$GetOptions_H{"--slow"},
+# optional input files
+                'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"});
 
@@ -229,6 +235,22 @@ my %clan_H         = (); # hash of clans,   key: model name, value: name of clan
 my %domain_H       = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
 parse_clan_file($clan_file, \%clan_H, \%domain_H);
 
+# parse input domains file, if nec
+my $model;
+my %accept_H = ();
+if(opt_IsUsed("--inaccept", \%opt_HH)) { 
+  foreach $model (keys %domain_H) { 
+    $accept_H{$model} = 0;
+  }    
+  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H);
+}
+else { # --inaccept not used, all models are acceptable
+  foreach $model (keys %domain_H) { 
+    $accept_H{$model} = 1;
+  }   
+} 
+exit 0;
+
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
 run_command("esl-seqstat -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
@@ -369,6 +391,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 # Functions for parsing files:
 # parse_clan_file:          parse the clan input file
+# parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_seqstat_file:       parse esl-seqstat -a output file
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
@@ -404,7 +427,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #
-# Returns:     Nothing. Fills @{$clan_names_AR}, %{$clan_H}, @{$domain_names_AR}, %{$domain_HR}
+# Returns:     Nothing. Fills %{$clan_H}, %{$domain_HR}
 # 
 # Dies:        Never.
 #
@@ -416,7 +439,7 @@ sub parse_clan_file {
 
   my ($clan_file, $clan_HR, $domain_HR) = @_;
 
-  open(IN, $clan_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+  open(IN, $clan_file) || die "ERROR unable to open clan info file $clan_file for reading";
 
 # example line:
 # SSU_rRNA_archaea SSU Archaea
@@ -444,6 +467,63 @@ sub parse_clan_file {
     }
     $clan_HR->{$model}   = $clan;
     $domain_HR->{$model} = $domain;
+  }
+  close(IN);
+
+  return;
+}
+
+#################################################################
+# Subroutine : parse_inaccept_file()
+# Incept:      EPN, Wed Mar  1 11:59:13 2017
+#
+# Purpose:     Parse the 'inaccept' input file.
+#              
+# Arguments: 
+#   $inaccept_file:  file to parse
+#   $accept_HR:      ref to hash of names, key is model name, value is '1' if model is acceptable
+#                    This hash should already be defined with all model names and all values as '0'.
+#
+# Returns:     Nothing. Updates %{$accpep_HR}.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub parse_inaccept_file { 
+  my $nargs_expected = 2;
+  my $sub_name = "parse_inaccept_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($inaccept_file, $accept_HR) = @_;
+
+  open(IN, $inaccept_file) || die "ERROR unable to open clan info file $clan_file for reading";
+
+# example line (one token per line)
+# SSU_rRNA_archaea
+
+  # construct string of all valid model names to use for error message
+  my $valid_name_str = "\n";
+  my $model;
+  foreach $model (sort keys (%{$accept_HR})) { 
+    $valid_name_str .= "\t" . $model . "\n";
+  }
+
+  open(IN, $inaccept_file) || die "ERROR unable to open $inaccept_file for reading"; 
+  while(my $line = <IN>) { 
+    chomp $line;
+    if($line =~ m/\w/) { # skip blank lines
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 1) { 
+        die "ERROR didn't read 1 token in inaccept input file $inaccept_file, line $line\nEach line should have exactly 1 white-space delimited token, a valid model name"; 
+      }
+      ($model) = (@el_A);
+      
+      if(! exists $accept_HR->{$model}) { 
+        die "ERROR read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+      }
+      
+      $accept_HR->{$model} = 1;
+    }
   }
   close(IN);
 
