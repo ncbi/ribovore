@@ -235,6 +235,11 @@ my %clan_H         = (); # hash of clans,   key: model name, value: name of clan
 my %domain_H       = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
 parse_clan_file($clan_file, \%clan_H, \%domain_H);
 
+# parse the model file and make sure that there is a 1:1 correspondence between 
+# models in the models file and models listed in the clans file
+my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
+$width_H{"model"} = parse_model_file($model_file, \%clan_H);
+
 # parse input domains file, if nec
 my $model;
 my %accept_H = ();
@@ -249,7 +254,6 @@ else { # --inaccept not used, all models are acceptable
     $accept_H{$model} = 1;
   }   
 } 
-exit 0;
 
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
@@ -261,10 +265,11 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # sorted properly.
 # parse esl-seqstat file to get lengths
 parse_seqstat_file($seqstat_file, \$max_targetname_length, \%seqlen_H); 
+$width_H{"target"} = $max_targetname_length;
 
 # now that we know the max sequence name length, we can output headers to the output files
-output_long_headers($long_out_FH, $max_targetname_length);
-output_short_headers($short_out_FH, $max_targetname_length);
+output_long_headers($long_out_FH,   \%width_H);
+output_short_headers($short_out_FH, \%width_H);
 ###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
@@ -363,7 +368,7 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, $max_targetname_length, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
@@ -392,6 +397,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # Functions for parsing files:
 # parse_clan_file:          parse the clan input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
+# parse_model_file:         parse the model file 
 # parse_seqstat_file:       parse esl-seqstat -a output file
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
@@ -531,6 +537,66 @@ sub parse_inaccept_file {
 }
 
 #################################################################
+# Subroutine : parse_model_file()
+# Incept:      EPN, Wed Mar  1 14:46:19 2017
+#
+# Purpose:     Parse the model file to get model names and
+#              validate that there is 1:1 correspondence between
+#              model names in the model file and the keys 
+#              from %{$clan_HR}.
+#              
+# Arguments: 
+#   $model_file:  model file to parse
+#   $clan_HR:     ref to hash of clans for each model, ALREADY FILLED
+#                 we use this only for validation
+#
+# Returns:     Maximum length of any model read from the model file.
+# 
+# Dies:        If $model_file does not exist or is empty.
+#
+################################################################# 
+sub parse_model_file { 
+  my $nargs_expected = 2;
+  my $sub_name = "parse_inaccept_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($model_file, $clan_HR) = @_;
+
+  if(! -e $model_file) { die "ERROR model file $model_file does not exist"; }
+  if(! -s $model_file) { die "ERROR model file $model_file exists but is empty"; }
+
+  # make copy of %{$clan_HR} with all values set to '0' 
+  my $model;
+  my @tmp_clan_model_A = ();
+  my %tmp_clan_model_H = ();
+  foreach $model (keys %{$clan_HR}) { 
+    push(@tmp_clan_model_A, $model);
+    $tmp_clan_model_H{$model} = 0; # will set to '1' when we see it in the model file
+  }
+
+  my $model_width = 0;
+  my $name_output = `grep NAME $model_file | awk '{ print \$2 }'`;
+  my @name_A = split("\n", $name_output);
+  foreach $model (@name_A) { 
+    if(! exists $tmp_clan_model_H{$model}) { 
+      die "ERROR read model \"$model\" from model file $model_file that is not listed in the clans file.";
+    }
+    $tmp_clan_model_H{$model} = 1;
+    if(length($model) > $model_width) { 
+      $model_width = length($model);
+    }
+  }
+
+  foreach $model (keys %tmp_clan_model_H) { 
+    if($tmp_clan_model_H{$model} == 0) { 
+      die "ERROR model \"$model\" read from clans file is not in the model file.";
+    }
+  }
+
+  return $model_width;
+}
+
+#################################################################
 # Subroutine : parse_seqstat_file()
 # Incept:      EPN, Wed Dec 14 16:16:22 2016
 #
@@ -598,7 +664,8 @@ sub parse_seqstat_file {
 #                                           "cmsearch-slow",    "cmscan-slow", 
 #                                           "cmsearch-fast",    "cmscan-fast",
 #                                           "nhmmer",           "ssualign")
-#   $max_targetname_length: max length of any target name
+#   $width_HR:        hash, key is "model" or "target", value 
+#                     is width (maximum length) of any target/model
 #   $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
 #   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
@@ -615,7 +682,7 @@ sub parse_sorted_tbl_file {
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $search_method, $max_targetname_length, $seqlen_HR, $clan_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $search_method, $width_HR, $seqlen_HR, $clan_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
@@ -756,7 +823,7 @@ sub parse_sorted_tbl_file {
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $max_targetname_length, $domain_HR, $prv_target, $seqlen_HR,
+      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqlen_HR,
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     }
@@ -836,7 +903,7 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $max_targetname_length, $domain_HR, $prv_target, $seqlen_HR,
+  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqlen_HR,
                             \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                             \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   
@@ -944,7 +1011,8 @@ sub set_vars {
 #   $short_FH:      file handle to output short data to
 #   $opt_HHR:       reference to 2D hash of cmdline options
 #   $have_evalues:  '1' if we have E-values, '0' if not
-#   $target_width:  maximum length of any target name
+#   $width_HR:      hash, key is "model" or "target", value 
+#                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
 #   $seqlen_HR:     hash of target sequence lengths
@@ -971,15 +1039,15 @@ sub output_one_target_wrapper {
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1003,7 +1071,8 @@ sub output_one_target_wrapper {
 #   $do_short:      TRUE to output in 'short' concise mode, else do long mode
 #   $opt_HHR:       reference to 2D hash of cmdline options
 #   $have_evalues:  '1' if we have E-values, '0' if not
-#   $target_width:  maximum length of any target name
+#   $width_HR:      hash, key is "model" or "target", value 
+#                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
 #   $seqlen:        length of target sequence
@@ -1030,7 +1099,7 @@ sub output_one_target {
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $have_evalues, $target_width, $domain_HR, $target, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1108,11 +1177,11 @@ sub output_one_target {
 
   if($do_short) { 
     printf $FH ("%-*s  %-20s  %s\n", 
-                $target_width, $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
+                $width_HR->{"target"}, $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
   }
   else { 
     printf $FH ("%-*s  %4s  %10d  %3d  %3s  %-15s  %-22s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
-                $target_width, $target, $pass_fail, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
+                $width_HR->{"target"}, $target, $pass_fail, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
                 $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
                 $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
     
@@ -1170,8 +1239,9 @@ sub output_short_headers {
 # Purpose:     Output column headers to the long output file.
 #              
 # Arguments: 
-#   $FH:            file handle to output to
-#   $target_width:  maximum length of any target name
+#   $FH:        file handle to output to
+#   $width_HR:  hash, key is "model" or "target", value 
+#               is width (maximum length) of any target/model
 #
 # Returns:     Nothing.
 # 
@@ -1183,20 +1253,20 @@ sub output_long_headers {
   my $sub_name = "output_short_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $target_width) = (@_);
+  my ($FH, $width_HR) = (@_);
 
   printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-80s  %10s  %-46s  %s\n", 
-              $target_width, "#", "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
+              $width_HR->{"target"}, "#", "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
               "model", "evalue", "score", "extra");
   printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %78s  %10s  %46s  %s\n", 
-              $target_width, "#", "", "", "", "", "", "--------------------------------------------------------------------------------", 
+              $width_HR->{"target"}, "#", "", "", "", "", "", "--------------------------------------------------------------------------------", 
               "", "----------------------------------------------", "");
 
   printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
-              $target_width, "#target", "p/f", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
+              $width_HR->{"target"}, "#target", "p/f", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
               "model", "evalue", "score", "extra");
   printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
-              $target_width, "#-----------------------------", "----", "----------", "---", "---", "---------------", "----------------------", "----------", "----------", "-", 
+              $width_HR->{"target"}, "#-----------------------------", "----", "----------", "---", "---", "---------------", "----------------------", "----------", "----------", "-", 
               "-----", "----------", "----------", "----------", "----------------------", "----------", "----------", "-----");
 
   return;
@@ -1550,4 +1620,42 @@ sub debug_print {
   }
 
   return;
+}
+
+#################################################################
+# Subroutine: get_monocharacter_string()
+# Incept:     EPN, Thu Mar 10 21:02:35 2016 [dnaorg.pm]
+#
+# Purpose:    Return a string of length $len of repeated instances
+#             of the character $char.
+#
+# Arguments:
+#   $len:   desired length of the string to return
+#   $char:  desired character
+#
+# Returns:  A string of $char repeated $len times.
+# 
+# Dies:     if $len is not a positive integer
+#
+#################################################################
+sub get_monocharacter_string {
+  my $sub_name = "get_monocharacter_string";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($len, $char) = @_;
+
+  if(! verify_integer($len)) { 
+    die "ERROR in $sub_name, passed in length ($len) is not a non-negative integer";
+  }
+  if($len < 0) { 
+    die "ERROR in $sub_name, passed in length ($len) is a negative integer";
+  }
+    
+  my $ret_str = "";
+  for(my $i = 0; $i < $len; $i++) { 
+    $ret_str .= $char;
+  }
+
+  return $ret_str;
 }
