@@ -43,9 +43,8 @@ $opt_group_desc_H{"1"} = "basic options";
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-d",           "real",    "50.",                    1,    undef, undef,      "set minimum acceptable score difference to <x>", "set minimum acceptable bit score difference between best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"2"} = "options for control search algorithm";
+$opt_group_desc_H{"2"} = "options for controlling the search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output             help-output    
 opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--fast,--slow",      "annotate with nhmmer",     "using nhmmer for annotation", \%opt_HH, \@opt_order_A);
 opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",   "using cmscan for annotation", \%opt_HH, \@opt_order_A);
@@ -53,13 +52,19 @@ opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nh
 opt_Add("--fast",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in fast mode",         "run in fast mode, sacrificing accuracy of boundaries", \%opt_HH, \@opt_order_A);
 opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--fast",             "run in slow mode",         "run in slow mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "optional input files";
-#       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   3,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"3"} = "options for controlling the score difference failure threshold";
+#     option                 type   default                group   requires incompat    preamble-output                                          help-output    
+opt_Add("--posdiff",       "real",   "0.05",                  3,  undef,   undef,      "use min acceptable per-posn score difference of <x>", "use minimum acceptable bit per posn score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",       "real",   "50.",                   3,  undef,   undef,      "use min acceptable total score difference of <x>",    "use minimum acceptable bit total score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "advanced options";
-#       option               type   default                group  requires incompat  preamble-output             help-output    
-opt_Add("--skipsearch",   "boolean", 0,                       4,  undef,   "-f",     "skip search stage",        "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"4"} = "optional input files";
+#       option               type   default                group  requires incompat  preamble-output                     help-output    
+opt_Add("--inaccept",     "string",  undef,                   4,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"5"} = "advanced options";
+#       option               type   default                group  requires incompat             preamble-output                     help-output    
+opt_Add("--evalues",      "boolean", 0,                       5,  undef,   "--fast,--ssualign", "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       5,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -70,16 +75,19 @@ my $options_okay =
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
                 'v'            => \$GetOptions_H{"-v"},
-                'd=s'          => \$GetOptions_H{"-d"},
 # algorithm options
                 'nhmmer'       => \$GetOptions_H{"--nhmmer"},
                 'cmscan'       => \$GetOptions_H{"--cmscan"},
                 'ssualign'     => \$GetOptions_H{"--ssualign"},
                 'fast'         => \$GetOptions_H{"--fast"},
                 'slow'         => \$GetOptions_H{"--slow"},
+# options controlling the score difference failure threshold
+                'posdiff=s'    => \$GetOptions_H{"--posdiff"},
+                'absdiff=s'    => \$GetOptions_H{"--absdiff"},
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
+                'evalues'      => \$GetOptions_H{"--evalues"},
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"});
 
 my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
@@ -293,8 +301,8 @@ $width_H{"index"}  = length($nseq);
 if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
 
 # now that we know the max sequence name length, we can output headers to the output files
-output_long_headers($srt_long_out_FH,     \%width_H);
-output_short_headers($srt_short_out_FH,   \%width_H);
+output_long_headers($srt_long_out_FH,     \%opt_HH, \%width_H);
+output_short_headers($srt_short_out_FH,             \%width_H);
 ###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
@@ -393,7 +401,7 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqidx_H, \%seqlen_H, 
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
                       \%family_H, \%domain_H, \%accept_H, $unsrt_long_out_FH, $unsrt_short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
@@ -439,7 +447,7 @@ close($srt_long_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
-printf("# Long (15 column) output saved to file $srt_long_out_file.\n");
+printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 15 : 13));
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
@@ -734,6 +742,7 @@ sub parse_seqstat_file {
 #                                           "cmsearch-slow",    "cmscan-slow", 
 #                                           "cmsearch-fast",    "cmscan-fast",
 #                                           "nhmmer",           "ssualign")
+#   $opt_HHR:         ref to 2D options hash of cmdline option values
 #   $width_HR:        hash, key is "model" or "target", value 
 #                     is width (maximum length) of any target/model
 #   $seqidx_HR:       ref to hash of sequence indices, key is sequence name, value is index
@@ -750,11 +759,11 @@ sub parse_seqstat_file {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 10;
+  my $nargs_expected = 11;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $search_method, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $search_method, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
@@ -798,9 +807,7 @@ sub parse_sorted_tbl_file {
   my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue);
   my $better_than_one; # set to true for each hit if it is better than our current 'one' hit
   my $better_than_two; # set to true for each hit if it is better than our current 'two' hit
-  my $have_evalues = (($search_method eq "cmsearch-hmmonly") || ($search_method eq "cmscan-hmmonly") ||
-                      ($search_method eq "cmsearch-slow")    || ($search_method eq "cmscan-slow")    ||
-                      ($search_method eq "nhmmer")) ? 1 : 0;
+  my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
   while(my $line = <IN>) { 
     ######################################################
@@ -895,7 +902,7 @@ sub parse_sorted_tbl_file {
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $accept_HR, 
+      output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                                 $prv_target, $seqidx_HR, $seqlen_HR, 
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
@@ -910,7 +917,7 @@ sub parse_sorted_tbl_file {
       $better_than_one = 1; # no current, 'one' this will be it
     }
     else { 
-      if($have_evalues) { 
+      if($use_evalues) { 
         if(($evalue < $one_evalue_H{$family}) || # this E-value is better than (less than) our current 'one' E-value
            ($evalue eq $one_evalue_H{$family} && $score > $one_score_H{$family})) { # this E-value equals current 'one' E-value, 
           # but this score is better than current 'one' score
@@ -929,7 +936,7 @@ sub parse_sorted_tbl_file {
         $better_than_two = 1;
       }
       else { 
-        if($have_evalues) { 
+        if($use_evalues) { 
           if(($evalue < $two_evalue_H{$family}) || # this E-value is better than (less than) our current 'two' E-value
              ($evalue eq $two_evalue_H{$family} && $score > $two_score_H{$family})) { # this E-value equals current 'two' E-value, 
             # but this score is better than current 'two' score
@@ -976,7 +983,7 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $accept_HR, 
+  output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                             $prv_target, $seqidx_HR, $seqlen_HR, 
                             \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                             \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
@@ -1084,7 +1091,7 @@ sub set_vars {
 #   $long_FH:       file handle to output long data to
 #   $short_FH:      file handle to output short data to
 #   $opt_HHR:       reference to 2D hash of cmdline options
-#   $have_evalues:  '1' if we have E-values, '0' if not
+#   $use_evalues:  '1' if we have E-values, '0' if not
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
@@ -1117,16 +1124,16 @@ sub output_one_target_wrapper {
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
       $target, $seqidx_HR, $seqlen_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1187,7 +1194,7 @@ sub output_one_hitless_target_wrapper {
 #   $FH:            file handle to output to
 #   $do_short:      TRUE to output in 'short' concise mode, else do long mode
 #   $opt_HHR:       reference to 2D hash of cmdline options
-#   $have_evalues:  '1' if we have E-values, '0' if not
+#   $use_evalues:  '1' if we have E-values, '0' if not
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
@@ -1220,11 +1227,9 @@ sub output_one_target {
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx, $seqlen, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
-
-  my $diff_thresh = opt_Get("-d", $opt_HHR);
 
   # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
@@ -1237,7 +1242,7 @@ sub output_one_target {
     if(! defined $wfamily) { 
       $better_than_winning = 1; 
     }
-    elsif($have_evalues) { 
+    elsif($use_evalues) { 
       if(($one_evalue_HR->{$family} < $one_evalue_HR->{$wfamily}) || # this E-value is better than (less than) our current winning E-value
          ($one_evalue_HR->{$family} eq $one_evalue_HR->{$wfamily} && $one_score_HR->{$family} > $one_score_HR->{$wfamily})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
         $better_than_winning = 1;
@@ -1262,7 +1267,7 @@ sub output_one_target {
     if($family ne $wfamily) { 
       if(exists($one_model_HR->{$family})) { 
         if($extra_string ne "") { $extra_string .= ","; }
-        if($have_evalues) { 
+        if($use_evalues) { 
           $extra_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
                                    $family, $one_model_HR->{$family}, $one_evalue_HR->{$family}, $one_score_HR->{$family}, 
                                    $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
@@ -1278,19 +1283,37 @@ sub output_one_target {
     }
   }
   my $coverage = (abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1) / $seqlen;
-  my $one_evalue2print = ($have_evalues) ? sprintf("%10g", $one_evalue_HR->{$wfamily}) : "-";
+  my $one_evalue2print = ($use_evalues) ? sprintf("%8g  ", $one_evalue_HR->{$wfamily}) : "";
   my $two_evalue2print = undef;
   if(defined $two_model_HR->{$wfamily}) { 
-    $two_evalue2print = ($have_evalues) ? sprintf("%10g", $two_evalue_HR->{$wfamily}) : "-";
+    $two_evalue2print = ($use_evalues) ? sprintf("%8g  ", $two_evalue_HR->{$wfamily}) : "";
   }
   
-  my $score_diff = (exists $two_score_HR->{$wfamily}) ? ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}) : $one_score_HR->{$wfamily};
+  # if we have a second-best model, determine score difference between best and second-best model
+  my $score_diff  = undef;
+  my $diff_thresh = undef;
+  my $diff_str    = undef;
+  if(exists $two_score_HR->{$wfamily}) { 
+    $score_diff = ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily});
+    # determine score difference threshold
+    if(opt_IsUsed("--absdiff", $opt_HHR)) { 
+      # absolute score difference, regardless of length of hit
+      $diff_thresh = opt_Get("--absdiff", $opt_HHR); 
+      $diff_str    = $diff_thresh . "_total_bits";
+    }
+    else { 
+      # default: per position score difference, dependent on length of hit
+      $diff_thresh = opt_Get("--posdiff", $opt_HHR) * abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1;
+      $diff_str    = $diff_thresh . "_bits_per_posn";
+    }
+  }
+
   # does the sequence pass or fail? 
   # FAILs if: 
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
   # - winning hit is to unacceptable model
   # - on negative strand
-  # - score difference between top two models exceeds $diff_thresh AND top two models are different domains 
+  # - score difference between top two models is below $diff_thresh AND top two models are different domains 
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
   my $pass_fail = "PASS";
   my $reason_for_failure = "";
@@ -1304,13 +1327,12 @@ sub output_one_target {
     if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
     $reason_for_failure .= "opposite_strand"
   }
-  if(defined $two_model_HR->{$wfamily}) { 
-    if(($score_diff <= $diff_thresh) && 
-       ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
-      $pass_fail = "FAIL";
-      if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
-      $reason_for_failure .= "score_difference_between_top_two_models_below_threshold($score_diff)";
-    }
+  if((defined $score_diff)        && 
+     ($score_diff < $diff_thresh) && 
+     ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
+    $pass_fail = "FAIL";
+    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
+    $reason_for_failure .= "score_difference_between_top_two_models_below_threshold($score_diff<$diff_str)";
   }
   if($nhits > 1) { 
     $pass_fail = "FAIL";
@@ -1327,7 +1349,7 @@ sub output_one_target {
                 $one_strand_HR->{$wfamily}, $pass_fail, $reason_for_failure);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %8s  %s  %5.3f  %*d  %*d  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %s%s  %5.3f  %*d  %*d  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1344,17 +1366,18 @@ sub output_one_target {
                 $width_HR->{"length"}, $one_stop_HR->{$wfamily});
     
     if(defined $two_model_HR->{$wfamily}) { 
-      printf $FH ("%6.1f  %-*s  %6.1f  %8s  ", 
+      printf $FH ("%6.1f  %-*s  %6.1f  %s", 
                   $one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}, 
                   $width_HR->{"model"}, $two_model_HR->{$wfamily}, 
                   $two_score_HR->{$wfamily},
                   $two_evalue2print);
     }
     else { 
-      printf $FH ("%6s  %-*s  %6s  %8s  ", 
+      printf $FH ("%6s  %-*s  %6s  %s", 
                   "-" , 
                   $width_HR->{"model"}, "-", 
-                  "-", "-");
+                  "-", 
+                  ($use_evalues) ? "       -  " : "");
     }
     
     if($extra_string eq "") { 
@@ -1401,6 +1424,8 @@ sub output_one_hitless_target {
   my $reason_for_failure = "no_hits";
   my $nhits = 0;
 
+  my $use_evalues = opt_Get("--evalues", $opt_HHR);
+
   if($do_short) { 
     printf $FH ("%-*s  %-*s  %-*s  %3s  %s  %s\n", 
                 $width_HR->{"index"}, $seqidx,
@@ -1409,7 +1434,7 @@ sub output_one_hitless_target {
                 "?", $pass_fail, $reason_for_failure);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %s%s  %5s  %*s  %*s  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1419,15 +1444,16 @@ sub output_one_hitless_target {
                 $width_HR->{"domain"}, "-", 
                 $width_HR->{"model"}, "-", 
                 "-", 
-                "-", 
+                ($use_evalues) ? "       -  " : "",
                 "?",
                 "-", 
                 $width_HR->{"length"}, "-", 
                 $width_HR->{"length"}, "-");
-    printf $FH ("%6s  %-*s  %6s  %8s  %s", 
+    printf $FH ("%6s  %-*s  %6s  %s%s", 
                 "-" , 
                 $width_HR->{"model"}, "-", 
-                "-", "-", "-");
+                "-", 
+                ($use_evalues) ? "       -  " : "", "-");
     
   }
   return;
@@ -1481,7 +1507,8 @@ sub output_short_headers {
 #              
 # Arguments: 
 #   $FH:        file handle to output to
-#   $width_HR:  hash, key is "model" or "target", value 
+#   $opt_HHR:   ref to 2D options hash
+#   $width_HR:  ref to hash, key is "model" or "target", value 
 #               is width (maximum length) of any target/model
 #
 # Returns:     Nothing.
@@ -1490,11 +1517,11 @@ sub output_short_headers {
 #
 ################################################################# 
 sub output_long_headers { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_long_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $width_HR) = (@_);
+  my ($FH, $opt_HHR, $width_HR) = (@_);
 
   my $index_dash_str   = "#" . get_monocharacter_string($width_HR->{"index"}-1, "-");
   my $target_dash_str  = get_monocharacter_string($width_HR->{"target"}, "-");
@@ -1503,8 +1530,15 @@ sub output_long_headers {
   my $domain_dash_str  = get_monocharacter_string($width_HR->{"domain"}, "-");
   my $length_dash_str  = get_monocharacter_string($width_HR->{"length"}, "-");
 
-  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 8 + 2 + 1 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
-  my $second_model_group_width = $width_HR->{"model"} + 2 + 6 + 2 + 8;
+  my $use_evalues = opt_Get("--evalues", $opt_HHR);
+
+  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 1 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
+  my $second_model_group_width = $width_HR->{"model"} + 2 + 6 ;
+  if($use_evalues) { 
+    $best_model_group_width   += 2 + 8;
+    $second_model_group_width += 2 + 8;
+  }
+
   if(length("best-scoring model")        > $best_model_group_width)   { $best_model_group_width   = length("best-scoring model"); }
   if(length("second-best-scoring model") > $second_model_group_width) { $second_model_group_width = length("second-best-scoring model"); } 
 
@@ -1538,7 +1572,7 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  %6s  %-*s  %6s  %8s %s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -1548,7 +1582,7 @@ sub output_long_headers {
               $width_HR->{"domain"}, "domain", 
               $width_HR->{"model"},  "model", 
               "score", 
-              "evalue", 
+              ($use_evalues) ? "  evalue  " : "", 
               "s",
               "cov",
               $width_HR->{"length"}, "start",
@@ -1556,10 +1590,11 @@ sub output_long_headers {
               "scdiff",
               $width_HR->{"model"},  "model", 
               "score", 
-              "evalue", 
+              ($use_evalues) ? "  evalue  " : "", 
               "extra");
+
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  %6s  %-*s  %6s  %8s %s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -1569,7 +1604,7 @@ sub output_long_headers {
               $width_HR->{"domain"}, $domain_dash_str, 
               $width_HR->{"model"},  $model_dash_str,
               "------", 
-              "--------", 
+              ($use_evalues) ? "--------  " : "",
               "-",
               "-----",
               $width_HR->{"length"}, $length_dash_str,
@@ -1577,7 +1612,7 @@ sub output_long_headers {
               "------", 
               $width_HR->{"model"},  $model_dash_str, 
               "------", 
-              "--------", 
+              ($use_evalues) ? "--------  " : "",
               "-----");
   return;
 }
