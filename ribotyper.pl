@@ -393,18 +393,30 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqidx_H, \%seqlen_H, \%family_H, \%domain_H, $unsrt_long_out_FH, $unsrt_short_out_FH);
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqidx_H, \%seqlen_H, 
+                      \%family_H, \%domain_H, \%accept_H, $unsrt_long_out_FH, $unsrt_short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 #######################################################
-# Step 5: Sort the output files based on sequence index
+# Step 5: Add data for sequences with 0 hits and then sort the output files 
+#         based on sequence index
 #         from original input file
 ###########################################################################
-# first close the unsorted file handles (we're done with these) 
+$start_secs = output_progress_prior("Sorting and finalizing output files", $progress_w, undef, *STDOUT);
+
+# for any sequence that has 0 hits (we'll know these as those that 
+# do not have a value of -1 in $seqlen_HR->{$target} at this stage
+my $target;
+foreach $target (keys %seqlen_H) { 
+  if($seqlen_H{$target} ne "-1") { 
+    output_one_hitless_target_wrapper($unsrt_long_out_FH, $unsrt_short_out_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H);
+  }
+}
+
+# now close the unsorted file handles (we're done with these) 
 # and also the sorted file handles (so we can output directly to them using system())
 # Remember, we already output the headers to these files above
-$start_secs = output_progress_prior("Sorting and finalizing output files", $progress_w, undef, *STDOUT);
 close($unsrt_long_out_FH);
 close($unsrt_short_out_FH);
 close($srt_long_out_FH);
@@ -728,6 +740,7 @@ sub parse_seqstat_file {
 #   $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
+#   $accept_HR:       ref to hash of acceptable models, key is model name, value is '1' if acceptable
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
 #
@@ -737,11 +750,11 @@ sub parse_seqstat_file {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 9;
+  my $nargs_expected = 10;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $search_method, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $search_method, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
@@ -882,7 +895,8 @@ sub parse_sorted_tbl_file {
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
+      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $accept_HR, 
+                                $prv_target, $seqidx_HR, $seqlen_HR, 
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     }
@@ -962,7 +976,8 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
+  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $accept_HR, 
+                            $prv_target, $seqidx_HR, $seqlen_HR, 
                             \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                             \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   
@@ -1073,6 +1088,9 @@ sub set_vars {
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
+#   $accept_HR:     reference to the 'accept' hash, key is "model"
+#                   value is '1' if hits to model are "PASS"es '0'
+#                   if they are "FAIL"s
 #   $target:        target name
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
@@ -1095,19 +1113,20 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 21;
+  my $nargs_expected = 22;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx_HR, $seqlen_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, 
+      $target, $seqidx_HR, $seqlen_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1115,6 +1134,44 @@ sub output_one_target_wrapper {
   init_vars($one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   init_vars($two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   $seqlen_HR->{$target} = -1; # serves as a flag that we output info for this sequence
+  
+  return;
+}
+
+#################################################################
+# Subroutine : output_one_hitless_target_wrapper()
+# Incept:      EPN, Thu Mar  2 11:35:28 2017
+#
+# Purpose:     Call function to output information for a target
+#              with zero hits.
+#              
+# Arguments: 
+#   $long_FH:       file handle to output long data to
+#   $short_FH:      file handle to output short data to
+#   $opt_HHR:       reference to 2D hash of cmdline options
+#   $width_HR:      hash, key is "model" or "target", value 
+#                   is width (maximum length) of any target/model
+#   $target:        target name
+#   $seqidx_HR:     hash of target sequence indices
+#   $seqlen_HR:     hash of target sequence lengths
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_one_hitless_target_wrapper { 
+  my $nargs_expected = 7;
+  my $sub_name = "output_one_hitless_target_wrapper";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR) = @_;
+
+  # output to short and long output files
+  output_one_hitless_target($long_FH,  0, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}); 
+  output_one_hitless_target($short_FH, 1, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}); 
+
+  #$seqlen_HR->{$target} = -1; # serves as a flag that we output info for this sequence
   
   return;
 }
@@ -1134,6 +1191,9 @@ sub output_one_target_wrapper {
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
+#   $accept_HR:     reference to the 'accept' hash, key is "model"
+#                   value is '1' if hits to model are "PASS"es '0'
+#                   if they are "FAIL"s
 #   $target:        target name
 #   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
@@ -1156,11 +1216,11 @@ sub output_one_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 21;
+  my $nargs_expected = 22;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx, $seqlen, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1224,6 +1284,7 @@ sub output_one_target {
   my $score_diff = (exists $two_score_HR->{$wfamily}) ? ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}) : $one_score_HR->{$wfamily};
   # does the sequence pass or fail? 
   # FAILs if: 
+  # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
   # - winning hit is to unacceptable model
   # - on negative strand
   # - score difference between top two models exceeds $diff_thresh AND top two models are different domains 
@@ -1240,7 +1301,7 @@ sub output_one_target {
   if($nhits > 1) { $pass_fail = "FAIL"; }
 
   if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %s\n", 
+    printf $FH ("%-*s  %-*s  %-*s  %s  %s\n", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
@@ -1272,7 +1333,9 @@ sub output_one_target {
     }
     else { 
       printf $FH ("%6s  %-*s  %6s  %8s  ", 
-             "-" , "-", "-", "-");
+                  "-" , 
+                  $width_HR->{"model"}, "-", 
+                  "-", "-");
     }
     
     if($extra_string eq "") { 
@@ -1282,6 +1345,72 @@ sub output_one_target {
     print $FH ("$extra_string\n");
   }
 
+  return;
+}
+
+#################################################################
+# Subroutine : output_one_hitless_target()
+# Incept:      EPN, Thu Mar  2 11:37:13 2017
+#
+# Purpose:     Output information for current sequence with zero
+#              hits in either long or short mode. Short mode if 
+#              $do_short is true.
+#              
+# Arguments: 
+#   $FH:            file handle to output to
+#   $do_short:      TRUE to output in 'short' concise mode, else do long mode
+#   $opt_HHR:       reference to 2D hash of cmdline options
+#   $width_HR:      hash, key is "model" or "target", value 
+#                   is width (maximum length) of any target/model
+#   $target:        target name
+#   $seqidx:        index of target sequence
+#   $seqlen:        length of target sequence
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_one_hitless_target { 
+  my $nargs_expected = 7;
+  my $sub_name = "output_one_hitless_target";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH, $do_short, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
+
+  my $pass_fail = "FAIL";
+  my $reason_for_failure = "no hits to any models";
+  my $nhits = 0;
+
+  if($do_short) { 
+    printf $FH ("%-*s  %-*s  %-*s  %s  %s\n", 
+                $width_HR->{"index"}, $seqidx,
+                $width_HR->{"target"}, $target, 
+                $width_HR->{"classification"}, "-",
+                $pass_fail, $reason_for_failure);
+  }
+  else { 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  ", 
+                $width_HR->{"index"}, $seqidx,
+                $width_HR->{"target"}, $target, 
+                $pass_fail, 
+                $width_HR->{"length"}, $seqlen, 
+                $nhits,
+                $width_HR->{"family"}, "-",
+                $width_HR->{"domain"}, "-", 
+                $width_HR->{"model"}, "-", 
+                "-", 
+                "-", 
+                "?",
+                "-", 
+                $width_HR->{"length"}, "-", 
+                $width_HR->{"length"}, "-");
+    printf $FH ("%6s  %-*s  %6s  %8s  %s", 
+                "-" , 
+                $width_HR->{"model"}, "-", 
+                "-", "-", "-");
+    
+  }
   return;
 }
 
