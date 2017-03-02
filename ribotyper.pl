@@ -19,15 +19,15 @@ my $esl_exec_dir      = "/usr/local/infernal/1.1.2/bin/";
 #         2D key: string denoting type of information 
 #                 (one of "type", "default", "group", "requires", "incompatible", "preamble", "help")
 #         value:  string explaining 2D key:
-#                 "type":          "boolean", "string", "integer" or "real"
-#                 "default":       default value for option
-#                 "group":         integer denoting group number this option belongs to
-#                 "requires":      string of 0 or more other options this option requires to work, each separated by a ','
-#                 "incompatiable": string of 0 or more other options this option is incompatible with, each separated by a ','
-#                 "preamble":      string describing option for preamble section (beginning of output from script)
-#                 "help":          string describing option for help section (printed if -h used)
-#                 "setby":         '1' if option set by user, else 'undef'
-#                 "value":         value for option, can be undef if default is undef
+#                 "type":         "boolean", "string", "integer" or "real"
+#                 "default":      default value for option
+#                 "group":        integer denoting group number this option belongs to
+#                 "requires":     string of 0 or more other options this option requires to work, each separated by a ','
+#                 "incompatible": string of 0 or more other options this option is incompatible with, each separated by a ','
+#                 "preamble":     string describing option for preamble section (beginning of output from script)
+#                 "help":         string describing option for help section (printed if -h used)
+#                 "setby":        '1' if option set by user, else 'undef'
+#                 "value":        value for option, can be undef if default is undef
 #
 # opt_order_A: array of options in the order they should be processed
 # 
@@ -63,7 +63,7 @@ opt_Add("--skipsearch",   "boolean", 0,                       4,  undef,   "-f",
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribotyper.pl [-options] <fasta file to annotate> <model file> <clan/domain info file> <output directory>\n";
+my $usage    = "Usage: ribotyper.pl [-options] <fasta file to annotate> <model file> <fam/domain info file> <output directory>\n";
 $usage      .= "\n";
 my $synopsis = "ribotyper.pl :: detect and classify ribosomal RNA sequences";
 my $options_okay = 
@@ -107,7 +107,7 @@ if(scalar(@ARGV) != 4) {
   print "\nTo see more help on available options, do dnaorg_annotate.pl -h\n\n";
   exit(1);
 }
-my ($seq_file, $model_file, $clan_file, $dir_out) = (@ARGV);
+my ($seq_file, $model_file, $model_info_file, $dir_out) = (@ARGV);
 
 # set options in opt_HH
 opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
@@ -117,7 +117,6 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
 my $cmd;                       # a command to be run by run_command()
 my $ncpu = 0;                  # number of CPUs to use with search command
-my $max_targetname_length = 0; # maximum length of any target name
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -167,8 +166,8 @@ push(@arg_A, $seq_file);
 push(@arg_desc_A, "query model input file");
 push(@arg_A, $model_file);
 
-push(@arg_desc_A, "clan information input file");
-push(@arg_A, $clan_file);
+push(@arg_desc_A, "model information input file");
+push(@arg_A, $model_info_file);
 
 push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
@@ -229,19 +228,32 @@ validate_executable_hash(\%execs_H);
 my $progress_w = 74; # the width of the left hand column in our progress output, hard-coded
 my $start_secs = output_progress_prior("Parsing and validating input files and determining target sequence lengths", $progress_w, undef, *STDOUT);
 ###########################################################################
-# parse clan file
-# variables related to clans and domains
-my %clan_H         = (); # hash of clans,   key: model name, value: name of clan model belongs to (e.g. SSU)
-my %domain_H       = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
-parse_clan_file($clan_file, \%clan_H, \%domain_H);
+# parse fam file
+# variables related to fams and domains
+my %family_H = (); # hash of fams,   key: model name, value: name of family model belongs to (e.g. SSU)
+my %domain_H = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
+parse_model_info_file($model_info_file, \%family_H, \%domain_H);
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
-# models in the models file and models listed in the clans file
+# models in the models file and models listed in the model info file
 my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
-$width_H{"model"} = parse_model_file($model_file, \%clan_H);
+$width_H{"model"} = parse_model_file($model_file, \%family_H);
 
-# parse input domains file, if nec
+# determine max width of domain, family, and classification (formed as family.domain)
+$width_H{"domain"}         = length("domain");
+$width_H{"family"}         = length("fam");
+$width_H{"classification"} = length("classification");
 my $model;
+foreach $model (keys %domain_H) { 
+  my $domain_len = length($domain_H{$model});
+  my $family_len = length($family_H{$model});
+  my $class_len  = $domain_len + $family_len + 1; # +1 is for the '.' separator
+  if($domain_len > $width_H{"domain"})         { $width_H{"domain"}         = $domain_len; }
+  if($family_len > $width_H{"family"})         { $width_H{"family"}         = $family_len; } 
+  if($class_len  > $width_H{"classification"}) { $width_H{"classification"} = $class_len;  }
+}
+
+# parse input accept file, if nec
 my %accept_H = ();
 if(opt_IsUsed("--inaccept", \%opt_HH)) { 
   foreach $model (keys %domain_H) { 
@@ -258,14 +270,21 @@ else { # --inaccept not used, all models are acceptable
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
 run_command("esl-seqstat -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value set to -1 after we output info for this sequence
                    # and then serves as flag for: "we output this sequence 
                    # already, if we see it again we know the tbl file was not
                    # sorted properly.
 # parse esl-seqstat file to get lengths
-parse_seqstat_file($seqstat_file, \$max_targetname_length, \%seqlen_H); 
+my $max_targetname_length = length("target"); # maximum length of any target name
+my $max_length_length     = length("length"); # maximum length of the string-ized length of any target
+my $nseq                  = 0; # number of sequences read
+parse_seqstat_file($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, \%seqidx_H, \%seqlen_H); 
 $width_H{"target"} = $max_targetname_length;
+$width_H{"length"} = $max_length_length;
+$width_H{"index"}  = length($nseq);
+if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
 
 # now that we know the max sequence name length, we can output headers to the output files
 output_long_headers($long_out_FH,   \%width_H);
@@ -368,7 +387,7 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqlen_H, \%clan_H, \%domain_H, $long_out_FH, $short_out_FH);
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqidx_H, \%seqlen_H, \%family_H, \%domain_H, $long_out_FH, $short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
@@ -395,7 +414,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # List of subroutines:
 #
 # Functions for parsing files:
-# parse_clan_file:          parse the clan input file
+# parse_model_info_file:    parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
 # parse_seqstat_file:       parse esl-seqstat -a output file
@@ -423,55 +442,55 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 
 #################################################################
-# Subroutine : parse_clan_file()
+# Subroutine : parse_model_info_file()
 # Incept:      EPN, Mon Dec 19 10:01:32 2016
 #
-# Purpose:     Parse a clan input file.
+# Purpose:     Parse a model info input file.
 #              
 # Arguments: 
-#   $clan_file:       file to parse
-#   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
+#   $model_info_file: file to parse
+#   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #
-# Returns:     Nothing. Fills %{$clan_H}, %{$domain_HR}
+# Returns:     Nothing. Fills %{$family_H}, %{$domain_HR}
 # 
 # Dies:        Never.
 #
 ################################################################# 
-sub parse_clan_file { 
+sub parse_model_info_file { 
   my $nargs_expected = 3;
-  my $sub_name = "parse_clan_file";
+  my $sub_name = "parse_model_info_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($clan_file, $clan_HR, $domain_HR) = @_;
+  my ($model_info_file, $family_HR, $domain_HR) = @_;
 
-  open(IN, $clan_file) || die "ERROR unable to open clan info file $clan_file for reading";
+  open(IN, $model_info_file) || die "ERROR unable to open model info file $model_file for reading";
 
 # example line:
 # SSU_rRNA_archaea SSU Archaea
 
-  my %clan_exists_H   = ();
+  my %family_exists_H = ();
   my %domain_exists_H = ();
 
-  open(IN, $clan_file) || die "ERROR unable to open $clan_file for reading"; 
+  open(IN, $model_info_file) || die "ERROR unable to open $model_info_file for reading"; 
   while(my $line = <IN>) { 
     chomp $line;
     my @el_A = split(/\s+/, $line);
     if(scalar(@el_A) != 3) { 
-      die "ERROR didn't read 3 tokens in clan input file $clan_file, line $line"; 
+      die "ERROR didn't read 3 tokens in model info input file $model_info_file, line $line"; 
     }
-    my($model, $clan, $domain) = (@el_A);
+    my($model, $family, $domain) = (@el_A);
 
-    if(! exists $clan_exists_H{$clan}) { 
-      $clan_exists_H{$clan} = 1;
+    if(! exists $family_exists_H{$family}) { 
+      $family_exists_H{$family} = 1;
     }
     if(! exists $domain_exists_H{$domain}) { 
       $domain_exists_H{$domain} = 1;
     }
-    if(exists $clan_HR->{$model}) { 
-      die "ERROR read model $model twice in $clan_file"; 
+    if(exists $family_HR->{$model}) { 
+      die "ERROR read model $model twice in $model_info_file"; 
     }
-    $clan_HR->{$model}   = $clan;
+    $family_HR->{$model} = $family;
     $domain_HR->{$model} = $domain;
   }
   close(IN);
@@ -502,7 +521,7 @@ sub parse_inaccept_file {
 
   my ($inaccept_file, $accept_HR) = @_;
 
-  open(IN, $inaccept_file) || die "ERROR unable to open clan info file $clan_file for reading";
+  open(IN, $inaccept_file) || die "ERROR unable to open input accept file $inaccept_file for reading";
 
 # example line (one token per line)
 # SSU_rRNA_archaea
@@ -543,11 +562,11 @@ sub parse_inaccept_file {
 # Purpose:     Parse the model file to get model names and
 #              validate that there is 1:1 correspondence between
 #              model names in the model file and the keys 
-#              from %{$clan_HR}.
+#              from %{$family_HR}.
 #              
 # Arguments: 
 #   $model_file:  model file to parse
-#   $clan_HR:     ref to hash of clans for each model, ALREADY FILLED
+#   $family_HR:   ref to hash of families for each model, ALREADY FILLED
 #                 we use this only for validation
 #
 # Returns:     Maximum length of any model read from the model file.
@@ -560,36 +579,36 @@ sub parse_model_file {
   my $sub_name = "parse_inaccept_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($model_file, $clan_HR) = @_;
+  my ($model_file, $family_HR) = @_;
 
   if(! -e $model_file) { die "ERROR model file $model_file does not exist"; }
   if(! -s $model_file) { die "ERROR model file $model_file exists but is empty"; }
 
-  # make copy of %{$clan_HR} with all values set to '0' 
+  # make copy of %{$family_HR} with all values set to '0' 
   my $model;
-  my @tmp_clan_model_A = ();
-  my %tmp_clan_model_H = ();
-  foreach $model (keys %{$clan_HR}) { 
-    push(@tmp_clan_model_A, $model);
-    $tmp_clan_model_H{$model} = 0; # will set to '1' when we see it in the model file
+  my @tmp_family_model_A = ();
+  my %tmp_family_model_H = ();
+  foreach $model (keys %{$family_HR}) { 
+    push(@tmp_family_model_A, $model);
+    $tmp_family_model_H{$model} = 0; # will set to '1' when we see it in the model file
   }
 
-  my $model_width = 0;
+  my $model_width = length("model");
   my $name_output = `grep NAME $model_file | awk '{ print \$2 }'`;
   my @name_A = split("\n", $name_output);
   foreach $model (@name_A) { 
-    if(! exists $tmp_clan_model_H{$model}) { 
-      die "ERROR read model \"$model\" from model file $model_file that is not listed in the clans file.";
+    if(! exists $tmp_family_model_H{$model}) { 
+      die "ERROR read model \"$model\" from model file $model_file that is not listed in the model info file.";
     }
-    $tmp_clan_model_H{$model} = 1;
+    $tmp_family_model_H{$model} = 1;
     if(length($model) > $model_width) { 
       $model_width = length($model);
     }
   }
 
-  foreach $model (keys %tmp_clan_model_H) { 
-    if($tmp_clan_model_H{$model} == 0) { 
-      die "ERROR model \"$model\" read from clans file is not in the model file.";
+  foreach $model (keys %tmp_family_model_H) { 
+    if($tmp_family_model_H{$model} == 0) { 
+      die "ERROR model \"$model\" read from model info file is not in the model file.";
     }
   }
 
@@ -605,24 +624,29 @@ sub parse_model_file {
 # Arguments: 
 #   $seqstat_file:            file to parse
 #   $max_targetname_length_R: REF to the maximum length of any target name, updated here
+#   $max_length_length_R:     REF to the maximum length of string-ized length of any target seq, updated here
+#   $nseq_R:                  REF to the number of sequences read, updated here
+#   $seqidx_HR:               REF to hash of sequence indices to fill here
 #   $seqlen_HR:               REF to hash of sequence lengths to fill here
 #
-# Returns:     Nothing. Fills %{$seqlen_HR}.
+# Returns:     Nothing. Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
+#              $$max_targetname_length_R, $$max_length_length_R, and $$nseq_R.
 # 
 # Dies:        Never.
 #
 ################################################################# 
 sub parse_seqstat_file { 
-  my $nargs_expected = 3;
+  my $nargs_expected = 6;
   my $sub_name = "parse_seqstat_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($seqstat_file, $max_targetname_length_R, $seqlen_HR) = @_;
+  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqidx_HR, $seqlen_HR) = @_;
 
   open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
 
   my $nread = 0;
   my $targetname_length;
+  my $seqlength_length;
   my $targetname;
   my $length;
 
@@ -633,7 +657,9 @@ sub parse_seqstat_file {
     chomp $line;
     #print $line . "\n";
     if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
+      $nread++;
       ($targetname, $length) = ($1, $2);
+      $seqidx_HR->{$targetname} = $nread;
       $seqlen_HR->{$targetname} = $length;
 
       $targetname_length = length($targetname);
@@ -641,7 +667,11 @@ sub parse_seqstat_file {
         $$max_targetname_length_R = $targetname_length;
       }
 
-      $nread++;
+      $seqlength_length  = length($length);
+      if($seqlength_length > $$max_length_length_R) { 
+        $$max_length_length_R = $seqlength_length;
+      }
+
     }
   }
   close(IN);
@@ -649,6 +679,7 @@ sub parse_seqstat_file {
     die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
   }
 
+  $$nseq_R = $nread;
   return;
 }
 
@@ -666,23 +697,24 @@ sub parse_seqstat_file {
 #                                           "nhmmer",           "ssualign")
 #   $width_HR:        hash, key is "model" or "target", value 
 #                     is width (maximum length) of any target/model
+#   $seqidx_HR:       ref to hash of sequence indices, key is sequence name, value is index
 #   $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
-#   $clan_HR:         ref to hash of clan names, key is model name, value is clan name
+#   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
 #
-# Returns:     Nothing. Fills %{$clan_H}, %{$domain_HR}
+# Returns:     Nothing. Fills %{$family_H}, %{$domain_HR}
 # 
 # Dies:        Never.
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $search_method, $width_HR, $seqlen_HR, $clan_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $search_method, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
@@ -697,8 +729,8 @@ sub parse_sorted_tbl_file {
   # 'two': current second best scoring model for current sequence 
   #        that overlaps with hit in 'one' data structures
   # 
-  # keys for all below are clans (e.g. 'SSU' or 'LSU')
-  # values are for the best scoring hit in this clan to current sequence
+  # keys for all below are families (e.g. 'SSU' or 'LSU')
+  # values are for the best scoring hit in this family to current sequence
   my %one_model_H;  
   my %one_score_H;  
   my %one_evalue_H; 
@@ -707,7 +739,7 @@ sub parse_sorted_tbl_file {
   my %one_strand_H; 
   
   # same as for 'one' data structures, but values are for second best scoring hit
-  # in this clan to current sequence that overlaps with hit in 'one' data structures
+  # in this family to current sequence that overlaps with hit in 'one' data structures
   my %two_model_H;
   my %two_score_H;
   my %two_evalue_H;
@@ -716,7 +748,7 @@ sub parse_sorted_tbl_file {
   my %two_strand_H;
 
   my $prv_target = undef; # target name of previous line
-  my $clan       = undef; # clan of current model
+  my $family     = undef; # family of current model
 
   open(IN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
 
@@ -800,9 +832,9 @@ sub parse_sorted_tbl_file {
       die "ERROR, $search_method is not a valid method";
     }
 
-    $clan = $clan_HR->{$model};
-    if(! defined $clan) { 
-      die "ERROR unrecognized model $model, no clan information";
+    $family = $family_HR->{$model};
+    if(! defined $family) { 
+      die "ERROR unrecognized model $model, no family information";
     }
 
     # two sanity checks:
@@ -823,7 +855,7 @@ sub parse_sorted_tbl_file {
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqlen_HR,
+      output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     }
@@ -833,38 +865,38 @@ sub parse_sorted_tbl_file {
     # Determine if this hit is either a new 'one' or 'two' hit
     $better_than_one = 0; # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
     $better_than_two = 0; # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
-    if(! defined $one_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+    if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
       $better_than_one = 1; # no current, 'one' this will be it
     }
     else { 
       if($have_evalues) { 
-        if(($evalue < $one_evalue_H{$clan}) || # this E-value is better than (less than) our current 'one' E-value
-           ($evalue eq $one_evalue_H{$clan} && $score > $one_score_H{$clan})) { # this E-value equals current 'one' E-value, 
+        if(($evalue < $one_evalue_H{$family}) || # this E-value is better than (less than) our current 'one' E-value
+           ($evalue eq $one_evalue_H{$family} && $score > $one_score_H{$family})) { # this E-value equals current 'one' E-value, 
           # but this score is better than current 'one' score
         $better_than_one = 1;
         }
       }
       else { # we don't have E-values
-        if($score > $one_score_H{$clan}) { # score is better than current 'one' score
+        if($score > $one_score_H{$family}) { # score is better than current 'one' score
           $better_than_one = 1;
         }
       }
     }
     # only possibly set $better_than_two to TRUE if $better_than_one is FALSE, and it's not the same model as 'one'
-    if((! $better_than_one) && ($model ne $one_model_H{$clan})) {  
-      if(! defined $two_score_H{$clan}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+    if((! $better_than_one) && ($model ne $one_model_H{$family})) {  
+      if(! defined $two_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $better_than_two = 1;
       }
       else { 
         if($have_evalues) { 
-          if(($evalue < $two_evalue_H{$clan}) || # this E-value is better than (less than) our current 'two' E-value
-             ($evalue eq $two_evalue_H{$clan} && $score > $two_score_H{$clan})) { # this E-value equals current 'two' E-value, 
+          if(($evalue < $two_evalue_H{$family}) || # this E-value is better than (less than) our current 'two' E-value
+             ($evalue eq $two_evalue_H{$family} && $score > $two_score_H{$family})) { # this E-value equals current 'two' E-value, 
             # but this score is better than current 'two' score
             $better_than_two = 1;
           }
         }
         else { # we don't have E-values
-          if($score > $two_score_H{$clan}) { # score is better than current 'one' score
+          if($score > $two_score_H{$family}) { # score is better than current 'one' score
             $better_than_two = 1;
           }
         }
@@ -878,17 +910,17 @@ sub parse_sorted_tbl_file {
     if($better_than_one) { 
       # new 'one' hit, update 'one' variables, 
       # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
-      if(defined $one_model_H{$clan} && $one_model_H{$clan} ne $model) { 
-        set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
-                 $one_model_H{$clan},   $one_score_H{$clan},  $one_evalue_H{$clan},  $one_start_H{$clan},  $one_stop_H{$clan},  $one_strand_H{$clan});
+      if(defined $one_model_H{$family} && $one_model_H{$family} ne $model) { 
+        set_vars($family, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+                 $one_model_H{$family},   $one_score_H{$family},  $one_evalue_H{$family},  $one_start_H{$family},  $one_stop_H{$family},  $one_strand_H{$family});
       }
       # now set new 'one' hit values
-      set_vars($clan, \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+      set_vars($family, \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
     }
     elsif($better_than_two) { 
       # new 'two' hit, set it
-      set_vars($clan, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+      set_vars($family, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
                $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
     }
     # finished updating 'one' or 'two' data structures
@@ -897,13 +929,13 @@ sub parse_sorted_tbl_file {
     $prv_target = $target;
 
     # sanity check
-    if((defined $one_model_H{$clan} && defined $two_model_H{$clan}) && ($one_model_H{$clan} eq $two_model_H{$clan})) { 
-      die "ERROR, coding error, one_model and two_model are identical for $clan $target";
+    if((defined $one_model_H{$family} && defined $two_model_H{$family}) && ($one_model_H{$family} eq $two_model_H{$family})) { 
+      die "ERROR, coding error, one_model and two_model are identical for $family $target";
     }
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqlen_HR,
+  output_one_target_wrapper($long_out_FH, $short_out_FH, \%opt_HH, $have_evalues, $width_HR, $domain_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
                             \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                             \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   
@@ -962,19 +994,19 @@ sub init_vars {
 #              'one' variable values to 'two' variables.
 #              
 # Arguments: 
-#   $clan:      clan, key to hashes
+#   $family:    family, key to hashes
 #   $model_HR:  REF to hash of $model variables, a model name
 #   $score_HR:  REF to hash of $score variables, a bit score
 #   $evalue_HR: REF to hash of $evalue variables, an E-value
 #   $start_HR:  REF to hash of $start variables, a start position
 #   $stop_HR:   REF to hash of $stop variables, a stop position
 #   $strand_HR: REF to hash of $strand variables, a strand
-#   $model:     value to set $model_HR{$clan} to 
-#   $score:     value to set $score_HR{$clan} to 
-#   $evalue:    value to set $evalue_HR{$clan} to 
-#   $start:     value to set $start_HR{$clan} to 
-#   $stop:      value to set $stop_HR{$clan} to 
-#   $strand:    value to set $strand_HR{$clan} to 
+#   $model:     value to set $model_HR{$family} to 
+#   $score:     value to set $score_HR{$family} to 
+#   $evalue:    value to set $evalue_HR{$family} to 
+#   $start:     value to set $start_HR{$family} to 
+#   $stop:      value to set $stop_HR{$family} to 
+#   $strand:    value to set $strand_HR{$family} to 
 #
 # Returns:     Nothing.
 # 
@@ -986,16 +1018,16 @@ sub set_vars {
   my $sub_name = "set_vars";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($clan, 
+  my ($family, 
       $model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR, 
       $model,    $score,    $evalue,    $start,    $stop,    $strand) = @_;
 
-  $model_HR->{$clan}  = $model;
-  $score_HR->{$clan}  = $score;
-  $evalue_HR->{$clan} = $evalue;
-  $start_HR->{$clan}  = $start;
-  $stop_HR->{$clan}   = $stop;
-  $strand_HR->{$clan} = $strand;
+  $model_HR->{$family}  = $model;
+  $score_HR->{$family}  = $score;
+  $evalue_HR->{$family} = $evalue;
+  $start_HR->{$family}  = $start;
+  $stop_HR->{$family}   = $stop;
+  $strand_HR->{$family} = $strand;
 
   return;
 }
@@ -1015,6 +1047,7 @@ sub set_vars {
 #                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
+#   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
@@ -1035,19 +1068,19 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 20;
+  my $nargs_expected = 21;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx_HR, $seqlen_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1075,6 +1108,7 @@ sub output_one_target_wrapper {
 #                   is width (maximum length) of any target/model
 #   $domain_HR:     reference to domain hash
 #   $target:        target name
+#   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
@@ -1095,11 +1129,11 @@ sub output_one_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 20;
+  my $nargs_expected = 21;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $have_evalues, $width_HR, $domain_HR, $target, $seqidx, $seqlen, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1108,89 +1142,106 @@ sub output_one_target {
   # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
-  # determine the winning clan
-  my $wclan = undef;
+  # determine the winning family
+  my $wfamily = undef;
   my $better_than_winning = 0;
-  foreach my $clan (keys %{$one_model_HR}) { 
+  foreach my $family (keys %{$one_model_HR}) { 
     # determine if this hit is better than our winning clan
-    if(! defined $wclan) { 
+    if(! defined $wfamily) { 
       $better_than_winning = 1; 
     }
     elsif($have_evalues) { 
-      if(($one_evalue_HR->{$clan} < $one_evalue_HR->{$wclan}) || # this E-value is better than (less than) our current winning E-value
-         ($one_evalue_HR->{$clan} eq $one_evalue_HR->{$wclan} && $one_score_HR->{$clan} > $one_score_HR->{$wclan})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
+      if(($one_evalue_HR->{$family} < $one_evalue_HR->{$wfamily}) || # this E-value is better than (less than) our current winning E-value
+         ($one_evalue_HR->{$family} eq $one_evalue_HR->{$wfamily} && $one_score_HR->{$family} > $one_score_HR->{$wfamily})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
         $better_than_winning = 1;
       }
     }
     else { # we don't have E-values
-      if($one_score_HR->{$clan} > $one_score_HR->{$wclan}) { # score is better than current winning score
+      if($one_score_HR->{$family} > $one_score_HR->{$wfamily}) { # score is better than current winning score
         $better_than_winning = 1;
       }
     }
     if($better_than_winning) { 
-      $wclan = $clan;
+      $wfamily = $family;
     }
   }
 
   # build up 'extra information' about other hits in other clans, if any
   my $extra_string = "";
   my $nhits = 1;
-  foreach my $clan (keys %{$one_model_HR}) { 
-    if($clan ne $wclan) { 
-      if(exists($one_model_HR->{$clan})) { 
+  foreach my $family (keys %{$one_model_HR}) { 
+    if($family ne $wfamily) { 
+      if(exists($one_model_HR->{$family})) { 
         if($extra_string ne "") { $extra_string .= ","; }
         if($have_evalues) { 
           $extra_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
-                                   $clan, $one_model_HR->{$clan}, $one_evalue_HR->{$clan}, $one_score_HR->{$clan}, 
-                                   $one_start_HR->{$clan}, $one_stop_HR->{$clan}, $one_strand_HR->{$clan});
+                                   $family, $one_model_HR->{$family}, $one_evalue_HR->{$family}, $one_score_HR->{$family}, 
+                                   $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
         }
         else { # we don't have E-values
           $extra_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
-                                   $clan, $one_model_HR->{$clan}, $one_score_HR->{$clan}, 
-                                   $one_start_HR->{$clan}, $one_stop_HR->{$clan}, $one_strand_HR->{$clan});
+                                   $family, $one_model_HR->{$family}, $one_score_HR->{$family}, 
+                                   $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
         }
         $nhits++;
       }
     }
   }
-  my $coverage = (abs($one_stop_HR->{$wclan} - $one_start_HR->{$wclan}) + 1) / $seqlen;
-  my $one_evalue2print = ($have_evalues) ? sprintf("%10g", $one_evalue_HR->{$wclan}) : "-";
+  my $coverage = (abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1) / $seqlen;
+  my $one_evalue2print = ($have_evalues) ? sprintf("%10g", $one_evalue_HR->{$wfamily}) : "-";
   my $two_evalue2print = undef;
-  if(defined $two_model_HR->{$wclan}) { 
-    $two_evalue2print = ($have_evalues) ? sprintf("%10g", $two_evalue_HR->{$wclan}) : "-";
+  if(defined $two_model_HR->{$wfamily}) { 
+    $two_evalue2print = ($have_evalues) ? sprintf("%10g", $two_evalue_HR->{$wfamily}) : "-";
   }
   
-  my $score_diff = (exists $two_score_HR->{$wclan}) ? ($one_score_HR->{$wclan} - $two_score_HR->{$wclan}) : $one_score_HR->{$wclan};
+  my $score_diff = (exists $two_score_HR->{$wfamily}) ? ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}) : $one_score_HR->{$wfamily};
   # does the sequence pass or fail? 
   # FAILs iff: 
   # - score difference between top two models is exceeds $diff_thresh AND top two models are different domains
   # OR
   # - number of hits to different clans is higher than one
   my $pass_fail = "PASS";
-  if(defined $two_model_HR->{$wclan}) { 
+  if(defined $two_model_HR->{$wfamily}) { 
     if(($score_diff <= $diff_thresh) && 
-       ($domain_HR->{$one_model_HR->{$wclan}} ne $domain_HR->{$two_model_HR->{$wclan}})) { 
+       ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
       $pass_fail = "FAIL";
     }
   }
   if($nhits > 1) { $pass_fail = "FAIL"; }
 
   if($do_short) { 
-    printf $FH ("%-*s  %-20s  %s\n", 
-                $width_HR->{"target"}, $target, $wclan . "." . $domain_HR->{$one_model_HR->{$wclan}}, $pass_fail);
+    printf $FH ("%-*s  %-*s  %-*s  %s\n", 
+                $width_HR->{"index"}, $seqidx,
+                $width_HR->{"target"}, $target, 
+                $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
+                $pass_fail);
   }
   else { 
-    printf $FH ("%-*s  %4s  %10d  %3d  %3s  %-15s  %-22s  %10s  %10.1f  %s  %5.3f  %10d  %10d  ", 
-                $width_HR->{"target"}, $target, $pass_fail, $seqlen, $nhits, $wclan, $domain_HR->{$one_model_HR->{$wclan}}, $one_model_HR->{$wclan}, 
-                $one_evalue2print, $one_score_HR->{$wclan}, $one_strand_HR->{$wclan}, $coverage, 
-                $one_start_HR->{$wclan}, $one_stop_HR->{$wclan});
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %8s  %s  %5.3f  %*d  %*d  ", 
+                $width_HR->{"index"}, $seqidx,
+                $width_HR->{"target"}, $target, 
+                $pass_fail, 
+                $width_HR->{"length"}, $seqlen, 
+                $nhits, 
+                $width_HR->{"family"}, $wfamily, 
+                $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
+                $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
+                $one_score_HR->{$wfamily}, 
+                $one_evalue2print, 
+                $one_strand_HR->{$wfamily}, 
+                $coverage, 
+                $width_HR->{"length"}, $one_start_HR->{$wfamily}, 
+                $width_HR->{"length"}, $one_stop_HR->{$wfamily});
     
-    if(defined $two_model_HR->{$wclan}) { 
-      printf $FH ("%10.1f  %-22s  %10s  %10.1f  ", 
-             $one_score_HR->{$wclan} - $two_score_HR->{$wclan}, $two_model_HR->{$wclan}, $two_evalue2print, $two_score_HR->{$wclan});
+    if(defined $two_model_HR->{$wfamily}) { 
+      printf $FH ("%6.1f  %-*s  %6.1f  %8s  ", 
+                  $one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}, 
+                  $width_HR->{"model"}, $two_model_HR->{$wfamily}, 
+                  $two_score_HR->{$wfamily},
+                  $two_evalue2print);
     }
     else { 
-      printf $FH ("%10s  %-22s  %10s  %10.2s  ", 
+      printf $FH ("%6s  %-*s  %6s  %8s  ", 
              "-" , "-", "-", "-");
     }
     
@@ -1211,8 +1262,8 @@ sub output_one_target {
 # Purpose:     Output column headers to the short output file.
 #              
 # Arguments: 
-#   $FH:            file handle to output to
-#   $target_width:  maximum length of any target name
+#   $FH:        file handle to output to
+#   $width_HR:  maximum length of any target name
 #
 # Returns:     Nothing.
 # 
@@ -1224,10 +1275,22 @@ sub output_short_headers {
   my $sub_name = "output_short_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $target_width) = (@_);
+  my ($FH, $width_HR) = (@_);
 
-  printf $FH ("%-*s  %-20s  %s\n", $target_width, "#target", "classification", "pass/fail");
-  printf $FH ("%-*s  %-20s  %s\n", $target_width, "#-----------------------------", "--------------------", "---------");
+  my $index_dash_str  = "#" . get_monocharacter_string($width_HR->{"index"}-1, "-");
+  my $target_dash_str = get_monocharacter_string($width_HR->{"target"}, "-");
+  my $class_dash_str  = get_monocharacter_string($width_HR->{"classification"}, "-");
+
+  printf $FH ("%-*s  %-*s  %-*s  %4s  %s\n", 
+              $width_HR->{"index"}, "#idx", 
+              $width_HR->{"target"}, "target", 
+              $width_HR->{"classification"}, "classification", 
+              "P/F", "reason-for-failure");
+  printf $FH ("%-*s  %-*s  %-*s  %4s  %s\n", 
+              $width_HR->{"index"},          $index_dash_str, 
+              $width_HR->{"target"},         $target_dash_str, 
+              $width_HR->{"classification"}, $class_dash_str, 
+              "----", "------------------");
 
   return;
 }
@@ -1255,20 +1318,89 @@ sub output_long_headers {
 
   my ($FH, $width_HR) = (@_);
 
-  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-80s  %10s  %-46s  %s\n", 
-              $width_HR->{"target"}, "#", "", "", "", "", "", "                              best-scoring model", "", "         second-best-scoring model", "",
-              "model", "evalue", "score", "extra");
-  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %78s  %10s  %46s  %s\n", 
-              $width_HR->{"target"}, "#", "", "", "", "", "", "--------------------------------------------------------------------------------", 
-              "", "----------------------------------------------", "");
+  my $index_dash_str   = "#" . get_monocharacter_string($width_HR->{"index"}-1, "-");
+  my $target_dash_str  = get_monocharacter_string($width_HR->{"target"}, "-");
+  my $model_dash_str   = get_monocharacter_string($width_HR->{"model"},  "-");
+  my $family_dash_str  = get_monocharacter_string($width_HR->{"family"}, "-");
+  my $domain_dash_str  = get_monocharacter_string($width_HR->{"domain"}, "-");
+  my $length_dash_str  = get_monocharacter_string($width_HR->{"length"}, "-");
 
-  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
-              $width_HR->{"target"}, "#target", "p/f", "targetlen", "#ht", "fam", "domain", "model", "evalue", "score", "s", "cov", "start", "stop", "scdiff", 
-              "model", "evalue", "score", "extra");
-  printf $FH ("%-*s  %4s  %10s  %3s  %3s  %-15s  %-22s  %10s  %10s  %s  %5s  %10s  %10s  %10s  %-22s  %10s  %10s  %s\n", 
-              $width_HR->{"target"}, "#-----------------------------", "----", "----------", "---", "---", "---------------", "----------------------", "----------", "----------", "-", 
-              "-----", "----------", "----------", "----------", "----------------------", "----------", "----------", "-----");
+  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 8 + 2 + 1 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
+  my $second_model_group_width = $width_HR->{"model"} + 2 + 6 + 2 + 8;
+  if(length("best-scoring model")        > $best_model_group_width)   { $best_model_group_width   = length("best-scoring model"); }
+  if(length("second-best-scoring model") > $second_model_group_width) { $second_model_group_width = length("second-best-scoring model"); } 
 
+  my $best_model_group_dash_str   = get_monocharacter_string($best_model_group_width, "-");
+  my $second_model_group_dash_str = get_monocharacter_string($second_model_group_width, "-");
+  
+  # line 1
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %-*s  %s\n", 
+              $width_HR->{"index"},  "#",
+              $width_HR->{"target"}, "",
+              "", 
+              $width_HR->{"length"}, "", 
+              "", 
+              $width_HR->{"family"}, "", 
+              $width_HR->{"domain"}, "", 
+              $best_model_group_width, center_string($best_model_group_width, "best-scoring model"), 
+              "", 
+              $second_model_group_width, center_string($second_model_group_width, "second-best-scoring model"), 
+              "");
+  # line 2
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %-*s  %s\n", 
+              $width_HR->{"index"},  "#",
+              $width_HR->{"target"}, "",
+              "", 
+              $width_HR->{"length"}, "", 
+              "", 
+              $width_HR->{"family"}, "", 
+              $width_HR->{"domain"}, "", 
+              $best_model_group_width, $best_model_group_dash_str, 
+              "", 
+              $second_model_group_width, $second_model_group_dash_str, 
+              "");
+  # line 3
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  %6s  %-*s  %6s  %8s %s\n", 
+              $width_HR->{"index"},  "#idx", 
+              $width_HR->{"target"}, "target",
+              "p/f", 
+              $width_HR->{"length"}, "length", 
+              "#ht", 
+              $width_HR->{"family"}, "fam", 
+              $width_HR->{"domain"}, "domain", 
+              $width_HR->{"model"},  "model", 
+              "score", 
+              "evalue", 
+              "s",
+              "cov",
+              $width_HR->{"length"}, "start",
+              $width_HR->{"length"}, "stop",
+              "scdiff",
+              $width_HR->{"model"},  "model", 
+              "score", 
+              "evalue", 
+              "extra");
+  # line 4
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  %6s  %-*s  %6s  %8s %s\n", 
+              $width_HR->{"index"},  $index_dash_str,
+              $width_HR->{"target"}, $target_dash_str, 
+              "----", 
+              $width_HR->{"length"}, $length_dash_str,
+              "---", 
+              $width_HR->{"family"}, $family_dash_str,
+              $width_HR->{"domain"}, $domain_dash_str, 
+              $width_HR->{"model"},  $model_dash_str,
+              "------", 
+              "--------", 
+              "-",
+              "-----",
+              $width_HR->{"length"}, $length_dash_str,
+              $width_HR->{"length"}, $length_dash_str,
+              "------", 
+              $width_HR->{"model"},  $model_dash_str, 
+              "------", 
+              "--------", 
+              "-----");
   return;
 }
 
@@ -1608,14 +1740,14 @@ sub debug_print {
   printf $FH ("************************************************************\n");
   printf $FH ("in $sub_name, title: $title\n");
 
-  foreach my $clan (sort keys %{$model_HR}) { 
-    printf("clan: $clan\n");
-    printf("\tmodel:  $model_HR->{$clan}\n");
-    printf("\tscore:  $score_HR->{$clan}\n");
-    printf("\tevalue: $evalue_HR->{$clan}\n");
-    printf("\tstart:  $start_HR->{$clan}\n");
-    printf("\tstop:   $stop_HR->{$clan}\n");
-    printf("\tstrand: $strand_HR->{$clan}\n");
+  foreach my $family (sort keys %{$model_HR}) { 
+    printf("family: $family\n");
+    printf("\tmodel:  $model_HR->{$family}\n");
+    printf("\tscore:  $score_HR->{$family}\n");
+    printf("\tevalue: $evalue_HR->{$family}\n");
+    printf("\tstart:  $start_HR->{$family}\n");
+    printf("\tstop:   $stop_HR->{$family}\n");
+    printf("\tstrand: $strand_HR->{$family}\n");
     printf("--------------------------------\n");
   }
 
@@ -1658,4 +1790,35 @@ sub get_monocharacter_string {
   }
 
   return $ret_str;
+}
+
+#################################################################
+# Subroutine: center_string()
+# Incept:     EPN, Thu Mar  2 10:01:39 2017
+#
+# Purpose:    Given a string and width, return the string with
+#             prepended spaces (" ") so that the returned string
+#             will be roughly centered in a window of length 
+#             $width.
+#
+# Arguments:
+#   $width:  width to center in
+#   $str:    string to center
+#
+# Returns:  $str prepended with spaces so that it centers
+# 
+# Dies:     Never
+#
+#################################################################
+sub center_string { 
+  my $sub_name = "center_string";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($width, $str) = @_;
+
+  my $nspaces_to_prepend = int(($width - length($str)) / 2);
+  if($nspaces_to_prepend < 0) { $nspaces_to_prepend = 0; }
+
+  return get_monocharacter_string($nspaces_to_prepend, " ") . $str; 
 }
