@@ -175,12 +175,18 @@ push(@arg_A, $dir_out);
 output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
-my $long_out_file  = $out_root . ".long.out";
-my $short_out_file = $out_root . ".short.out";
-my $long_out_FH;  # output file handle for long output file
-my $short_out_FH; # output file handle for short output file
-open($long_out_FH,  ">", $long_out_file)  || die "ERROR unable to open $long_out_file for writing";
-open($short_out_FH, ">", $short_out_file) || die "ERROR unable to open $short_out_file for writing";
+my $unsrt_long_out_file  = $out_root . ".unsrt.long.out";
+my $unsrt_short_out_file = $out_root . ".unsrt.short.out";
+my $srt_long_out_file  = $out_root . ".long.out";
+my $srt_short_out_file = $out_root . ".short.out";
+my $unsrt_long_out_FH;  # output file handle for unsorted long output file
+my $unsrt_short_out_FH; # output file handle for unsorted short output file
+my $srt_long_out_FH;    # output file handle for sorted long output file
+my $srt_short_out_FH;   # output file handle for sorted short output file
+open($unsrt_long_out_FH,  ">", $unsrt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for writing";
+open($unsrt_short_out_FH, ">", $unsrt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for writing";
+open($srt_long_out_FH,    ">", $srt_long_out_file)    || die "ERROR unable to open $srt_long_out_file for writing";
+open($srt_short_out_FH,   ">", $srt_short_out_file)   || die "ERROR unable to open $srt_short_out_file for writing";
 
 ##########################
 # determine search method
@@ -287,8 +293,8 @@ $width_H{"index"}  = length($nseq);
 if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
 
 # now that we know the max sequence name length, we can output headers to the output files
-output_long_headers($long_out_FH,   \%width_H);
-output_short_headers($short_out_FH, \%width_H);
+output_long_headers($srt_long_out_FH,     \%width_H);
+output_short_headers($srt_short_out_FH,   \%width_H);
 ###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
@@ -387,20 +393,41 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 # Step 4: Parse sorted output
 $start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqidx_H, \%seqlen_H, \%family_H, \%domain_H, $long_out_FH, $short_out_FH);
+parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%width_H, \%seqidx_H, \%seqlen_H, \%family_H, \%domain_H, $unsrt_long_out_FH, $unsrt_short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
+#######################################################
+# Step 5: Sort the output files based on sequence index
+#         from original input file
 ###########################################################################
-# Add tails to output files and exit.
-# now that we know the max sequence name length, we can output headers to the output files
-output_long_tail($long_out_FH);
-output_short_tail($short_out_FH);
+# first close the unsorted file handles (we're done with these) 
+# and also the sorted file handles (so we can output directly to them using system())
+# Remember, we already output the headers to these files above
+$start_secs = output_progress_prior("Sorting and finalizing output files", $progress_w, undef, *STDOUT);
+close($unsrt_long_out_FH);
+close($unsrt_short_out_FH);
+close($srt_long_out_FH);
+close($srt_short_out_FH);
 
-close($short_out_FH);
-close($long_out_FH);
-printf("#\n# Short (3 column) output saved to file $short_out_file.\n");
-printf("# Long (14 column) output saved to file $long_out_file.\n");
+$cmd = "sort -n $unsrt_short_out_file >> $srt_short_out_file";
+run_command($cmd, opt_Get("-v", \%opt_HH));
+
+$cmd = "sort -n $unsrt_long_out_file >> $srt_long_out_file";
+run_command($cmd, opt_Get("-v", \%opt_HH));
+
+# reopen them, and add tails to the output files and exit.
+# now that we know the max sequence name length, we can output headers to the output files
+open($srt_long_out_FH,  ">>", $unsrt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for appending";
+open($srt_short_out_FH, ">>", $unsrt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for appending";
+output_long_tail($srt_long_out_FH);
+output_short_tail($srt_short_out_FH);
+close($srt_short_out_FH);
+close($srt_long_out_FH);
+output_progress_complete($start_secs, undef, undef, *STDOUT);
+
+printf("#\n# Short (3 column) output saved to file $srt_short_out_file.\n");
+printf("# Long (14 column) output saved to file $srt_long_out_file.\n");
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
@@ -1196,11 +1223,14 @@ sub output_one_target {
   
   my $score_diff = (exists $two_score_HR->{$wfamily}) ? ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}) : $one_score_HR->{$wfamily};
   # does the sequence pass or fail? 
-  # FAILs iff: 
-  # - score difference between top two models is exceeds $diff_thresh AND top two models are different domains
-  # OR
-  # - number of hits to different clans is higher than one
+  # FAILs if: 
+  # - winning hit is to unacceptable model
+  # - on negative strand
+  # - score difference between top two models exceeds $diff_thresh AND top two models are different domains 
+  # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
   my $pass_fail = "PASS";
+  my $reason_for_failure = "-";
+
   if(defined $two_model_HR->{$wfamily}) { 
     if(($score_diff <= $diff_thresh) && 
        ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
@@ -1214,7 +1244,7 @@ sub output_one_target {
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
-                $pass_fail);
+                $pass_fail, $reason_for_failure);
   }
   else { 
     printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %8s  %s  %5.3f  %*d  %*d  ", 
