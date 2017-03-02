@@ -438,8 +438,8 @@ close($srt_short_out_FH);
 close($srt_long_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
-printf("#\n# Short (3 column) output saved to file $srt_short_out_file.\n");
-printf("# Long (14 column) output saved to file $srt_long_out_file.\n");
+printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
+printf("# Long (15 column) output saved to file $srt_long_out_file.\n");
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
@@ -1252,6 +1252,8 @@ sub output_one_target {
       $wfamily = $family;
     }
   }
+  my $nhits_fail_str = $wfamily; # used only if we FAIL because there's 
+                                 # more than one hit to different families for this sequence
 
   # build up 'extra information' about other hits in other clans, if any
   my $extra_string = "";
@@ -1271,6 +1273,7 @@ sub output_one_target {
                                    $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
         }
         $nhits++;
+        $nhits_fail_str .= "+" . $family;
       }
     }
   }
@@ -1290,22 +1293,38 @@ sub output_one_target {
   # - score difference between top two models exceeds $diff_thresh AND top two models are different domains 
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
   my $pass_fail = "PASS";
-  my $reason_for_failure = "-";
+  my $reason_for_failure = "";
 
+  if($accept_HR->{$one_model_HR->{$wfamily}} != 1) { 
+    $pass_fail = "FAIL";
+    $reason_for_failure .= "unacceptable_model"
+  }
+  if($one_strand_HR->{$wfamily} eq "-") { 
+    $pass_fail = "FAIL";
+    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
+    $reason_for_failure .= "opposite_strand"
+  }
   if(defined $two_model_HR->{$wfamily}) { 
     if(($score_diff <= $diff_thresh) && 
        ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
       $pass_fail = "FAIL";
+      if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
+      $reason_for_failure .= "score_difference_between_top_two_models_below_threshold($score_diff)";
     }
   }
-  if($nhits > 1) { $pass_fail = "FAIL"; }
+  if($nhits > 1) { 
+    $pass_fail = "FAIL";
+    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
+    $reason_for_failure .= "hits_to_more_than_one_family($nhits_fail_str)";
+  }
+  if($reason_for_failure eq "") { $reason_for_failure = "-"; }
 
   if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %s  %s\n", 
+    printf $FH ("%-*s  %-*s  %-*s  %3s  %s  %s\n", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
-                $pass_fail, $reason_for_failure);
+                $one_strand_HR->{$wfamily}, $pass_fail, $reason_for_failure);
   }
   else { 
     printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %8s  %s  %5.3f  %*d  %*d  ", 
@@ -1379,15 +1398,15 @@ sub output_one_hitless_target {
   my ($FH, $do_short, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
 
   my $pass_fail = "FAIL";
-  my $reason_for_failure = "no hits to any models";
+  my $reason_for_failure = "no_hits";
   my $nhits = 0;
 
   if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %s  %s\n", 
+    printf $FH ("%-*s  %-*s  %-*s  %3s  %s  %s\n", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, "-",
-                $pass_fail, $reason_for_failure);
+                "?", $pass_fail, $reason_for_failure);
   }
   else { 
     printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %8s  %s  %5s  %*s  %*s  ", 
@@ -1440,16 +1459,16 @@ sub output_short_headers {
   my $target_dash_str = get_monocharacter_string($width_HR->{"target"}, "-");
   my $class_dash_str  = get_monocharacter_string($width_HR->{"classification"}, "-");
 
-  printf $FH ("%-*s  %-*s  %-*s  %4s  %s\n", 
+  printf $FH ("%-*s  %-*s  %-*s  %3s  %4s  %s\n", 
               $width_HR->{"index"}, "#idx", 
               $width_HR->{"target"}, "target", 
               $width_HR->{"classification"}, "classification", 
-              "P/F", "reason-for-failure");
-  printf $FH ("%-*s  %-*s  %-*s  %4s  %s\n", 
+              "str", "p/f", "reason-for-failure");
+  printf $FH ("%-*s  %-*s  %-*s  %3s  %4s  %s\n", 
               $width_HR->{"index"},          $index_dash_str, 
               $width_HR->{"target"},         $target_dash_str, 
               $width_HR->{"classification"}, $class_dash_str, 
-              "----", "------------------");
+              "---", "----", "------------------");
 
   return;
 }
@@ -1472,7 +1491,7 @@ sub output_short_headers {
 ################################################################# 
 sub output_long_headers { 
   my $nargs_expected = 2;
-  my $sub_name = "output_short_headers";
+  my $sub_name = "output_long_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($FH, $width_HR) = (@_);
