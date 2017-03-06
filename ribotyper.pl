@@ -115,7 +115,7 @@ if(scalar(@ARGV) != 4) {
   print "\nTo see more help on available options, do dnaorg_annotate.pl -h\n\n";
   exit(1);
 }
-my ($seq_file, $model_file, $model_info_file, $dir_out) = (@ARGV);
+my ($seq_file, $model_file, $modelinfo_file, $dir_out) = (@ARGV);
 
 # set options in opt_HH
 opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
@@ -175,7 +175,7 @@ push(@arg_desc_A, "query model input file");
 push(@arg_A, $model_file);
 
 push(@arg_desc_A, "model information input file");
-push(@arg_A, $model_info_file);
+push(@arg_A, $modelinfo_file);
 
 push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
@@ -246,7 +246,7 @@ my $start_secs = output_progress_prior("Parsing and validating input files and d
 # variables related to fams and domains
 my %family_H = (); # hash of fams,   key: model name, value: name of family model belongs to (e.g. SSU)
 my %domain_H = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
-parse_model_info_file($model_info_file, \%family_H, \%domain_H);
+parse_modelinfo_file($modelinfo_file, \%family_H, \%domain_H);
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
@@ -461,7 +461,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # List of subroutines:
 #
 # Functions for parsing files:
-# parse_model_info_file:    parse the model info input file
+# parse_modelinfo_file:    parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
 # parse_seqstat_file:       parse esl-seqstat -a output file
@@ -489,13 +489,13 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 
 #################################################################
-# Subroutine : parse_model_info_file()
+# Subroutine : parse_modelinfo_file()
 # Incept:      EPN, Mon Dec 19 10:01:32 2016
 #
 # Purpose:     Parse a model info input file.
 #              
 # Arguments: 
-#   $model_info_file: file to parse
+#   $modelinfo_file: file to parse
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #
@@ -504,14 +504,14 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # Dies:        Never.
 #
 ################################################################# 
-sub parse_model_info_file { 
+sub parse_modelinfo_file { 
   my $nargs_expected = 3;
-  my $sub_name = "parse_model_info_file";
+  my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($model_info_file, $family_HR, $domain_HR) = @_;
+  my ($modelinfo_file, $family_HR, $domain_HR) = @_;
 
-  open(IN, $model_info_file) || die "ERROR unable to open model info file $model_file for reading";
+  open(IN, $modelinfo_file) || die "ERROR unable to open model info file $model_file for reading";
 
 # example line:
 # SSU_rRNA_archaea SSU Archaea
@@ -519,12 +519,12 @@ sub parse_model_info_file {
   my %family_exists_H = ();
   my %domain_exists_H = ();
 
-  open(IN, $model_info_file) || die "ERROR unable to open $model_info_file for reading"; 
+  open(IN, $modelinfo_file) || die "ERROR unable to open $modelinfo_file for reading"; 
   while(my $line = <IN>) { 
     chomp $line;
     my @el_A = split(/\s+/, $line);
     if(scalar(@el_A) != 3) { 
-      die "ERROR didn't read 3 tokens in model info input file $model_info_file, line $line"; 
+      die "ERROR didn't read 3 tokens in model info input file $modelinfo_file, line $line"; 
     }
     my($model, $family, $domain) = (@el_A);
 
@@ -535,7 +535,7 @@ sub parse_model_info_file {
       $domain_exists_H{$domain} = 1;
     }
     if(exists $family_HR->{$model}) { 
-      die "ERROR read model $model twice in $model_info_file"; 
+      die "ERROR read model $model twice in $modelinfo_file"; 
     }
     $family_HR->{$model} = $family;
     $domain_HR->{$model} = $domain;
@@ -1449,7 +1449,7 @@ sub output_one_hitless_target {
                 "-", 
                 $width_HR->{"length"}, "-", 
                 $width_HR->{"length"}, "-");
-    printf $FH ("%6s  %-*s  %6s  %s%s", 
+    printf $FH ("%6s  %-*s  %6s  %s%s\n", 
                 "-" , 
                 $width_HR->{"model"}, "-", 
                 "-", 
