@@ -1321,7 +1321,7 @@ sub output_one_target {
       $diff_thresh = opt_Get("--absdiff", $opt_HHR); 
       $diff_str    = $diff_thresh . "_total_bits";
     }
-    else { 
+    elsif(opt_IsUsed("--posdiff", $opt_HHR)) { 
       # default: per position score difference, dependent on length of hit
       $diff_thresh = opt_Get("--posdiff", $opt_HHR) * abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1;
       $diff_str    = $diff_thresh . "_bits_per_posn";
@@ -1331,10 +1331,10 @@ sub output_one_target {
   # does the sequence pass or fail? 
   # FAILs if: 
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
-  # - winning hit is to unacceptable model
   # - on negative strand
-  # - score difference between top two models is below $diff_thresh AND top two models are different domains 
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
+  # - winning hit is to unacceptable model
+  # - --posdiff or --absdiff used AND score difference between top two models is below $diff_thresh
   my $pass_fail = "PASS";
   my $reason_for_failure = "";
 
@@ -1348,11 +1348,13 @@ sub output_one_target {
     $reason_for_failure .= "opposite_strand"
   }
   if((defined $score_diff)        && 
-     ($score_diff < $diff_thresh) && 
-     ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
+     (defined $diff_thresh)       &&
+     ($score_diff < $diff_thresh)) { 
     $pass_fail = "FAIL";
     if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
     $reason_for_failure .= "score_difference_between_top_two_models_below_threshold($score_diff<$diff_str)";
+    # If we wanted to demand top two models are from different domains, we'd add this to above if:
+    # ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
   }
   if($nhits > 1) { 
     $pass_fail = "FAIL";
