@@ -1362,14 +1362,15 @@ sub output_one_target {
   if($reason_for_failure eq "") { $reason_for_failure = "-"; }
 
   if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %3s  %s  %s\n", 
+    printf $FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
-                $one_strand_HR->{$wfamily}, $pass_fail, $reason_for_failure);
+                ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
+                $pass_fail, $reason_for_failure);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %s%s  %5.3f  %*d  %*d  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %s%-5s  %5.3f  %*d  %*d  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1380,7 +1381,7 @@ sub output_one_target {
                 $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
                 $one_score_HR->{$wfamily}, 
                 $one_evalue2print, 
-                $one_strand_HR->{$wfamily}, 
+                ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
                 $coverage, 
                 $width_HR->{"length"}, $one_start_HR->{$wfamily}, 
                 $width_HR->{"length"}, $one_stop_HR->{$wfamily});
@@ -1447,14 +1448,14 @@ sub output_one_hitless_target {
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
   if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %3s  %s  %s\n", 
+    printf $FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, "-",
-                "?", $pass_fail, $reason_for_failure);
+                "-", $pass_fail, $reason_for_failure);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %s%s  %5s  %*s  %*s  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %s%5s  %5s  %*s  %*s  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1465,7 +1466,7 @@ sub output_one_hitless_target {
                 $width_HR->{"model"}, "-", 
                 "-", 
                 ($use_evalues) ? "       -  " : "",
-                "?",
+                "-",
                 "-", 
                 $width_HR->{"length"}, "-", 
                 $width_HR->{"length"}, "-");
@@ -1505,16 +1506,16 @@ sub output_short_headers {
   my $target_dash_str = get_monocharacter_string($width_HR->{"target"}, "-");
   my $class_dash_str  = get_monocharacter_string($width_HR->{"classification"}, "-");
 
-  printf $FH ("%-*s  %-*s  %-*s  %3s  %4s  %s\n", 
+  printf $FH ("%-*s  %-*s  %-*s  %5s  %4s  %s\n", 
               $width_HR->{"index"}, "#idx", 
               $width_HR->{"target"}, "target", 
               $width_HR->{"classification"}, "classification", 
-              "str", "p/f", "reason-for-failure");
+              "strnd", "p/f", "reason-for-failure");
   printf $FH ("%-*s  %-*s  %-*s  %3s  %4s  %s\n", 
               $width_HR->{"index"},          $index_dash_str, 
               $width_HR->{"target"},         $target_dash_str, 
               $width_HR->{"classification"}, $class_dash_str, 
-              "---", "----", "------------------");
+              "-----", "----", "------------------");
 
   return;
 }
@@ -1552,7 +1553,7 @@ sub output_long_headers {
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
-  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 1 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
+  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6 ;
   if($use_evalues) { 
     $best_model_group_width   += 2 + 8;
@@ -1592,7 +1593,7 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -1603,7 +1604,7 @@ sub output_long_headers {
               $width_HR->{"model"},  "model", 
               "score", 
               ($use_evalues) ? "  evalue  " : "", 
-              "s",
+              "strnd",
               "cov",
               $width_HR->{"length"}, "start",
               $width_HR->{"length"}, "stop",
@@ -1614,7 +1615,7 @@ sub output_long_headers {
               "extra");
 
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -1625,7 +1626,7 @@ sub output_long_headers {
               $width_HR->{"model"},  $model_dash_str,
               "------", 
               ($use_evalues) ? "--------  " : "",
-              "-",
+              "-----",
               "-----",
               $width_HR->{"length"}, $length_dash_str,
               $width_HR->{"length"}, $length_dash_str,

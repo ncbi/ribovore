@@ -105,11 +105,11 @@ my $line2;
 my $n1 = 0;
 my $n2 = 0;
 while($line1 = <IN1>) { 
-  $n1++;
+  if($line1 =~ m/\w/) { $n1++; }
 }
 close(IN1);
 while($line2 = <IN2>) { 
-  $n2++;
+  if($line2 =~ m/\w/) { $n2++; }
 }
 close(IN2);
 
