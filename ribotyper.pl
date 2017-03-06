@@ -52,19 +52,24 @@ opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nh
 opt_Add("--hmm",          "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in slower HMM mode",   "run in slower HMM mode",         \%opt_HH, \@opt_order_A);
 opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--hmm",              "run in slow CM mode",      "run in slow CM mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options for controlling the score difference failure threshold";
+$opt_group_desc_H{"3"} = "options for controlling the minimum bit score for any hit";
+#     option                 type   default                group   requires incompat    preamble-output                                 help-output    
+opt_Add("--minbit",        "real",   "20.",                   3,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--nominbit",   "boolean",   0,                       3,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"4"} = "options for controlling the score difference failure threshold";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("--posdiff",       "real",   "0.05",                  3,  undef,   undef,      "use min acceptable per-posn score difference of <x>", "use minimum acceptable bit per posn score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",       "real",   "50.",                   3,  undef,   undef,      "use min acceptable total score difference of <x>",    "use minimum acceptable bit total score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--posdiff",       "real",   "0.05",                  4,  undef,   undef,      "use min acceptable per-posn score difference of <x>", "use minimum acceptable bit per posn score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",       "real",   "50.",                   4,  undef,   undef,      "use min acceptable total score difference of <x>",    "use minimum acceptable bit total score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "optional input files";
+$opt_group_desc_H{"5"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   4,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--inaccept",     "string",  undef,                   5,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "advanced options";
+$opt_group_desc_H{"6"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                     help-output    
-opt_Add("--evalues",      "boolean", 0,                       5,  undef,   "--ssualign",        "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       5,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       6,  undef,   "--ssualign",        "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       6,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -81,6 +86,9 @@ my $options_okay =
                 'ssualign'     => \$GetOptions_H{"--ssualign"},
                 'hmm'          => \$GetOptions_H{"--hmm"},
                 'slow'         => \$GetOptions_H{"--slow"},
+# options controlling minimum bit score cutoff 
+                'minbit=s'     => \$GetOptions_H{"--minbit"},
+                'nominbit'     => \$GetOptions_H{"--nominbit"},
 # options controlling the score difference failure threshold
                 'posdiff=s'    => \$GetOptions_H{"--posdiff"},
                 'absdiff=s'    => \$GetOptions_H{"--absdiff"},
@@ -774,6 +782,12 @@ sub parse_sorted_tbl_file {
      ($search_method ne "nhmmer")           && ($search_method ne "ssualign")) { 
     die "ERROR in $sub_name, invalid search method $search_method";
   }
+
+  # determine minimum bit score cutoff
+  my $minbit = undef;
+  if(! opt_Get("--nominbit", $opt_HHR)) { 
+    $minbit = opt_Get("--minbit", $opt_HHR);
+  }
   
   # Main data structures: 
   # 'one': current top scoring model for current sequence
@@ -915,43 +929,47 @@ sub parse_sorted_tbl_file {
     # Determine if this hit is either a new 'one' or 'two' hit
     $better_than_one = 0; # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
     $better_than_two = 0; # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
-    if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-      $better_than_one = 1; # no current, 'one' this will be it
-    }
-    else { 
-      if($use_evalues) { 
-        if(($evalue < $one_evalue_H{$family}) || # this E-value is better than (less than) our current 'one' E-value
-           ($evalue eq $one_evalue_H{$family} && $score > $one_score_H{$family})) { # this E-value equals current 'one' E-value, 
-          # but this score is better than current 'one' score
-        $better_than_one = 1;
-        }
-      }
-      else { # we don't have E-values
-        if($score > $one_score_H{$family}) { # score is better than current 'one' score
-          $better_than_one = 1;
-        }
-      }
-    }
-    # only possibly set $better_than_two to TRUE if $better_than_one is FALSE, and it's not the same model as 'one'
-    if((! $better_than_one) && ($model ne $one_model_H{$family})) {  
-      if(! defined $two_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-        $better_than_two = 1;
+    # first, enforce our global bit score minimum
+    if((! defined $minbit) || ($score >= $minbit)) { 
+      # yes, we either have no minimum, or our score exceeds our minimum
+      if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+        $better_than_one = 1; # no current, 'one' this will be it
       }
       else { 
         if($use_evalues) { 
-          if(($evalue < $two_evalue_H{$family}) || # this E-value is better than (less than) our current 'two' E-value
-             ($evalue eq $two_evalue_H{$family} && $score > $two_score_H{$family})) { # this E-value equals current 'two' E-value, 
-            # but this score is better than current 'two' score
-            $better_than_two = 1;
+          if(($evalue < $one_evalue_H{$family}) || # this E-value is better than (less than) our current 'one' E-value
+             ($evalue eq $one_evalue_H{$family} && $score > $one_score_H{$family})) { # this E-value equals current 'one' E-value, 
+            # but this score is better than current 'one' score
+            $better_than_one = 1;
           }
         }
         else { # we don't have E-values
-          if($score > $two_score_H{$family}) { # score is better than current 'one' score
-            $better_than_two = 1;
+          if($score > $one_score_H{$family}) { # score is better than current 'one' score
+            $better_than_one = 1;
           }
         }
       }
-    }
+      # only possibly set $better_than_two to TRUE if $better_than_one is FALSE, and it's not the same model as 'one'
+      if((! $better_than_one) && ($model ne $one_model_H{$family})) {  
+        if(! defined $two_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+          $better_than_two = 1;
+        }
+        else { 
+          if($use_evalues) { 
+            if(($evalue < $two_evalue_H{$family}) || # this E-value is better than (less than) our current 'two' E-value
+               ($evalue eq $two_evalue_H{$family} && $score > $two_score_H{$family})) { # this E-value equals current 'two' E-value, 
+              # but this score is better than current 'two' score
+              $better_than_two = 1;
+            }
+          }
+          else { # we don't have E-values
+            if($score > $two_score_H{$family}) { # score is better than current 'one' score
+              $better_than_two = 1;
+            }
+          }
+        }
+      }
+    } # end of 'if((! defined $minbit) || ($score >= $minbit))'
     # finished determining if this hit is a new 'one' or 'two' hit
     ##########################################################
     
