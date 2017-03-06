@@ -520,34 +520,27 @@ sub parse_modelinfo_file {
 
   my ($modelinfo_file, $family_HR, $domain_HR) = @_;
 
-  open(IN, $modelinfo_file) || die "ERROR unable to open model info file $model_file for reading";
+  open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
 # example line:
 # SSU_rRNA_archaea SSU Archaea
 
-  my %family_exists_H = ();
-  my %domain_exists_H = ();
-
   open(IN, $modelinfo_file) || die "ERROR unable to open $modelinfo_file for reading"; 
   while(my $line = <IN>) { 
-    chomp $line;
-    my @el_A = split(/\s+/, $line);
-    if(scalar(@el_A) != 3) { 
-      die "ERROR didn't read 3 tokens in model info input file $modelinfo_file, line $line"; 
-    }
-    my($model, $family, $domain) = (@el_A);
+    if($line !~ m/^\#/) { # skip comment lines
+      chomp $line;
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 3) { 
+        die "ERROR didn't read 3 tokens in model info input file $modelinfo_file, line $line"; 
+      }
+      my($model, $family, $domain) = (@el_A);
 
-    if(! exists $family_exists_H{$family}) { 
-      $family_exists_H{$family} = 1;
+      if(exists $family_HR->{$model}) { 
+        die "ERROR read model $model twice in $modelinfo_file"; 
+      }
+      $family_HR->{$model} = $family;
+      $domain_HR->{$model} = $domain;
     }
-    if(! exists $domain_exists_H{$domain}) { 
-      $domain_exists_H{$domain} = 1;
-    }
-    if(exists $family_HR->{$model}) { 
-      die "ERROR read model $model twice in $modelinfo_file"; 
-    }
-    $family_HR->{$model} = $family;
-    $domain_HR->{$model} = $domain;
   }
   close(IN);
 
