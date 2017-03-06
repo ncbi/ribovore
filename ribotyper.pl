@@ -46,11 +46,11 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 
 $opt_group_desc_H{"2"} = "options for controlling the search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output             help-output    
-opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--fast,--slow",      "annotate with nhmmer",     "using nhmmer for annotation", \%opt_HH, \@opt_order_A);
-opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",   "using cmscan for annotation", \%opt_HH, \@opt_order_A);
-opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nhmmer,--cmscan,--fast,--slow",        "annotate with SSU-ALIGN",  "using SSU-ALIGN for annotation", \%opt_HH, \@opt_order_A);
-opt_Add("--fast",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in fast mode",         "run in fast mode, sacrificing accuracy of boundaries", \%opt_HH, \@opt_order_A);
-opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--fast",             "run in slow mode",         "run in slow mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
+opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--hmm,--slow",       "annotate with nhmmer",     "using nhmmer for annotation",    \%opt_HH, \@opt_order_A);
+opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",   "using cmscan for annotation",    \%opt_HH, \@opt_order_A);
+opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nhmmer,--cmscan,--hmm,--slow",         "annotate with SSU-ALIGN",  "using SSU-ALIGN for annotation", \%opt_HH, \@opt_order_A);
+opt_Add("--hmm",          "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in slower HMM mode",   "run in slower HMM mode",         \%opt_HH, \@opt_order_A);
+opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--hmm",              "run in slow CM mode",      "run in slow CM mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the score difference failure threshold";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
@@ -63,7 +63,7 @@ opt_Add("--inaccept",     "string",  undef,                   4,  undef,   undef
 
 $opt_group_desc_H{"5"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                     help-output    
-opt_Add("--evalues",      "boolean", 0,                       5,  undef,   "--fast,--ssualign", "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       5,  undef,   "--ssualign",        "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch",   "boolean", 0,                       5,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
@@ -79,7 +79,7 @@ my $options_okay =
                 'nhmmer'       => \$GetOptions_H{"--nhmmer"},
                 'cmscan'       => \$GetOptions_H{"--cmscan"},
                 'ssualign'     => \$GetOptions_H{"--ssualign"},
-                'fast'         => \$GetOptions_H{"--fast"},
+                'hmm'          => \$GetOptions_H{"--hmm"},
                 'slow'         => \$GetOptions_H{"--slow"},
 # options controlling the score difference failure threshold
                 'posdiff=s'    => \$GetOptions_H{"--posdiff"},
@@ -122,6 +122,15 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
+
+# do some final option check that is currently too sophisticated for epn-options
+if(opt_Get("--evalues", \%opt_HH)) { 
+  if((! opt_Get("--nhmmer", \%opt_HH)) && 
+     (! opt_Get("--hmm", \%opt_HH)) && 
+     (! opt_Get("--slow", \%opt_HH))) { 
+    die "ERROR, --evalues requires one of --nhmmer, --hmm or --slow";
+  }
+}
 
 my $cmd;                       # a command to be run by run_command()
 my $ncpu = 0;                  # number of CPUs to use with search command
@@ -205,19 +214,19 @@ my $search_method = undef; # can be any of "cmsearch-hmmonly", "cmscan-hmmonly",
 #                                          "nhmmer",           "ssualign"
 
 if   (opt_Get("--nhmmer", \%opt_HH))   { $search_method = "nhmmer"; }
-elsif(opt_Get("--cmscan", \%opt_HH))   { $search_method = "cmscan-hmmonly"; }
+elsif(opt_Get("--cmscan", \%opt_HH))   { $search_method = "cmscan-fast"; }
 elsif(opt_Get("--ssualign", \%opt_HH)) { $search_method = "ssualign"; }
-else                                   { $search_method = "cmsearch-hmmonly"; }
+else                                   { $search_method = "cmsearch-fast"; }
 
-if(opt_Get("--fast", \%opt_HH)) { 
-  if   ($search_method eq "cmsearch-hmmonly") { $search_method = "cmsearch-fast"; }
-  elsif($search_method eq "cmscan-hmmonly")   { $search_method = "cmscan-fast"; }
-  else { die "ERROR, --fast used in error, search_method: $search_method"; }
+if(opt_Get("--hmm", \%opt_HH)) { 
+  if   ($search_method eq "cmsearch-fast") { $search_method = "cmsearch-hmmonly"; }
+  elsif($search_method eq "cmscan-fast")   { $search_method = "cmscan-hmmonly"; }
+  else { die "ERROR, --hmm used in error, search_method: $search_method"; }
 }
 elsif(opt_Get("--slow", \%opt_HH)) { 
-  if   ($search_method eq "cmsearch-hmmonly") { $search_method = "cmsearch-slow"; }
-  elsif($search_method eq "cmscan-hmmonly")   { $search_method = "cmscan-slow"; }
-  else { die "ERROR, --fast used in error, search_method: $search_method"; }
+  if   ($search_method eq "cmsearch-fast") { $search_method = "cmsearch-slow"; }
+  elsif($search_method eq "cmscan-fast")   { $search_method = "cmscan-slow"; }
+  else { die "ERROR, --hmm used in error, search_method: $search_method"; }
 }
 
 ###################################################
