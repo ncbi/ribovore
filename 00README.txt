@@ -26,7 +26,7 @@ From:
 This example runs the script on a sample file of 15 sequences:
 $ perl ribotyper.pl testfiles/seed-15.fa models/ssu.7.enone.lsu.3.170306.cm models/ssu.7.enone.lsu.3.170306.modelinfo test
 
-The script takes 3 command line arguments:
+The script takes 4 command line arguments:
 
 The first argument is the sequence file you want to annotate.
 
@@ -38,7 +38,11 @@ classifications that each profile pertains to.
 
 The fourth argument is the name of the output directory that you would
 like ribotyper to create. Output files will be placed in this output
-directory. 
+directory. If this directory already exists, the program will exit
+with an error message indicating that you need to either (a) remove
+the directory before rerunning, or (b) use the -f option with
+ribotyper.pl, in which case the directory will be overwritten.
+
 
 ##############################################################################
 OUTPUT
