@@ -18,7 +18,7 @@ if(! (-d $ribodir)) {
 }    
 my $inf_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
 my $hmmer_exec_dir    = $ribodir . "/infernal-1.1.2/src/";
-my $esl_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
+my $esl_exec_dir      = $ribodir . "/infernal-1.1.2/easel/miniapps/";
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -186,6 +186,11 @@ else {  # --skipsearch not used, normal case
 my $dir_out_tail   = $dir_out;
 $dir_out_tail   =~ s/^.+\///; # remove all but last dir
 my $out_root   = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
+
+# make sure the sequence file exists
+if(! -s $seq_file) { 
+  die "ERROR unable to open sequence file $seq_file"; 
+}
 
 #############################################
 # output program banner and open output files
