@@ -314,7 +314,7 @@ else { # --inaccept not used, all models are acceptable
 
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
-run_command("esl-seqstat -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+run_command($execs_H{"esl-seqstat"} . " -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value set to -1 after we output info for this sequence
