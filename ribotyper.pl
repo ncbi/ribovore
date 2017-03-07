@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 use strict;
 use warnings;
 use Getopt::Long;
@@ -5,12 +6,20 @@ use Time::HiRes qw(gettimeofday);
 
 require "epn-options.pm";
 
-# first, determine the paths to all modules, scripts and executables that we'll need
-# we currently use hard-coded-paths for Infernal, HMMER and easel executables:
-my $inf_exec_dir      = "/usr/local/infernal/1.1.2/bin/";
-my $hmmer_exec_dir    = "/usr/local/hmmer/3.1b2/bin/";
-my $esl_exec_dir      = "/usr/local/infernal/1.1.2/bin/";
-
+# make sure the DNAORGDIR environment variable is set
+my $ribodir = $ENV{'RIBODIR'};
+if(! exists($ENV{'RIBODIR'})) { 
+    printf STDERR ("\nERROR, the environment variable RIBODIR is not set, please set it to the directory where you installed the ribotyper scripts and their dependencies.\n"); 
+    exit(1); 
+}
+if(! (-d $ribodir)) { 
+    printf STDERR ("\nERROR, the ribotyper directory specified by your environment variable RIBODIR does not exist.\n"); 
+    exit(1); 
+}    
+my $inf_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
+my $hmmer_exec_dir    = $ribodir . "/infernal-1.1.2/src/";
+my $esl_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
+ 
 #########################################################
 # Command line and option processing using epn-options.pm
 #
