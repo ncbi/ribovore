@@ -3,6 +3,7 @@ EPN, Wed Feb 22 15:59:00 2017
 Organization of this file:
 
 INTRO
+SETTING UP ENVIRONMENT VARIABLES
 SAMPLE RUN
 OUTPUT
 RECOMMENDED MODEL FILES
@@ -19,12 +20,66 @@ Current location of code and other relevant files:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/
 
 ##############################################################################
-SAMPLE RUN
-From: 
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/
+SETTING UP ENVIRONMENT VARIABLES
 
-This example runs the script on a sample file of 15 sequences:
-$ perl ribotyper.pl testfiles/seed-15.fa models/ssu.7.enone.lsu.3.170306.cm models/ssu.7.enone.lsu.3.170306.modelinfo test
+Before you can run ribotyper.pl you will need to update some of your
+command line variables. To do this, add the following three lines to
+your .bashrc file (if you use bash shell) or .cshrc file (if you use C
+shell or tcsh). The .bashrc or .cshrc file will be in your home
+directory. To determine what shell you use type 'echo $SHELL', if it
+returns '/bin/bash', then update your .bashrc file, if it returns
+'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
+
+The 3 lines to add to your .bashrc file:
+-----------
+export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+export PERL5LIB="$RIBODIR:$PERL5LIB"
+export PATH="$RIBODIR:$PATH"
+-----------
+
+The 3 lines to add to your .cshrc file:
+-----------
+setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+setenv PERL5LIB "$RIBODIR":"$PERL5LIB"
+setenv PATH "$RIBODIR":"$PATH"
+-----------
+
+Then, after adding those 3 lines, execute this command:
+source ~/.bashrc
+OR
+source ~/.cshrc
+
+If you get an error about PERL5LIB being undefined, change the second
+line to add to:
+export PERL5LIB="$RIBODIR"
+for .bashrc, OR
+setenv PERL5LIB "$RIBODIR"
+for .cshrc. And then do 'source ~/.bashrc' or 'source ~/.cshrc' again.
+
+To check that your environment variables are properly set up do the
+following three commands:
+echo $RIBODIR
+echo $PERL5LIB
+echo $PATH
+
+The first command should return only:
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
+
+And the other two echo commands should return potentially longer
+strings that begin with the same path:
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
+
+If that is not the case, please email Eric Nawrocki
+(nawrocke@ncbi.nlm.nih.gov). If you do see the expected output, the
+following sample run should work.
+
+##############################################################################
+SAMPLE RUN
+
+This example runs the script on a sample file of 15 sequences. Go into
+a new directory and execute:
+
+ribotyper.pl $RIBODIR/testfiles/seed-15.fa $RIBODIR/models/ssu.7.enone.lsu.3.170306.cm $RIBODIR/models/ssu.7.enone.lsu.3.170306.modelinfo test
 
 The script takes 4 command line arguments:
 
@@ -43,6 +98,9 @@ with an error message indicating that you need to either (a) remove
 the directory before rerunning, or (b) use the -f option with
 ribotyper.pl, in which case the directory will be overwritten.
 
+The $RIBODIR environment variable is used several times here. That is
+a hard-coded path that was set in the 'Setting up environment
+variables for Ribotyper:' section above. 
 
 ##############################################################################
 OUTPUT
@@ -52,22 +110,22 @@ Example output of the script from the above command
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # dnaorg 0.01 (Dec 2016)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Mar  6 15:25:35 2017
+# date:    Tue Mar  7 15:57:56 2017
 #
-# target sequence input file:    testfiles/seed-15.fa                     
-# query model input file:        models/ssu.7.enone.lsu.3.170306.cm       
-# model information input file:  models/ssu.7.enone.lsu.3.170306.modelinfo
-# output directory name:         test                                     
-# forcing directory overwrite:   yes [-f]                                 
+# target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/seed-15.fa                     
+# query model input file:        /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.cm       
+# model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.modelinfo
+# output directory name:         test                                                                                       
+# forcing directory overwrite:   yes [-f]                                                                                   
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Parsing and validating input files and determining target sequence lengths ... done. [0.0 seconds]
-# Performing cmsearch-fast search                                            ... done. [1.1 seconds]
+# Performing cmsearch-fast search                                            ... done. [1.2 seconds]
 # Sorting tabular search results                                             ... done. [0.0 seconds]
 # Parsing tabular search results                                             ... done. [0.0 seconds]
 # Sorting and finalizing output files                                        ... done. [0.0 seconds]
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out.
-# Long (13 column) output saved to file test/test.ribotyper.long.out.
+# Long (17 column) output saved to file test/test.ribotyper.long.out.
 #
 #[RIBO-SUCCESS]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,7 +138,7 @@ with one line per sequence with fields separated by whitespace (spaces,
 not tabs). They will both be in the new directory 'test' that was
 created by the example run above.
 
-A 'short' file of 6 columns, and a 'long' file with 18 columns with
+A 'short' file of 6 columns, and a 'long' file with 17 columns with
 more information.
 
 Here is a description of the columns in the short file:

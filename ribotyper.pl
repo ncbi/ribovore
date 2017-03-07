@@ -478,7 +478,7 @@ close($srt_long_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
-printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 15 : 13));
+printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 19 : 17));
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
