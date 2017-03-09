@@ -709,7 +709,9 @@ sub parse_model_file {
 # Returns:     Nothing. Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
 #              $$max_targetname_length_R, $$max_length_length_R, and $$nseq_R.
 # 
-# Dies:        Never.
+# Dies:        If the sequence file has two sequences with identical names.
+#              Error message will list all duplicates.
+#              If no sequences were read.
 #
 ################################################################# 
 sub parse_seqstat_file { 
@@ -726,6 +728,8 @@ sub parse_seqstat_file {
   my $seqlength_length;
   my $targetname;
   my $length;
+  my %seqdups_H = ();       # key is a sequence name that exists more than once in seq file, value is number of occurences
+  my $at_least_one_dup = 0; # set to 1 if we find any duplicate sequence names
 
   while(my $line = <IN>) { 
     # = lcl|dna_BP331_0.3k:467     1232 
@@ -736,6 +740,16 @@ sub parse_seqstat_file {
     if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
       $nread++;
       ($targetname, $length) = ($1, $2);
+      if(exists($seqidx_HR->{$targetname})) { 
+        if(exists($seqdups_H{$targetname})) { 
+          $seqdups_H{$targetname}++;
+        }
+        else { 
+          $seqdups_H{$targetname} = 2;
+        }
+        $at_least_one_dup = 1;
+      }
+        
       $seqidx_HR->{$targetname} = $nread;
       $seqlen_HR->{$targetname} = $length;
 
@@ -754,6 +768,16 @@ sub parse_seqstat_file {
   close(IN);
   if($nread == 0) { 
     die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
+  }
+  if($at_least_one_dup) { 
+    my $i = 1;
+    my $die_string = "\nERROR, not all sequences in input sequence file have a unique name. They must.\nList of sequences that occur more than once, with number of occurrences:\n";
+    foreach $targetname (sort keys %seqdups_H) { 
+      $die_string .= "\t($i) $targetname $seqdups_H{$targetname}\n";
+      $i++;
+    }
+    $die_string .= "\n";
+    die $die_string;
   }
 
   $$nseq_R = $nread;
