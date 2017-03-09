@@ -834,7 +834,8 @@ sub parse_sorted_tbl_file {
   init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
   init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
 
-  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue);
+  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+      (undef, undef, undef, undef, undef, undef, undef, undef, undef);
   my $better_than_one; # set to true for each hit if it is better than our current 'one' hit
   my $better_than_two; # set to true for each hit if it is better than our current 'two' hit
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
@@ -1017,11 +1018,14 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                            $prv_target, $seqidx_HR, $seqlen_HR, 
-                            \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-                            \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-  
+  if((defined $score) 
+     && ((! defined $minbit) || ($score >= $minbit))) { 
+    # yes, we either have no minimum, or our score exceeds our minimum
+    output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
+                              $prv_target, $seqidx_HR, $seqlen_HR, 
+                              \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                              \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+  }
   # close file handle
   close(IN);
   
