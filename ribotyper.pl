@@ -839,6 +839,7 @@ sub parse_sorted_tbl_file {
   my $better_than_one; # set to true for each hit if it is better than our current 'one' hit
   my $better_than_two; # set to true for each hit if it is better than our current 'two' hit
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
+  my $nhits = 0; # number of hits above threshold for current sequence
 
   while(my $line = <IN>) { 
     ######################################################
@@ -932,11 +933,12 @@ sub parse_sorted_tbl_file {
     # Yes, if target sequence we just read is different from it
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
-    if((defined $prv_target) && ($prv_target ne $target)) { 
+    if(($nhits > 0) && (defined $prv_target) && ($prv_target ne $target)) { 
       output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                                 $prv_target, $seqidx_HR, $seqlen_HR, 
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+      $nhits = 0;
     }
     ##############################################################
     
@@ -947,6 +949,7 @@ sub parse_sorted_tbl_file {
     # first, enforce our global bit score minimum
     if((! defined $minbit) || ($score >= $minbit)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
+      $nhits++;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $better_than_one = 1; # no current, 'one' this will be it
       }
@@ -1025,6 +1028,7 @@ sub parse_sorted_tbl_file {
                               $prv_target, $seqidx_HR, $seqlen_HR, 
                               \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+    $nhits = 0;
   }
   # close file handle
   close(IN);
@@ -1320,6 +1324,7 @@ sub output_one_target {
       }
     }
   }
+  if(! defined $wfamily) { die "ERROR wfamily undefined for $target"; }
   my $coverage = (abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1) / $seqlen;
   my $one_evalue2print = ($use_evalues) ? sprintf("%8g  ", $one_evalue_HR->{$wfamily}) : "";
   my $two_evalue2print = undef;
