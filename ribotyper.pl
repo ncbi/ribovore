@@ -54,14 +54,15 @@ opt_Add("-f",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the search algorithm";
-#       option               type   default                group  requires incompat                                  preamble-output                help-output    
-opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--hmm,--slow",       "annotate with nhmmer",        "using nhmmer for annotation",    \%opt_HH, \@opt_order_A);
-opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",      "using cmscan for annotation",    \%opt_HH, \@opt_order_A);
-opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nhmmer,--cmscan,--hmm,--slow",         "annotate with SSU-ALIGN",     "using SSU-ALIGN for annotation", \%opt_HH, \@opt_order_A);
-opt_Add("--hmm",          "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in slower HMM mode",      "run in slower HMM mode",         \%opt_HH, \@opt_order_A);
-opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--hmm",              "run in slow CM mode",         "run in slow CM mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
-opt_Add("--mid",          "boolean", 0,                       2,"--slow",  "--max",                                  "use --mid instead of --rfam", "with --slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--max",          "boolean", 0,                       2,"--slow",  "--mid",                                  "use --max instead of --rfam", "with --slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat                                  preamble-output                  help-output    
+opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--hmm,--slow",       "annotate with nhmmer",          "using nhmmer for annotation",    \%opt_HH, \@opt_order_A);
+opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",        "using cmscan for annotation",    \%opt_HH, \@opt_order_A);
+opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nhmmer,--cmscan,--hmm,--slow",         "annotate with SSU-ALIGN",       "using SSU-ALIGN for annotation", \%opt_HH, \@opt_order_A);
+opt_Add("--hmm",          "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in slower HMM mode",        "run in slower HMM mode",         \%opt_HH, \@opt_order_A);
+opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--hmm",              "run in slow CM mode",           "run in slow CM mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
+opt_Add("--mid",          "boolean", 0,                       2,"--slow",  "--max",                                  "use --mid instead of --rfam",   "with --slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--max",          "boolean", 0,                       2,"--slow",  "--mid",                                  "use --max instead of --rfam",   "with --slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--smxsize",         "real", undef,                   2,"--max",   undef,                                    "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the minimum bit score for any hit";
 #     option                 type   default                group   requires incompat    preamble-output                                 help-output    
@@ -99,6 +100,7 @@ my $options_okay =
                 'slow'         => \$GetOptions_H{"--slow"},
                 'mid'          => \$GetOptions_H{"--mid"},
                 'max'          => \$GetOptions_H{"--max"},
+                'smxsize=s'    => \$GetOptions_H{"--smxsize"},
 # options controlling minimum bit score cutoff 
                 'minbit=s'     => \$GetOptions_H{"--minbit"},
                 'nominbit'     => \$GetOptions_H{"--nominbit"},
@@ -318,7 +320,7 @@ else { # --inaccept not used, all models are acceptable
 
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
-run_command($execs_H{"esl-seqstat"} . " -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+run_command($execs_H{"esl-seqstat"} . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value set to -1 after we output info for this sequence
@@ -378,9 +380,18 @@ else {
     }
   }
   elsif($search_method eq "cmsearch-slow" || $search_method eq "cmscan-slow") { 
-    if   (opt_Get("--mid", \%opt_HH)) { $cmsearch_and_cmscan_opts .= " --mid "; }
-    elsif(opt_Get("--max", \%opt_HH)) { $cmsearch_and_cmscan_opts .= " --max "; }
-    else                              { $cmsearch_and_cmscan_opts .= " --rfam "; }
+    if   (opt_Get("--mid", \%opt_HH)) { 
+      $cmsearch_and_cmscan_opts .= " --mid "; 
+    }
+    elsif(opt_Get("--max", \%opt_HH)) { 
+      $cmsearch_and_cmscan_opts .= " --max "; 
+      if(opt_IsUsed("--smxsize", \%opt_HH)) { 
+        $cmsearch_and_cmscan_opts .= " --smxsize " . opt_Get("--smxsize", \%opt_HH) . " ";
+      }
+    }
+    else { # default for --slow, --mid nor --max used (use cmsearch --rfam)
+      $cmsearch_and_cmscan_opts .= " --rfam "; 
+    }
     if($search_method eq "cmscan-slow") { 
       $cmsearch_and_cmscan_opts .= " --fmt 2 ";
     }
@@ -555,7 +566,7 @@ sub parse_modelinfo_file {
 
   open(IN, $modelinfo_file) || die "ERROR unable to open $modelinfo_file for reading"; 
   while(my $line = <IN>) { 
-    if($line !~ m/^\#/) { # skip comment lines
+    if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
       chomp $line;
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 3) { 
