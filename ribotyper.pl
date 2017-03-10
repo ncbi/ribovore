@@ -69,19 +69,23 @@ $opt_group_desc_H{"3"} = "options for controlling the minimum bit score for any 
 opt_Add("--minbit",        "real",   "20.",                   3,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--nominbit",   "boolean",   0,                       3,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "options for controlling the score difference failure threshold";
+$opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("--posdiff",       "real",   "0.05",                  4,  undef,   undef,      "use min acceptable per-posn score difference of <x>", "use minimum acceptable bit per posn score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",       "real",   "50.",                   4,  undef,   undef,      "use min acceptable total score difference of <x>",    "use minimum acceptable bit total score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",               "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "optional input files";
+$opt_group_desc_H{"5"} = "options for controlling the score difference failure threshold";
+#     option                 type   default                group   requires incompat    preamble-output                                          help-output    
+opt_Add("--posdiff",       "real",   "0.05",                  5,  undef,   undef,      "use min acceptable per-posn score difference of <x>", "use minimum acceptable bit per posn score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",       "real",   "50.",                   5,  undef,   undef,      "use min acceptable total score difference of <x>",    "use minimum acceptable bit total score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"6"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   5,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--inaccept",     "string",  undef,                   6,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"6"} = "advanced options";
+$opt_group_desc_H{"7"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                     help-output    
-opt_Add("--evalues",      "boolean", 0,                       6,  undef,   "--ssualign",        "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       6,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -104,6 +108,8 @@ my $options_okay =
 # options controlling minimum bit score cutoff 
                 'minbit=s'     => \$GetOptions_H{"--minbit"},
                 'nominbit'     => \$GetOptions_H{"--nominbit"},
+# options controlling which sequences pass/fail
+                'minusfail'    => \$GetOptions_H{"--minusfail"},
 # options controlling the score difference failure threshold
                 'posdiff=s'    => \$GetOptions_H{"--posdiff"},
                 'absdiff=s'    => \$GetOptions_H{"--absdiff"},
@@ -1393,18 +1399,23 @@ sub output_one_target {
   # does the sequence pass or fail? 
   # FAILs if: 
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
-  # - on negative strand
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
-  # - winning hit is to unacceptable model
+  # - winning hit is to unacceptable model 
+  # - --minusfail enabled and hit is on minus strand
   # - --posdiff or --absdiff used AND score difference between top two models is below $diff_thresh
   my $pass_fail = "PASS";
   my $reason_for_failure = "";
 
+  if($nhits > 1) { 
+    $pass_fail = "FAIL";
+    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
+    $reason_for_failure .= "hits_to_more_than_one_family($nhits_fail_str)";
+  }
   if($accept_HR->{$one_model_HR->{$wfamily}} != 1) { 
     $pass_fail = "FAIL";
     $reason_for_failure .= "unacceptable_model"
   }
-  if($one_strand_HR->{$wfamily} eq "-") { 
+  if(opt_Get("--minusfail", $opt_HHR) && ($one_strand_HR->{$wfamily} eq "-")) { 
     $pass_fail = "FAIL";
     if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
     $reason_for_failure .= "opposite_strand"
@@ -1417,11 +1428,6 @@ sub output_one_target {
     $reason_for_failure .= "score_difference_between_top_two_models_below_threshold($score_diff<$diff_str)";
     # If we wanted to demand top two models are from different domains, we'd add this to above if:
     # ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
-  }
-  if($nhits > 1) { 
-    $pass_fail = "FAIL";
-    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
-    $reason_for_failure .= "hits_to_more_than_one_family($nhits_fail_str)";
   }
   if($reason_for_failure eq "") { $reason_for_failure = "-"; }
 
