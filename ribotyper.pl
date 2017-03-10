@@ -1062,9 +1062,7 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  if((defined $score) 
-     && ((! defined $minbit) || ($score >= $minbit))) { 
-    # yes, we either have no minimum, or our score exceeds our minimum
+  if($nhits > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                               $prv_target, $seqidx_HR, $seqlen_HR, 
                               \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
