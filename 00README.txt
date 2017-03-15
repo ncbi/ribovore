@@ -161,27 +161,27 @@ $ cat test/test.ribotyper.short.out
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  -
 4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  -
 5     random                                         -                          -  FAIL  no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  FAIL  opposite_strand
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  -
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  FAIL  opposite_strand
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  -
 11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS  -
 12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   PASS  -
 13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   PASS  -
 14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   PASS  -
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  opposite_strand
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  -
 16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The Long file is not shown because it is so wide. 
-An example is in testfiles/example.long.txt.
+An example is in testfiles/test.ribotyper.long.out 
 
 Currently, there are five possible reasons that a sequence can
-"FAIL". Reasons 1, 2 and 3 are possible in all runs of the
-program. However, users will never see Reasons 4 or 5 unless they use
-command line options as explained below in the explanations of those
-Reasons.
+"FAIL". Reasons 1 and 2 are possible in all runs of the
+program. However, users will never see Reasons 3, 4 or 5 unless they
+use command line options as explained below in the explanations of
+those Reasons.
 
 Reason 1: "no_hits": No hits to any models above the minimum score
           threshold were found. The minimum score threshold is 
@@ -189,26 +189,28 @@ Reason 1: "no_hits": No hits to any models above the minimum score
           but this minimum score threshold is changeable to <x> with
           the --minbit <x>.
 
-Reason 2: "opposite_strand": The best hit is on the minus strand.
-
-Reason 3: "hits_to_more_than_one_family": A hit to two or more
+Reason 2: "hits_to_more_than_one_family": A hit to two or more
            'families' (e.g. SSU or LSU) exists for the same sequence. 
            This would happen, for example, if a single sequence had
            a fragment of an SSU sequence and a fragment of an LSU
            sequence on it.
 
-Reason 4: "unacceptable_model": Best hit is to a model that is
+Reason 3: "unacceptable_model": Best hit is to a model that is
           'unacceptable'. By default, all models are acceptable, but
           the user can specify only certain top-scoring models are
           'acceptable' using the --inaccept <s> option. See the
           'DEFINING ACCEPTABLE MODELS" section for an example.
 
-Reason 5: "score_difference_between_top_two_models_below_threshold"
+Reason 4: "score_difference_between_top_two_models_below_threshold"
           The score difference between the top scoring model and the
           second top scoring model is less than the minimum threshold
           allowed. By default, the minimum threshold is 0 bits, so
           this failure will never occur, but this threshold can be
           changed with the --posdiff and --absdiff options. 
+
+Reason 5: "opposite_strand": The best hit is on the minus strand and
+          the --minusfail option was used. 
+        
 
 ##############################################################################
 RECOMMENDED MODEL FILES
