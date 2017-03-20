@@ -64,10 +64,12 @@ opt_Add("--mid",          "boolean", 0,                       2,"--slow",  "--ma
 opt_Add("--max",          "boolean", 0,                       2,"--slow",  "--mid",                                  "use --max instead of --rfam",   "with --slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--smxsize",         "real", undef,                   2,"--max",   undef,                                    "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options for controlling the minimum bit score for any hit";
+$opt_group_desc_H{"3"} = "options related to bit score thresholds";
 #     option                 type   default                group   requires incompat    preamble-output                                 help-output    
 opt_Add("--minbit",        "real",   "20.",                   3,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--nominbit",   "boolean",   0,                       3,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
+opt_Add("--lowbitpos",     "real",   "0.5",                   3,  undef,   undef,      "set minimum bit per position threshold to <x>", "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--nolowbitpos","boolean",   0,                       3,  undef,   undef,      "turn off minimum bit per position threshold",   "turn off minimum bit per position threshold for reporting suspiciously low scores", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
@@ -108,6 +110,8 @@ my $options_okay =
 # options controlling minimum bit score cutoff 
                 'minbit=s'     => \$GetOptions_H{"--minbit"},
                 'nominbit'     => \$GetOptions_H{"--nominbit"},
+                'lowbitpos'    => \$GetOptions_H{"--lowbitpos"},
+                'nolowbitpos'  => \$GetOptions_H{"--nolowbitpos"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
 # options controlling the score difference failure threshold
@@ -501,7 +505,7 @@ close($srt_long_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
-printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 19 : 17));
+printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
@@ -1404,32 +1408,43 @@ sub output_one_target {
   # - --minusfail enabled and hit is on minus strand
   # - --posdiff or --absdiff used AND score difference between top two models is below $diff_thresh
   my $pass_fail = "PASS";
-  my $reason_for_failure = "";
+  my $unusual_features = "";
 
   if($nhits > 1) { 
     $pass_fail = "FAIL";
-    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
-    $reason_for_failure .= "hits_to_more_than_one_family($nhits_fail_str)";
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "hits_to_more_than_one_family($nhits_fail_str)";
   }
   if($accept_HR->{$one_model_HR->{$wfamily}} != 1) { 
     $pass_fail = "FAIL";
-    $reason_for_failure .= "unacceptable_model"
+    $unusual_features .= "unacceptable_model"
   }
   if(opt_Get("--minusfail", $opt_HHR) && ($one_strand_HR->{$wfamily} eq "-")) { 
     $pass_fail = "FAIL";
-    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
-    $reason_for_failure .= "opposite_strand"
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "opposite_strand"
   }
   if((defined $score_diff)        && 
      (defined $diff_thresh)       &&
      ($score_diff < $diff_thresh)) { 
     $pass_fail = "FAIL";
-    if($reason_for_failure ne "") { $reason_for_failure .= ";"; }
-    $reason_for_failure .= "score_difference_between_top_two_models_below_threshold($score_diff<$diff_str)";
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "score_difference_between_top_two_models_below_threshold($score_diff<$diff_str)";
     # If we wanted to demand top two models are from different domains, we'd add this to above if:
     # ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
   }
-  if($reason_for_failure eq "") { $reason_for_failure = "-"; }
+
+  # determine if the sequence has a 'suspiciously_low_score'
+  # it does if bits per position (of entire sequence not just hit)
+  # is below the threshold (--lowbitpos) minimum
+  my $bits_per_posn = $one_score_HR->{$wfamily} / $seqlen, 
+  my $lowbit_flag = 0;
+  if((! opt_Get("--nolowbitpos", $opt_HHR)) && ($bits_per_posn < opt_Get("--lowbitpos", $opt_HHR))) { 
+    $lowbit_flag = 1;
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowbitpos", $opt_HHR));
+  }
+  if($unusual_features eq "") { $unusual_features = "-"; }
 
   if($do_short) { 
     printf $FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
@@ -1437,10 +1452,10 @@ sub output_one_target {
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
                 ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
-                $pass_fail, $reason_for_failure);
+                $pass_fail, $unusual_features);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %s%-5s  %5.3f  %*d  %*d  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %4.2f  %s%-5s  %5.3f  %*d  %*d  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1450,6 +1465,7 @@ sub output_one_target {
                 $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
                 $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
                 $one_score_HR->{$wfamily}, 
+                $bits_per_posn, 
                 $one_evalue2print, 
                 ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
                 $coverage, 
@@ -1512,7 +1528,7 @@ sub output_one_hitless_target {
   my ($FH, $do_short, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
 
   my $pass_fail = "FAIL";
-  my $reason_for_failure = "no_hits";
+  my $unusual_features = "no_hits";
   my $nhits = 0;
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
@@ -1522,10 +1538,10 @@ sub output_one_hitless_target {
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $width_HR->{"classification"}, "-",
-                "-", $pass_fail, $reason_for_failure);
+                "-", $pass_fail, $unusual_features);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %s%5s  %5s  %*s  %*s  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1534,6 +1550,7 @@ sub output_one_hitless_target {
                 $width_HR->{"family"}, "-",
                 $width_HR->{"domain"}, "-", 
                 $width_HR->{"model"}, "-", 
+                "-", 
                 "-", 
                 ($use_evalues) ? "       -  " : "",
                 "-",
@@ -1580,13 +1597,12 @@ sub output_short_headers {
               $width_HR->{"index"}, "#idx", 
               $width_HR->{"target"}, "target", 
               $width_HR->{"classification"}, "classification", 
-              "strnd", "p/f", "reason-for-failure");
+              "strnd", "p/f", "unexpected_features");
   printf $FH ("%-*s  %-*s  %-*s  %3s  %4s  %s\n", 
               $width_HR->{"index"},          $index_dash_str, 
               $width_HR->{"target"},         $target_dash_str, 
               $width_HR->{"classification"}, $class_dash_str, 
-              "-----", "----", "------------------");
-
+              "-----", "----", "-------------------");
   return;
 }
 
@@ -1623,7 +1639,7 @@ sub output_long_headers {
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
-  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
+  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 4 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6 ;
   if($use_evalues) { 
     $best_model_group_width   += 2 + 8;
@@ -1663,7 +1679,7 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -1673,6 +1689,7 @@ sub output_long_headers {
               $width_HR->{"domain"}, "domain", 
               $width_HR->{"model"},  "model", 
               "score", 
+              "b/nt",
               ($use_evalues) ? "  evalue  " : "", 
               "strnd",
               "cov",
@@ -1685,7 +1702,7 @@ sub output_long_headers {
               "extra");
 
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -1695,6 +1712,7 @@ sub output_long_headers {
               $width_HR->{"domain"}, $domain_dash_str, 
               $width_HR->{"model"},  $model_dash_str,
               "------", 
+              "----", 
               ($use_evalues) ? "--------  " : "",
               "-----",
               "-----",

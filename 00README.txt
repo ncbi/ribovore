@@ -154,8 +154,8 @@ Column 6: explanation of any "FAIL" values in column 5 ("-" for PASSing
 Short file:
 $ cat test/test.ribotyper.short.out
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#idx  target                                         classification         strnd   p/f  reason-for-failure
-#---  ---------------------------------------------  ---------------------  -----  ----  ------------------
+#idx  target                                         classification         strnd   p/f  unexpected_features
+#---  ---------------------------------------------  ---------------------  -----  ----  -------------------
 1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  -
 2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  -
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  -
@@ -210,7 +210,18 @@ Reason 4: "score_difference_between_top_two_models_below_threshold"
 
 Reason 5: "opposite_strand": The best hit is on the minus strand and
           the --minusfail option was used. 
-        
+
+Additionally, there is one 'unexpected feature' that does not cause a
+failure but which will be reported in the final column of the 'short'
+output. This is a 'low' bits per position score. The bits per position
+score is determined by dividing the total score of the best hit by the
+length of the sequence (not just the length of the hit). If bits per
+position is below 0.5, then the sequence will have the string
+'suspiciously_low_bit_score(x<0.5)' in the final column of the short
+output file, where x is the bits per position for this hit. The
+threshold of 0.5 is to changeable to <y> with the --lowbitpos <y>
+option. The threshold can be turned off (so that no hits are ever
+reported as 'suspiciously_low') with the --nolowbitpos option.
 
 ##############################################################################
 RECOMMENDED MODEL FILES
