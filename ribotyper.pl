@@ -1351,20 +1351,20 @@ sub output_one_target {
   my $nhits_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
 
-  # build up 'extra information' about other hits in other clans, if any
-  my $extra_string = "";
+  # build up 'other_hits_string' string about other hits in other clans, if any
+  my $other_hits_string = "";
   my $nhits = 1;
   foreach my $family (keys %{$one_model_HR}) { 
     if($family ne $wfamily) { 
       if(exists($one_model_HR->{$family})) { 
-        if($extra_string ne "") { $extra_string .= ","; }
+        if($other_hits_string ne "") { $other_hits_string .= ","; }
         if($use_evalues) { 
-          $extra_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
+          $other_hits_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
                                    $family, $one_model_HR->{$family}, $one_evalue_HR->{$family}, $one_score_HR->{$family}, 
                                    $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
         }
         else { # we don't have E-values
-          $extra_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
+          $other_hits_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
                                    $family, $one_model_HR->{$family}, $one_score_HR->{$family}, 
                                    $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
         }
@@ -1444,6 +1444,10 @@ sub output_one_target {
     if($unusual_features ne "") { $unusual_features .= ";"; }
     $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowbitpos", $opt_HHR));
   }
+  if($other_hits_string ne "") { 
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "other_family_hits:" . $other_hits_string;
+  }  
   if($unusual_features eq "") { $unusual_features = "-"; }
 
   if($do_short) { 
@@ -1487,11 +1491,11 @@ sub output_one_target {
                   ($use_evalues) ? "       -  " : "");
     }
     
-    if($extra_string eq "") { 
-      $extra_string = "-";
+    if($unusual_features eq "") { 
+      $unusual_features = "-";
     }
     
-    print $FH ("$extra_string\n");
+    print $FH ("$unusual_features\n");
   }
 
   return;
@@ -1561,7 +1565,7 @@ sub output_one_hitless_target {
                 "-" , 
                 $width_HR->{"model"}, "-", 
                 "-", 
-                ($use_evalues) ? "       -  " : "", "-");
+                ($use_evalues) ? "       -  " : "", $unusual_features);
     
   }
   return;
@@ -1699,7 +1703,7 @@ sub output_long_headers {
               $width_HR->{"model"},  "model", 
               "score", 
               ($use_evalues) ? "  evalue  " : "", 
-              "extra");
+              "unexpected_features");
 
   # line 4
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
@@ -1722,7 +1726,7 @@ sub output_long_headers {
               $width_HR->{"model"},  $model_dash_str, 
               "------", 
               ($use_evalues) ? "--------  " : "",
-              "-----");
+              "-------------------");
   return;
 }
 
