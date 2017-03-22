@@ -85,9 +85,10 @@ $opt_group_desc_H{"6"} = "optional input files";
 opt_Add("--inaccept",     "string",  undef,                   6,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "advanced options";
-#       option               type   default                group  requires incompat             preamble-output                     help-output    
-opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores", "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat             preamble-output                               help-output    
+opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                       7,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -121,7 +122,8 @@ my $options_okay =
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
                 'evalues'      => \$GetOptions_H{"--evalues"},
-                'skipsearch'   => \$GetOptions_H{"--skipsearch"});
+                'skipsearch'   => \$GetOptions_H{"--skipsearch"},
+                'noali'        => \$GetOptions_H{"--noali"});
 
 my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
 my $executable    = $0;
@@ -156,12 +158,19 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-# do some final option check that is currently too sophisticated for epn-options
+# do some final option checks that are currently too sophisticated for epn-options
 if(opt_Get("--evalues", \%opt_HH)) { 
   if((! opt_Get("--nhmmer", \%opt_HH)) && 
      (! opt_Get("--hmm", \%opt_HH)) && 
      (! opt_Get("--slow", \%opt_HH))) { 
     die "ERROR, --evalues requires one of --nhmmer, --hmm or --slow";
+  }
+}
+if(opt_Get("--noali", \%opt_HH)) { 
+  if((! opt_Get("--nhmmer", \%opt_HH)) && 
+     (! opt_Get("--hmm", \%opt_HH)) && 
+     (! opt_Get("--slow", \%opt_HH))) { 
+    die "ERROR, --noali requires one of --nhmmer, --hmm or --slow";
   }
 }
 
@@ -371,7 +380,9 @@ if($search_method eq "nhmmer") {
   $tblout_file        = $out_root . ".nhmmer.tbl";
   $sorted_tblout_file = $tblout_file . ".sorted";
   $searchout_file     = $out_root . ".nhmmer.out";
-  $search_cmd         = $execs_H{"nhmmer"} . " --noali --cpu $ncpu --tblout $tblout_file $model_file $seq_file > $searchout_file";
+  $search_cmd         = $execs_H{"nhmmer"};
+  if(opt_Get("--noali", \%opt_HH)) { $search_cmd .= " --noali"; }
+  $search_cmd        .= " --cpu $ncpu --tblout $tblout_file $model_file $seq_file > $searchout_file";
   $sort_cmd           = "grep -v ^\# $tblout_file | sort -k1 > " . $sorted_tblout_file;
 }
 elsif($search_method eq "ssualign") { 
@@ -382,9 +393,9 @@ elsif($search_method eq "ssualign") {
   $sort_cmd           = "grep -v ^\# $tblout_file | awk ' { printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); } ' | sort -k2 > " . $sorted_tblout_file;
 }
 else { 
-  # search_method is "cmsearch-slow", "cmscan-slow', "cmsearch-fast", or "cmscan-slow"
+  # search_method is "cmsearch-slow", "cmscan-slow', "cmsearch-fast", or "cmscan-fast"
   if($search_method eq "cmsearch-fast" || $search_method eq "cmscan-fast") { 
-    $cmsearch_and_cmscan_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc ";
+    $cmsearch_and_cmscan_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc --noali ";
     if($search_method eq "cmscan-fast") { 
       $cmsearch_and_cmscan_opts .= " --fmt 2 ";
     }
@@ -405,12 +416,19 @@ else {
     if($search_method eq "cmscan-slow") { 
       $cmsearch_and_cmscan_opts .= " --fmt 2 ";
     }
+    if(opt_Get("--noali", \%opt_HH)) { 
+      $cmsearch_and_cmscan_opts .= " --noali ";
+    }
   }
   else { # $search_method is either "cmsearch-hmmonly", or "cmscan-hmmonly";
     $cmsearch_and_cmscan_opts .= " --hmmonly ";
     if($search_method eq "cmscan-hmmonly") { 
       $cmsearch_and_cmscan_opts .= " --fmt 2 ";
     }
+    if(opt_Get("--noali", \%opt_HH)) { 
+      $cmsearch_and_cmscan_opts .= " --noali ";
+    }
+  $search_cmd = $executable; 
   }
   if(($search_method eq "cmsearch-slow") || ($search_method eq "cmsearch-fast") || ($search_method eq "cmsearch-hmmonly")) { 
     $tblout_file        = $out_root . ".cmsearch.tbl";
@@ -431,7 +449,7 @@ else {
       $sort_cmd = "grep -v ^\# $tblout_file | sort -k4 > " . $sorted_tblout_file;
     }
   }
-  $search_cmd = $executable . " --noali --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
+  $search_cmd = $executable . " --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = output_progress_prior("Performing $search_method search ", $progress_w, undef, *STDOUT);
