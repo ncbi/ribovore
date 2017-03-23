@@ -895,6 +895,9 @@ sub parse_sorted_tbl_file {
   my %two_stop_H;
   my %two_strand_H;
 
+  my %nhits_per_model_H = (); # hash; key: model name, value: number of hits to model above threshold 
+                              # for current target sequence
+
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
 
@@ -1004,10 +1007,11 @@ sub parse_sorted_tbl_file {
     # for new sequence just read
     if(($nhits > 0) && (defined $prv_target) && ($prv_target ne $target)) { 
       output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                                $prv_target, $seqidx_HR, $seqlen_HR, 
+                                $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, 
                                 \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
       $nhits = 0;
+      %nhits_per_model_H = ();
     }
     ##############################################################
     
@@ -1019,6 +1023,7 @@ sub parse_sorted_tbl_file {
     if((! defined $minbit) || ($score >= $minbit)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits++;
+      $nhits_per_model_H{$model}++;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $better_than_one = 1; # no current, 'one' this will be it
       }
@@ -1092,10 +1097,11 @@ sub parse_sorted_tbl_file {
   # output data for final sequence
   if($nhits > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                              $prv_target, $seqidx_HR, $seqlen_HR, 
+                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, 
                               \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     $nhits = 0;
+    %nhits_per_model_H = ();
   }
   # close file handle
   close(IN);
@@ -1210,6 +1216,7 @@ sub set_vars {
 #   $target:        target name
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
+#   $nhits_HR:      reference to hash of num hits per model
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -1229,20 +1236,22 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 22;
+  my $nargs_expected = 23;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-      $target, $seqidx_HR, $seqlen_HR, 
+      $target, $seqidx_HR, $seqlen_HR, $nhits_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
+  output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR,
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}, 
+  output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR,
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1313,6 +1322,7 @@ sub output_one_hitless_target_wrapper {
 #   $target:        target name
 #   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
+#   $nhits_HR:      reference to hash of num hits per model
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -1332,11 +1342,12 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 22;
+  my $nargs_expected = 23;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, $seqidx, $seqlen, 
+  my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+      $seqidx, $seqlen, $nhits_HR,
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1366,12 +1377,13 @@ sub output_one_target {
       $wfamily = $family;
     }
   }
-  my $nhits_fail_str = $wfamily; # used only if we FAIL because there's 
+  my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
+  my $nhits = $nhits_HR->{$one_model_HR->{$wfamily}};
 
   # build up 'other_hits_string' string about other hits in other clans, if any
   my $other_hits_string = "";
-  my $nhits = 1;
+  my $nfams = 1;
   foreach my $family (keys %{$one_model_HR}) { 
     if($family ne $wfamily) { 
       if(exists($one_model_HR->{$family})) { 
@@ -1386,8 +1398,8 @@ sub output_one_target {
                                    $family, $one_model_HR->{$family}, $one_score_HR->{$family}, 
                                    $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
         }
-        $nhits++;
-        $nhits_fail_str .= "+" . $family;
+        $nfams++;
+        $nfams_fail_str .= "+" . $family;
       }
     }
   }
@@ -1428,11 +1440,16 @@ sub output_one_target {
   my $pass_fail = "PASS";
   my $unusual_features = "";
 
-  if($nhits > 1) { 
+  if($nfams > 1) { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "hits_to_more_than_one_family($nhits_fail_str)";
+    $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str)";
   }
+  if($nhits > 1) {
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "multiple_hits_to_best_model($nhits)";
+  }
+
   if($accept_HR->{$one_model_HR->{$wfamily}} != 1) { 
     $pass_fail = "FAIL";
     $unusual_features .= "unacceptable_model"
@@ -1477,17 +1494,18 @@ sub output_one_target {
                 $pass_fail, $unusual_features);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %4.2f  %s%-5s  %5.3f  %*d  %*d  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %4.2f  %3d  %s%-5s  %5.3f  %*d  %*d  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
                 $width_HR->{"length"}, $seqlen, 
-                $nhits, 
+                $nfams, 
                 $width_HR->{"family"}, $wfamily, 
                 $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
                 $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
                 $one_score_HR->{$wfamily}, 
                 $bits_per_posn, 
+                $nhits, 
                 $one_evalue2print, 
                 ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
                 $coverage, 
@@ -1551,6 +1569,7 @@ sub output_one_hitless_target {
 
   my $pass_fail = "FAIL";
   my $unusual_features = "no_hits";
+  my $nfams = 0;
   my $nhits = 0;
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
@@ -1563,17 +1582,18 @@ sub output_one_hitless_target {
                 "-", $pass_fail, $unusual_features);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %4s  %3s  %s%5s  %5s  %*s  %*s  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
                 $width_HR->{"length"}, $seqlen, 
-                $nhits,
+                $nfams,
                 $width_HR->{"family"}, "-",
                 $width_HR->{"domain"}, "-", 
                 $width_HR->{"model"}, "-", 
                 "-", 
                 "-", 
+                $nhits,
                 ($use_evalues) ? "       -  " : "",
                 "-",
                 "-", 
@@ -1661,7 +1681,7 @@ sub output_long_headers {
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
-  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 4 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
+  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6 ;
   if($use_evalues) { 
     $best_model_group_width   += 2 + 8;
@@ -1701,17 +1721,18 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %6s  %4s  %3s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
               $width_HR->{"length"}, "length", 
-              "#ht", 
+              "#fm", 
               $width_HR->{"family"}, "fam", 
               $width_HR->{"domain"}, "domain", 
               $width_HR->{"model"},  "model", 
               "score", 
               "b/nt",
+              "#ht", 
               ($use_evalues) ? "  evalue  " : "", 
               "strnd",
               "cov",
@@ -1724,7 +1745,7 @@ sub output_long_headers {
               "unexpected_features");
 
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %4s  %3s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -1735,6 +1756,7 @@ sub output_long_headers {
               $width_HR->{"model"},  $model_dash_str,
               "------", 
               "----", 
+              "---",
               ($use_evalues) ? "--------  " : "",
               "-----",
               "-----",
