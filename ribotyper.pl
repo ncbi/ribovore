@@ -93,6 +93,7 @@ $opt_group_desc_H{"7"} = "advanced options";
 opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 opt_Add("--noali",        "boolean", 0,                       7,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                       7,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -131,7 +132,8 @@ my $options_okay =
 # advanced options
                 'evalues'      => \$GetOptions_H{"--evalues"},
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"},
-                'noali'        => \$GetOptions_H{"--noali"});
+                'noali'        => \$GetOptions_H{"--noali"},
+                'samedomain'   => \$GetOptions_H{"--samedomain"});
 
 my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
 my $executable    = $0;
@@ -320,7 +322,7 @@ my $start_secs = output_progress_prior("Parsing and validating input files and d
 ###########################################################################
 # parse fam file
 # variables related to fams and domains
-my %family_H = (); # hash of fams,   key: model name, value: name of family model belongs to (e.g. SSU)
+my %family_H = (); # hash of fams,    key: model name, value: name of family model belongs to (e.g. SSU)
 my %domain_H = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
 parse_modelinfo_file($modelinfo_file, \%family_H, \%domain_H);
 
@@ -900,6 +902,7 @@ sub parse_sorted_tbl_file {
   # keys for all below are families (e.g. 'SSU' or 'LSU')
   # values are for the best scoring hit in this family to current sequence
   my %one_model_H;  
+  my %one_domain_H;  
   my %one_score_H;  
   my %one_evalue_H; 
   my %one_start_H;  
@@ -909,6 +912,7 @@ sub parse_sorted_tbl_file {
   # same as for 'one' data structures, but values are for second best scoring hit
   # in this family to current sequence that overlaps with hit in 'one' data structures
   my %two_model_H;
+  my %two_domain_H;  
   my %two_score_H;
   my %two_evalue_H;
   my %two_start_H;
@@ -923,13 +927,16 @@ sub parse_sorted_tbl_file {
 
   open(IN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
 
-  init_vars(\%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
-  init_vars(\%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+  init_vars(\%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H);
+  init_vars(\%two_model_H, \%two_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
 
-  my ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-      (undef, undef, undef, undef, undef, undef, undef, undef, undef);
-  my $better_than_one; # set to true for each hit if it is better than our current 'one' hit
-  my $better_than_two; # set to true for each hit if it is better than our current 'two' hit
+  my ($target, $model, $domain, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
+      (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
+  my $cur_becomes_one; # set to true for each hit if it is better than our current 'one' hit
+  my $cur_becomes_two; # set to true for each hit if it is better than our current 'two' hit
+  my $cur_domain_or_model; # domain (default) or model (--samedomain) of current hit
+  my $one_domain_or_model; # domain (default) or model (--samedomain) of current 'one' hit
+  my $two_domain_or_model; # domain (default) or model (--samedomain) of current 'two' hit
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
   my $nhits = 0; # number of hits above threshold for current sequence
 
@@ -1028,8 +1035,8 @@ sub parse_sorted_tbl_file {
     if(($nhits > 0) && (defined $prv_target) && ($prv_target ne $target)) { 
       output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                                 $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, 
-                                \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-                                \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+                                \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                                \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
       $nhits = 0;
       %nhits_per_model_H = ();
     }
@@ -1037,46 +1044,54 @@ sub parse_sorted_tbl_file {
     
     ##########################################################
     # Determine if this hit is either a new 'one' or 'two' hit
-    $better_than_one = 0; # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
-    $better_than_two = 0; # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
+    $cur_becomes_one     = 0;       # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
+    $cur_becomes_two     = 0;       # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
+    $domain = $domain_HR->{$model}; # the domain for this model
+    $one_domain_or_model = undef;   # top hit's domain (default) or model (if --samedomain)
+    $two_domain_or_model = undef;   # second best hit's domain (default) or model (if --samedomain)
+    $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
     # first, enforce our global bit score minimum
     if((! defined $minbit) || ($score >= $minbit)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits++;
       $nhits_per_model_H{$model}++;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-        $better_than_one = 1; # no current, 'one' this will be it
+        $cur_becomes_one = 1; # no current, 'one' this will be it
       }
       else { 
+        # determine the domain (default) or model (--samedomain) of top hit and current hit we're looking at
+        # if --samedomain, we require that top two hits be different models, not necessarily different domains
+        $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $one_model_H{$family} : $one_domain_H{$family};
         if($use_evalues) { 
           if(($evalue < $one_evalue_H{$family}) || # this E-value is better than (less than) our current 'one' E-value
              ($evalue eq $one_evalue_H{$family} && $score > $one_score_H{$family})) { # this E-value equals current 'one' E-value, 
             # but this score is better than current 'one' score
-            $better_than_one = 1;
+            $cur_becomes_one = 1;
           }
         }
         else { # we don't have E-values
           if($score > $one_score_H{$family}) { # score is better than current 'one' score
-            $better_than_one = 1;
+            $cur_becomes_one = 1;
           }
         }
       }
-      # only possibly set $better_than_two to TRUE if $better_than_one is FALSE, and it's not the same model as 'one'
-      if((! $better_than_one) && ($model ne $one_model_H{$family})) {  
+      # only possibly set $cur_becomes_two to TRUE if $cur_becomes_one is FALSE, and it's not the same model/domain as 'one'
+      if((! $cur_becomes_one) && ($cur_domain_or_model ne $one_domain_or_model)) { 
         if(! defined $two_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-          $better_than_two = 1;
+          $cur_becomes_two = 1;
         }
         else { 
+          $two_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $two_model_H{$family} : $two_domain_H{$family};
           if($use_evalues) { 
             if(($evalue < $two_evalue_H{$family}) || # this E-value is better than (less than) our current 'two' E-value
                ($evalue eq $two_evalue_H{$family} && $score > $two_score_H{$family})) { # this E-value equals current 'two' E-value, 
               # but this score is better than current 'two' score
-              $better_than_two = 1;
+              $cur_becomes_two = 1;
             }
           }
           else { # we don't have E-values
             if($score > $two_score_H{$family}) { # score is better than current 'one' score
-              $better_than_two = 1;
+              $cur_becomes_two = 1;
             }
           }
         }
@@ -1087,21 +1102,23 @@ sub parse_sorted_tbl_file {
     
     ##########################################################
     # if we have a new hit, update 'one' and/or 'two' data structures
-    if($better_than_one) { 
+    if($cur_becomes_one) { 
       # new 'one' hit, update 'one' variables, 
       # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
-      if(defined $one_model_H{$family} && $one_model_H{$family} ne $model) { 
-        set_vars($family, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
-                 $one_model_H{$family},   $one_score_H{$family},  $one_evalue_H{$family},  $one_start_H{$family},  $one_stop_H{$family},  $one_strand_H{$family});
+      if((defined $one_domain_or_model) && ($one_domain_or_model ne $cur_domain_or_model)) { 
+        set_vars($family, \%two_model_H, \%two_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+                 $one_model_H{$family},  $one_domain_H{$family},  $one_score_H{$family},  $one_evalue_H{$family},  $one_start_H{$family},  $one_stop_H{$family},  $one_strand_H{$family});
       }
       # now set new 'one' hit values
-      set_vars($family, \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-               $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
+      set_vars($family, \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+               $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand);
     }
-    elsif($better_than_two) { 
+    elsif(($cur_becomes_two) && ($one_domain_or_model ne $cur_domain_or_model)) { 
       # new 'two' hit, set it
-      set_vars($family, \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
-               $model,       $score,      $evalue,      $seqfrom,    $seqto,     $strand);
+      # (we don't need to check that 'one_domain_or_model ne cur_domain_or_model' because we did that
+      #  above before we set cur_becomes_two to true)
+      set_vars($family, \%two_model_H, \%two_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H, 
+               $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand);
     }
     # finished updating 'one' or 'two' data structures
     ##########################################################
@@ -1118,8 +1135,8 @@ sub parse_sorted_tbl_file {
   if($nhits > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                               $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, 
-                              \%one_model_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-                              \%two_model_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+                              \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                              \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     $nhits = 0;
     %nhits_per_model_H = ();
   }
@@ -1138,6 +1155,7 @@ sub parse_sorted_tbl_file {
 #              
 # Arguments: 
 #   $model_HR:   REF to $model variable hash, a model name
+#   $domain_HR:  REF to $domain variable hash, domain for model
 #   $score_HR:   REF to $score variable hash, a bit score
 #   $evalue_HR:  REF to $evalue variable hash, an E-value
 #   $start_HR:   REF to $start variable hash, a start position
@@ -1150,14 +1168,15 @@ sub parse_sorted_tbl_file {
 #
 ################################################################# 
 sub init_vars { 
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   my $sub_name = "init_vars";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR) = @_;
+  my ($model_HR, $domain_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR) = @_;
 
   foreach my $key (keys %{$model_HR}) { 
     delete $model_HR->{$key};
+    delete $domain_HR->{$key};
     delete $score_HR->{$key};
     delete $evalue_HR->{$key};
     delete $start_HR->{$key};
@@ -1180,12 +1199,14 @@ sub init_vars {
 # Arguments: 
 #   $family:    family, key to hashes
 #   $model_HR:  REF to hash of $model variables, a model name
+#   $domain_HR: REF to $domain variable hash, domain for model
 #   $score_HR:  REF to hash of $score variables, a bit score
 #   $evalue_HR: REF to hash of $evalue variables, an E-value
 #   $start_HR:  REF to hash of $start variables, a start position
 #   $stop_HR:   REF to hash of $stop variables, a stop position
 #   $strand_HR: REF to hash of $strand variables, a strand
 #   $model:     value to set $model_HR{$family} to 
+#   $domain:    value to set $domain_HR{$family} to 
 #   $score:     value to set $score_HR{$family} to 
 #   $evalue:    value to set $evalue_HR{$family} to 
 #   $start:     value to set $start_HR{$family} to 
@@ -1198,15 +1219,16 @@ sub init_vars {
 #
 ################################################################# 
 sub set_vars { 
-  my $nargs_expected = 13;
+  my $nargs_expected = 15;
   my $sub_name = "set_vars";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($family, 
-      $model_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR, 
-      $model,    $score,    $evalue,    $start,    $stop,    $strand) = @_;
+      $model_HR, $domain_HR, $score_HR, $evalue_HR, $start_HR, $stop_HR, $strand_HR, 
+      $model,    $domain,    $score,    $evalue,    $start,    $stop,    $strand) = @_;
 
   $model_HR->{$family}  = $model;
+  $domain_HR->{$family} = $domain;
   $score_HR->{$family}  = $score;
   $evalue_HR->{$family} = $evalue;
   $start_HR->{$family}  = $start;
@@ -1238,12 +1260,14 @@ sub set_vars {
 #   $seqlen_HR:     hash of target sequence lengths
 #   $nhits_HR:      reference to hash of num hits per model
 #   %one_model_HR:  'one' model
+#   %one_domain_HR: 'one' domain
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
 #   %one_start_HR:  'one' start position
 #   %one_stop_HR:   'one' stop position
 #   %one_strand_HR: 'one' strand 
 #   %two_model_HR:  'two' model
+#   %two_domain_HR: 'two' domain
 #   %two_score_HR:  'two' bit score
 #   %two_evalue_HR: 'two' E-value
 #   %two_start_HR:  'two' start position
@@ -1256,14 +1280,14 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 23;
+  my $nargs_expected = 25;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
       $target, $seqidx_HR, $seqlen_HR, $nhits_HR, 
-      $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
-      $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
+      $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
+      $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
   output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
@@ -1276,8 +1300,8 @@ sub output_one_target_wrapper {
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
   # reset vars
-  init_vars($one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
-  init_vars($two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+  init_vars($one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
+  init_vars($two_model_HR, $one_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   $seqlen_HR->{$target} = -1; # serves as a flag that we output info for this sequence
   
   return;
@@ -1506,12 +1530,12 @@ sub output_one_target {
       if($score_ppos_diff < $diff_vlow_thresh) { 
         if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_domains(%.3f<%.3f_bits_per_posn)", $score_ppos_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
       }
       elsif($score_ppos_diff < $diff_low_thresh) { 
         if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_domains(%.3f<%.3f_bits_per_posn)", $score_ppos_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("low_score_difference_between_top_two_%s(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
       }
     }
     else { 
@@ -1521,12 +1545,12 @@ sub output_one_target {
       if($score_total_diff < $diff_vlow_thresh) { 
         if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_domains(%.3f<%.3f_total_bits)", $score_total_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
       }
       elsif($score_total_diff < $diff_low_thresh) { 
         if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_domains(%.3f<%.3f_total_bits)", $score_total_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("low_score_difference_between_top_two_%s(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
       }
     }
   }
@@ -1750,8 +1774,13 @@ sub output_long_headers {
     $second_model_group_width += 2 + 8;
   }
 
-  if(length("best-scoring model")        > $best_model_group_width)   { $best_model_group_width   = length("best-scoring model"); }
-  if(length("second-best-scoring model") > $second_model_group_width) { $second_model_group_width = length("second-best-scoring model"); } 
+  if(length("best-scoring model")               > $best_model_group_width)   { $best_model_group_width   = length("best-scoring model"); }
+  if(opt_Get("--samedomain", $opt_HHR)) { 
+    if(length("second best-scoring model") > $second_model_group_width) { $second_model_group_width = length("second best-scoring model"); } 
+  }
+  else { 
+    if(length("different domain's best-scoring model") > $second_model_group_width) { $second_model_group_width = length("different domain's best-scoring model"); } 
+  }
 
   my $best_model_group_dash_str   = get_monocharacter_string($best_model_group_width, "-");
   my $second_model_group_dash_str = get_monocharacter_string($second_model_group_width, "-");
@@ -1767,7 +1796,7 @@ sub output_long_headers {
               $width_HR->{"domain"}, "", 
               $best_model_group_width, center_string($best_model_group_width, "best-scoring model"), 
               "", 
-              $second_model_group_width, center_string($second_model_group_width, "second-best-scoring model"), 
+              $second_model_group_width, center_string($second_model_group_width, (opt_Get("--samedomain", $opt_HHR)) ? "second best-scoring model" : "different domain's best-scoring model"), 
               "");
   # line 2
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %-*s  %s\n", 
