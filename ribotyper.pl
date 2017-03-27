@@ -76,9 +76,13 @@ $opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL";
 opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",               "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"5"} = "options for controlling the score difference failure threshold";
-#     option                 type   default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("--posdiff",       "real",   "0.05",                  5,  undef,   undef,      "use min acceptable per-posn score difference of <x>", "use minimum acceptable bit per posn score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",       "real",   "50.",                   5,  undef,   undef,      "use min acceptable total score difference of <x>",    "use minimum acceptable bit total score difference b/t best and 2nd best model to <x> bits", \%opt_HH, \@opt_order_A);
+#     option                 type   default                group  requires incompat    preamble-output                                            help-output    
+opt_Add("--lowpdiff",      "real",   "0.10",                  5,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowpdiff",     "real",   "0.04",                  5,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",    "boolean",   0,                       5,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
+opt_Add("--lowadiff",      "real",   "100.",                  5,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowadiff",     "real",   "40.",                   5,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--difffail",   "boolean",   0,                       5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",      "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"6"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
@@ -115,9 +119,13 @@ my $options_okay =
                 'nolowbitpos'  => \$GetOptions_H{"--nolowbitpos"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
-# options controlling the score difference failure threshold
-                'posdiff=s'    => \$GetOptions_H{"--posdiff"},
-                'absdiff=s'    => \$GetOptions_H{"--absdiff"},
+# options controlling the score difference thresholds
+                'lowpdiff=s'   => \$GetOptions_H{"--lowpdiff"},
+                'vlowpdiff=s'  => \$GetOptions_H{"--vlowpdiff"},
+                'absdiff'      => \$GetOptions_H{"--absdiff"},
+                'lowadiff=s'   => \$GetOptions_H{"--lowadiff"},
+                'vlowadiff=s'  => \$GetOptions_H{"--vlowadiff"},
+                'difffail'     => \$GetOptions_H{"--difffail"},
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
@@ -171,6 +179,18 @@ if(opt_Get("--noali", \%opt_HH)) {
      (! opt_Get("--hmm", \%opt_HH)) && 
      (! opt_Get("--slow", \%opt_HH))) { 
     die "ERROR, --noali requires one of --nhmmer, --hmm or --slow";
+  }
+}
+if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
+  if(opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)) { 
+    die sprintf("ERROR, with --lowpdiff <x> and --vlowpdiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
+                opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)); 
+  }
+}
+if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) { 
+  if(opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)) { 
+    die sprintf("ERROR, with --lowadiff <x> and --vlowadiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
+                opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)); 
   }
 }
 
@@ -1412,21 +1432,34 @@ sub output_one_target {
   }
   
   # if we have a second-best model, determine score difference between best and second-best model
-  my $score_diff  = undef;
-  my $diff_thresh = undef;
-  my $diff_str    = undef;
+  my $do_ppos_score_diff = 1; # true unless --absdiff option used
+  if(opt_IsUsed("--absdiff", $opt_HHR)) { 
+    $do_ppos_score_diff = 0;
+  }
+  my $score_total_diff = undef; # score total difference 
+  my $score_ppos_diff  = undef; # score per position difference 
+  my $diff_low_thresh  = undef; # bit score difference for 'low difference' warning/failure
+  my $diff_vlow_thresh = undef; # bit score difference for 'very low difference 'warning/failure
+  my $diff_low_str     = undef; # string that explains low bit score difference warning/failure
+  my $diff_vlow_str    = undef; # string that explains very low bit score difference warning/failure
+
   if(exists $two_score_HR->{$wfamily}) { 
-    $score_diff = ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily});
     # determine score difference threshold
-    if(opt_IsUsed("--absdiff", $opt_HHR)) { 
-      # absolute score difference, regardless of length of hit
-      $diff_thresh = opt_Get("--absdiff", $opt_HHR); 
-      $diff_str    = $diff_thresh . "_total_bits";
-    }
-    elsif(opt_IsUsed("--posdiff", $opt_HHR)) { 
+    $score_total_diff = ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily});
+    $score_ppos_diff  = $score_total_diff / abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily});
+    if($do_ppos_score_diff) { 
       # default: per position score difference, dependent on length of hit
-      $diff_thresh = opt_Get("--posdiff", $opt_HHR) * abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1;
-      $diff_str    = $diff_thresh . "_bits_per_posn";
+      $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
+      $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
+      $diff_low_str     = $diff_low_thresh . "_bits_per_posn";
+      $diff_vlow_str    = $diff_vlow_thresh . "_bits_per_posn";
+    }
+    else { 
+      # absolute score difference, regardless of length of hit
+      $diff_low_thresh  = opt_Get("--lowadiff", $opt_HHR); 
+      $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR); 
+      $diff_low_str     = $diff_low_thresh . "_total_bits";
+      $diff_vlow_str    = $diff_vlow_thresh . "_total_bits";
     }
   }
 
@@ -1459,14 +1492,43 @@ sub output_one_target {
     if($unusual_features ne "") { $unusual_features .= ";"; }
     $unusual_features .= "opposite_strand"
   }
-  if((defined $score_diff)        && 
-     (defined $diff_thresh)       &&
-     ($score_diff < $diff_thresh)) { 
-    $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "score_difference_between_top_two_models_below_threshold($score_diff<$diff_str)";
-    # If we wanted to demand top two models are from different domains, we'd add this to above if:
-    # ($domain_HR->{$one_model_HR->{$wfamily}} ne $domain_HR->{$two_model_HR->{$wfamily}})) { 
+
+  # determine if the sequence has a low score difference between the top
+  # two domains
+  if(exists $two_score_HR->{$wfamily}) { 
+    # determine score difference threshold
+    $score_total_diff = ($one_score_HR->{$wfamily} - $two_score_HR->{$wfamily});
+    $score_ppos_diff  = $score_total_diff / abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily});
+    if($do_ppos_score_diff) { 
+      # default: per position score difference, dependent on length of hit
+      $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
+      $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
+      if($score_ppos_diff < $diff_vlow_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
+        if($unusual_features ne "") { $unusual_features .= ";"; }
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_domains(%.3f<%.3f_bits_per_posn)", $score_ppos_diff, $diff_vlow_thresh);
+      }
+      elsif($score_ppos_diff < $diff_low_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
+        if($unusual_features ne "") { $unusual_features .= ";"; }
+        $unusual_features .= sprintf("low_score_difference_between_top_two_domains(%.3f<%.3f_bits_per_posn)", $score_ppos_diff, $diff_low_thresh);
+      }
+    }
+    else { 
+      # absolute score difference, regardless of length of hit
+      $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR);
+      $diff_low_thresh  = opt_Get("--lowadiff",  $opt_HHR);
+      if($score_total_diff < $diff_vlow_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
+        if($unusual_features ne "") { $unusual_features .= ";"; }
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_domains(%.3f<%.3f_total_bits)", $score_total_diff, $diff_vlow_thresh);
+      }
+      elsif($score_total_diff < $diff_low_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
+        if($unusual_features ne "") { $unusual_features .= ";"; }
+        $unusual_features .= sprintf("low_score_difference_between_top_two_domains(%.3f<%.3f_total_bits)", $score_total_diff, $diff_low_thresh);
+      }
+    }
   }
 
   # determine if the sequence has a 'suspiciously_low_score'
