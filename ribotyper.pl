@@ -75,7 +75,7 @@ $opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
 opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",               "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "options for controlling the score difference failure threshold";
+$opt_group_desc_H{"5"} = "options for controlling the score difference threshold";
 #     option                 type   default                group  requires incompat    preamble-output                                            help-output    
 opt_Add("--lowpdiff",      "real",   "0.10",                  5,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--vlowpdiff",     "real",   "0.04",                  5,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
@@ -84,16 +84,21 @@ opt_Add("--lowadiff",      "real",   "100.",                  5,"--absdiff",unde
 opt_Add("--vlowadiff",     "real",   "40.",                   5,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--difffail",   "boolean",   0,                       5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",      "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"6"} = "optional input files";
-#       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   6,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"6"} = "options for controlling the coverage threshold";
+#     option                 type   default                group  requires incompat    preamble-output                                            help-output    
+opt_Add("--tcov",          "real",   "0.92",                  6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--covfail",    "boolean",   0,                       6,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",        "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"7"} = "advanced options";
+$opt_group_desc_H{"7"} = "optional input files";
+#       option               type   default                group  requires incompat  preamble-output                     help-output    
+opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"8"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                       7,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                       7,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       8,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       8,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                       8,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                       8,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -127,6 +132,9 @@ my $options_okay =
                 'lowadiff=s'   => \$GetOptions_H{"--lowadiff"},
                 'vlowadiff=s'  => \$GetOptions_H{"--vlowadiff"},
                 'difffail'     => \$GetOptions_H{"--difffail"},
+# options controlling coverage threshold
+                'tcov=s'       => \$GetOptions_H{"--tcov"}, 
+                'covfail'      => \$GetOptions_H{"--covfail"}, 
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
@@ -536,10 +544,10 @@ run_command($cmd, opt_Get("-v", \%opt_HH));
 
 # reopen them, and add tails to the output files and exit.
 # now that we know the max sequence name length, we can output headers to the output files
-open($srt_long_out_FH,  ">>", $unsrt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for appending";
-open($srt_short_out_FH, ">>", $unsrt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for appending";
-output_long_tail($srt_long_out_FH);
-output_short_tail($srt_short_out_FH);
+open($srt_long_out_FH,  ">>", $srt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for appending";
+open($srt_short_out_FH, ">>", $srt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for appending";
+output_long_tail($srt_long_out_FH, \%opt_HH);
+output_short_tail($srt_short_out_FH, \%opt_HH);
 close($srt_short_out_FH);
 close($srt_long_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
@@ -921,6 +929,8 @@ sub parse_sorted_tbl_file {
 
   my %nhits_per_model_H = (); # hash; key: model name, value: number of hits to model above threshold 
                               # for current target sequence
+  my %nnts_per_model_H = ();  # hash; key: model name, value: number of nucleotides in all hits to model 
+                              # above threshold for current target sequence
 
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
@@ -1034,11 +1044,12 @@ sub parse_sorted_tbl_file {
     # for new sequence just read
     if(($nhits > 0) && (defined $prv_target) && ($prv_target ne $target)) { 
       output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                                $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, 
+                                $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_H, 
                                 \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                 \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
       $nhits = 0;
       %nhits_per_model_H = ();
+      %nnts_per_model_H  = ();
     }
     ##############################################################
     
@@ -1055,6 +1066,7 @@ sub parse_sorted_tbl_file {
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits++;
       $nhits_per_model_H{$model}++;
+      $nnts_per_model_H{$model} += abs($seqfrom - $seqto) + 1;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $cur_becomes_one = 1; # no current, 'one' this will be it
       }
@@ -1134,11 +1146,12 @@ sub parse_sorted_tbl_file {
   # output data for final sequence
   if($nhits > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, 
+                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_H,
                               \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
     $nhits = 0;
     %nhits_per_model_H = ();
+    %nnts_per_model_H = ();
   }
   # close file handle
   close(IN);
@@ -1259,6 +1272,7 @@ sub set_vars {
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
 #   $nhits_HR:      reference to hash of num hits per model
+#   $nnts_HR:       reference to hash of num nucleotides in all hits per model
 #   %one_model_HR:  'one' model
 #   %one_domain_HR: 'one' domain
 #   %one_score_HR:  'one' bit score
@@ -1280,22 +1294,22 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 25;
+  my $nargs_expected = 26;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-      $target, $seqidx_HR, $seqlen_HR, $nhits_HR, 
+      $target, $seqidx_HR, $seqlen_HR, $nhits_HR, $nnts_HR, 
       $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
   output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR,
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR,
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HR,
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1367,6 +1381,7 @@ sub output_one_hitless_target_wrapper {
 #   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
 #   $nhits_HR:      reference to hash of num hits per model
+#   $nnts_HR:       reference to hash of num nucleotides in all hits per model
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -1386,12 +1401,12 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 23;
+  my $nargs_expected = 24;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-      $seqidx, $seqlen, $nhits_HR,
+      $seqidx, $seqlen, $nhits_HR, $nnts_HR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1424,6 +1439,7 @@ sub output_one_target {
   my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
   my $nhits = $nhits_HR->{$one_model_HR->{$wfamily}};
+  my $nnts  = $nnts_HR->{$one_model_HR->{$wfamily}};
 
   # build up 'other_hits_string' string about other hits in other clans, if any
   my $other_hits_string = "";
@@ -1448,7 +1464,8 @@ sub output_one_target {
     }
   }
   if(! defined $wfamily) { die "ERROR wfamily undefined for $target"; }
-  my $coverage = (abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1) / $seqlen;
+  my $best_coverage = (abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1) / $seqlen;
+  my $tot_coverage  = $nnts / $seqlen;
   my $one_evalue2print = ($use_evalues) ? sprintf("%8g  ", $one_evalue_HR->{$wfamily}) : "";
   my $two_evalue2print = undef;
   if(defined $two_model_HR->{$wfamily}) { 
@@ -1569,7 +1586,17 @@ sub output_one_target {
     if($unusual_features ne "") { $unusual_features .= ";"; }
     $unusual_features .= "other_family_hits:" . $other_hits_string;
   }  
+
+  # determine if coverage is low
+  if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
+    if(opt_Get("--covfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+    }
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= sprintf("low_total_coverage(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
+  }
   if($unusual_features eq "") { $unusual_features = "-"; }
+
 
   if($do_short) { 
     printf $FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
@@ -1580,7 +1607,7 @@ sub output_one_target {
                 $pass_fail, $unusual_features);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6.1f  %4.2f  %3d  %s%-5s  %5.3f  %*d  %*d  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6.1f  %4.2f  %s%3d  %5.3f  %5.3f  %*d  %*d  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1589,12 +1616,13 @@ sub output_one_target {
                 $width_HR->{"family"}, $wfamily, 
                 $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
                 $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
+                ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
                 $one_score_HR->{$wfamily}, 
                 $bits_per_posn, 
-                $nhits, 
                 $one_evalue2print, 
-                ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
-                $coverage, 
+                $nhits, 
+                $tot_coverage, 
+                $best_coverage, 
                 $width_HR->{"length"}, $one_start_HR->{$wfamily}, 
                 $width_HR->{"length"}, $one_stop_HR->{$wfamily});
     
@@ -1668,7 +1696,7 @@ sub output_one_hitless_target {
                 "-", $pass_fail, $unusual_features);
   }
   else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %6s  %4s  %3s  %s%5s  %5s  %*s  %*s  ", 
+    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6s  %4s  %s%3s  %5s  %5s  %*s  %*s  ", 
                 $width_HR->{"index"}, $seqidx,
                 $width_HR->{"target"}, $target, 
                 $pass_fail, 
@@ -1679,8 +1707,8 @@ sub output_one_hitless_target {
                 $width_HR->{"model"}, "-", 
                 "-", 
                 "-", 
-                $nhits,
                 ($use_evalues) ? "       -  " : "",
+                $nhits,
                 "-",
                 "-", 
                 $width_HR->{"length"}, "-", 
@@ -1767,7 +1795,7 @@ sub output_long_headers {
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
-  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
+  my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6 ;
   if($use_evalues) { 
     $best_model_group_width   += 2 + 8;
@@ -1812,7 +1840,7 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %6s  %4s  %3s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %6s  %s%4s  %3s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -1821,14 +1849,15 @@ sub output_long_headers {
               $width_HR->{"family"}, "fam", 
               $width_HR->{"domain"}, "domain", 
               $width_HR->{"model"},  "model", 
+              "strnd",
               "score", 
+              ($use_evalues) ? "  evalue  " : "", 
               "b/nt",
               "#ht", 
-              ($use_evalues) ? "  evalue  " : "", 
-              "strnd",
-              "cov",
-              $width_HR->{"length"}, "start",
-              $width_HR->{"length"}, "stop",
+              "tcov",
+              "bcov",
+              $width_HR->{"length"}, "bstart",
+              $width_HR->{"length"}, "bstop",
               "scdiff",
               $width_HR->{"model"},  "model", 
               "score", 
@@ -1836,7 +1865,7 @@ sub output_long_headers {
               "unexpected_features");
 
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %4s  %3s  %s%5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %6s  %s%4s  %3s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -1845,10 +1874,11 @@ sub output_long_headers {
               $width_HR->{"family"}, $family_dash_str,
               $width_HR->{"domain"}, $domain_dash_str, 
               $width_HR->{"model"},  $model_dash_str,
+              "-----", 
               "------", 
-              "----", 
-              "---",
               ($use_evalues) ? "--------  " : "",
+              "----",
+              "---",
               "-----",
               "-----",
               $width_HR->{"length"}, $length_dash_str,
@@ -1869,6 +1899,7 @@ sub output_long_headers {
 #              
 # Arguments: 
 #   $FH:       file handle to output to
+#   $opt_HHR:  reference to options 2D hash
 #
 # Returns:     Nothing.
 # 
@@ -1876,16 +1907,25 @@ sub output_long_headers {
 #
 ################################################################# 
 sub output_short_tail { 
-  my $nargs_expected = 1;
+  my $nargs_expected = 2;
   my $sub_name = "output_short_tail";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH) = (@_);
+  my ($FH, $opt_HHR) = (@_);
 
-#  printf $FH ("# Explanation of columns:\n");
-#  printf $FH ("# Column 1: name of target sequence\n");
-#  printf $FH ("# Column 2: classification of sequence\n");
-#  printf $FH ("# Column 3: PASS/FAIL\n");
+  printf $FH ("#\n");
+  printf $FH ("# Explanation of columns:\n");
+  printf $FH ("#\n");
+  printf $FH ("# Column 1 [idx]:                 index of sequence in input sequence file\n");
+  printf $FH ("# Column 2 [target]:              name of target sequence\n");
+  printf $FH ("# Column 3 [classification]:      classification of sequence\n");
+  printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of sequence\n");
+#  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (see below for more on FAIL)\n");
+  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL\n");
+#  printf $FH ("# Column 6 [unexpected_features]: unusual/unexpected features of sequence (see below for more)\n");
+  printf $FH ("# Column 6 [unexpected_features]: unusual/unexpected features of sequence\n");
+  
+  output_unexpected_features_explanation($FH, $opt_HHR);
 
   return;
 }
@@ -1899,6 +1939,7 @@ sub output_short_tail {
 #              
 # Arguments: 
 #   $FH:       file handle to output to
+#   $opt_HHR:  reference to options 2D hash
 #
 # Returns:     Nothing.
 # 
@@ -1906,16 +1947,107 @@ sub output_short_tail {
 #
 ################################################################# 
 sub output_long_tail { 
-  my $nargs_expected = 1;
+  my $nargs_expected = 2;
   my $sub_name = "output_long_tail";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH) = (@_);
+  my ($FH, $opt_HHR) = (@_);
 
-#  printf $FH ("# Explanation of columns:\n");
-#  printf $FH ("# Column 1: name of target sequence\n");
-#  printf $FH ("# Column 2: classification of sequence\n");
-#  printf $FH ("# Column 3: PASS/FAIL\n");
+  my $use_evalues = opt_Get("--evalues", $opt_HHR);
+  my $column_ct = 1;
+
+  printf $FH ("#\n");
+  printf $FH ("# Explanation of columns:\n");
+  printf $FH ("#\n");
+  printf $FH ("# Column %2d [idx]:                 index of sequence in input sequence file\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [target]:              name of target sequence\n", $column_ct); 
+  $column_ct++;
+  printf $FH ("# Column %2d [p/f]:                 PASS or FAIL (see below for more on FAIL)\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [length]:              length of target sequence (nt)\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [#fm]:                 number of different families detected in sequence\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [fam]:                 name of family the best-scoring model to this sequence belongs to\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [domain]:              name of domain the best-scoring model to this sequence belongs to\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [model]:               name of best-scoring model\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [strnd]:               strand ('plus' or 'minus') of sequence\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
+  $column_ct++;
+  if($use_evalues) { 
+    printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
+    $column_ct++;
+  }
+  printf $FH ("# Column %2d [b/nt]:                bits per nucleotide (bits/hit_length) of best-scoring hit to this sequence\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [#ht]:                 number of hits of best-scoring model to this sequence above threshold [%.2f bits]\n", $column_ct, opt_Get("--minbit", $opt_HHR));
+  $column_ct++;
+  printf $FH ("# Column %2d [tcov]:                fraction of target sequence included in all (non-overlapping) hits to the best-scoring model\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [bcov]:                fraction of target sequence included in single best-scoring hit\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [bstart]:              start position of best-scoring hit\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [bstop]:               stop position of best-scoring hit\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [scdiff]:              difference in score between top scoring hit in best model and top scoring hit in second best model\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [model]:               name of second best-scoring model\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
+  $column_ct++;
+  if($use_evalues) { 
+    printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
+    $column_ct++;
+  }
+#  printf $FH ("# Column %2d [unexpected_features]: unusual/unexpected features of sequence (see below for more)\n", $column_ct);
+  printf $FH ("# Column %2d [unexpected_features]: unusual/unexpected features of sequence\n", $column_ct);
+  $column_ct++;
+  
+  output_unexpected_features_explanation($FH, $opt_HHR);
+
+  return;
+}
+
+
+#################################################################
+# Subroutine : output_unexpected_features_explanation()
+# Incept:      EPN, Tue Mar 28 15:29:10 2017
+#
+# Purpose:     Output explanation of possible unexpected features.
+#              
+# Arguments: 
+#   $FH:       file handle to output to
+#   $opt_HHR:  reference to options 2D hash
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_unexpected_features_explanation { 
+  my $nargs_expected = 2;
+  my $sub_name = "output_unexpected_features_explanation";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($FH, $opt_HHR) = (@_);
+
+#  print $FH ("#\n");
+#  print $FH ("# Explanation of possible values in unexpected_features column:\n");
+#  print $FH ("#\n");
+#  print $FH ("# This column will include a '-' if none of the features listed below are detected.\n");
+#  print $FH ("# Or it will contain one or more of the following types of messages. There are no\n");
+#  print $FH ("# whitespaces in this field, instead underscore '_' are used to make parsing easier.\n");
+#  print $FH ("#\n");
+#  print $FH ("# There are two types of unexpected features: those that cause a sequence to FAIL and\n");
+#  print $FH ("# those that do not\n");
+#  print $FH ("# Unexpected features There are two types of unexpected features: those that cause a sequence to FAIL and\n");
+#  print $FH ("# those that do not\n");
 
   return;
 }
