@@ -86,7 +86,7 @@ opt_Add("--difffail",   "boolean",   0,                       5,  undef,   undef
 
 $opt_group_desc_H{"6"} = "options for controlling the coverage threshold";
 #     option                 type   default                group  requires incompat    preamble-output                                            help-output    
-opt_Add("--tcov",          "real",   "0.92",                  6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",          "real",   "0.88",                  6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
 opt_Add("--covfail",    "boolean",   0,                       6,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",        "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "optional input files";
@@ -929,8 +929,9 @@ sub parse_sorted_tbl_file {
 
   my %nhits_per_model_H = (); # hash; key: model name, value: number of hits to model above threshold 
                               # for current target sequence
-  my %nnts_per_model_H = ();  # hash; key: model name, value: number of nucleotides in all hits to model 
-                              # above threshold for current target sequence
+  my %nnts_per_model_HH = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                              # nucleotides in all hits (no threshold applied) to model for that strand for 
+                              # current target sequence
 
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
@@ -948,7 +949,7 @@ sub parse_sorted_tbl_file {
   my $one_domain_or_model; # domain (default) or model (--samedomain) of current 'one' hit
   my $two_domain_or_model; # domain (default) or model (--samedomain) of current 'two' hit
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
-  my $nhits = 0; # number of hits above threshold for current sequence
+  my $nhits_above_thresh = 0; # number of hits above threshold for current sequence
 
   while(my $line = <IN>) { 
     ######################################################
@@ -1042,14 +1043,16 @@ sub parse_sorted_tbl_file {
     # Yes, if target sequence we just read is different from it
     # If yes, output info for it, and re-initialize data structures
     # for new sequence just read
-    if(($nhits > 0) && (defined $prv_target) && ($prv_target ne $target)) { 
-      output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                                $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_H, 
-                                \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
-                                \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-      $nhits = 0;
+    if((defined $prv_target) && ($prv_target ne $target)) { 
+      if($nhits_above_thresh > 0) { 
+        output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
+                                  $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_HH, 
+                                  \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
+                                  \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
+      }
+      $nhits_above_thresh = 0;
       %nhits_per_model_H = ();
-      %nnts_per_model_H  = ();
+      %nnts_per_model_HH = ();
     }
     ##############################################################
     
@@ -1061,12 +1064,15 @@ sub parse_sorted_tbl_file {
     $one_domain_or_model = undef;   # top hit's domain (default) or model (if --samedomain)
     $two_domain_or_model = undef;   # second best hit's domain (default) or model (if --samedomain)
     $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
+
+    # we count all hits (don't enforce minimum threshold) to each model
+    $nhits_per_model_H{$model}++;
+    $nnts_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
+
     # first, enforce our global bit score minimum
     if((! defined $minbit) || ($score >= $minbit)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
-      $nhits++;
-      $nhits_per_model_H{$model}++;
-      $nnts_per_model_H{$model} += abs($seqfrom - $seqto) + 1;
+      $nhits_above_thresh++;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $cur_becomes_one = 1; # no current, 'one' this will be it
       }
@@ -1144,14 +1150,11 @@ sub parse_sorted_tbl_file {
   }
 
   # output data for final sequence
-  if($nhits > 0) { 
+  if($nhits_above_thresh > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_H,
+                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_HH,
                               \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
-    $nhits = 0;
-    %nhits_per_model_H = ();
-    %nnts_per_model_H = ();
   }
   # close file handle
   close(IN);
@@ -1272,7 +1275,7 @@ sub set_vars {
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
 #   $nhits_HR:      reference to hash of num hits per model
-#   $nnts_HR:       reference to hash of num nucleotides in all hits per model
+#   $nnts_HHR       reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_domain_HR: 'one' domain
 #   %one_score_HR:  'one' bit score
@@ -1299,17 +1302,17 @@ sub output_one_target_wrapper {
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-      $target, $seqidx_HR, $seqlen_HR, $nhits_HR, $nnts_HR, 
+      $target, $seqidx_HR, $seqlen_HR, $nhits_HR, $nnts_HHR, 
       $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
   output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HR, 
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HHR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HR,
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HHR,
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1381,7 +1384,7 @@ sub output_one_hitless_target_wrapper {
 #   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
 #   $nhits_HR:      reference to hash of num hits per model
-#   $nnts_HR:       reference to hash of num nucleotides in all hits per model
+#   $nnts_HHR:      reference to hash of num nucleotides in all hits per model (key 1), strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -1406,7 +1409,7 @@ sub output_one_target {
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-      $seqidx, $seqlen, $nhits_HR, $nnts_HR, 
+      $seqidx, $seqlen, $nhits_HR, $nnts_HHR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1439,7 +1442,7 @@ sub output_one_target {
   my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
   my $nhits = $nhits_HR->{$one_model_HR->{$wfamily}};
-  my $nnts  = $nnts_HR->{$one_model_HR->{$wfamily}};
+  my $nnts  = $nnts_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}};
 
   # build up 'other_hits_string' string about other hits in other clans, if any
   my $other_hits_string = "";
@@ -1985,7 +1988,7 @@ sub output_long_tail {
   }
   printf $FH ("# Column %2d [b/nt]:                bits per nucleotide (bits/hit_length) of best-scoring hit to this sequence\n", $column_ct);
   $column_ct++;
-  printf $FH ("# Column %2d [#ht]:                 number of hits of best-scoring model to this sequence above threshold [%.2f bits]\n", $column_ct, opt_Get("--minbit", $opt_HHR));
+  printf $FH ("# Column %2d [#ht]:                 number of hits of best-scoring model to this sequence (no threshold enforced)\n", $column_ct);
   $column_ct++;
   printf $FH ("# Column %2d [tcov]:                fraction of target sequence included in all (non-overlapping) hits to the best-scoring model\n", $column_ct);
   $column_ct++;
