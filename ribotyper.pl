@@ -64,41 +64,44 @@ opt_Add("--mid",          "boolean", 0,                       2,"--slow",  "--ma
 opt_Add("--max",          "boolean", 0,                       2,"--slow",  "--mid",                                  "use --max instead of --rfam",   "with --slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--smxsize",         "real", undef,                   2,"--max",   undef,                                    "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options related to bit score thresholds";
+$opt_group_desc_H{"3"} = "options related to bit score REPORTING thresholds";
 #     option                 type   default                group   requires incompat    preamble-output                                 help-output    
-opt_Add("--minbit",        "real",   "20.",                   3,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--nominbit",   "boolean",   0,                       3,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
-opt_Add("--lowbitpos",     "real",   "0.5",                   3,  undef,   undef,      "set minimum bit per position threshold to <x>", "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--nolowbitpos","boolean",   0,                       3,  undef,   undef,      "turn off minimum bit per position threshold",   "turn off minimum bit per position threshold for reporting suspiciously low scores", \%opt_HH, \@opt_order_A);
+opt_Add("--minsc",         "real",   "20.",                   3,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--nominsc",    "boolean",   0,                       3,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL";
+$opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",               "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
+opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",                 "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
+opt_Add("--scfail",     "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--difffail",   "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--covfail",    "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--multfail",   "boolean",   0,                        4,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "options for controlling the score difference threshold";
-#     option                 type   default                group  requires incompat    preamble-output                                            help-output    
-opt_Add("--lowpdiff",      "real",   "0.10",                  5,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowpdiff",     "real",   "0.04",                  5,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",    "boolean",   0,                       5,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
-opt_Add("--lowadiff",      "real",   "100.",                  5,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowadiff",     "real",   "40.",                   5,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--difffail",   "boolean",   0,                       5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",      "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"5"} = "options for controlling the bit score WARNING threshold";
+opt_Add("--lowppossc",   "real",   "0.5",                        5,  undef,   undef,      "set minimum bit per position threshold to <x>", "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"6"} = "options for controlling the coverage threshold";
 #     option                 type   default                group  requires incompat    preamble-output                                            help-output    
 opt_Add("--tcov",          "real",   "0.88",                  6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
-opt_Add("--covfail",    "boolean",   0,                       6,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",        "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"7"} = "optional input files";
+$opt_group_desc_H{"7"} = "\toptions for controlling the score difference threshold to report/fail sequences";
+#     option                 type   default                group  requires incompat    preamble-output                                            help-output    
+opt_Add("--lowpdiff",      "real",   "0.10",                  7,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowpdiff",     "real",   "0.04",                  7,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",    "boolean",   0,                       7,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
+opt_Add("--lowadiff",      "real",   "100.",                  7,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowadiff",     "real",   "40.",                   7,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"8"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--inaccept",     "string",  undef,                   8,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"8"} = "advanced options";
+$opt_group_desc_H{"9"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                       8,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       8,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                       8,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                       8,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       9,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       9,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                       9,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                       9,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -119,22 +122,25 @@ my $options_okay =
                 'max'          => \$GetOptions_H{"--max"},
                 'smxsize=s'    => \$GetOptions_H{"--smxsize"},
 # options controlling minimum bit score cutoff 
-                'minbit=s'     => \$GetOptions_H{"--minbit"},
-                'nominbit'     => \$GetOptions_H{"--nominbit"},
-                'lowbitpos'    => \$GetOptions_H{"--lowbitpos"},
-                'nolowbitpos'  => \$GetOptions_H{"--nolowbitpos"},
+                'minsc=s'     => \$GetOptions_H{"--minsc"},
+                'nominsc'     => \$GetOptions_H{"--nominsc"},
+                'lowppossc'   => \$GetOptions_H{"--lowppossc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
+                'scfail'       => \$GetOptions_H{"--scfail"},
+                'difffail'     => \$GetOptions_H{"--difffail"},
+                'covfail'      => \$GetOptions_H{"--covfail"},
+                'multfail'     => \$GetOptions_H{"--multfail"},
+# options controlling the low bit score threshold
+                'lowppossc'   => \$GetOptions_H{"--lowppossc"},
+# options controlling coverage threshold
+                'tcov=s'       => \$GetOptions_H{"--tcov"}, 
 # options controlling the score difference thresholds
                 'lowpdiff=s'   => \$GetOptions_H{"--lowpdiff"},
                 'vlowpdiff=s'  => \$GetOptions_H{"--vlowpdiff"},
                 'absdiff'      => \$GetOptions_H{"--absdiff"},
                 'lowadiff=s'   => \$GetOptions_H{"--lowadiff"},
                 'vlowadiff=s'  => \$GetOptions_H{"--vlowadiff"},
-                'difffail'     => \$GetOptions_H{"--difffail"},
-# options controlling coverage threshold
-                'tcov=s'       => \$GetOptions_H{"--tcov"}, 
-                'covfail'      => \$GetOptions_H{"--covfail"}, 
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
@@ -897,9 +903,9 @@ sub parse_sorted_tbl_file {
   }
 
   # determine minimum bit score cutoff
-  my $minbit = undef;
-  if(! opt_Get("--nominbit", $opt_HHR)) { 
-    $minbit = opt_Get("--minbit", $opt_HHR);
+  my $minsc = undef;
+  if(! opt_Get("--nominsc", $opt_HHR)) { 
+    $minsc = opt_Get("--minsc", $opt_HHR);
   }
   
   # Main data structures: 
@@ -1070,7 +1076,7 @@ sub parse_sorted_tbl_file {
     $nnts_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
 
     # first, enforce our global bit score minimum
-    if((! defined $minbit) || ($score >= $minbit)) { 
+    if((! defined $minsc) || ($score >= $minsc)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits_above_thresh++;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
@@ -1114,7 +1120,7 @@ sub parse_sorted_tbl_file {
           }
         }
       }
-    } # end of 'if((! defined $minbit) || ($score >= $minbit))'
+    } # end of 'if((! defined $minsc) || ($score >= $minsc))'
     # finished determining if this hit is a new 'one' or 'two' hit
     ##########################################################
     
@@ -1507,36 +1513,69 @@ sub output_one_target {
     }
   }
 
-  # does the sequence pass or fail? 
-  # FAILs if: 
+  # Determine if there are any unusual features 
+  # and if the sequence PASSes or FAILs.
+  # 
+  # Possible unusual feature criteria are listed below. 
+  # A FAILure occurs if either the criteria is a strict failure criteria
+  # or if it is a optional criteria and the relevant command line option is used.
+  # 
+  # Two strict failure criteria:
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
-  # - winning hit is to unacceptable model 
-  # - --minusfail enabled and hit is on minus strand
-  # - --posdiff or --absdiff used AND score difference between top two models is below $diff_thresh
+  # 
+  # Optional failure criteria, require a specific command line option to cause a failure
+  #  but always get printed to unusual_features columns)
+  # - winning hit is to unacceptable model (requires --inaccept to FAIL or get reported)
+  # - hit is on minus strand (requires --minusfail to FAIL, always reported))
+  # - low score, bits per position below threshold (requires --
+  # - low coverage (requires --covfail)
+  # - score difference between top two models is below $diff_thresh (requires --difffail)
+  # - number of this to best model is > 1 (requires --multfail)
+  # 
   my $pass_fail = "PASS";
   my $unusual_features = "";
 
+  # check/enforce strict failure criteria
   if($nfams > 1) { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str)";
-  }
-  if($nhits > 1) {
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "multiple_hits_to_best_model($nhits)";
+    $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string)";
   }
 
+  # check/enforce optional failure criteria
+  # determine if the sequence hits to an unacceptable model
   if($accept_HR->{$one_model_HR->{$wfamily}} != 1) { 
     $pass_fail = "FAIL";
     $unusual_features .= "unacceptable_model"
   }
-  if(opt_Get("--minusfail", $opt_HHR) && ($one_strand_HR->{$wfamily} eq "-")) { 
-    $pass_fail = "FAIL";
+  # determine if sequence is on opposite strand
+  if($one_strand_HR->{$wfamily} eq "-") { 
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "opposite_strand"
+    $unusual_features .= "opposite_strand";
+    if(opt_Get("--minusfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+    }
   }
-
+  # determine if the sequence has a 'suspiciously_low_score'
+  # it does if bits per position (of entire sequence not just hit)
+  # is below the threshold (--lowppossc) minimum
+  my $bits_per_posn = $one_score_HR->{$wfamily} / $seqlen;
+  if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
+    if(opt_Get("--scfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+    }
+  }
+  # determine if coverage is low
+  if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= sprintf("low_total_coverage(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
+    if(opt_Get("--covfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+    }
+  }
   # determine if the sequence has a low score difference between the top
   # two domains
   if(exists $two_score_HR->{$wfamily}) { 
@@ -1574,29 +1613,13 @@ sub output_one_target {
       }
     }
   }
-
-  # determine if the sequence has a 'suspiciously_low_score'
-  # it does if bits per position (of entire sequence not just hit)
-  # is below the threshold (--lowbitpos) minimum
-  my $bits_per_posn = $one_score_HR->{$wfamily} / $seqlen, 
-  my $lowbit_flag = 0;
-  if((! opt_Get("--nolowbitpos", $opt_HHR)) && ($bits_per_posn < opt_Get("--lowbitpos", $opt_HHR))) { 
-    $lowbit_flag = 1;
+  # determine if there are more than one hit to the best model
+  if($nhits > 1) {
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowbitpos", $opt_HHR));
-  }
-  if($other_hits_string ne "") { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "other_family_hits:" . $other_hits_string;
-  }  
-
-  # determine if coverage is low
-  if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
-    if(opt_Get("--covfail", $opt_HHR)) { 
+    $unusual_features .= "multiple_hits_to_best_model($nhits)";
+    if(opt_Get("--multfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
     }
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= sprintf("low_total_coverage(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
   }
   if($unusual_features eq "") { $unusual_features = "-"; }
 
@@ -1926,8 +1949,8 @@ sub output_short_tail {
   printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of sequence\n");
 #  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (see below for more on FAIL)\n");
   printf $FH ("# Column 5 [p/f]:                 PASS or FAIL\n");
-#  printf $FH ("# Column 6 [unexpected_features]: unusual/unexpected features of sequence (see below for more)\n");
-  printf $FH ("# Column 6 [unexpected_features]: unusual/unexpected features of sequence\n");
+#  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below for more)\n");
+  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)\n");
   
   output_unexpected_features_explanation($FH, $opt_HHR);
 
@@ -2010,7 +2033,7 @@ sub output_long_tail {
     $column_ct++;
   }
 #  printf $FH ("# Column %2d [unexpected_features]: unusual/unexpected features of sequence (see below for more)\n", $column_ct);
-  printf $FH ("# Column %2d [unexpected_features]: unusual/unexpected features of sequence\n", $column_ct);
+  printf $FH ("# Column %2d [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)\n", $column_ct);
   $column_ct++;
   
   output_unexpected_features_explanation($FH, $opt_HHR);

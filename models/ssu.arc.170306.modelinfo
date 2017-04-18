@@ -1,0 +1,4 @@
+# Each non-# prefixed line should have 3 white-space delimited tokens: 
+#<modelname> <family> <domain>
+#model                     family domain
+SSU_rRNA_archaea              SSU Archaea
