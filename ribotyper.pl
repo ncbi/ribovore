@@ -1540,7 +1540,7 @@ sub output_one_target {
   if($nfams > 1) { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string)";
+    $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string";
   }
 
   # check/enforce optional failure criteria
