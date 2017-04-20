@@ -188,8 +188,8 @@ and reported in the final column of both the short and long output
 files. These unexpected features can cause a sequence to FAIL, as
 explained below.
 
-There are 10 possible unexpected features that get reported, some of
-which are related to each other. Four of these will always cause a
+There are 11 possible unexpected features that get reported, some of
+which are related to each other. Five of these will always cause a
 sequence to fail. The other 6 *can* cause a sequence to fail but only
 if specific command line options are used.
 
@@ -209,29 +209,32 @@ fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
 "hits_to_more_than_one_family", details hits to other families. ALWAYS
 CAUSES FAILURE.
 
-4: "unacceptable_model": Best hit is to a model that is
+4. "hits_on_both_strands": At least 1 hit above minimum score
+threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
+
+5. "unacceptable_model": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 --inaccept <s> option. An example of using this file is given below 
 in the DEFINING ACCEPTABLE MODELS section. ALWAYS CAUSES FAILURE.
 
-5. "opposite_strand": The best hit is on the minus strand. ONLY CAUSES
+6. "opposite_strand": The best hit is on the minus strand. ONLY CAUSES
 FAILURE IF THE --minusfail OPTION IS ENABLED.
 
-6. "suspiciously_low_score_per_posn": the bits per nucleotide
+7. "suspiciously_low_score_per_posn": the bits per nucleotide
 statistic (total bit score divided by length of total sequence (not
 just length of hit)) is below threshold. By default the threshold is
 0.5 bits per position, but this can be changed to <x> with the
 "--lowppossc <x>" option. ONLY CAUSES FAILURE IF THE --scfail OPTION
 IS ENABLED.
 
-7. "low_total_coverage": the total coverage of all hits to the best
+8. "low_total_coverage": the total coverage of all hits to the best
 model (summed length of all hits divided by total sequence length) is
 below threshold. By default the threshold is 0.88, but can be changed
 to <x> with the --tcov <x> option. ONLY CAUSES FAILURE IF THE
 --covfail OPTION IS ENABLED.
 
-8. "low_score_difference_between_top_two_domains": the score
+9. "low_score_difference_between_top_two_domains": the score
 difference between the top two domains is below the 'low'
 threshold. By default this is the score per position difference, and
 the 'low' threshold is 0.10 bits per position, but this is changeable
@@ -241,7 +244,7 @@ option. If --absdiff is used, the threshold is 100 bits, but
 changeable to <x> with the --lowadiff <x> option. ONLY CAUSES FAILURE
 IF THE --difffail OPTION IS ENABLED.
 
-9. "very_low_score_difference_between_top_two_domains": the score
+10. "very_low_score_difference_between_top_two_domains": the score
 difference between the top two domains is below the 'very low'
 threshold. By default this is the score per position difference, and
 the 'very low' threshold is 0.04 bits per position, but this is
@@ -251,7 +254,7 @@ the --absdiff option. If --absdiff is used, the threshold is 40 bits,
 but changeable to <x> with the --vlowadiff <x> option. ONLY CAUSES
 FAILURE IF THE --difffail OPTION IS ENABLED.
 
-10. "multiple_hits_to_best_model": there are more than one hits to the
+11. "multiple_hits_to_best_model": there are more than one hits to the
 best scoring model. ONLY CAUSES FAILURE IF THE --multfail OPTION IS
 ENABLED.
 

@@ -598,8 +598,11 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # run_command:              run a command using system()
 # validate_executable_hash: validate executables exist and are executable
 # seconds_since_epoch:      number of seconds since the epoch, for timings
+# debug_print:              print out info of a hit for debugging
+# get_monocharacter_string: return string of a specified length of a specified character
+# center_string:            center a string inside a string of whitespace of specified length
+# determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
 #
-
 #################################################################
 # Subroutine : parse_modelinfo_file()
 # Incept:      EPN, Mon Dec 19 10:01:32 2016
@@ -933,11 +936,11 @@ sub parse_sorted_tbl_file {
   my %two_stop_H;
   my %two_strand_H;
 
-  my %nhits_per_model_H = (); # hash; key: model name, value: number of hits to model above threshold 
-                              # for current target sequence
-  my %nnts_per_model_HH = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                              # nucleotides in all hits (no threshold applied) to model for that strand for 
-                              # current target sequence
+  my %nhits_per_model_HH = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                               # hits to model above threshold for that strand for current target sequence
+  my %nnts_per_model_HH  = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                               # nucleotides in all hits (no threshold applied) to model for that strand for 
+                               # current target sequence
 
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
@@ -1052,13 +1055,13 @@ sub parse_sorted_tbl_file {
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
         output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                                  $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_HH, 
+                                  $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, 
                                   \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                   \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
       }
       $nhits_above_thresh = 0;
-      %nhits_per_model_H = ();
-      %nnts_per_model_HH = ();
+      %nhits_per_model_HH = ();
+      %nnts_per_model_HH  = ();
     }
     ##############################################################
     
@@ -1071,14 +1074,15 @@ sub parse_sorted_tbl_file {
     $two_domain_or_model = undef;   # second best hit's domain (default) or model (if --samedomain)
     $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
 
-    # we count all hits (don't enforce minimum threshold) to each model
-    $nhits_per_model_H{$model}++;
+    # we count all nucleotides in all hits (don't enforce minimum threshold) to each model
     $nnts_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
 
     # first, enforce our global bit score minimum
     if((! defined $minsc) || ($score >= $minsc)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits_above_thresh++;
+      # we only count hits above threshold
+      $nhits_per_model_HH{$model}{$strand}++;
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $cur_becomes_one = 1; # no current, 'one' this will be it
       }
@@ -1158,7 +1162,7 @@ sub parse_sorted_tbl_file {
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_H, \%nnts_per_model_HH,
+                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH,
                               \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   }
@@ -1280,7 +1284,7 @@ sub set_vars {
 #   $target:        target name
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
-#   $nhits_HR:      reference to hash of num hits per model
+#   $nhits_HHR:     reference to hash of num hits per model (key 1), per strand (key 2)
 #   $nnts_HHR       reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_domain_HR: 'one' domain
@@ -1308,17 +1312,17 @@ sub output_one_target_wrapper {
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-      $target, $seqidx_HR, $seqlen_HR, $nhits_HR, $nnts_HHR, 
+      $target, $seqidx_HR, $seqlen_HR, $nhits_HHR, $nnts_HHR, 
       $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
   output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HHR, 
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HR, $nnts_HHR,
+                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR,
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1389,7 +1393,7 @@ sub output_one_hitless_target_wrapper {
 #   $target:        target name
 #   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
-#   $nhits_HR:      reference to hash of num hits per model
+#   $nhits_HHR:     reference to hash of num hits per model (key 1), strand (key 2)
 #   $nnts_HHR:      reference to hash of num nucleotides in all hits per model (key 1), strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
@@ -1415,12 +1419,14 @@ sub output_one_target {
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-      $seqidx, $seqlen, $nhits_HR, $nnts_HHR, 
+      $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
+
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($opt_HHR);
 
   # determine the winning family
   my $wfamily = undef;
@@ -1447,7 +1453,24 @@ sub output_one_target {
   }
   my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
-  my $nhits = $nhits_HR->{$one_model_HR->{$wfamily}};
+  my $nhits = $nhits_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}};
+  my $both_strands_fail_str = "";
+  # add a '.' followed by <d>, where <d> is number of hits on opposite strand of best hit, if <d> > 0
+  my $other_strand = ($one_strand_HR->{$wfamily} eq "+") ? "-" : "+";
+  if(exists $nhits_HHR->{$one_model_HR->{$wfamily}}{$other_strand} && 
+     $nhits_HHR->{$one_model_HR->{$wfamily}}{$other_strand} > 0) { 
+    $nhits += $nhits_HHR->{$one_model_HR->{$wfamily}}{$other_strand};
+    $both_strands_fail_str  = "hits_on_both_strands(" . $one_strand_HR->{$wfamily} . ":";
+    $both_strands_fail_str .= $nhits_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}} . "_hit(s)"; 
+    if($have_accurate_coverage) { 
+      $both_strands_fail_str .= "[" . $nnts_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}} . "_nt]";
+    }
+    $both_strands_fail_str .= ";" . $other_strand . ":";
+    $both_strands_fail_str .= $nhits_HHR->{$one_model_HR->{$wfamily}}{$other_strand} . "_hit(s)";
+    if($have_accurate_coverage) { 
+      $both_strands_fail_str .= "[" . $nnts_HHR->{$one_model_HR->{$wfamily}}{$other_strand} . "_nt])";
+    }
+  }
   my $nnts  = $nnts_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}};
 
   # build up 'other_hits_string' string about other hits in other clans, if any
@@ -1520,9 +1543,10 @@ sub output_one_target {
   # A FAILure occurs if either the criteria is a strict failure criteria
   # or if it is a optional criteria and the relevant command line option is used.
   # 
-  # Two strict failure criteria:
+  # Three strict failure criteria:
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
+  # - hits to best model on both strands 
   # 
   # Optional failure criteria, require a specific command line option to cause a failure
   #  but always get printed to unusual_features columns)
@@ -1537,11 +1561,18 @@ sub output_one_target {
   my $unusual_features = "";
 
   # check/enforce strict failure criteria
+  # hits to more than one family?
   if($nfams > 1) { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
     $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string";
   }
+  # hits on both strands to best model?
+  if($both_strands_fail_str ne "") { 
+    $pass_fail = "FAIL";
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= $both_strands_fail_str;
+  }    
 
   # check/enforce optional failure criteria
   # determine if the sequence hits to an unacceptable model
@@ -1981,6 +2012,10 @@ sub output_long_tail {
   my ($FH, $opt_HHR) = (@_);
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($opt_HHR);
+
+  my $inaccurate_cov_str = ("                                   (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
+
   my $column_ct = 1;
 
   printf $FH ("#\n");
@@ -2015,8 +2050,10 @@ sub output_long_tail {
   printf $FH ("# Column %2d [#ht]:                 number of hits of best-scoring model to this sequence (no threshold enforced)\n", $column_ct);
   $column_ct++;
   printf $FH ("# Column %2d [tcov]:                fraction of target sequence included in all (non-overlapping) hits to the best-scoring model\n", $column_ct);
+  if(! $have_accurate_coverage) { print $FH $inaccurate_cov_str; }
   $column_ct++;
   printf $FH ("# Column %2d [bcov]:                fraction of target sequence included in single best-scoring hit\n", $column_ct);
+  if(! $have_accurate_coverage) { print $FH $inaccurate_cov_str; }
   $column_ct++;
   printf $FH ("# Column %2d [bstart]:              start position of best-scoring hit\n", $column_ct);
   $column_ct++;
@@ -2437,4 +2474,39 @@ sub center_string {
   if($nspaces_to_prepend < 0) { $nspaces_to_prepend = 0; }
 
   return get_monocharacter_string($nspaces_to_prepend, " ") . $str; 
+}
+
+#################################################################
+# Subroutine: determine_if_coverage_is_accurate()
+# Incept:     EPN, Thu Apr 20 10:30:28 2017
+#
+# Purpose:    Based on the command line options determine if the 
+#             coverage values are accurate. With the fast mode,
+#             coverage values are not accurate, but with some
+#             options like --hmm and --slow, they are.
+#
+# Arguments:
+#   $opt_HHR:       reference to 2D hash of cmdline options
+#
+# Returns:  '1' if coverage is accurate, else '0'
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_if_coverage_is_accurate { 
+  my $sub_name = "determine_if_coverage_is_accurate()";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($opt_HHR) = (@_);
+
+  my $have_accurate_coverage = 0;
+  if(opt_Get("--hmm",      $opt_HHR)) { $have_accurate_coverage = 1; }
+  if(opt_Get("--slow",     $opt_HHR)) { $have_accurate_coverage = 1; }
+  if(opt_Get("--mid",      $opt_HHR)) { $have_accurate_coverage = 1; }
+  if(opt_Get("--max",      $opt_HHR)) { $have_accurate_coverage = 1; }
+  if(opt_Get("--nhmmer",   $opt_HHR)) { $have_accurate_coverage = 1; }
+  if(opt_Get("--ssualign", $opt_HHR)) { $have_accurate_coverage = 1; }
+
+  return $have_accurate_coverage;
 }
