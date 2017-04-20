@@ -1977,7 +1977,7 @@ sub output_short_tail {
   printf $FH ("# Column 1 [idx]:                 index of sequence in input sequence file\n");
   printf $FH ("# Column 2 [target]:              name of target sequence\n");
   printf $FH ("# Column 3 [classification]:      classification of sequence\n");
-  printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of sequence\n");
+  printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit\n");
 #  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (see below for more on FAIL)\n");
   printf $FH ("# Column 5 [p/f]:                 PASS or FAIL\n");
 #  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below for more)\n");
@@ -2037,7 +2037,7 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [model]:               name of best-scoring model\n", $column_ct);
   $column_ct++;
-  printf $FH ("# Column %2d [strnd]:               strand ('plus' or 'minus') of sequence\n", $column_ct);
+  printf $FH ("# Column %2d [strnd]:               strand ('plus' or 'minus') of best-scoring hit\n", $column_ct);
   $column_ct++;
   printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
   $column_ct++;
