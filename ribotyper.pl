@@ -84,7 +84,7 @@ $opt_group_desc_H{"6"} = "options for controlling the coverage threshold";
 #     option                 type   default                group  requires incompat    preamble-output                                            help-output    
 opt_Add("--tcov",          "real",   "0.88",                  6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"7"} = "\toptions for controlling the score difference threshold to report/fail sequences";
+$opt_group_desc_H{"7"} = "options for controlling the score difference threshold to report/fail sequences";
 #     option                 type   default                group  requires incompat    preamble-output                                            help-output    
 opt_Add("--lowpdiff",      "real",   "0.10",                  7,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--vlowpdiff",     "real",   "0.04",                  7,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
@@ -102,6 +102,7 @@ opt_Add("--evalues",      "boolean", 0,                       9,  undef,   "--ss
 opt_Add("--skipsearch",   "boolean", 0,                       9,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 opt_Add("--noali",        "boolean", 0,                       9,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                       9,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",         "boolean", 0,                       9,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -147,6 +148,7 @@ my $options_okay =
                 'evalues'      => \$GetOptions_H{"--evalues"},
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"},
                 'noali'        => \$GetOptions_H{"--noali"},
+                'keep'         => \$GetOptions_H{"--keep"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"});
 
 my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
@@ -210,9 +212,9 @@ if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) {
   }
 }
 
-my $cmd;                       # a command to be run by run_command()
-my $ncpu = 0;                  # number of CPUs to use with search command
-
+my $cmd;              # a command to be run by run_command()
+my $ncpu = 0;         # number of CPUs to use with search command
+my @to_remove_A = (); # array of files to remove at end
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
 if(opt_Get("--skipsearch", \%opt_HH)) { 
@@ -283,6 +285,10 @@ my $unsrt_long_out_FH;  # output file handle for unsorted long output file
 my $unsrt_short_out_FH; # output file handle for unsorted short output file
 my $srt_long_out_FH;    # output file handle for sorted long output file
 my $srt_short_out_FH;   # output file handle for sorted short output file
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $unsrt_long_out_file);
+  push(@to_remove_A, $unsrt_short_out_file);
+}
 open($unsrt_long_out_FH,  ">", $unsrt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for writing";
 open($unsrt_short_out_FH, ">", $unsrt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for writing";
 open($srt_long_out_FH,    ">", $srt_long_out_file)    || die "ERROR unable to open $srt_long_out_file for writing";
@@ -375,6 +381,9 @@ else { # --inaccept not used, all models are acceptable
 
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $seqstat_file);
+}
 run_command($execs_H{"esl-seqstat"} . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
@@ -501,6 +510,17 @@ else {
     die "ERROR with --skipsearch, tblout file ($tblout_file) should exist and be non-empty but it's not";
   }
 }
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $tblout_file);
+  push(@to_remove_A, $sorted_tblout_file);
+  if(($search_method ne "nhmmer" || 
+      $search_method ne "cmsearch-slow" || 
+      $search_method ne "cmscan-slow" || 
+      $search_method ne "cmsearch-hmmonly") && 
+     (! opt_Get("--noali", \%opt_HH))) { 
+    push(@to_remove_A, $searchout_file);
+  }
+}
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
@@ -548,7 +568,7 @@ run_command($cmd, opt_Get("-v", \%opt_HH));
 $cmd = "sort -n $unsrt_long_out_file >> $srt_long_out_file";
 run_command($cmd, opt_Get("-v", \%opt_HH));
 
-# reopen them, and add tails to the output files and exit.
+# reopen them, and add tails to the output files
 # now that we know the max sequence name length, we can output headers to the output files
 open($srt_long_out_FH,  ">>", $srt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for appending";
 open($srt_short_out_FH, ">>", $srt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for appending";
@@ -556,6 +576,11 @@ output_long_tail($srt_long_out_FH, \%opt_HH);
 output_short_tail($srt_short_out_FH, \%opt_HH);
 close($srt_short_out_FH);
 close($srt_long_out_FH);
+
+# remove files we don't want anymore, then exit
+foreach my $file (@to_remove_A) { 
+  unlink $file;
+}
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
