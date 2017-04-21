@@ -2039,7 +2039,7 @@ sub output_long_tail {
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
   my $have_accurate_coverage = determine_if_coverage_is_accurate($opt_HHR);
 
-  my $inaccurate_cov_str = ("                                   (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
+  my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
 
   my $column_ct = 1;
 
