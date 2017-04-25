@@ -77,32 +77,28 @@ opt_Add("--difffail",   "boolean",   0,                        4,  undef,   unde
 opt_Add("--covfail",    "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--multfail",   "boolean",   0,                        4,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "options for controlling the bit score WARNING threshold";
-opt_Add("--lowppossc",   "real",   "0.5",                        5,  undef,   undef,      "set minimum bit per position threshold to <x>", "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"5"} = "options for controlling thresholds for failure/warning criteria";
+#     option                 type    default               group   requires incompat    preamble-output                                            help-output    
+opt_Add("--lowppossc",     "real",   "0.5",                    5,  undef,   undef,      "set minimum bit per position threshold to <x>",           "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",          "real",   "0.88",                   5,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--lowpdiff",      "real",   "0.10",                   5,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowpdiff",     "real",   "0.04",                   5,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",    "boolean",   0,                        5,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
+opt_Add("--lowadiff",      "real",   "100.",                   5,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowadiff",     "real",   "40.",                    5,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--maxoverlap", "integer",   "10",                     5,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failue to <n>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"6"} = "options for controlling the coverage threshold";
-#     option                 type   default                group  requires incompat    preamble-output                                            help-output    
-opt_Add("--tcov",          "real",   "0.88",                  6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
-
-$opt_group_desc_H{"7"} = "options for controlling the score difference threshold to report/fail sequences";
-#     option                 type   default                group  requires incompat    preamble-output                                            help-output    
-opt_Add("--lowpdiff",      "real",   "0.10",                  7,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowpdiff",     "real",   "0.04",                  7,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",    "boolean",   0,                       7,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
-opt_Add("--lowadiff",      "real",   "100.",                  7,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowadiff",     "real",   "40.",                   7,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-
-$opt_group_desc_H{"8"} = "optional input files";
+$opt_group_desc_H{"6"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   8,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--inaccept",     "string",  undef,                   6,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"9"} = "advanced options";
+$opt_group_desc_H{"7"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                       9,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       9,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                       9,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                       9,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
-opt_Add("--keep",         "boolean", 0,                       9,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                       7,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                       7,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",         "boolean", 0,                       7,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -132,16 +128,15 @@ my $options_okay =
                 'difffail'     => \$GetOptions_H{"--difffail"},
                 'covfail'      => \$GetOptions_H{"--covfail"},
                 'multfail'     => \$GetOptions_H{"--multfail"},
-# options controlling the low bit score threshold
-                'lowppossc'   => \$GetOptions_H{"--lowppossc"},
-# options controlling coverage threshold
+# options controlling thresholds for warnings and failures
+                'lowppossc'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"}, 
-# options controlling the score difference thresholds
                 'lowpdiff=s'   => \$GetOptions_H{"--lowpdiff"},
                 'vlowpdiff=s'  => \$GetOptions_H{"--vlowpdiff"},
                 'absdiff'      => \$GetOptions_H{"--absdiff"},
                 'lowadiff=s'   => \$GetOptions_H{"--lowadiff"},
                 'vlowadiff=s'  => \$GetOptions_H{"--vlowadiff"},
+                'maxoverlap'   => \$GetOptions_H{"--maxoverlap"},
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # advanced options
@@ -627,6 +622,8 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # get_monocharacter_string: return string of a specified length of a specified character
 # center_string:            center a string inside a string of whitespace of specified length
 # determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
+# get_overlap():            determine the extent of overlap of two regions
+# get_overlap_helper():     does actual work to determine overlap
 #
 #################################################################
 # Subroutine : parse_modelinfo_file()
@@ -961,11 +958,24 @@ sub parse_sorted_tbl_file {
   my %two_stop_H;
   my %two_strand_H;
 
-  my %nhits_per_model_HH = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                               # hits to model above threshold for that strand for current target sequence
-  my %nnts_per_model_HH  = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                               # nucleotides in all hits (no threshold applied) to model for that strand for 
-                               # current target sequence
+  # statistics we keep track of per model and strand, used to detect various output statistics and
+  # to report 'unexpected features'
+  my %nnts_per_model_HH  = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                                 # nucleotides in all hits (no threshold applied) to model for that strand for 
+                                 # current target sequence
+  my %nhits_per_model_HH = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                                 # hits to model above threshold for that strand for current target sequence
+  my %mdl_bd_per_model_HHA = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: an array of model 
+                                 # coordinate boundaries for all hits above threshold (sorted by score), 
+                                 # each element of the array is a string of the format <d1>-<d2>, 
+                                 # where <d1> is the 5' model position boundary of the hit and 
+                                 # <d2> is the 3' model position boundary of the hit
+  my %seq_bd_per_model_HHA = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: an array of sequence
+                                 # coordinate boundaries for all hits above threshold (sorted by score), 
+                                 # each element of the array is a string of the format <d1>-<d2>, 
+                                 # where <d1> is the 5' sequence position boundary of the hit and 
+                                 # <d2> is the 3' sequence position boundary of the hit
+                                 # if strand is '+', <d1> <= <d2> and if strand is '-', <d1> >= <d2>
 
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
@@ -1081,12 +1091,15 @@ sub parse_sorted_tbl_file {
       if($nhits_above_thresh > 0) { 
         output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                                   $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, 
+                                  \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                                   \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                   \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
       }
-      $nhits_above_thresh = 0;
-      %nhits_per_model_HH = ();
-      %nnts_per_model_HH  = ();
+      $nhits_above_thresh   = 0;
+      %nhits_per_model_HH   = ();
+      %nnts_per_model_HH    = ();
+      %mdl_bd_per_model_HHA = ();
+      %seq_bd_per_model_HHA = ();
     }
     ##############################################################
     
@@ -1108,6 +1121,13 @@ sub parse_sorted_tbl_file {
       $nhits_above_thresh++;
       # we only count hits above threshold
       $nhits_per_model_HH{$model}{$strand}++;
+      if(! exists $mdl_bd_per_model_HHA{$model}{$strand}) { 
+        @{$mdl_bd_per_model_HHA{$model}{$strand}} = ();
+        @{$seq_bd_per_model_HHA{$model}{$strand}} = ();
+      }
+      push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "-" . $mdlto)); 
+      push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "-" . $seqto)); 
+
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $cur_becomes_one = 1; # no current, 'one' this will be it
       }
@@ -1187,7 +1207,8 @@ sub parse_sorted_tbl_file {
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
     output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH,
+                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, 
+                              \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                               \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
   }
@@ -1310,7 +1331,9 @@ sub set_vars {
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
 #   $nhits_HHR:     reference to hash of num hits per model (key 1), per strand (key 2)
-#   $nnts_HHR       reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
+#   $nnts_HHR:      reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
+#   $mdl_bd_HHAR:   reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
+#   $seq_bd_HHAR:   reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_domain_HR: 'one' domain
 #   %one_score_HR:  'one' bit score
@@ -1332,22 +1355,25 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 26;
+  my $nargs_expected = 28;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
       $target, $seqidx_HR, $seqlen_HR, $nhits_HHR, $nnts_HHR, 
+      $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
   output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
                     $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR, 
+                    $mdl_bd_HHAR, $seq_bd_HHAR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
   output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
                     $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR,
+                    $mdl_bd_HHAR, $seq_bd_HHAR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
@@ -1420,6 +1446,8 @@ sub output_one_hitless_target_wrapper {
 #   $seqlen:        length of target sequence
 #   $nhits_HHR:     reference to hash of num hits per model (key 1), strand (key 2)
 #   $nnts_HHR:      reference to hash of num nucleotides in all hits per model (key 1), strand (key 2)
+#   $mdl_bd_HHAR:   reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
+#   $seq_bd_HHAR:   reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -1439,12 +1467,12 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 24;
+  my $nargs_expected = 26;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-      $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, 
+      $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
@@ -1479,6 +1507,8 @@ sub output_one_target {
   my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
   my $nhits = $nhits_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}};
+
+  # determine if we have hits on both strands, and if so, build up failure string
   my $both_strands_fail_str = "";
   # add a '.' followed by <d>, where <d> is number of hits on opposite strand of best hit, if <d> > 0
   my $other_strand = ($one_strand_HR->{$wfamily} eq "+") ? "-" : "+";
@@ -1496,8 +1526,29 @@ sub output_one_target {
       $both_strands_fail_str .= "[" . $nnts_HHR->{$one_model_HR->{$wfamily}}{$other_strand} . "_nt])";
     }
   }
-  my $nnts  = $nnts_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}};
 
+  # determine if we have hits that overlap on the model by more than maximum allowed amount
+  my $duplicate_model_region_str = "";
+  $nhits = scalar(@{$mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}});
+  my $noverlap_allowed = opt_Get("--maxoverlap", $opt_HHR);
+  for(my $i = 0; $i < $nhits; $i++) { 
+    for(my $j = $i+1; $j < $nhits; $j++) { 
+      my $bd1 = $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i];
+      my $bd2 = $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$j];
+      my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
+      if($noverlap > $noverlap_allowed) { 
+        if($duplicate_model_region_str eq "") { 
+          $duplicate_model_region_str .= "duplicate_model_region:"; 
+        }
+        else { 
+          $duplicate_model_region_str .= ",";
+        }
+        $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "($bd1,$bd2)";
+      }
+    }
+  }
+
+  my $nnts  = $nnts_HHR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}};
   # build up 'other_hits_string' string about other hits in other clans, if any
   my $other_hits_string = "";
   my $nfams = 1;
@@ -1568,10 +1619,11 @@ sub output_one_target {
   # A FAILure occurs if either the criteria is a strict failure criteria
   # or if it is a optional criteria and the relevant command line option is used.
   # 
-  # Three strict failure criteria:
+  # Four strict failure criteria:
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
   # - hits to best model on both strands 
+  # - hits overlap on model (duplicate model region)
   # 
   # Optional failure criteria, require a specific command line option to cause a failure
   #  but always get printed to unusual_features columns)
@@ -1590,28 +1642,36 @@ sub output_one_target {
   if($nfams > 1) { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string";
+    $unusual_features .= "*hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string";
   }
   # hits on both strands to best model?
   if($both_strands_fail_str ne "") { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= $both_strands_fail_str;
+    $unusual_features .= "*" . $both_strands_fail_str;
   }    
+  # duplicate model region
+  if($duplicate_model_region_str ne "") { 
+    $pass_fail = "FAIL";
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "*" . $duplicate_model_region_str;
+  }    
+
 
   # check/enforce optional failure criteria
   # determine if the sequence hits to an unacceptable model
   if($accept_HR->{$one_model_HR->{$wfamily}} != 1) { 
     $pass_fail = "FAIL";
-    $unusual_features .= "unacceptable_model"
+    $unusual_features .= "*unacceptable_model"
   }
   # determine if sequence is on opposite strand
   if($one_strand_HR->{$wfamily} eq "-") { 
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "opposite_strand";
     if(opt_Get("--minusfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
+      $unusual_features .= "*";
     }
+    $unusual_features .= "opposite_strand";
   }
   # determine if the sequence has a 'suspiciously_low_score'
   # it does if bits per position (of entire sequence not just hit)
@@ -1619,18 +1679,20 @@ sub output_one_target {
   my $bits_per_posn = $one_score_HR->{$wfamily} / $seqlen;
   if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
     if(opt_Get("--scfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
+      $unusual_features .= "*";
     }
+    $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
   }
   # determine if coverage is low
   if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= sprintf("low_total_coverage(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
     if(opt_Get("--covfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
+      $unusual_features .= "*";
     }
+    $unusual_features .= sprintf("low_total_coverage(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
   }
   # determine if the sequence has a low score difference between the top
   # two domains
@@ -1643,13 +1705,19 @@ sub output_one_target {
       $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
       $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
       if($score_ppos_diff < $diff_vlow_thresh) { 
-        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
         $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
       }
       elsif($score_ppos_diff < $diff_low_thresh) { 
-        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
         $unusual_features .= sprintf("low_score_difference_between_top_two_%s(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
       }
     }
@@ -1658,13 +1726,19 @@ sub output_one_target {
       $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR);
       $diff_low_thresh  = opt_Get("--lowadiff",  $opt_HHR);
       if($score_total_diff < $diff_vlow_thresh) { 
-        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
         $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
       }
       elsif($score_total_diff < $diff_low_thresh) { 
-        if(opt_Get("--difffail", $opt_HHR)) { $pass_fail = "FAIL"; }
         if($unusual_features ne "") { $unusual_features .= ";"; }
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
         $unusual_features .= sprintf("low_score_difference_between_top_two_%s(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
       }
     }
@@ -1672,10 +1746,11 @@ sub output_one_target {
   # determine if there are more than one hit to the best model
   if($nhits > 1) {
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "multiple_hits_to_best_model($nhits)";
     if(opt_Get("--multfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
+      $unusual_features .= "*";
     }
+    $unusual_features .= "multiple_hits_to_best_model($nhits)";
   }
   if($unusual_features eq "") { $unusual_features = "-"; }
 
@@ -1764,7 +1839,7 @@ sub output_one_hitless_target {
   my ($FH, $do_short, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
 
   my $pass_fail = "FAIL";
-  my $unusual_features = "no_hits";
+  my $unusual_features = "*no_hits";
   my $nfams = 0;
   my $nhits = 0;
 
@@ -2534,4 +2609,113 @@ sub determine_if_coverage_is_accurate {
   if(opt_Get("--ssualign", $opt_HHR)) { $have_accurate_coverage = 1; }
 
   return $have_accurate_coverage;
+}
+
+#################################################################
+# Subroutine: get_overlap()
+# Incept:     EPN, Mon Apr 24 15:47:13 2017
+#
+# Purpose:    Determine if there is overlap between two regions
+#             defined by strings of the format <d1>-<d2> where
+#             <d1> is the beginning of the region and <d2> is the
+#             end. If strand is "+" then <d1> <= <d2> and if strand
+#             is "-" then <d1> >= <d2>.
+#
+# Arguments:
+#   $regstr1:  string 1 defining region 1
+#   $regstr2:  string 2 defining region 2
+#
+# Returns:  Two values:
+#           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
+#                         0 if none
+#           $overlap_reg: region of overlap, "" if none
+# 
+# Dies:     If regions are not formatted correctly, or
+#           regions are different strands.
+#
+#################################################################
+sub get_overlap { 
+  my $sub_name = "get_overlap()";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($regstr1, $regstr2) = (@_);
+
+  my ($start1, $stop1, $strand1, $start2, $stop2, $strand2);
+
+  if($regstr1 =~ /(\d+)\-(\d+)/) { ($start1, $stop1) = ($1, $2); }
+  else                           { die "ERROR in $sub_name, region string $regstr1 not parseable"; }
+
+  if($regstr2 =~ /(\d+)\-(\d+)/) { ($start2, $stop2) = ($1, $2); }
+  else                           { die "ERROR in $sub_name, region string $regstr2 not parseable"; }
+
+  $strand1 = ($start1 <= $stop1) ? "+" : "-";
+  $strand2 = ($start2 <= $stop2) ? "+" : "-";
+
+  if($strand1 ne $strand2) { 
+    die "ERROR in $sub_name, different strands for regions $regstr1 and $regstr2";
+  }
+
+  if($strand1 eq "-") { 
+    my $tmp = $start1; 
+    $start1 = $stop1;
+    $stop1  = $tmp;
+    $tmp    = $start2;
+    $start2 = $stop2;
+    $stop2  = $tmp;
+  }
+
+  return get_overlap_helper($start1, $stop1, $start2, $stop2);
+}
+
+#################################################################
+# Subroutine: get_overlap_helper()
+# Incept:     EPN, Mon Mar 14 13:47:57 2016 [dnaorg_scripts:dnaorg.pm:getOverlap()]
+#
+# Purpose:    Calculate number of nucleotides of overlap between
+#             two regions.
+#
+# Args:
+#  $start1: start position of hit 1 (must be <= $end1)
+#  $end1:   end   position of hit 1 (must be >= $end1)
+#  $start2: start position of hit 2 (must be <= $end2)
+#  $end2:   end   position of hit 2 (must be >= $end2)
+#
+# Returns:  Two values:
+#           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
+#                         0 if none
+#           $overlap_reg: region of overlap, "" if none
+#
+# Dies:     if $end1 < $start1 or $end2 < $start2.
+sub get_overlap_helper {
+  my $sub_name = "get_overlap_helper";
+  my $nargs_exp = 4;
+  if(scalar(@_) != 4) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($start1, $end1, $start2, $end2) = @_; 
+
+  # printf("in $sub_name $start1..$end1 $start2..$end2\n");
+
+  if($start1 > $end1) { die "ERROR in $sub_name start1 > end1 ($start1 > $end1)"; }
+  if($start2 > $end2) { die "ERROR in $sub_name start2 > end2 ($start2 > $end2)"; }
+
+  # Given: $start1 <= $end1 and $start2 <= $end2.
+  
+  # Swap if nec so that $start1 <= $start2.
+  if($start1 > $start2) { 
+    my $tmp;
+    $tmp   = $start1; $start1 = $start2; $start2 = $tmp;
+    $tmp   =   $end1;   $end1 =   $end2;   $end2 = $tmp;
+  }
+  
+  # 3 possible cases:
+  # Case 1. $start1 <=   $end1 <  $start2 <=   $end2  Overlap is 0
+  # Case 2. $start1 <= $start2 <=   $end1 <    $end2  
+  # Case 3. $start1 <= $start2 <=   $end2 <=   $end1
+  if($end1 < $start2) { return (0, ""); }                                          # case 1
+  if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
+  if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
+  die "ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2";
+
+  return; # NOT REACHED
 }
