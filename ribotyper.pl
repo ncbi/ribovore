@@ -1538,13 +1538,36 @@ sub output_one_target {
       my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
       if($noverlap > $noverlap_allowed) { 
         if($duplicate_model_region_str eq "") { 
-          $duplicate_model_region_str .= "duplicate_model_region:"; 
+          $duplicate_model_region_str .= "missassembly(duplicate_model_region):"; 
         }
         else { 
           $duplicate_model_region_str .= ",";
         }
         $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "($bd1,$bd2)";
       }
+    }
+  }
+
+  # determine if hits are out of order between model and sequence
+  my $out_of_order_str = "";
+  if($nhits > 1) { 
+    my @seq_hit_order_A = ();
+    my @mdl_hit_order_A = ();
+    my $seq_hit_order_str = sort_hit_array($seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}, $nhits, \@seq_hit_order_A, undef);
+    my $mdl_hit_order_str = sort_hit_array($mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}, $nhits, \@mdl_hit_order_A, \@seq_hit_order_A);
+    if($seq_hit_order_str ne $mdl_hit_order_str) { 
+      $out_of_order_str = "misassembly(inconsistent_hit_order):seq_order($seq_hit_order_str[";
+      my $i;
+      for($i = 0; $i < $nhits; $i++) { 
+        $out_of_order_str .= $seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
+        if($i < ($nhits-1) { $out_of_order_str .= ",";
+      }
+      $out_of_order_str .= "]),mdl_order($mdl_hit_order_str[";
+      for($i = 0; $i < $nhits; $i++) { 
+        $out_of_order_str .= $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
+        if($i < ($nhits-1) { $out_of_order_str .= ",";
+      }
+      $out_of_order_str .= "])";
     }
   }
 
@@ -2641,16 +2664,8 @@ sub get_overlap {
 
   my ($regstr1, $regstr2) = (@_);
 
-  my ($start1, $stop1, $strand1, $start2, $stop2, $strand2);
-
-  if($regstr1 =~ /(\d+)\-(\d+)/) { ($start1, $stop1) = ($1, $2); }
-  else                           { die "ERROR in $sub_name, region string $regstr1 not parseable"; }
-
-  if($regstr2 =~ /(\d+)\-(\d+)/) { ($start2, $stop2) = ($1, $2); }
-  else                           { die "ERROR in $sub_name, region string $regstr2 not parseable"; }
-
-  $strand1 = ($start1 <= $stop1) ? "+" : "-";
-  $strand2 = ($start2 <= $stop2) ? "+" : "-";
+  my ($start1, $stop1, $strand1) = decompose_region_str($regstr1);
+  my ($start2, $stop2, $strand2) = decompose_region_str($regstr2);
 
   if($strand1 ne $strand2) { 
     die "ERROR in $sub_name, different strands for regions $regstr1 and $regstr2";
@@ -2718,4 +2733,161 @@ sub get_overlap_helper {
   die "ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2";
 
   return; # NOT REACHED
+}
+
+#################################################################
+# Subroutine: sort_hit_array()
+# Incept:     EPN, Tue Apr 25 06:23:42 2017
+#
+# Purpose:    Sort an array of regions of hits.
+#
+# Args:
+#  $tosort_AR:       ref of array to sort
+#  $sorted_reg_AR:   ref of array to fill with sorted version of @{$tosort_AR}
+#  $sorted_order_AR: ref of array to fill with indices in $tosort_AR corresponding 
+#                    to @{$sorted_reg_AR}
+#  $sec_reg_AR:      ref to array of regions to use for secondary sorting, to break ties
+#  $sec_order_AR:    ref to array of original indices corresponding to @{$sec_reg_AR}
+#
+# Returns:  nothing, fills @{$sorted_AR} as sorted copy of @{$tosort_AR},
+#           fills @{$sorted_order_AR}
+#
+# Dies:     if some of the regions in @{$tosort_AR} are on different strands
+#           or are in the wrong format
+sub sort_hit_array { 
+  my $sub_name = "sort_hit_array";
+  my $nargs_exp = 5;
+  if(scalar(@_) != 5) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($tosort_AR, $sorted_reg_AR, $sorted_order_AR, $sec_reg_AR, $sec_order_AR) = @_;
+
+  my ($i, $j); # counters
+
+  my $nel = scalar(@{$tosort_AR});
+
+  if($nel == 1) { die "ERROR in $sub_name, nel is 1 (should be > 1)"; }
+
+  # make sure all elements are on the same strand
+  my(undef, undef, $strand) = decompose_region_str($tosort_AR->[0]);
+  for($i = 1; $i < $nel; $i++) { 
+    my(undef, undef, $cur_strand) = decompose_region_str($tosort_AR->[$i]);
+    if($strand ne $cur_strand) { 
+      die "ERROR in $sub_name, not all regions are on same strand, region 1: $tosort_AR->[0] $strand, region " . $i+1 . ": $tosort_AR->[$i] $cur_strand";
+    }
+  }
+
+  # sort array 
+  my @{$sorted_AR} = sort { $a <=> <$b> } @{$tosort_AR};
+
+  # determine order in original array
+  my $order_str = "";
+  my @used_AR = (); # [0..$i..$nel-1], 1 if element $i has been used (we've set $sorted_order_AR->[$i] already)
+  for($i = 0; $i < $nel; $i++) { $used_AR->[$i] = 0; } # initialize
+
+  for($i = 0; $i < $nel; $i++) { 
+    @match_A = ();
+    $nmatch = 0;
+    $last_match = undef;;
+    for($j = 0; $j < $nel; $j++) { 
+      if($sorted_AR->[$i] eq $tosort_AR->[$j]) { 
+        $match_A[$j] = 1;
+        $nmatch++;
+        $last_match = $j;
+      }
+    }
+    if($nmatch == 0) { 
+      die "ERROR in $sub_name, unable to find $sorted_AR->[$i] in original array"; 
+    }
+    if($nmatch == 1) { 
+      $sorted_order_AR->[$last_match] = $i;
+      $used_AR->[$last_match] = 1;
+    }
+    if($nmatch > 1) { 
+      # more than one match of $sorted_AR->[$i] in original array, use 
+      # secondary array to sort, the first occurence of $sorted_AR->[$i]
+      # in the secondary array that hasn't been used yet is the one we want.
+      # But what we 'want' is to know what order that occurence was in 
+      # the secondary array (@{$sec_order_AR}) so we need to use both
+      # @{$sec_reg_AR} and @{$sec_order_AR} in the loop below
+      if((! defined $sec_reg_AR) || (! defined $sec_order_AR)) { 
+        die "ERROR in $sub_name, found duplicate of $sorted_AR->[$i] but secondary arrays for sorting are not both defined";
+      }
+      my $found_match = 0;
+      for($j = 0; $j < $nel; $j++) { 
+HERE HERE HERE         if(($sorted_AR->[$i] eq $sec_reg_AR->[$j]) && # secondary region value $j matches value we want to match
+           ($used_AR[$sec_order_AR->[$j]] == 0) && 
+           ($match_A[$j] == 1)) { 
+          $sorted_order_AR->[$sec_order_AR->[$j]] = $i;
+          $used_AR->[$sec_order_AR->[$j]] = 1;
+          $j = $nel; # breaks loop
+          $found_match = 0;
+        }
+      }
+      if(! $found_match) { 
+        "ERROR in $sub_name, unable to find match for $sorted_AR->[$i] in secondary arrays";
+      }
+    }
+            
+                 
+          
+          
+        
+
+
+  # printf("in $sub_name $start1..$end1 $start2..$end2\n");
+
+  if($start1 > $end1) { die "ERROR in $sub_name start1 > end1 ($start1 > $end1)"; }
+  if($start2 > $end2) { die "ERROR in $sub_name start2 > end2 ($start2 > $end2)"; }
+
+  # Given: $start1 <= $end1 and $start2 <= $end2.
+  
+  # Swap if nec so that $start1 <= $start2.
+  if($start1 > $start2) { 
+    my $tmp;
+    $tmp   = $start1; $start1 = $start2; $start2 = $tmp;
+    $tmp   =   $end1;   $end1 =   $end2;   $end2 = $tmp;
+  }
+  
+  # 3 possible cases:
+  # Case 1. $start1 <=   $end1 <  $start2 <=   $end2  Overlap is 0
+  # Case 2. $start1 <= $start2 <=   $end1 <    $end2  
+  # Case 3. $start1 <= $start2 <=   $end2 <=   $end1
+  if($end1 < $start2) { return (0, ""); }                                          # case 1
+  if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
+  if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
+  die "ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2";
+
+  return; # NOT REACHED
+}
+
+#################################################################
+# Subroutine: decompose_region_str()
+# Incept:     EPN, Wed Apr 26 06:09:45 2017
+#
+# Purpose:    Given a 'region' string in the format <d1>.<d2>, 
+#             decompose it and return <d1>, <d2> and <strand>.
+#
+# Args:
+#  $regstr:    region string in format <d1>.<d2>
+#
+# Returns:  Three values:
+#           <d1>: beginning of region
+#           <d2>: end of region
+#           <strand>: "+" if <d1> <= <d2>, else "-"
+#
+# Dies:     if $regstr is not in correct format 
+sub decompose_region_str { 
+  my $sub_name = "decompose_region_str";
+  my $nargs_exp = 3;
+  if(scalar(@_) != 3) { die "ERROR $sub_name entered with wrong number of input args"; }
+
+  my ($regstr) = @_;
+
+  my ($d1, $d2, $strand); 
+  if($regstr =~ /(\d+)\.(\d+)/) { ($d1, $d2) = ($1, $2); }
+  else                          { die "ERROR in $sub_name, region string $regstr not parseable"; }
+
+  $strand = ($d1 <= $d2) ? "+" : "-";
+
+  return($d1, $d2, $strand);
 }
