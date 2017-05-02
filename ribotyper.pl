@@ -1726,7 +1726,7 @@ sub output_one_target {
     }
     $unusual_features .= "opposite_strand";
   }
-  # determine if the sequence has a 'suspiciously_low_score'
+  # determine if the sequence has a 'low_score'
   # it does if bits per position (of entire sequence not just hit)
   # is below the threshold (--lowppossc) minimum
   my $bits_per_posn = $one_score_HR->{$wfamily} / $seqlen;
@@ -1736,7 +1736,7 @@ sub output_one_target {
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("suspiciously_low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
+    $unusual_features .= sprintf("low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
   }
   # determine if coverage is low
   if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
