@@ -1013,6 +1013,8 @@ sub parse_sorted_tbl_file {
         # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
         ($target, $model, $score, $seqfrom, $seqto, $strand) = 
             ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+        $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
+        $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
       }
       else { # $search_method is "cmscan-fast"
         if(scalar(@el_A) != 17) { die "ERROR did not find 9 columns in fast cmscan tabular output at line: $line"; }
@@ -1021,6 +1023,8 @@ sub parse_sorted_tbl_file {
         # 1    SSU_rRNA_archaea     lcl|dna_BP331_0.3k:467 -          559.8        1     1232      +     []        1232  =       2  1.000  1.000      "      "      "
         ($target, $model, $score, $seqfrom, $seqto, $strand) = 
             ($el_A[2], $el_A[1], $el_A[4], $el_A[5], $el_A[6], $el_A[7]);
+        $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
+        $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
       }
     }    
     elsif($search_method eq "cmsearch-hmmonly" || $search_method eq "cmsearch-slow") { 
@@ -1125,8 +1129,8 @@ sub parse_sorted_tbl_file {
         @{$mdl_bd_per_model_HHA{$model}{$strand}} = ();
         @{$seq_bd_per_model_HHA{$model}{$strand}} = ();
       }
-      push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "-" . $mdlto)); 
-      push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "-" . $seqto)); 
+      push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "." . $mdlto)); 
+      push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "." . $seqto)); 
 
       if(! defined $one_score_H{$family}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $cur_becomes_one = 1; # no current, 'one' this will be it
@@ -1366,13 +1370,8 @@ sub output_one_target_wrapper {
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($long_FH, 0, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+  output_one_target($short_FH, $long_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
                     $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR, 
-                    $mdl_bd_HHAR, $seq_bd_HHAR, 
-                    $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
-                    $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-  output_one_target($short_FH, 1, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR,
                     $mdl_bd_HHAR, $seq_bd_HHAR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
                     $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
@@ -1427,12 +1426,13 @@ sub output_one_hitless_target_wrapper {
 # Subroutine : output_one_target()
 # Incept:      EPN, Tue Dec 13 15:30:12 2016
 #
-# Purpose:     Output information for current sequence in either
-#              long or short mode. Short mode if $do_short is true.
+# Purpose:     Output information for current sequence in short 
+#              and/or long mode (depending on whether $short_FH 
+#              and $long_FH are defined or not).
 #              
 # Arguments: 
-#   $FH:            file handle to output to
-#   $do_short:      TRUE to output in 'short' concise mode, else do long mode
+#   $short_FH:      file handle to output short output to (can be undef to not output short output)
+#   $long_FH:       file handle to output long output to (can be undef to not output long output)
 #   $opt_HHR:       reference to 2D hash of cmdline options
 #   $use_evalues:  '1' if we have E-values, '0' if not
 #   $width_HR:      hash, key is "model" or "target", value 
@@ -1471,7 +1471,7 @@ sub output_one_target {
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+  my ($short_FH, $long_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
@@ -1480,6 +1480,7 @@ sub output_one_target {
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
   my $have_accurate_coverage = determine_if_coverage_is_accurate($opt_HHR);
+  my $have_model_coords      = determine_if_we_have_model_coords($opt_HHR);
 
   # determine the winning family
   my $wfamily = undef;
@@ -1529,45 +1530,70 @@ sub output_one_target {
 
   # determine if we have hits that overlap on the model by more than maximum allowed amount
   my $duplicate_model_region_str = "";
-  $nhits = scalar(@{$mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}});
-  my $noverlap_allowed = opt_Get("--maxoverlap", $opt_HHR);
-  for(my $i = 0; $i < $nhits; $i++) { 
-    for(my $j = $i+1; $j < $nhits; $j++) { 
-      my $bd1 = $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i];
-      my $bd2 = $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$j];
-      my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
-      if($noverlap > $noverlap_allowed) { 
-        if($duplicate_model_region_str eq "") { 
-          $duplicate_model_region_str .= "missassembly(duplicate_model_region):"; 
+  if($have_model_coords) { # we can only do this if search output included model coords
+    $nhits = scalar(@{$mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}});
+    my $noverlap_allowed = opt_Get("--maxoverlap", $opt_HHR);
+    for(my $i = 0; $i < $nhits; $i++) { 
+      for(my $j = $i+1; $j < $nhits; $j++) { 
+        my $bd1 = $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i];
+        my $bd2 = $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$j];
+        my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
+        if($noverlap > $noverlap_allowed) { 
+          if($duplicate_model_region_str eq "") { 
+            $duplicate_model_region_str .= "missassembly(duplicate_model_region):"; 
+          }
+          else { 
+            $duplicate_model_region_str .= ",";
+          }
+          $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "($bd1,$bd2)";
         }
-        else { 
-          $duplicate_model_region_str .= ",";
-        }
-        $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "($bd1,$bd2)";
       }
     }
   }
-
+    
   # determine if hits are out of order between model and sequence
   my $out_of_order_str = "";
-  if($nhits > 1) { 
-    my @seq_hit_order_A = ();
-    my @mdl_hit_order_A = ();
-    my $seq_hit_order_str = sort_hit_array($seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}, $nhits, \@seq_hit_order_A, undef);
-    my $mdl_hit_order_str = sort_hit_array($mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}, $nhits, \@mdl_hit_order_A, \@seq_hit_order_A);
-    if($seq_hit_order_str ne $mdl_hit_order_str) { 
-      $out_of_order_str = "misassembly(inconsistent_hit_order):seq_order($seq_hit_order_str[";
+  if($have_model_coords) { # we can only do this if search output included model coords
+    if($nhits > 1) { 
       my $i;
+      my @seq_hit_order_A = (); # array of sequence boundary hit indices in sorted order [0..nhits-1] values are in range 1..nhits
+      my @mdl_hit_order_A = (); # array of model    boundary hit indices in sorted order [0..nhits-1] values are in range 1..nhits
+      my $seq_hit_order_str = sort_hit_array($seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}, \@seq_hit_order_A, 0); # 0 means duplicate values in first array are not allowed
+      my $mdl_hit_order_str = sort_hit_array($mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}, \@mdl_hit_order_A, 1); # 1 means duplicate values in first array are allowed
+      # check if the hits are out of order we don't just check for equality of the
+      # two strings because it's possible (but rare) that there could be duplicates in the model
+      # order array (but not in the sequence array), so we need to allow for that.
+      my $out_of_order_flag = 0;
       for($i = 0; $i < $nhits; $i++) { 
-        $out_of_order_str .= $seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
-        if($i < ($nhits-1) { $out_of_order_str .= ",";
+        my $x = $mdl_hit_order_A[$i];
+        my $y = $seq_hit_order_A[$i];
+        # check to see if hit $i is same order in both mdl and seq coords
+        # or if it is not, it's okay if it is identical to the one that is
+        # example: 
+        # hit 1 seq 1..10   model  90..99
+        # hit 2 seq 11..20  model 100..110
+        # hit 3 seq 21..30  model 100..110
+        # seq order: 1,2,3
+        # mdl order: 1,3,2 (or 1,2,3) we want both to be ok (not FAIL)
+        if(($x ne $y) && # hits are not the same order
+           ($mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[($x-1)] ne
+            $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[($y-1)])) { # hit is not identical to hit in correct order
+          $out_of_order_flag = 1;
+        }
       }
-      $out_of_order_str .= "]),mdl_order($mdl_hit_order_str[";
-      for($i = 0; $i < $nhits; $i++) { 
-        $out_of_order_str .= $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
-        if($i < ($nhits-1) { $out_of_order_str .= ",";
+      if($out_of_order_flag) { 
+        $out_of_order_str = "misassembly(inconsistent_hit_order):seq_order(" . $seq_hit_order_str . "[";
+        for($i = 0; $i < $nhits; $i++) { 
+          $out_of_order_str .= $seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
+          if($i < ($nhits-1)) { $out_of_order_str .= ","; }
+        }
+        $out_of_order_str .= "]),mdl_order(" . $mdl_hit_order_str . "[";
+        for($i = 0; $i < $nhits; $i++) { 
+          $out_of_order_str .= $mdl_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
+          if($i < ($nhits-1)) { $out_of_order_str .= ","; }
+        }
+        $out_of_order_str .= "])";
       }
-      $out_of_order_str .= "])";
     }
   }
 
@@ -1679,7 +1705,11 @@ sub output_one_target {
     if($unusual_features ne "") { $unusual_features .= ";"; }
     $unusual_features .= "*" . $duplicate_model_region_str;
   }    
-
+  if($out_of_order_str ne "") { 
+    $pass_fail = "FAIL";
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $unusual_features .= "*" . $out_of_order_str;
+  }
 
   # check/enforce optional failure criteria
   # determine if the sequence hits to an unacceptable model
@@ -1778,54 +1808,54 @@ sub output_one_target {
   if($unusual_features eq "") { $unusual_features = "-"; }
 
 
-  if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
-                $width_HR->{"index"}, $seqidx,
-                $width_HR->{"target"}, $target, 
-                $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
-                ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
-                $pass_fail, $unusual_features);
+  if(defined $short_FH) { 
+    printf $short_FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
+                      $width_HR->{"index"}, $seqidx,
+                      $width_HR->{"target"}, $target, 
+                      $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$one_model_HR->{$wfamily}}, 
+                      ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
+                      $pass_fail, $unusual_features);
   }
-  else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6.1f  %4.2f  %s%3d  %5.3f  %5.3f  %*d  %*d  ", 
-                $width_HR->{"index"}, $seqidx,
-                $width_HR->{"target"}, $target, 
-                $pass_fail, 
-                $width_HR->{"length"}, $seqlen, 
-                $nfams, 
-                $width_HR->{"family"}, $wfamily, 
-                $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
-                $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
-                ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
-                $one_score_HR->{$wfamily}, 
-                $bits_per_posn, 
-                $one_evalue2print, 
-                $nhits, 
-                $tot_coverage, 
-                $best_coverage, 
-                $width_HR->{"length"}, $one_start_HR->{$wfamily}, 
-                $width_HR->{"length"}, $one_stop_HR->{$wfamily});
+  if(defined $long_FH) { 
+    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6.1f  %4.2f  %s%3d  %5.3f  %5.3f  %*d  %*d  ", 
+                     $width_HR->{"index"}, $seqidx,
+                     $width_HR->{"target"}, $target, 
+                     $pass_fail, 
+                     $width_HR->{"length"}, $seqlen, 
+                     $nfams, 
+                     $width_HR->{"family"}, $wfamily, 
+                     $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
+                     $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
+                     ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
+                     $one_score_HR->{$wfamily}, 
+                     $bits_per_posn, 
+                     $one_evalue2print, 
+                     $nhits, 
+                     $tot_coverage, 
+                     $best_coverage, 
+                     $width_HR->{"length"}, $one_start_HR->{$wfamily}, 
+                     $width_HR->{"length"}, $one_stop_HR->{$wfamily});
     
     if(defined $two_model_HR->{$wfamily}) { 
-      printf $FH ("%6.1f  %-*s  %6.1f  %s", 
-                  $one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}, 
-                  $width_HR->{"model"}, $two_model_HR->{$wfamily}, 
-                  $two_score_HR->{$wfamily},
-                  $two_evalue2print);
+      printf $long_FH ("%6.1f  %-*s  %6.1f  %s", 
+                       $one_score_HR->{$wfamily} - $two_score_HR->{$wfamily}, 
+                       $width_HR->{"model"}, $two_model_HR->{$wfamily}, 
+                       $two_score_HR->{$wfamily},
+                       $two_evalue2print);
     }
     else { 
-      printf $FH ("%6s  %-*s  %6s  %s", 
-                  "-" , 
-                  $width_HR->{"model"}, "-", 
-                  "-", 
-                  ($use_evalues) ? "       -  " : "");
+      printf $long_FH ("%6s  %-*s  %6s  %s", 
+                       "-" , 
+                       $width_HR->{"model"}, "-", 
+                       "-", 
+                       ($use_evalues) ? "       -  " : "");
     }
     
     if($unusual_features eq "") { 
       $unusual_features = "-";
     }
     
-    print $FH ("$unusual_features\n");
+    print $long_FH ("$unusual_features\n");
   }
 
   return;
@@ -2635,6 +2665,39 @@ sub determine_if_coverage_is_accurate {
 }
 
 #################################################################
+# Subroutine: determine_if_we_have_model_coords()
+# Incept:     EPN, Tue May  2 09:40:34 2017
+#
+# Purpose:    Based on the command line options determine if the
+#             search output includes model coordinates or not.
+#
+# Arguments:
+#   $opt_HHR: reference to 2D hash of cmdline options
+#
+# Returns:  '1' if we have model coords, else '0'
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_if_we_have_model_coords { 
+  my $sub_name = "determine_if_we_have_model_coords()";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($opt_HHR) = (@_);
+
+  my $have_model_coords = 0;
+  if(opt_Get("--hmm",      $opt_HHR)) { $have_model_coords = 1; }
+  if(opt_Get("--slow",     $opt_HHR)) { $have_model_coords = 1; }
+  if(opt_Get("--mid",      $opt_HHR)) { $have_model_coords = 1; }
+  if(opt_Get("--max",      $opt_HHR)) { $have_model_coords = 1; }
+  if(opt_Get("--nhmmer",   $opt_HHR)) { $have_model_coords = 1; }
+  if(opt_Get("--ssualign", $opt_HHR)) { $have_model_coords = 1; }
+
+  return $have_model_coords;
+}
+
+#################################################################
 # Subroutine: get_overlap()
 # Incept:     EPN, Mon Apr 24 15:47:13 2017
 #
@@ -2727,7 +2790,7 @@ sub get_overlap_helper {
   # Case 1. $start1 <=   $end1 <  $start2 <=   $end2  Overlap is 0
   # Case 2. $start1 <= $start2 <=   $end1 <    $end2  
   # Case 3. $start1 <= $start2 <=   $end2 <=   $end1
-  if($end1 < $start2) { return (0, ""); }                                          # case 1
+  if($end1 < $start2) { return (0, ""); }                                           # case 1
   if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
   if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
   die "ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2";
@@ -2742,24 +2805,23 @@ sub get_overlap_helper {
 # Purpose:    Sort an array of regions of hits.
 #
 # Args:
-#  $tosort_AR:       ref of array to sort
-#  $sorted_reg_AR:   ref of array to fill with sorted version of @{$tosort_AR}
-#  $sorted_order_AR: ref of array to fill with indices in $tosort_AR corresponding 
-#                    to @{$sorted_reg_AR}
-#  $sec_reg_AR:      ref to array of regions to use for secondary sorting, to break ties
-#  $sec_order_AR:    ref to array of original indices corresponding to @{$sec_reg_AR}
+#  $tosort_AR:   ref of array to sort
+#  $order_AR:    ref to array of original indices corresponding to @{$tosort_AR}
+#  $allow_dups:  '1' to allow duplicates in $tosort_AR, '0' to not and die if
+#                they're found
 #
-# Returns:  nothing, fills @{$sorted_AR} as sorted copy of @{$tosort_AR},
-#           fills @{$sorted_order_AR}
+# Returns:  string indicating the order of the elements in $tosort_AR in the sorted
+#           array.
 #
-# Dies:     if some of the regions in @{$tosort_AR} are on different strands
-#           or are in the wrong format
+# Dies:     - if some of the regions in @{$tosort_AR} are on different strands
+#             or are in the wrong format
+#           - if there are duplicate values in $tosort_AR and $allow_dups is 0
 sub sort_hit_array { 
   my $sub_name = "sort_hit_array";
-  my $nargs_exp = 5;
-  if(scalar(@_) != 5) { die "ERROR $sub_name entered with wrong number of input args"; }
+  my $nargs_exp = 3;
+  if(scalar(@_) != 3) { die "ERROR $sub_name entered with wrong number of input args"; }
 
-  my ($tosort_AR, $sorted_reg_AR, $sorted_order_AR, $sec_reg_AR, $sec_order_AR) = @_;
+  my ($tosort_AR, $order_AR, $allow_dups) = @_;
 
   my ($i, $j); # counters
 
@@ -2776,88 +2838,34 @@ sub sort_hit_array {
     }
   }
 
-  # sort array 
-  my @{$sorted_AR} = sort { $a <=> <$b> } @{$tosort_AR};
-
-  # determine order in original array
-  my $order_str = "";
-  my @used_AR = (); # [0..$i..$nel-1], 1 if element $i has been used (we've set $sorted_order_AR->[$i] already)
-  for($i = 0; $i < $nel; $i++) { $used_AR->[$i] = 0; } # initialize
-
+  # make a temporary hash and sort it by value
+  my %hash = ();
   for($i = 0; $i < $nel; $i++) { 
-    @match_A = ();
-    $nmatch = 0;
-    $last_match = undef;;
-    for($j = 0; $j < $nel; $j++) { 
-      if($sorted_AR->[$i] eq $tosort_AR->[$j]) { 
-        $match_A[$j] = 1;
-        $nmatch++;
-        $last_match = $j;
-      }
-    }
-    if($nmatch == 0) { 
-      die "ERROR in $sub_name, unable to find $sorted_AR->[$i] in original array"; 
-    }
-    if($nmatch == 1) { 
-      $sorted_order_AR->[$last_match] = $i;
-      $used_AR->[$last_match] = 1;
-    }
-    if($nmatch > 1) { 
-      # more than one match of $sorted_AR->[$i] in original array, use 
-      # secondary array to sort, the first occurence of $sorted_AR->[$i]
-      # in the secondary array that hasn't been used yet is the one we want.
-      # But what we 'want' is to know what order that occurence was in 
-      # the secondary array (@{$sec_order_AR}) so we need to use both
-      # @{$sec_reg_AR} and @{$sec_order_AR} in the loop below
-      if((! defined $sec_reg_AR) || (! defined $sec_order_AR)) { 
-        die "ERROR in $sub_name, found duplicate of $sorted_AR->[$i] but secondary arrays for sorting are not both defined";
-      }
-      my $found_match = 0;
-      for($j = 0; $j < $nel; $j++) { 
-HERE HERE HERE         if(($sorted_AR->[$i] eq $sec_reg_AR->[$j]) && # secondary region value $j matches value we want to match
-           ($used_AR[$sec_order_AR->[$j]] == 0) && 
-           ($match_A[$j] == 1)) { 
-          $sorted_order_AR->[$sec_order_AR->[$j]] = $i;
-          $used_AR->[$sec_order_AR->[$j]] = 1;
-          $j = $nel; # breaks loop
-          $found_match = 0;
-        }
-      }
-      if(! $found_match) { 
-        "ERROR in $sub_name, unable to find match for $sorted_AR->[$i] in secondary arrays";
-      }
-    }
-            
-                 
-          
-          
-        
-
-
-  # printf("in $sub_name $start1..$end1 $start2..$end2\n");
-
-  if($start1 > $end1) { die "ERROR in $sub_name start1 > end1 ($start1 > $end1)"; }
-  if($start2 > $end2) { die "ERROR in $sub_name start2 > end2 ($start2 > $end2)"; }
-
-  # Given: $start1 <= $end1 and $start2 <= $end2.
-  
-  # Swap if nec so that $start1 <= $start2.
-  if($start1 > $start2) { 
-    my $tmp;
-    $tmp   = $start1; $start1 = $start2; $start2 = $tmp;
-    $tmp   =   $end1;   $end1 =   $end2;   $end2 = $tmp;
+    $hash{($i+1)} = $tosort_AR->[$i];
   }
-  
-  # 3 possible cases:
-  # Case 1. $start1 <=   $end1 <  $start2 <=   $end2  Overlap is 0
-  # Case 2. $start1 <= $start2 <=   $end1 <    $end2  
-  # Case 3. $start1 <= $start2 <=   $end2 <=   $end1
-  if($end1 < $start2) { return (0, ""); }                                          # case 1
-  if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
-  if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
-  die "ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2";
+  @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
 
-  return; # NOT REACHED
+  # now that we have the sorted order, we can easily check for dups
+  if(! $allow_dups) { 
+    for($i = 1; $i < $nel; $i++) { 
+      if($hash{$order_AR->[($i-1)]} eq $hash{$order_AR->[$i]}) { 
+        die "ERROR in $sub_name, duplicate values exist in the array: " . $hash{$order_AR->[$i]} . " appears twice"; 
+      }
+    }
+  }
+
+  # reverse array if strand is "-"
+  if($strand eq "-") { 
+    @{$order_AR} = reverse @{$order_AR};
+  }
+
+  # construct return string
+  my $ret_str = $order_AR->[0];
+  for($i = 1; $i < $nel; $i++) { 
+    $ret_str .= "," . $order_AR->[$i];
+  }
+
+  return $ret_str;
 }
 
 #################################################################
@@ -2878,8 +2886,8 @@ HERE HERE HERE         if(($sorted_AR->[$i] eq $sec_reg_AR->[$j]) && # secondary
 # Dies:     if $regstr is not in correct format 
 sub decompose_region_str { 
   my $sub_name = "decompose_region_str";
-  my $nargs_exp = 3;
-  if(scalar(@_) != 3) { die "ERROR $sub_name entered with wrong number of input args"; }
+  my $nargs_exp = 1;
+  if(scalar(@_) != 1) { die "ERROR $sub_name entered with wrong number of input args"; }
 
   my ($regstr) = @_;
 
