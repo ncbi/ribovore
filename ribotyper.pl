@@ -1540,7 +1540,7 @@ sub output_one_target {
         my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
         if($noverlap > $noverlap_allowed) { 
           if($duplicate_model_region_str eq "") { 
-            $duplicate_model_region_str .= "missassembly(duplicate_model_region):"; 
+            $duplicate_model_region_str .= "duplicate_model_region:"; 
           }
           else { 
             $duplicate_model_region_str .= ",";
@@ -1582,7 +1582,7 @@ sub output_one_target {
         }
       }
       if($out_of_order_flag) { 
-        $out_of_order_str = "misassembly(inconsistent_hit_order):seq_order(" . $seq_hit_order_str . "[";
+        $out_of_order_str = "inconsistent_hit_order:seq_order(" . $seq_hit_order_str . "[";
         for($i = 0; $i < $nhits; $i++) { 
           $out_of_order_str .= $seq_bd_HHAR->{$one_model_HR->{$wfamily}}{$one_strand_HR->{$wfamily}}[$i]; 
           if($i < ($nhits-1)) { $out_of_order_str .= ","; }
