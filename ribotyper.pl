@@ -52,6 +52,7 @@ $opt_group_desc_H{"1"} = "basic options";
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 0,                        1,    undef,"--ssualign","use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output                  help-output    
@@ -72,8 +73,8 @@ opt_Add("--nominsc",    "boolean",   0,                       3,  undef,   undef
 $opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
 opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",                 "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
-opt_Add("--scfail",     "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--difffail",   "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--scfail",     "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score threshold FAIL",        "seqs that fall below low score threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--difffail",   "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--covfail",    "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--multfail",   "boolean",   0,                        4,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
 
@@ -109,6 +110,7 @@ my $options_okay =
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
                 'v'            => \$GetOptions_H{"-v"},
+                'n=s'          => \$GetOptions_H{"-n"},
 # algorithm options
                 'nhmmer'       => \$GetOptions_H{"--nhmmer"},
                 'cmscan'       => \$GetOptions_H{"--cmscan"},
@@ -207,8 +209,8 @@ if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) {
   }
 }
 
-my $cmd;              # a command to be run by run_command()
-my $ncpu = 0;         # number of CPUs to use with search command
+my $cmd;                             # a command to be run by run_command()
+my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @to_remove_A = (); # array of files to remove at end
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
