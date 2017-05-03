@@ -151,8 +151,8 @@ my $options_okay =
 my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
-my $version       = "0.01";
-my $releasedate   = "Dec 2016";
+my $version       = "0.02";
+my $releasedate   = "May 2017";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -2297,7 +2297,7 @@ sub output_banner {
   my ($FH, $version, $releasedate, $synopsis, $date) = @_;
 
   print $FH ("\# $synopsis\n");
-  print $FH ("\# dnaorg $version ($releasedate)\n");
+  print $FH ("\# ribotyper $version ($releasedate)\n");
 #  print $FH ("\# Copyright (C) 2014 HHMI Janelia Research Campus\n");
 #  print $FH ("\# Freely distributed under the GNU General Public License (GPLv3)\n");
   print $FH ("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
