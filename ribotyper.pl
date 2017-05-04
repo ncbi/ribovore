@@ -17,7 +17,6 @@ if(! (-d $ribodir)) {
     exit(1); 
 }    
 my $inf_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
-my $hmmer_exec_dir    = $ribodir . "/infernal-1.1.2/src/";
 my $esl_exec_dir      = $ribodir . "/infernal-1.1.2/easel/miniapps/";
 my $df_model_dir      = $ribodir . "/models/";
  
@@ -56,52 +55,55 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-n",           "integer", 0,                        1,    undef,"--ssualign","use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  0,                        1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"2"} = "options for controlling the search algorithm";
-#       option               type   default                group  requires incompat                                  preamble-output                  help-output    
-opt_Add("--nhmmer",       "boolean", 0,                       2,  undef,   "--cmscan,--ssualign,--hmm,--slow",       "annotate with nhmmer",          "using nhmmer for annotation",    \%opt_HH, \@opt_order_A);
-opt_Add("--cmscan",       "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign",                    "annotate with cmsearch",        "using cmscan for annotation",    \%opt_HH, \@opt_order_A);
-opt_Add("--ssualign",     "boolean", 0,                       2,  undef,   "--nhmmer,--cmscan,--hmm,--slow",         "annotate with SSU-ALIGN",       "using SSU-ALIGN for annotation", \%opt_HH, \@opt_order_A);
-opt_Add("--hmm",          "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--slow",             "run in slower HMM mode",        "run in slower HMM mode",         \%opt_HH, \@opt_order_A);
-opt_Add("--slow",         "boolean", 0,                       2,  undef,   "--nhmmer,--ssualign,--hmm",              "run in slow CM mode",           "run in slow CM mode, maximize boundary accuracy", \%opt_HH, \@opt_order_A);
-opt_Add("--mid",          "boolean", 0,                       2,"--slow",  "--max",                                  "use --mid instead of --rfam",   "with --slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--max",          "boolean", 0,                       2,"--slow",  "--mid",                                  "use --max instead of --rfam",   "with --slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--smxsize",         "real", undef,                   2,"--max",   undef,                                    "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
+#       option               type   default                group  requires incompat    preamble-output                            help-output    
+opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   "--slow",   "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                       2,  undef,   "--hmm",    "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options related to bit score REPORTING thresholds";
+$opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
+#       option               type   default                group  requires incompat           preamble-output                        help-output    
+opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow",        "run second round in slow CM mode",    "run second round in slow CM mode",    \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"4"} = "options related to bit score REPORTING thresholds";
 #     option                 type   default                group   requires incompat    preamble-output                                 help-output    
-opt_Add("--minsc",         "real",   "20.",                   3,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--nominsc",    "boolean",   0,                       3,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
+opt_Add("--minsc",         "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--nominsc",    "boolean",   0,                       4,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
+$opt_group_desc_H{"5"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("--minusfail",  "boolean",   0,                        4,  undef,   undef,      "hits on negative (minus) strand FAIL",                 "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
-opt_Add("--scfail",     "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score threshold FAIL",        "seqs that fall below low score threshold FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--difffail",   "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--covfail",    "boolean",   0,                        4,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--multfail",   "boolean",   0,                        4,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--minusfail",  "boolean",   0,                        5,  undef,   undef,      "hits on negative (minus) strand FAIL",                 "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
+opt_Add("--scfail",     "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score threshold FAIL",        "seqs that fall below low score threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--difffail",   "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--covfail",    "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--multfail",   "boolean",   0,                        5,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "options for controlling thresholds for failure/warning criteria";
+$opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
-opt_Add("--lowppossc",     "real",   "0.5",                    5,  undef,   undef,      "set minimum bit per position threshold to <x>",           "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",          "real",   "0.88",                   5,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
-opt_Add("--lowpdiff",      "real",   "0.10",                   5,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowpdiff",     "real",   "0.04",                   5,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",    "boolean",   0,                        5,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
-opt_Add("--lowadiff",      "real",   "100.",                   5,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowadiff",     "real",   "40.",                    5,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--maxoverlap", "integer",   "10",                     5,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failue to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--lowppossc",     "real",   "0.5",                    6,  undef,   undef,      "set minimum bit per position threshold to <x>",           "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",          "real",   "0.88",                   6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--lowpdiff",      "real",   "0.10",                   6,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowpdiff",     "real",   "0.04",                   6,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",    "boolean",   0,                        6,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
+opt_Add("--lowadiff",      "real",   "100.",                   6,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failue to <n>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"6"} = "optional input files";
+$opt_group_desc_H{"7"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   6,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"7"} = "advanced options";
+$opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
+opt_Add("--mid",          "boolean", 0,                       8,"--slow",  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--max",          "boolean", 0,                       8,"--slow",  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef,      "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"9"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                       7,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                       7,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                       7,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                       7,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
-opt_Add("--keep",         "boolean", 0,                       7,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       9,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                       9,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                       9,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --slow, --hmm, or --nhmmer", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                       9,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",         "boolean", 0,                       9,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -114,15 +116,11 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
-# algorithm options
-                'nhmmer'       => \$GetOptions_H{"--nhmmer"},
-                'cmscan'       => \$GetOptions_H{"--cmscan"},
-                'ssualign'     => \$GetOptions_H{"--ssualign"},
-                'hmm'          => \$GetOptions_H{"--hmm"},
-                'slow'         => \$GetOptions_H{"--slow"},
-                'mid'          => \$GetOptions_H{"--mid"},
-                'max'          => \$GetOptions_H{"--max"},
-                'smxsize=s'    => \$GetOptions_H{"--smxsize"},
+# first round algorithm options
+                '1hmm'          => \$GetOptions_H{"--1hmm"},
+                '1slow'         => \$GetOptions_H{"--1slow"},
+# first round algorithm options
+                '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
                 'minsc=s'     => \$GetOptions_H{"--minsc"},
                 'nominsc'     => \$GetOptions_H{"--nominsc"},
@@ -144,6 +142,10 @@ my $options_okay =
                 'maxoverlap'   => \$GetOptions_H{"--maxoverlap"},
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
+# options that affect --1slow and --2slow
+                'mid'          => \$GetOptions_H{"--mid"},
+                'max'          => \$GetOptions_H{"--max"},
+                'smxsize=s'    => \$GetOptions_H{"--smxsize"},
 # advanced options
                 'evalues'      => \$GetOptions_H{"--evalues"},
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"},
@@ -305,43 +307,31 @@ open($unsrt_short_out_FH, ">", $unsrt_short_out_file) || die "ERROR unable to op
 open($srt_long_out_FH,    ">", $srt_long_out_file)    || die "ERROR unable to open $srt_long_out_file for writing";
 open($srt_short_out_FH,   ">", $srt_short_out_file)   || die "ERROR unable to open $srt_short_out_file for writing";
 
-##########################
-# determine search method
-##########################
-my $search_method = undef; # can be any of "cmsearch-hmmonly", "cmscan-hmmonly", 
-#                                          "cmsearch-slow",    "cmscan-slow", 
-#                                          "cmsearch-fast",    "cmscan-fast",
-#                                          "nhmmer",           "ssualign"
+##############################################
+# determine search methods for rounds 1 and 2
+##############################################
+my $alg1 = undef; # can be any of "fast", "hmmonly", or "slow"
+if   (opt_Get("--1hmm",  \%opt_HH))   { $alg1 = "hmmonly"; }
+elsif(opt_Get("--1slow", \%opt_HH))   { $alg1 = "slow"; }
+else                                  { $alg1 = "fast"; }
 
-if   (opt_Get("--nhmmer", \%opt_HH))   { $search_method = "nhmmer"; }
-elsif(opt_Get("--cmscan", \%opt_HH))   { $search_method = "cmscan-fast"; }
-elsif(opt_Get("--ssualign", \%opt_HH)) { $search_method = "ssualign"; }
-else                                   { $search_method = "cmsearch-fast"; }
-
-if(opt_Get("--hmm", \%opt_HH)) { 
-  if   ($search_method eq "cmsearch-fast") { $search_method = "cmsearch-hmmonly"; }
-  elsif($search_method eq "cmscan-fast")   { $search_method = "cmscan-hmmonly"; }
-  else { die "ERROR, --hmm used in error, search_method: $search_method"; }
-}
-elsif(opt_Get("--slow", \%opt_HH)) { 
-  if   ($search_method eq "cmsearch-fast") { $search_method = "cmsearch-slow"; }
-  elsif($search_method eq "cmscan-fast")   { $search_method = "cmscan-slow"; }
-  else { die "ERROR, --hmm used in error, search_method: $search_method"; }
+my $alg2 = undef; # can be "hmmonly" or "slow"
+if(! opt_Get("--1slow", \%opt_HH)) { 
+  if(opt_Get("--2slow", \%opt_HH)) { 
+    $alg2 = "slow"; 
+  }
+  elsif(! opt_Get("--1hmm", \%opt_HH)) { 
+    $alg2 = "hmmonly";
+  }
 }
 
 ###################################################
 # make sure the required executables are executable
 ###################################################
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmscan"}          = $inf_exec_dir   . "cmscan";
 $execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
 $execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
-if($search_method eq "nhmmer") { 
-  $execs_H{"nhmmer"}          = $hmmer_exec_dir . "nhmmer";
-}
-if($search_method eq "ssualign") { 
-  $execs_H{"ssu-align"}       = $hmmer_exec_dir . "ssu-align";
-}
+$execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
 #$execs_H{"esl_ssplit"}    = $esl_ssplit;
 validate_executable_hash(\%execs_H);
 
@@ -363,9 +353,6 @@ my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%f
 # models in the models file and models listed in the model info file
 my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
 $width_H{"model"} = parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H);
-
-
-exit 0;
 
 # determine max width of domain, family, and classification (formed as family.domain)
 $width_H{"domain"}         = length("domain");
@@ -426,140 +413,71 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
-# Step 2: run search algorithm
+# Step 2: run round 1 search algorithm
 # determine which algorithm to use and options to use as well
 # as the command for sorting the output and parsing the output
 # set up defaults
-my $cmsearch_and_cmscan_opts = "";
-my $tblout_file = "";
-my $sorted_tblout_file = "";
-my $searchout_file = "";
-my $search_cmd = "";
-my $sort_cmd = "";
+my $alg1_opts = "";
+my $r1_tblout_file = "";
+my $r1_sorted_tblout_file = "";
+my $r1_searchout_file = "";
+my $r1_search_cmd = "";
+my $r1_sort_cmd = "";
 
-if($search_method eq "nhmmer") { 
-  $tblout_file        = $out_root . ".nhmmer.tbl";
-  $sorted_tblout_file = $tblout_file . ".sorted";
-  $searchout_file     = $out_root . ".nhmmer.out";
-  $search_cmd         = $execs_H{"nhmmer"};
-  if(opt_Get("--noali", \%opt_HH)) { $search_cmd .= " --noali"; }
-  $search_cmd        .= " --cpu $ncpu --tblout $tblout_file $master_model_file $seq_file > $searchout_file";
-  $sort_cmd           = "grep -v ^\# $tblout_file | sort -k1 > " . $sorted_tblout_file;
-}
-elsif($search_method eq "ssualign") { 
-  $tblout_file        = $out_root . "/" . $dir_out_tail . ".ribotyper.tab";
-  $sorted_tblout_file = $tblout_file . ".sorted";
-  $searchout_file     = $out_root . ".nhmmer.out";
-  $search_cmd         = $execs_H{"ssu-align"} . " --no-align -m $master_model_file -f $seq_file $out_root > /dev/null";
-  $sort_cmd           = "grep -v ^\# $tblout_file | awk ' { printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); } ' | sort -k2 > " . $sorted_tblout_file;
+
+$alg1_opts          = determine_cmsearch_opts($alg1, \%opt_HH);
+$r1_tblout_file        = $out_root . "r1.cmsearch.tbl";
+$r1_sorted_tblout_file = $r1_tblout_file . "r1.sorted";
+$r1_searchout_file     = $out_root . ".cmsearch.out";
+$r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorted_tblout_file;
+$r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
+
+if(! opt_Get("--skipsearch", \%opt_HH)) { 
+  $start_secs = output_progress_prior("Performing round 1 cmsearch-$alg1 search ", $progress_w, undef, *STDOUT);
 }
 else { 
-  # search_method is "cmsearch-slow", "cmscan-slow', "cmsearch-fast", or "cmscan-fast"
-  if($search_method eq "cmsearch-fast" || $search_method eq "cmscan-fast") { 
-    $cmsearch_and_cmscan_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc --noali ";
-    if($search_method eq "cmscan-fast") { 
-      $cmsearch_and_cmscan_opts .= " --fmt 2 ";
-    }
-  }
-  elsif($search_method eq "cmsearch-slow" || $search_method eq "cmscan-slow") { 
-    if   (opt_Get("--mid", \%opt_HH)) { 
-      $cmsearch_and_cmscan_opts .= " --mid "; 
-    }
-    elsif(opt_Get("--max", \%opt_HH)) { 
-      $cmsearch_and_cmscan_opts .= " --max "; 
-      if(opt_IsUsed("--smxsize", \%opt_HH)) { 
-        $cmsearch_and_cmscan_opts .= " --smxsize " . opt_Get("--smxsize", \%opt_HH) . " ";
-      }
-    }
-    else { # default for --slow, --mid nor --max used (use cmsearch --rfam)
-      $cmsearch_and_cmscan_opts .= " --rfam "; 
-    }
-    if($search_method eq "cmscan-slow") { 
-      $cmsearch_and_cmscan_opts .= " --fmt 2 ";
-    }
-    if(opt_Get("--noali", \%opt_HH)) { 
-      $cmsearch_and_cmscan_opts .= " --noali ";
-    }
-  }
-  else { # $search_method is either "cmsearch-hmmonly", or "cmscan-hmmonly";
-    $cmsearch_and_cmscan_opts .= " --hmmonly ";
-    if($search_method eq "cmscan-hmmonly") { 
-      $cmsearch_and_cmscan_opts .= " --fmt 2 ";
-    }
-    if(opt_Get("--noali", \%opt_HH)) { 
-      $cmsearch_and_cmscan_opts .= " --noali ";
-    }
-  $search_cmd = $executable; 
-  }
-  if(($search_method eq "cmsearch-slow") || ($search_method eq "cmsearch-fast") || ($search_method eq "cmsearch-hmmonly")) { 
-    $tblout_file        = $out_root . ".cmsearch.tbl";
-    $sorted_tblout_file = $tblout_file . ".sorted";
-    $searchout_file     = $out_root . ".cmsearch.out";
-    $executable         = $execs_H{"cmsearch"};
-    $sort_cmd           = "grep -v ^\# $tblout_file | sort -k1 > " . $sorted_tblout_file;
-  }
-  else { # search_method is "cmscan-slow", "cmscan-fast", or "cmscan-hmmonly"
-    $tblout_file        = $out_root . ".cmscan.tbl";
-    $sorted_tblout_file = $tblout_file . ".sorted";
-    $searchout_file     = $out_root . ".cmscan.out";
-    $executable         = $execs_H{"cmscan"};
-    if($search_method eq "cmscan-fast") { 
-      $sort_cmd = "grep -v ^\# $tblout_file | awk '{ printf(\"%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, \$14, \$15, \$16, \$17); }' | sort -k3 > " . $sorted_tblout_file;
-    }
-    else { 
-      $sort_cmd = "grep -v ^\# $tblout_file | sort -k4 > " . $sorted_tblout_file;
-    }
-  }
-  $search_cmd = $executable . " --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $master_model_file $seq_file > $searchout_file";
+  $start_secs = output_progress_prior("Skipping round 1 cmsearch-$alg1 search stage (using results from previous run)", $progress_w, undef, *STDOUT);
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = output_progress_prior("Performing $search_method search ", $progress_w, undef, *STDOUT);
+  run_command($r1_search_cmd, opt_Get("-v", \%opt_HH));
 }
 else { 
-  $start_secs = output_progress_prior("Skipping $search_method search stage (using results from previous run)", $progress_w, undef, *STDOUT);
-}
-if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  run_command($search_cmd, opt_Get("-v", \%opt_HH));
-}
-else { 
-  if(! -s $tblout_file) { 
-    die "ERROR with --skipsearch, tblout file ($tblout_file) should exist and be non-empty but it's not";
+  if(! -s $r1_tblout_file) { 
+    die "ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not";
   }
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $tblout_file);
-  push(@to_remove_A, $sorted_tblout_file);
-  if(($search_method ne "nhmmer" || 
-      $search_method ne "cmsearch-slow" || 
-      $search_method ne "cmscan-slow" || 
-      $search_method ne "cmsearch-hmmonly") && 
+  push(@to_remove_A, $r1_tblout_file);
+  push(@to_remove_A, $r1_sorted_tblout_file);
+  if(($alg1 ne "slow" || 
+      $alg1 ne "hmmonly") && 
      (! opt_Get("--noali", \%opt_HH))) { 
-    push(@to_remove_A, $searchout_file);
+    push(@to_remove_A, $r1_searchout_file);
   }
 }
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
-# Step 3: Sort output
-$start_secs = output_progress_prior("Sorting tabular search results", $progress_w, undef, *STDOUT);
-run_command($sort_cmd, opt_Get("-v", \%opt_HH));
+# Step 3: Sort round 1 output
+$start_secs = output_progress_prior("Sorting tabular round 1 search results", $progress_w, undef, *STDOUT);
+run_command($r1_sort_cmd, opt_Get("-v", \%opt_HH));
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
-# Step 4: Parse sorted output
-$start_secs = output_progress_prior("Parsing tabular search results", $progress_w, undef, *STDOUT);
-parse_sorted_tbl_file($sorted_tblout_file, $search_method, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
+# Step 4: Parse round 1 sorted output
+$start_secs = output_progress_prior("Parsing tabular round 1 search results", $progress_w, undef, *STDOUT);
+parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
                       \%family_H, \%domain_H, \%accept_H, $unsrt_long_out_FH, $unsrt_short_out_FH);
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
-#######################################################
+###########################################################################
 # Step 5: Add data for sequences with 0 hits and then sort the output files 
 #         based on sequence index
 #         from original input file
 ###########################################################################
-$start_secs = output_progress_prior("Sorting and finalizing output files", $progress_w, undef, *STDOUT);
+$start_secs = output_progress_prior("Sorting and finalizing round 1 output files", $progress_w, undef, *STDOUT);
 
 # for any sequence that has 0 hits (we'll know these as those that 
 # do not have a value of -1 in $seqlen_HR->{$target} at this stage
@@ -588,7 +506,7 @@ run_command($cmd, opt_Get("-v", \%opt_HH));
 # now that we know the max sequence name length, we can output headers to the output files
 open($srt_long_out_FH,  ">>", $srt_long_out_file)  || die "ERROR unable to open $unsrt_long_out_file for appending";
 open($srt_short_out_FH, ">>", $srt_short_out_file) || die "ERROR unable to open $unsrt_short_out_file for appending";
-output_long_tail($srt_long_out_FH, \%opt_HH);
+output_long_tail($srt_long_out_FH, 1, \%opt_HH); # 1: round 1 of searching
 output_short_tail($srt_short_out_FH, \%opt_HH);
 close($srt_short_out_FH);
 close($srt_long_out_FH);
@@ -598,6 +516,23 @@ foreach my $file (@to_remove_A) {
   unlink $file;
 }
 output_progress_complete($start_secs, undef, undef, *STDOUT);
+
+###########################################################################
+# Step 6: Parse the round 1 output to create sfetch files for fetching
+#         sequence sets for each model.
+###########################################################################
+#$start_secs = output_progress_prior("Creating sequence subsets for round 2 single model searches", $progress_w, undef, *STDOUT);
+
+#my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
+#parse_round1_long_file($srt_long_out_file, \%family_H, \%seqsub_HA); 
+
+
+
+
+
+
+
+
 
 printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
 printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
@@ -1031,10 +966,8 @@ sub parse_seqstat_file {
 #              
 # Arguments: 
 #   $sorted_tbl_file: file with sorted tabular search results
-#   $search_method:   search method (one of "cmsearch-hmmonly", "cmscan-hmmonly"
-#                                           "cmsearch-slow",    "cmscan-slow", 
-#                                           "cmsearch-fast",    "cmscan-fast",
-#                                           "nhmmer",           "ssualign")
+#   $alg:             search method (one of "fast", "hmmonly", or "slow")
+#   $round:           '1' or '2', what round of searching we're in
 #   $opt_HHR:         ref to 2D options hash of cmdline option values
 #   $width_HR:        hash, key is "model" or "target", value 
 #                     is width (maximum length) of any target/model
@@ -1052,18 +985,15 @@ sub parse_seqstat_file {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 11;
+  my $nargs_expected = 12;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $search_method, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
-  if(($search_method ne "cmsearch-hmmonly") && ($search_method ne "cmscan-hmmonly") && 
-     ($search_method ne "cmsearch-slow")    && ($search_method ne "cmscan-slow") &&
-     ($search_method ne "cmsearch-fast")    && ($search_method ne "cmscan-fast") &&      
-     ($search_method ne "nhmmer")           && ($search_method ne "ssualign")) { 
-    die "ERROR in $sub_name, invalid search method $search_method";
+  if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
+    die "ERROR in $sub_name, invalid search method $alg";
   }
 
   # determine minimum bit score cutoff
@@ -1146,66 +1076,21 @@ sub parse_sorted_tbl_file {
     }
     my @el_A = split(/\s+/, $line);
 
-    if(($search_method eq "cmsearch-fast") || ($search_method eq "cmscan-fast")) { 
-      if($search_method eq "cmsearch-fast") {
-        if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast cmsearch tabular output at line: $line"; }
-        # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
-        ($target, $model, $score, $seqfrom, $seqto, $strand) = 
-            ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
-        $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
-        $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
-      }
-      else { # $search_method is "cmscan-fast"
-        if(scalar(@el_A) != 17) { die "ERROR did not find 9 columns in fast cmscan tabular output at line: $line"; }
-        ##idx target name          query name             clan name  score seq from   seq to strand bounds      seqlen olp anyidx afrct1 afrct2 winidx wfrct1 wfrct2
-        ##--- -------------------- ---------------------- --------- ------ -------- -------- ------ ------ ----------- --- ------ ------ ------ ------ ------ ------
-        # 1    SSU_rRNA_archaea     lcl|dna_BP331_0.3k:467 -          559.8        1     1232      +     []        1232  =       2  1.000  1.000      "      "      "
-        ($target, $model, $score, $seqfrom, $seqto, $strand) = 
-            ($el_A[2], $el_A[1], $el_A[4], $el_A[5], $el_A[6], $el_A[7]);
-        $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
-        $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
-      }
-    }    
-    elsif($search_method eq "cmsearch-hmmonly" || $search_method eq "cmsearch-slow") { 
+    if($alg eq "fast") {
+      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast cmsearch tabular output at line: $line"; }
+      # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
+      ($target, $model, $score, $seqfrom, $seqto, $strand) = 
+          ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
+      $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
+      $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
+    }
+    else { # "hmmonly" or "slow"
       ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
       ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
       #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
       if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmsearch tabular output at line: $line"; }
       ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
           ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
-    }
-    elsif($search_method eq "cmscan-hmmonly" || $search_method eq "cmscan-slow") { 
-      ##idx target name          accession query name             accession clan name mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc olp anyidx afrct1 afrct2 winidx wfrct1 wfrct2 description of target
-      ##--- -------------------- --------- ---------------------- --------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- --- ------ ------ ------ ------ ------ ------ ---------------------
-      #  1    SSU_rRNA_bacteria    RF00177   lcl|dna_BP331_0.3k:467 -         -         hmm       37     1301        1     1228      +     -    6 0.53   6.2  974.2  2.8e-296  !   ^       -      -      -      -      -      - -
-      # same as cmsearch but target/query are switched
-      if(scalar(@el_A) < 27) { die "ERROR found less than 27 columns in cmscan tabular output at line: $line"; }
-      ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-          ($el_A[3], $el_A[1], $el_A[7], $el_A[8], $el_A[9], $el_A[10], $el_A[11],  $el_A[16], $el_A[17]);
-    }
-    elsif($search_method eq "nhmmer") { 
-      ## target name            accession  query name           accession  hmmfrom hmm to alifrom  ali to envfrom  env to  sq len strand   E-value  score  bias  description of target
-      ###    ------------------- ---------- -------------------- ---------- ------- ------- ------- ------- ------- ------- ------- ------ --------- ------ ----- ---------------------
-      #  lcl|dna_BP444_24.8k:251  -          SSU_rRNA_archaea     RF01959          3    1443       2    1436       1    1437    1437    +           0 1036.1  18.0  -
-      if(scalar(@el_A) < 16) { die "ERROR found less than 16 columns in nhmmer tabular output at line: $line"; }
-      ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-          ($el_A[0], $el_A[2], $el_A[4], $el_A[5], $el_A[6], $el_A[7], $el_A[11],  $el_A[13], $el_A[12]);
-    }
-    elsif($search_method eq "ssualign") { 
-      ##                                                 target coord   query coord                         
-      ##                                       ----------------------  ------------                         
-      ## model name  target name                    start        stop  start   stop    bit sc   E-value  GC%
-      ## ----------  ------------------------  ----------  ----------  -----  -----  --------  --------  ---
-      #  archaea     lcl|dna_BP331_0.3k:467            18        1227      1   1508    478.86         -   53
-      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in SSU-ALIGN tabular output line: $line"; }
-      ($target, $model, $seqfrom, $seqto, $mdlfrom, $mdlto, $score) = 
-          ($el_A[1], $el_A[0], $el_A[2], $el_A[3], $el_A[4], $el_A[5], $el_A[6]);
-      $strand = "+";
-      if($seqfrom > $seqto) { $strand = "-"; }
-      $evalue = "-";
-    }
-    else { 
-      die "ERROR, $search_method is not a valid method";
     }
 
     $family = $family_HR->{$model};
@@ -1232,7 +1117,7 @@ sub parse_sorted_tbl_file {
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
-        output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
+        output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                                   $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, 
                                   \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                                   \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
@@ -1349,7 +1234,7 @@ sub parse_sorted_tbl_file {
 
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
-    output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
+    output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
                               $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, 
                               \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                               \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
@@ -1463,6 +1348,7 @@ sub set_vars {
 #   $long_FH:       file handle to output long data to
 #   $short_FH:      file handle to output short data to
 #   $opt_HHR:       reference to 2D hash of cmdline options
+#   $round:        '1' or '2', what round of searching we're in
 #   $use_evalues:  '1' if we have E-values, '0' if not
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
@@ -1498,18 +1384,18 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 28;
+  my $nargs_expected = 29;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
+  my ($long_FH, $short_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
       $target, $seqidx_HR, $seqlen_HR, $nhits_HHR, $nnts_HHR, 
       $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($short_FH, $long_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+  output_one_target($short_FH, $long_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
                     $seqidx_HR->{$target}, $seqlen_HR->{$target}, $nhits_HHR, $nnts_HHR, 
                     $mdl_bd_HHAR, $seq_bd_HHAR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
@@ -1570,9 +1456,10 @@ sub output_one_hitless_target_wrapper {
 #              and $long_FH are defined or not).
 #              
 # Arguments: 
-#   $short_FH:      file handle to output short output to (can be undef to not output short output)
-#   $long_FH:       file handle to output long output to (can be undef to not output long output)
-#   $opt_HHR:       reference to 2D hash of cmdline options
+#   $short_FH:     file handle to output short output to (can be undef to not output short output)
+#   $long_FH:      file handle to output long output to (can be undef to not output long output)
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $round:        '1' or '2', what round of searching we're in
 #   $use_evalues:  '1' if we have E-values, '0' if not
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
@@ -1606,11 +1493,11 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 26;
+  my $nargs_expected = 27;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($short_FH, $long_FH, $opt_HHR, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+  my ($short_FH, $long_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
@@ -1618,8 +1505,8 @@ sub output_one_target {
   # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
 
-  my $have_accurate_coverage = determine_if_coverage_is_accurate($opt_HHR);
-  my $have_model_coords      = determine_if_we_have_model_coords($opt_HHR);
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
+  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
 
   # determine the winning family
   my $wfamily = undef;
@@ -2289,6 +2176,7 @@ sub output_short_tail {
 #              
 # Arguments: 
 #   $FH:       file handle to output to
+#   $round:    '1' or '2', what round of searching we're in
 #   $opt_HHR:  reference to options 2D hash
 #
 # Returns:     Nothing.
@@ -2297,14 +2185,14 @@ sub output_short_tail {
 #
 ################################################################# 
 sub output_long_tail { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_long_tail";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $opt_HHR) = (@_);
+  my ($FH, $round, $opt_HHR) = (@_);
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
-  my $have_accurate_coverage = determine_if_coverage_is_accurate($opt_HHR);
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
 
   my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
 
@@ -2772,13 +2660,14 @@ sub center_string {
 # Subroutine: determine_if_coverage_is_accurate()
 # Incept:     EPN, Thu Apr 20 10:30:28 2017
 #
-# Purpose:    Based on the command line options determine if the 
-#             coverage values are accurate. With the fast mode,
-#             coverage values are not accurate, but with some
-#             options like --hmm and --slow, they are.
+# Purpose:    Based on the command line options and what round we are in,
+#             determine if the coverage values are accurate. With the
+#             fast mode, coverage values are not accurate, but with
+#             some options like --hmm and --slow, they are.
 #
 # Arguments:
-#   $opt_HHR:       reference to 2D hash of cmdline options
+#   $round:    what round of searching we're in, '1' or '2'
+#   $opt_HHR:  reference to 2D hash of cmdline options
 #
 # Returns:  '1' if coverage is accurate, else '0'
 # 
@@ -2787,18 +2676,22 @@ sub center_string {
 #################################################################
 sub determine_if_coverage_is_accurate { 
   my $sub_name = "determine_if_coverage_is_accurate()";
-  my $nargs_expected = 1;
+  my $nargs_expected = 2;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($opt_HHR) = (@_);
+  my ($round, $opt_HHR) = (@_);
 
   my $have_accurate_coverage = 0;
-  if(opt_Get("--hmm",      $opt_HHR)) { $have_accurate_coverage = 1; }
-  if(opt_Get("--slow",     $opt_HHR)) { $have_accurate_coverage = 1; }
-  if(opt_Get("--mid",      $opt_HHR)) { $have_accurate_coverage = 1; }
-  if(opt_Get("--max",      $opt_HHR)) { $have_accurate_coverage = 1; }
-  if(opt_Get("--nhmmer",   $opt_HHR)) { $have_accurate_coverage = 1; }
-  if(opt_Get("--ssualign", $opt_HHR)) { $have_accurate_coverage = 1; }
+  if($round == 1) { 
+    if(opt_Get("--1hmm",  $opt_HHR)) { $have_accurate_coverage = 1; }
+    if(opt_Get("--1slow", $opt_HHR)) { $have_accurate_coverage = 1; }
+  }
+  elsif($round == 2) { 
+    $have_accurate_coverage = 1; # always true for round 2
+  }
+  else { 
+    die "ERROR in $sub_name, invalid round value of $round"; 
+  }
 
   return $have_accurate_coverage;
 }
@@ -2807,10 +2700,12 @@ sub determine_if_coverage_is_accurate {
 # Subroutine: determine_if_we_have_model_coords()
 # Incept:     EPN, Tue May  2 09:40:34 2017
 #
-# Purpose:    Based on the command line options determine if the
-#             search output includes model coordinates or not.
+# Purpose:    Based on the command line options and what round
+#             we are in, determine if the search output includes 
+#             model coordinates or not.
 #
 # Arguments:
+#   $round:   what round of searching we're in, '1' or '2'
 #   $opt_HHR: reference to 2D hash of cmdline options
 #
 # Returns:  '1' if we have model coords, else '0'
@@ -2820,18 +2715,22 @@ sub determine_if_coverage_is_accurate {
 #################################################################
 sub determine_if_we_have_model_coords { 
   my $sub_name = "determine_if_we_have_model_coords()";
-  my $nargs_expected = 1;
+  my $nargs_expected = 2;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($opt_HHR) = (@_);
+  my ($round, $opt_HHR) = (@_);
 
   my $have_model_coords = 0;
-  if(opt_Get("--hmm",      $opt_HHR)) { $have_model_coords = 1; }
-  if(opt_Get("--slow",     $opt_HHR)) { $have_model_coords = 1; }
-  if(opt_Get("--mid",      $opt_HHR)) { $have_model_coords = 1; }
-  if(opt_Get("--max",      $opt_HHR)) { $have_model_coords = 1; }
-  if(opt_Get("--nhmmer",   $opt_HHR)) { $have_model_coords = 1; }
-  if(opt_Get("--ssualign", $opt_HHR)) { $have_model_coords = 1; }
+  if($round == 1) { 
+    if(opt_Get("--1hmm",  $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1slow", $opt_HHR)) { $have_model_coords = 1; }
+  }
+  elsif($round == 2) { 
+    $have_model_coords = 1; # always true for round 2
+  }
+  else { 
+    die "ERROR in $sub_name, invalid round value of $round"; 
+  }
 
   return $have_model_coords;
 }
@@ -3136,4 +3035,61 @@ sub check_if_file_exists_and_is_non_empty {
   }
   
   return 1;
+}
+
+#################################################################
+# Subroutine : determine_cmsearch_opts()
+# Incept:      EPN, Thu May  4 13:14:10 2017
+#
+# Purpose:     Determine the CM search options given an algorithm
+#              type of either "fast", "hmmonly", or "slow" and 
+#              a reference to the command line options.
+#
+# Arguments: 
+#   $alg:      algorithm, either "fast", "hmmonly" or "slow"
+#   $opt_HHR:  reference to 2D hash of cmdline options
+# 
+# Returns:     String of options to use for cmsearch.
+#
+# Dies:        If $alg string is invalid.
+# 
+################################################################# 
+sub determine_cmsearch_opts { 
+  my $nargs_expected = 2;
+  my $sub_name = "determine_cmsearch_opts()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($alg, $opt_HHR) = @_;
+
+  my $alg_opts = undef;
+  if($alg eq "fast") { 
+    $alg_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc --noali ";
+  }
+  elsif($alg eq "slow") { 
+    if(opt_Get("--mid", $opt_HHR)) { 
+      $alg_opts .= " --mid "; 
+    }
+    elsif(opt_Get("--max", $opt_HHR)) { 
+      $alg_opts .= " --max "; 
+      if(opt_IsUsed("--smxsize", $opt_HHR)) { 
+        $alg_opts .= " --smxsize " . opt_Get("--smxsize", $opt_HHR) . " ";
+      }
+    }
+    else { # default for --slow, --mid nor --max used (use cmsearch --rfam)
+      $alg_opts .= " --rfam "; 
+    }
+    if(opt_Get("--noali", $opt_HHR)) { 
+      $alg_opts .= " --noali ";
+    }
+  }
+  elsif($alg eq "hmmonly") { 
+    $alg_opts .= " --hmmonly ";
+    if(opt_Get("--noali", $opt_HHR)) { 
+      $alg_opts .= " --noali ";
+    }
+  }
+  else { 
+    die "ERROR in $sub_name, algorithm is invalid: $alg\n";
+  }
+
+  return $alg_opts;
 }
