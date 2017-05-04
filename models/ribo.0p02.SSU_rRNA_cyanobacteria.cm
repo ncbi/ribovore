@@ -5832,6 +5832,7 @@ COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/sr
 COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone ssu.cya.170222.p7ml.enone.cm ../final.170222.cyano.seed
 NSEQ  49
 EFFN  49.000000
+CKSUM 37734795
 STATS LOCAL MSV      -11.3997  0.69373
 STATS LOCAL VITERBI  -11.9771  0.69373
 STATS LOCAL FORWARD   -9.6721  0.69373

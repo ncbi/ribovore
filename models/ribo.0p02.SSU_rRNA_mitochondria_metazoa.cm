@@ -3792,6 +3792,7 @@ COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/sr
 COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone ssu.mmi.170222.p7ml.enone.cm ../final.170222.metamito.seed
 NSEQ  83
 EFFN  83.000000
+CKSUM 4201911036
 STATS LOCAL MSV      -11.4049  0.69470
 STATS LOCAL VITERBI  -12.0299  0.69470
 STATS LOCAL FORWARD   -7.3545  0.69470

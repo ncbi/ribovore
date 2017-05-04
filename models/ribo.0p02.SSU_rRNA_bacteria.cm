@@ -6006,6 +6006,7 @@ COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/sr
 COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone RF00177.p7ml.enone.cm ../RF00177.12p2.stk
 NSEQ  99
 EFFN  99.000000
+CKSUM 2093381478
 STATS LOCAL MSV      -11.6928  0.69391
 STATS LOCAL VITERBI  -12.2944  0.69391
 STATS LOCAL FORWARD   -8.6140  0.69391

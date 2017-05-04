@@ -19,6 +19,7 @@ if(! (-d $ribodir)) {
 my $inf_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
 my $hmmer_exec_dir    = $ribodir . "/infernal-1.1.2/src/";
 my $esl_exec_dir      = $ribodir . "/infernal-1.1.2/easel/miniapps/";
+my $df_model_dir      = $ribodir . "/models/";
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -53,6 +54,7 @@ opt_Add("-h",           "boolean", 0,                        0,    undef, undef,
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 0,                        1,    undef,"--ssualign","use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
+opt_Add("-i",           "string",  0,                        1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the search algorithm";
 #       option               type   default                group  requires incompat                                  preamble-output                  help-output    
@@ -111,6 +113,7 @@ my $options_okay =
                 'f'            => \$GetOptions_H{"-f"},
                 'v'            => \$GetOptions_H{"-v"},
                 'n=s'          => \$GetOptions_H{"-n"},
+                'i=s'          => \$GetOptions_H{"-i"},
 # algorithm options
                 'nhmmer'       => \$GetOptions_H{"--nhmmer"},
                 'cmscan'       => \$GetOptions_H{"--cmscan"},
@@ -152,6 +155,7 @@ my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can j
 my $executable    = $0;
 my $date          = scalar localtime();
 my $version       = "0.02";
+my $version_str   = "0p02";
 my $releasedate   = "May 2017";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -167,13 +171,13 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 }
 
 # check that number of command line args is correct
-if(scalar(@ARGV) != 4) {   
+if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
   print "\nTo see more help on available options, do dnaorg_annotate.pl -h\n\n";
   exit(1);
 }
-my ($seq_file, $model_file, $modelinfo_file, $dir_out) = (@ARGV);
+my ($seq_file, $dir_out) = (@ARGV);
 
 # set options in opt_HH
 opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
@@ -243,14 +247,27 @@ else {  # --skipsearch not used, normal case
     run_command($cmd, opt_Get("-v", \%opt_HH));
   }
 }
-my $dir_out_tail   = $dir_out;
-$dir_out_tail   =~ s/^.+\///; # remove all but last dir
-my $out_root   = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
+my $dir_out_tail = $dir_out;
+$dir_out_tail    =~ s/^.+\///; # remove all but last dir
+my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
 
-# make sure the sequence file exists
-if(! -s $seq_file) { 
-  die "ERROR unable to open sequence file $seq_file"; 
+my $df_modelinfo_file = $df_model_dir . "ribo." . $version_str . ".modelinfo";
+my $modelinfo_file = undef;
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  $modelinfo_file = $df_modelinfo_file;
 }
+else { 
+  $modelinfo_file = opt_Get("-i", \%opt_HH);
+}
+# make sure the sequence and modelinfo files exists
+check_if_file_exists_and_is_non_empty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  check_if_file_exists_and_is_non_empty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+}
+else { # -i used on the command line
+  check_if_file_exists_and_is_non_empty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+}
+# we check for the existence of model file after we parse the model info file
 
 #############################################
 # output program banner and open output files
@@ -262,22 +279,19 @@ my @arg_A      = ();
 push(@arg_desc_A, "target sequence input file");
 push(@arg_A, $seq_file);
 
-push(@arg_desc_A, "query model input file");
-push(@arg_A, $model_file);
+push(@arg_desc_A, "output directory name");
+push(@arg_A, $dir_out);
 
 push(@arg_desc_A, "model information input file");
 push(@arg_A, $modelinfo_file);
-
-push(@arg_desc_A, "output directory name");
-push(@arg_A, $dir_out);
 
 output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 my $unsrt_long_out_file  = $out_root . ".unsrt.long.out";
 my $unsrt_short_out_file = $out_root . ".unsrt.short.out";
-my $srt_long_out_file  = $out_root . ".long.out";
-my $srt_short_out_file = $out_root . ".short.out";
+my $srt_long_out_file    = $out_root . ".long.out";
+my $srt_short_out_file   = $out_root . ".short.out";
 my $unsrt_long_out_FH;  # output file handle for unsorted long output file
 my $unsrt_short_out_FH; # output file handle for unsorted short output file
 my $srt_long_out_FH;    # output file handle for sorted long output file
@@ -337,16 +351,21 @@ validate_executable_hash(\%execs_H);
 my $progress_w = 74; # the width of the left hand column in our progress output, hard-coded
 my $start_secs = output_progress_prior("Parsing and validating input files and determining target sequence lengths", $progress_w, undef, *STDOUT);
 ###########################################################################
-# parse fam file
+# parse model info file, which checks that all CM files exist
 # variables related to fams and domains
-my %family_H = (); # hash of fams,    key: model name, value: name of family model belongs to (e.g. SSU)
-my %domain_H = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
-parse_modelinfo_file($modelinfo_file, \%family_H, \%domain_H);
+my %family_H = ();   # hash of fams,    key: model name, value: name of family model belongs to (e.g. SSU)
+my %domain_H = ();   # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
+my %indi_cmfile_H = (); # hash of individual CM files; key model name: path to individual CM file for this model
+
+my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH);
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
 my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
-$width_H{"model"} = parse_model_file($model_file, \%family_H);
+$width_H{"model"} = parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H);
+
+
+exit 0;
 
 # determine max width of domain, family, and classification (formed as family.domain)
 $width_H{"domain"}         = length("domain");
@@ -424,14 +443,14 @@ if($search_method eq "nhmmer") {
   $searchout_file     = $out_root . ".nhmmer.out";
   $search_cmd         = $execs_H{"nhmmer"};
   if(opt_Get("--noali", \%opt_HH)) { $search_cmd .= " --noali"; }
-  $search_cmd        .= " --cpu $ncpu --tblout $tblout_file $model_file $seq_file > $searchout_file";
+  $search_cmd        .= " --cpu $ncpu --tblout $tblout_file $master_model_file $seq_file > $searchout_file";
   $sort_cmd           = "grep -v ^\# $tblout_file | sort -k1 > " . $sorted_tblout_file;
 }
 elsif($search_method eq "ssualign") { 
   $tblout_file        = $out_root . "/" . $dir_out_tail . ".ribotyper.tab";
   $sorted_tblout_file = $tblout_file . ".sorted";
   $searchout_file     = $out_root . ".nhmmer.out";
-  $search_cmd         = $execs_H{"ssu-align"} . " --no-align -m $model_file -f $seq_file $out_root > /dev/null";
+  $search_cmd         = $execs_H{"ssu-align"} . " --no-align -m $master_model_file -f $seq_file $out_root > /dev/null";
   $sort_cmd           = "grep -v ^\# $tblout_file | awk ' { printf(\"%s %s %s %s %s %s %s %s %s\\n\", \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9); } ' | sort -k2 > " . $sorted_tblout_file;
 }
 else { 
@@ -491,7 +510,7 @@ else {
       $sort_cmd = "grep -v ^\# $tblout_file | sort -k4 > " . $sorted_tblout_file;
     }
   }
-  $search_cmd = $executable . " --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $model_file $seq_file > $searchout_file";
+  $search_cmd = $executable . " --cpu $ncpu $cmsearch_and_cmscan_opts --tblout $tblout_file $master_model_file $seq_file > $searchout_file";
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = output_progress_prior("Performing $search_method search ", $progress_w, undef, *STDOUT);
@@ -595,7 +614,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # List of subroutines:
 #
 # Functions for parsing files:
-# parse_modelinfo_file:    parse the model info input file
+# parse_modelinfo_file:     parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
 # parse_seqstat_file:       parse esl-seqstat -a output file
@@ -634,47 +653,123 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # Purpose:     Parse a model info input file.
 #              
 # Arguments: 
-#   $modelinfo_file: file to parse
+#   $modelinfo_file:  file to parse
+#   $df_model_dir:    default $RIBODIR/models directory, where default models should be
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
+#   $indi_cmfile_HR:  ref to hash of CM files, key is model name, value is path to CM file
+#   $opt_HHR:         reference to 2D hash of cmdline options (needed to determine if -i was used)
 #
-# Returns:     Nothing. Fills %{$family_H}, %{$domain_HR}
+# Returns:     Path to master CM file. Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
 # 
 # Dies:        Never.
 #
 ################################################################# 
 sub parse_modelinfo_file { 
-  my $nargs_expected = 3;
+  my $nargs_expected = 6;
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $family_HR, $domain_HR) = @_;
+  my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR) = @_;
 
   open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
-# example line:
-# SSU_rRNA_archaea SSU Archaea
+  my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
+  my $found_master      = 0;     # set to '1' when we find master file line
+  my $master_cmfile     = undef; # name of 'master' CM file with all CMs
+  my $non_df_model_file = undef; # non-default model file
+  my $df_model_file     = undef; # default model file
+  my $in_df;                     # flag for whether we found model file in default dir or not
+  my $in_nondf;                  # flag for whether we found model file in non-default dir or not
 
+  # determine directory that $modelinfo_file exists in if -i used, all models must 
+  # either be in this directory or in $df_model_dir
+  my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
+  if($opt_i_used) { 
+    $non_df_modelinfo_dir = get_dir_path($modelinfo_file);
+  }
+
+  # actually parse modelinfo file: 
+  # example lines:
+  # ---
+  # SSU_rRNA_archaea SSU Archaea ribo.0p02.SSU_rRNA_archaea.cm
+  # LSU_rRNA_eukarya LSU Eukarya ribo.0p02.LSU_rRNA_eukarya.cm
+  # *all*            -   -       ribo.0p02.cm
+  # ---
+  # exactly one line must have model name as '*all*'
   open(IN, $modelinfo_file) || die "ERROR unable to open $modelinfo_file for reading"; 
   while(my $line = <IN>) { 
     if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
       chomp $line;
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 3) { 
-        die "ERROR didn't read 3 tokens in model info input file $modelinfo_file, line $line"; 
+      if(scalar(@el_A) != 4) { 
+        die "ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line"; 
       }
-      my($model, $family, $domain) = (@el_A);
-
-      if(exists $family_HR->{$model}) { 
-        die "ERROR read model $model twice in $modelinfo_file"; 
+      my($model, $family, $domain, $cmfile) = (@el_A);
+      
+      # make sure that the model file exists, either in $df_model_dir or, if
+      # -i was used, in the same directory that $modelinfo_file is in
+      $df_model_file = $df_model_dir . $cmfile;
+      if($opt_i_used) { 
+        $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
+        $in_nondf = check_if_file_exists_and_is_non_empty($non_df_model_file, undef, $sub_name, 0); # don't die if it doesn't exist
+        $in_df    = check_if_file_exists_and_is_non_empty($df_model_file,     undef, $sub_name, 0); # don't die if it doesn't exist
+        if(($in_nondf != 0) && ($in_df != 0)) { # exists in two places
+          die "ERROR in $sub_name, looking for model file $cmfile, found it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\nIt can only exist in one of these places, so either\nrename it or remove of the copies (do NOT remove the copy from the default model directory unless you put it there)\n."
+        }
+        elsif(($in_nondf == 0) && ($in_df == 0)) { 
+          die "ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n";
+        }
+        elsif(($in_nondf == -1) && ($in_df == 0)) { 
+          die "ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty";
+        }
+        elsif(($in_nondf == 0) && ($in_df == -1)) { 
+          die "ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty";
+        }
+       elsif($in_nondf == 1) { 
+          $cmfile = $non_df_model_file;
+        }
+        elsif($in_df == 1) { 
+          $cmfile = $df_model_file;
+        }
+        else { 
+          die "ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n";
+        }
+      }     
+      else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
+        check_if_file_exists_and_is_non_empty($df_model_file, "model file name read from default model info file", $sub_name, 1); # die if it doesn't exist
+        $cmfile = $df_model_file;
       }
-      $family_HR->{$model} = $family;
-      $domain_HR->{$model} = $domain;
+        
+      if($model eq "*all*") { 
+        if($found_master) { 
+          die "ERROR read model $model twice in $modelinfo_file";
+        }
+        $found_master = 1;
+        $master_cmfile = $cmfile
+      }
+      else { 
+        if(exists $family_HR->{$model}) { 
+          die "ERROR read model $model twice in $modelinfo_file"; 
+        }
+        $family_HR->{$model}      = $family;
+        $domain_HR->{$model}      = $domain;
+        $indi_cmfile_HR->{$model} = $cmfile;
+      }
     }
   }
   close(IN);
 
-  return;
+  if(! $found_master) { 
+    if($opt_i_used) { 
+      die "ERROR in $sub_name, didn't read special line with '*all*' as first token\nin modelinfo file $modelinfo_file (specified with -i) which\nspecifies the master CM file"; 
+    }
+    else { 
+      die "ERROR in $sub_name, didn't read special line'*all*' as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?\n";
+    }
+  }
+
+  return $master_cmfile;
 }
 
 #################################################################
@@ -735,50 +830,92 @@ sub parse_inaccept_file {
 }
 
 #################################################################
-# Subroutine : parse_model_file()
+# Subroutine : parse_and_validate_model_files()
 # Incept:      EPN, Wed Mar  1 14:46:19 2017
 #
-# Purpose:     Parse the model file to get model names and
+# Purpose:     Parse the master model file to get model names and
 #              validate that there is 1:1 correspondence between
 #              model names in the model file and the keys 
-#              from %{$family_HR}.
+#              from %{$family_HR}. Also make sure that the 
+#              checksum values read for each model in the master 
+#              model file are equal to the corresponding checksum 
+#              values from the individual CM files. 
+#              We've already verified that all CM files exist 
+#              and are non-empty.
 #              
 # Arguments: 
-#   $model_file:  model file to parse
-#   $family_HR:   ref to hash of families for each model, ALREADY FILLED
-#                 we use this only for validation
+#   $master_model_file: master model file to parse
+#   $family_HR:         ref to hash of families for each model, 
+#                       ALREADY FILLED, we use this only for validation
+#   $indi_cmfile_HR     ref to hash of individual CM files for each model,
+#                       ALREADY FILLED we use this only for validation
 #
 # Returns:     Maximum length of any model read from the model file.
 # 
-# Dies:        If $model_file does not exist or is empty.
+# Dies:        If master model file does not have exactly the 
+#              same set of models that are keys in $family_HR
+#              and match the checksum values in the individual
+#              CM files.
 #
 ################################################################# 
-sub parse_model_file { 
-  my $nargs_expected = 2;
-  my $sub_name = "parse_inaccept_file";
+sub parse_and_validate_model_files { 
+  my $nargs_expected = 3;
+  my $sub_name = "parse_and_validate_model_files";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($model_file, $family_HR) = @_;
-
-  if(! -e $model_file) { die "ERROR model file $model_file does not exist"; }
-  if(! -s $model_file) { die "ERROR model file $model_file exists but is empty"; }
+  my ($master_model_file, $family_HR, $indi_cmfile_HR) = @_;
 
   # make copy of %{$family_HR} with all values set to '0' 
-  my $model;
+  my $model; # a model name
+  my $cksum; # a checksum value
   my @tmp_family_model_A = ();
   my %tmp_family_model_H = ();
+  my $expected_nmodels = scalar(keys %{$family_HR});
   foreach $model (keys %{$family_HR}) { 
     push(@tmp_family_model_A, $model);
-    $tmp_family_model_H{$model} = 0; # will set to '1' when we see it in the model file
+    $tmp_family_model_H{$model} = 0; 
+    # we will set to '1' when we see it in the model file and validate it's checksum
   }
 
   my $model_width = length("model");
-  my $name_output = `grep NAME $model_file | awk '{ print \$2 }'`;
+  my $name_output = `grep NAME $master_model_file | awk '{ print \$2 }'`;
   my @name_A = split("\n", $name_output);
-  foreach $model (@name_A) { 
+  my $cksum_output = `grep CKSUM $master_model_file | awk '{ print \$2 }'`;
+  my @cksum_A = split("\n", $cksum_output);
+
+  my $indi_cksum_output = undef;
+  my @indi_cksum_A = ();
+  my $indi_cmfile = undef;
+
+  my $nnames = scalar(@name_A);
+  if($nnames != scalar(@cksum_A)) { 
+    die "ERROR in $sub_name, did not read the same number of names and checksum lines from master model file:\n$master_model_file\n"; 
+  }
+  if($nnames != (2 * $expected_nmodels)) { 
+    # each CM file has 2 occurrences of each name, once for the CM and once for the HMM filter
+    die sprinft("ERROR in $sub_name, expected to read 2 names for each model for a total of %d names, but read $nnames\nDoes the master model file $master_model_file have more models than are listed in the modelinfo file?\nIf so, remove the ones that are not in the modelinfo file\n", 2*$expected_nmodels); 
+  }
+  for(my $i = 0; $i < scalar(@name_A); $i++) { 
+    $model = $name_A[$i];
+    $cksum = $cksum_A[$i];
+    $indi_cmfile = $indi_cmfile_HR->{$model};
     if(! exists $tmp_family_model_H{$model}) { 
-      die "ERROR read model \"$model\" from model file $model_file that is not listed in the model info file.";
+      die "ERROR read model \"$model\" from model file $master_model_file that is not listed in the model info file.";
     }
+    if($tmp_family_model_H{$model} == 0) { # only check if we haven't seen this name before
+      $indi_cksum_output = `grep CKSUM $indi_cmfile | awk '{ print \$2 }'`;
+      @indi_cksum_A = split("\n", $indi_cksum_output);
+      if(scalar(@indi_cksum_A) != 2) { 
+        die "ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model in it"; 
+      }
+      if($indi_cksum_A[0] != $indi_cksum_A[1]) { 
+        die "ERROR in $sub_name, the two CKSUM lines from $indi_cmfile differ unexpectedly"; 
+      }
+      if($indi_cksum_A[0] != $cksum) { 
+        die "ERROR in $sub_name, for model $model, checksum mismatch between the master CM file and the individual CM file\nmaster CM file: $master_model_file\nindividual CM file: $indi_cmfile\nAre you sure these models are the same? They are required to be identical.\n";
+      }
+    }
+    # if we get here, checksum test has passed
     $tmp_family_model_H{$model} = 1;
     if(length($model) > $model_width) { 
       $model_width = length($model);
@@ -2900,4 +3037,103 @@ sub decompose_region_str {
   $strand = ($d1 <= $d2) ? "+" : "-";
 
   return($d1, $d2, $strand);
+}
+
+#################################################################
+# Subroutine : remove_dir_path()
+# Incept:      EPN, Mon Nov  9 14:30:59 2009 [ssu-align]
+#
+# Purpose:     Given a full path of a file remove the directory path.
+#              For example: "foodir/foodir2/foo.stk" becomes "foo.stk".
+#
+# Arguments: 
+#   $fullpath: name of original file
+# 
+# Returns:     The string $fullpath with dir path removed.
+#
+################################################################# 
+sub remove_dir_path {
+  my $sub_name = "remove_dir_path()";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my $fullpath = $_[0];
+  
+  $fullpath =~ s/^.+\///;
+
+  return $fullpath;
+}
+
+#################################################################
+# Subroutine : get_dir_path()
+# Incept:      EPN, Thu May  4 09:39:06 2017
+#              EPN, Mon Mar 15 10:17:11 2010 [ssu.pm:ReturnDirPath()]
+#
+# Purpose:     Given a file name return the directory path, with the final '/'
+#              For example: "foodir/foodir2/foo.stk" becomes "foodir/foodir2/".
+#
+# Arguments: 
+#   $orig_file: name of original file
+# 
+# Returns:     The string $orig_file with actual file name removed
+#
+################################################################# 
+sub get_dir_path {
+  my $narg_expected = 1;
+  my $sub_name = "get_dir_path()";
+  if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+  my $orig_file = $_[0];
+  
+  printf("in $sub_name, input: $orig_file");
+  
+  $orig_file =~ s/[^\/]+$//; # remove final string of non '/' characters
+  
+  printf(" returning $orig_file\n");
+  
+  if($orig_file eq "") { return "./";       }
+  else                 { return $orig_file; }
+}
+
+#################################################################
+# Subroutine : check_if_file_exists_and_is_non_empty()
+# Incept:      EPN, Thu May  4 09:30:32 2017 [dnaorg.pm:validateFileExistsAndIsNonEmpty]
+#
+# Purpose:     Check if a file exists and is non-empty. 
+#
+# Arguments: 
+#   $filename:         file that we are checking on
+#   $filedesc:         description of file
+#   $calling_sub_name: name of calling subroutine (can be undef)
+#   $do_die:           '1' if we should die if it does not exist.  
+# 
+# Returns:     Return '1' if it does and is non empty, '0' if it does
+#              not exist, or '-1' if it exists but is empty.
+#
+# Dies:        If file does not exist or is empty and $do_die is 1.
+# 
+################################################################# 
+sub check_if_file_exists_and_is_non_empty { 
+  my $nargs_expected = 4;
+  my $sub_name = "check_if_file_exists_and_is_non_empty()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($filename, $filedesc, $calling_sub_name, $do_die) = @_;
+
+  if(! -e $filename) { 
+    if($do_die) { 
+      die sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
+                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
+                  (defined $filedesc         ? " ($filedesc)" : "")); 
+    }
+    return 0;
+  }
+  elsif(! -s $filename) { 
+    if($do_die) { 
+      die sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
+                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
+                  (defined $filedesc         ? " ($filedesc)" : "")); 
+    }
+    return -1;
+  }
+  
+  return 1;
 }

@@ -5173,6 +5173,7 @@ COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/sr
 COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone RF02542.p7ml.enone.cm ../RF02542.12p2.stk
 NSEQ  46
 EFFN  46.000000
+CKSUM 2931573229
 STATS LOCAL MSV      -11.8298  0.69416
 STATS LOCAL VITERBI  -12.4153  0.69416
 STATS LOCAL FORWARD   -8.2042  0.69416
