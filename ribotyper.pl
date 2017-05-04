@@ -343,9 +343,11 @@ my $start_secs = output_progress_prior("Parsing and validating input files and d
 ###########################################################################
 # parse model info file, which checks that all CM files exist
 # variables related to fams and domains
-my %family_H = ();   # hash of fams,    key: model name, value: name of family model belongs to (e.g. SSU)
-my %domain_H = ();   # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
+my %family_H      = (); # hash of fams,    key: model name, value: name of family model belongs to (e.g. SSU)
+my %domain_H      = (); # hash of domains, key: model name, value: name of domain model belongs to (e.g. Archaea)
 my %indi_cmfile_H = (); # hash of individual CM files; key model name: path to individual CM file for this model
+my %sfetchfile_H  = (); # key is model, value is name of sfetch input file to use to create $seqfile_H{$model}
+my %seqfile_H     = (); # key is model, value is name of sequence file search this model with for round 2, undef if none
 
 my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH);
 
@@ -381,6 +383,16 @@ else { # --inaccept not used, all models are acceptable
     $accept_H{$model} = 1;
   }   
 } 
+
+# check for SSI index file for the sequence file,
+# if it doesn't exist, create it
+my $ssi_file = $seq_file . ".ssi";
+if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) { 
+  run_command($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) { 
+    die "ERROR, tried to create $ssi_file, but failed"; 
+  }
+}
 
 # run esl-seqstat to get sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
@@ -424,11 +436,10 @@ my $r1_searchout_file = "";
 my $r1_search_cmd = "";
 my $r1_sort_cmd = "";
 
-
 $alg1_opts          = determine_cmsearch_opts($alg1, \%opt_HH);
-$r1_tblout_file        = $out_root . "r1.cmsearch.tbl";
-$r1_sorted_tblout_file = $r1_tblout_file . "r1.sorted";
-$r1_searchout_file     = $out_root . ".cmsearch.out";
+$r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
+$r1_sorted_tblout_file = $r1_tblout_file . "sorted";
+$r1_searchout_file     = $out_root . ".r1.cmsearch.out";
 $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorted_tblout_file;
 $r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
@@ -521,18 +532,79 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 # Step 6: Parse the round 1 output to create sfetch files for fetching
 #         sequence sets for each model.
 ###########################################################################
-#$start_secs = output_progress_prior("Creating sequence subsets for round 2 single model searches", $progress_w, undef, *STDOUT);
+if(defined $alg2) { # only do this if we're doing a second round of searching
+  if(! opt_Get("--skipsearch", \%opt_HH)) { 
+    $start_secs = output_progress_prior("Fetch sequence subsets for round 2 single model searches", $progress_w, undef, *STDOUT);
 
-#my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
-#parse_round1_long_file($srt_long_out_file, \%family_H, \%seqsub_HA); 
+    my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
+    # first initialize all arrays to empty
+    foreach $model (keys %family_H) { 
+      @{$seqsub_HA{$model}} = ();
+    }
+    
+    # fill the arrays with sequence names for each model
+    parse_round1_long_file($srt_long_out_file, \%seqsub_HA); 
+    
+    # create the sfetch files with sequence names
+    foreach $model (sort keys %family_H) { 
+      $sfetchfile_H{$model} = undef;
+      if(scalar(@{$seqsub_HA{$model}}) > 0) { 
+        $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
+        write_array_to_file($seqsub_HA{$model}, $sfetchfile_H{$model}); 
+      }
+    }
+    output_progress_complete($start_secs, undef, undef, *STDOUT);
+    
+    foreach $model (sort keys %family_H) { 
+      if(defined $sfetchfile_H{$model}) { 
+        $seqfile_H{$model} = $out_root . ".$model.fa";
+        run_command($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+      }
+    }
+  }
+}
 
+###########################################################################
+# Step 7: Do round 2 of searches, one model at a time.
+###########################################################################
+my $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH);
+my @r2_model_A = ();              # models we performed round 2 for
+my @r2_tblout_file_A = ();        # tblout files for each model we performed round 2 for
+my @r2_sorted_tblout_file_A = (); # sorted tblout files for each model we performed round 2 for
+my @r2_searchout_file_A = ();     # search output file for each model we performed round 2 for
+my @r2_search_cmd_A = ();         # search command for each model we performed round 2 for
+my @r2_sort_cmd_A = ();           # sort command for each model we performed round 2 for
+if(defined $alg2) { 
 
+  if(! opt_Get("--skipsearch", \%opt_HH)) { 
+    $start_secs = output_progress_prior("Performing round 2 cmsearch-$alg2 search(es) ", $progress_w, undef, *STDOUT);
+  }
+  else { 
+    $start_secs = output_progress_prior("Skipping round 2 cmsearch-$alg2 search stage (using results from previous run)", $progress_w, undef, *STDOUT);
+  }
+  my $midx = 0;
+  my $cmd  = undef;
+  foreach $model (sort keys %family_H) { 
+    if(defined $sfetchfile_H{$model}) { 
+      push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
+      push(@r2_sorted_tblout_file_A, $r2_tblout_file_A[$midx] . ".sorted");
+      push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
+      push(@r2_sort_cmd_A,           "grep -v ^\# " . $r2_tblout_file_A[$midx] . " | sort -k1 > " . $r2_sorted_tblout_file_A[$midx]);
+      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
 
-
-
-
-
-
+      if(! opt_Get("--skipsearch", \%opt_HH)) { 
+        run_command($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
+      }
+      else { 
+        if(! -s $r2_tblout_file_A[$midx]) { 
+          die "ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not";
+        }
+      }
+      $midx++; 
+    }
+  }
+  output_progress_complete($start_secs, undef, undef, *STDOUT);
+}
 
 printf("#\n# Short (6 column) output saved to file $srt_short_out_file.\n");
 printf("# Long (%d column) output saved to file $srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
@@ -3093,3 +3165,89 @@ sub determine_cmsearch_opts {
 
   return $alg_opts;
 }
+
+#################################################################
+# Subroutine : parse_round1_long_file()
+# Incept:      EPN, Thu May  4 13:54:36 2017
+#
+# Purpose:     Parse a 'long' output file created by this script
+#              and fill %seqsub_HA with names of sequences to 
+#              that are best-matches to each model.
+#              
+# Arguments: 
+#   $long_file:    'long' format file to parse
+#   $seqsub_HAR:   ref to hash of arrays, key is model name, value is array of 
+#                  sequences that match best to the model
+#
+# Returns:     Nothing. Updates %{$seqsub_HAR}.
+# 
+# Dies:        If $long_file is in incorrect format.
+#
+################################################################# 
+sub parse_round1_long_file {
+  my $nargs_expected = 2;
+  my $sub_name = "parse_round1_long_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($long_file, $seqsub_HAR) = @_;
+
+  my @el_A    = (); # array of elements in a line
+  my $model   = undef; # a model
+  my $seqname = undef; # a sequence name
+
+  open(IN, $long_file) || die "ERROR in $sub_name, unable to open $long_file for reading";
+
+  while(my $line = <IN>) { 
+    if($line !~ m/^\#/) { # skip comment lines
+      @el_A = split(/\s+/, $line);
+      ($seqname, $model) = ($el_A[1], $el_A[7]);
+      if($model ne "-") { 
+        if(! exists $seqsub_HAR->{$model}) {
+          die "ERROR in $sub_name, unexpected model value: $model";
+        }
+        push(@{$seqsub_HAR->{$model}}, $seqname);
+      }
+    }
+  }
+  close(IN);
+  
+  return;
+}
+
+#################################################################
+# Subroutine : write_array_to_file()
+# Incept:      EPN, Thu May  4 14:11:03 2017
+#
+# Purpose:     Create a file with each element in an array on 
+#              a different line.
+#              
+# Arguments: 
+#   $AR:    reference to array 
+#   $file:  name of file to create
+#
+# Returns:  Nothing.
+# 
+# Dies:     If $AR is empty.
+#
+################################################################# 
+sub write_array_to_file {
+  my $nargs_expected = 2;
+  my $sub_name = "write_array_to_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($AR, $file) = @_;
+
+  if((! defined $AR) || (scalar(@{$AR}) == 0)) { 
+    die "ERROR in $sub_name, array is empty or not defined";
+  }
+
+  open(OUT, ">", $file) || die "ERROR in $sub_name, unable to open file $file for writing";
+
+  foreach my $el (@{$AR}) { 
+    print OUT $el . "\n"; 
+  }
+  close(OUT);
+
+  return;
+}
+
