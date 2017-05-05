@@ -450,11 +450,11 @@ $width_H{"index"}  = length($nseq);
 if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
 
 # now that we know the max sequence name length, we can output headers to the output files
-output_long_headers($r1_srt_long_out_FH,     \%opt_HH, \%width_H);
-output_short_headers($r1_srt_short_out_FH,             \%width_H);
+output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H);
+output_short_headers($r1_srt_short_out_FH, \%width_H);
 if(defined $alg2) { 
-  output_long_headers($r2_srt_long_out_FH,     \%opt_HH, \%width_H);
-  output_short_headers($r2_srt_short_out_FH,             \%width_H);
+  output_long_headers($r2_srt_long_out_FH, 2,\%opt_HH, \%width_H);
+  output_short_headers($r2_srt_short_out_FH, \%width_H);
 }
 
 ###########################################################################
@@ -1243,8 +1243,15 @@ sub parse_sorted_tbl_file {
   my $cur_domain_or_model; # domain (default) or model (--samedomain) of current hit
   my $one_domain_or_model; # domain (default) or model (--samedomain) of current 'one' hit
   my $two_domain_or_model; # domain (default) or model (--samedomain) of current 'two' hit
-  my $use_evalues = opt_Get("--evalues", $opt_HHR);
   my $nhits_above_thresh = 0; # number of hits above threshold for current sequence
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
+  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
+  my $have_evalues           = determine_if_we_have_evalues($round, $opt_HHR);
+  my $sort_by_evalues        = opt_Get("--evalues", $opt_HHR);
+
+  if($sort_by_evalues && (! $have_evalues)) { 
+    die "ERROR, trying to sort by E-values but we don't have them. Coding error."; 
+  }
 
   while(my $line = <IN>) { 
     ######################################################
@@ -1300,8 +1307,9 @@ sub parse_sorted_tbl_file {
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
-        output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                                  $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
+        output_one_target_wrapper($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
+                                  $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
+                                  \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
                                   \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                                   \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                                   \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
@@ -1346,7 +1354,7 @@ sub parse_sorted_tbl_file {
         # determine the domain (default) or model (--samedomain) of top hit and current hit we're looking at
         # if --samedomain, we require that top two hits be different models, not necessarily different domains
         $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $one_model_H{$family} : $one_domain_H{$family};
-        if($use_evalues) { 
+        if($sort_by_evalues) { 
           if(($evalue < $one_evalue_H{$family}) || # this E-value is better than (less than) our current 'one' E-value
              ($evalue eq $one_evalue_H{$family} && $score > $one_score_H{$family})) { # this E-value equals current 'one' E-value, 
             # but this score is better than current 'one' score
@@ -1366,7 +1374,7 @@ sub parse_sorted_tbl_file {
         }
         else { 
           $two_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $two_model_H{$family} : $two_domain_H{$family};
-          if($use_evalues) { 
+          if($sort_by_evalues) { 
             if(($evalue < $two_evalue_H{$family}) || # this E-value is better than (less than) our current 'two' E-value
                ($evalue eq $two_evalue_H{$family} && $score > $two_score_H{$family})) { # this E-value equals current 'two' E-value, 
               # but this score is better than current 'two' score
@@ -1417,8 +1425,9 @@ sub parse_sorted_tbl_file {
 
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
-    output_one_target_wrapper($long_out_FH, $short_out_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
-                              $prv_target, $seqidx_HR, $seqlen_HR, \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
+    output_one_target_wrapper($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
+                              $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
+                              \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
                               \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                               \%one_model_H, \%one_domain_H, \%one_score_H, \%one_evalue_H, \%one_start_H, \%one_stop_H, \%one_strand_H, 
                               \%two_model_H, \%one_domain_H, \%two_score_H, \%two_evalue_H, \%two_start_H, \%two_stop_H, \%two_strand_H);
@@ -1528,25 +1537,26 @@ sub set_vars {
 # Purpose:     Call function to output information and reset variables.
 #              
 # Arguments: 
-#   $long_FH:       file handle to output long data to
-#   $short_FH:      file handle to output short data to
-#   $opt_HHR:       reference to 2D hash of cmdline options
-#   $round:        '1' or '2', what round of searching we're in
-#   $use_evalues:  '1' if we have E-values, '0' if not
-#   $width_HR:      hash, key is "model" or "target", value 
-#                   is width (maximum length) of any target/model
-#   $domain_HR:     reference to domain hash
-#   $accept_HR:     reference to the 'accept' hash, key is "model"
-#                   value is '1' if hits to model are "PASS"es '0'
-#                   if they are "FAIL"s
-#   $target:        target name
-#   $seqidx_HR:     hash of target sequence indices
-#   $seqlen_HR:     hash of target sequence lengths
-#   $nhits_HHR:     reference to hash of num hits per model (key 1), per strand (key 2)
-#   $nnts_HHR:      reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
-#   $tbits_HHR:     reference to hash of total (summed) bit score in all hits per model (key 1), per strand (key 2)
-#   $mdl_bd_HHAR:   reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
-#   $seq_bd_HHAR:   reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
+#   $short_FH:               file handle to output short output to (can be undef to not output short output)
+#   $long_FH:                file handle to output long output to (can be undef to not output long output)
+#   $opt_HHR:                reference to 2D hash of cmdline options
+#   $round:                  '1' or '2', what round of searching we're in
+#   $have_accurate_coverage: '1' if we have accurate coverage, '0' if not
+#   $have_model_coords:      '1' if we have model coords, '0' if not
+#   $have_evalues:           '1' if we have E-values, '0' if not
+#   $width_HR:               hash, key is "model" or "target", value 
+#                            is width (maximum length) of any target/model
+#   $domain_HR:              reference to domain hash
+#   $accept_HR:              reference to the 'accept' hash, key is "model"
+#                            value is '1' if hits to model are "PASS"es '0'
+#                            if they are "FAIL"s
+#   $target:                 target name
+#   $seqidx_HR:              hash of target sequence indices
+#   $seqlen_HR:              hash of target sequence lengths
+#   $nhits_HHR:              reference to hash of num hits per model (key 1), per strand (key 2)
+#   $nnts_HHR:               reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
+#   $mdl_bd_HHAR:            reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
+#   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_domain_HR: 'one' domain
 #   %one_score_HR:  'one' bit score
@@ -1568,18 +1578,20 @@ sub set_vars {
 #
 ################################################################# 
 sub output_one_target_wrapper { 
-  my $nargs_expected = 30;
+  my $nargs_expected = 33;
   my $sub_name = "output_one_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, 
+  my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues,
+      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, 
       $target, $seqidx_HR, $seqlen_HR, $nhits_HHR, $nnts_HHR, $tbits_HHR,
       $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_domain_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_domain_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # output to short and long output files
-  output_one_target($short_FH, $long_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+  output_one_target($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues,
+                    $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
                     $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $nhits_HHR, $nnts_HHR, $tbits_HHR,
                     $mdl_bd_HHAR, $seq_bd_HHAR, 
                     $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
@@ -1624,17 +1636,19 @@ sub output_hitless_targets {
 
   my $target;
 
+  my $have_evalues = determine_if_we_have_evalues($round, $opt_HHR);
+
   if($round == 1) { 
     foreach $target (keys %seqlen_H) { 
       if($seqlen_H{$target} >= 0) { # in round 1, positive sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H);
+        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues);
       }
     }
   }
   elsif($round == 2) { 
     foreach $target (keys %seqlen_H) { 
       if($seqlen_H{$target} <= 0) { # in round 2, negative sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H);
+        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues);
       }
     }
   }
@@ -1658,6 +1672,7 @@ sub output_hitless_targets {
 #   $target:        target name
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
+#   $have_evalues:  '1' to print space for E-values
 #
 # Returns:     Nothing.
 # 
@@ -1665,14 +1680,14 @@ sub output_hitless_targets {
 #
 ################################################################# 
 sub output_one_hitless_target_wrapper { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "output_one_hitless_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR) = @_;
+  my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR, $have_evalues) = @_;
 
   # output to short and long output files
-  output_one_hitless_target($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target})); 
+  output_one_hitless_target($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues); 
 
   $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
   
@@ -1696,6 +1711,7 @@ sub output_one_hitless_target_wrapper {
 #   $target:        target name
 #   $seqidx:        index of target sequence
 #   $seqlen:        length of target sequence
+#   $have_evalues:  '1' to print space for E-values
 #
 # Returns:     Nothing.
 # 
@@ -1703,18 +1719,16 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_hitless_target { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "output_one_hitless_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
+  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues) = @_;
 
   my $pass_fail = "FAIL";
   my $unusual_features = "*no_hits";
   my $nfams = 0;
   my $nhits = 0;
-
-  my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
   if(defined $short_FH) { 
     printf $short_FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
@@ -1738,7 +1752,7 @@ sub output_one_hitless_target {
                      "-", 
                      "-",
                      "-",
-                     ($use_evalues) ? "       -  " : "",
+                     ($have_evalues) ? "       -  " : "",
                      "-",
                      "-", 
                      $width_HR->{"length"}, "-", 
@@ -1748,7 +1762,7 @@ sub output_one_hitless_target {
                      "-" , 
                      $width_HR->{"model"}, "-", 
                      "-", 
-                     ($use_evalues) ? "       -  " : "", $unusual_features);
+                     ($have_evalues) ? "       -  " : "", $unusual_features);
   }
   return;
 }
@@ -1762,25 +1776,28 @@ sub output_one_hitless_target {
 #              and $long_FH are defined or not).
 #              
 # Arguments: 
-#   $short_FH:     file handle to output short output to (can be undef to not output short output)
-#   $long_FH:      file handle to output long output to (can be undef to not output long output)
-#   $opt_HHR:      reference to 2D hash of cmdline options
-#   $round:        '1' or '2', what round of searching we're in
-#   $use_evalues:  '1' if we have E-values, '0' if not
-#   $width_HR:      hash, key is "model" or "target", value 
-#                   is width (maximum length) of any target/model
-#   $domain_HR:     reference to domain hash
-#   $accept_HR:     reference to the 'accept' hash, key is "model"
-#                   value is '1' if hits to model are "PASS"es '0'
-#                   if they are "FAIL"s
-#   $target:        target name
-#   $seqidx:        index of target sequence
-#   $seqlen:        length of target sequence
-#   $nhits_HHR:     reference to hash of num hits per model (key 1), strand (key 2)
-#   $nnts_HHR:      reference to hash of num nucleotides in all hits per model (key 1), strand (key 2)
-#   $tbits_HHR:     reference to hash of total (summed) bit score in all hits per model (key 1), per strand (key 2)
-#   $mdl_bd_HHAR:   reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
-#   $seq_bd_HHAR:   reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
+#   $short_FH:               file handle to output short output to (can be undef to not output short output)
+#   $long_FH:                file handle to output long output to (can be undef to not output long output)
+#   $opt_HHR:                reference to 2D hash of cmdline options
+#   $round:                  '1' or '2', what round of searching we're in
+#   $have_accurate_coverage: '1' if we have accurate coverage, '0' if not
+#   $have_model_coords:      '1' if we have model coords, '0' if not
+#   $have_evalues:           '1' if we have E-values, '0' if not
+#   $sort_by_evalues:        '1' if we are sorting by E-values, '0' if not
+#   $width_HR:               hash, key is "model" or "target", value 
+#                            is width (maximum length) of any target/model
+#   $domain_HR:              reference to domain hash
+#   $accept_HR:              reference to the 'accept' hash, key is "model"
+#                            value is '1' if hits to model are "PASS"es '0'
+#                            if they are "FAIL"s
+#   $target:                 target name
+#   $seqidx:                 index of target sequence
+#   $seqlen:                 length of target sequence
+#   $nhits_HHR:              reference to hash of num hits per model (key 1), strand (key 2)
+#   $nnts_HHR:               reference to hash of num nucleotides in all hits per model (key 1), strand (key 2)
+#   $tbits_HHR:              reference to hash of total (summed) bit score in all hits per model (key 1), per strand (key 2)
+#   $mdl_bd_HHAR:            reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
+#   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   %one_model_HR:  'one' model
 #   %one_score_HR:  'one' bit score
 #   %one_evalue_HR: 'one' E-value
@@ -1800,20 +1817,18 @@ sub output_one_hitless_target {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 28;
+  my $nargs_expected = 31;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($short_FH, $long_FH, $opt_HHR, $round, $use_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+  my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
+      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR, 
       $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR) = @_;
 
   # debug_print(*STDOUT, "$target:$seqlen:one", $one_model_HR, $one_score_HR, $one_evalue_HR, $one_start_HR, $one_stop_HR, $one_strand_HR);
   # debug_print(*STDOUT, "$target:$seqlen:two", $two_model_HR, $two_score_HR, $two_evalue_HR, $two_start_HR, $two_stop_HR, $two_strand_HR);
-
-  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
-  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
 
   # determine the winning family
   my $wfamily = undef;
@@ -1823,13 +1838,13 @@ sub output_one_target {
     if(! defined $wfamily) { 
       $better_than_winning = 1; 
     }
-    elsif($use_evalues) { 
+    elsif($sort_by_evalues) { 
       if(($one_evalue_HR->{$family} < $one_evalue_HR->{$wfamily}) || # this E-value is better than (less than) our current winning E-value
          ($one_evalue_HR->{$family} eq $one_evalue_HR->{$wfamily} && $one_score_HR->{$family} > $one_score_HR->{$wfamily})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
         $better_than_winning = 1;
       }
     }
-    else { # we don't have E-values
+    else { # we are not sorting by E-values
       if($one_score_HR->{$family} > $one_score_HR->{$wfamily}) { # score is better than current winning score
         $better_than_winning = 1;
       }
@@ -1943,7 +1958,7 @@ sub output_one_target {
     if($family ne $wfamily) { 
       if(exists($one_model_HR->{$family})) { 
         if($other_hits_string ne "") { $other_hits_string .= ","; }
-        if($use_evalues) { 
+        if($have_evalues) { 
           $other_hits_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
                                    $family, $one_model_HR->{$family}, $one_evalue_HR->{$family}, $one_score_HR->{$family}, 
                                    $one_start_HR->{$family}, $one_stop_HR->{$family}, $one_strand_HR->{$family});
@@ -1961,10 +1976,10 @@ sub output_one_target {
   if(! defined $wfamily) { die "ERROR wfamily undefined for $target"; }
   my $best_coverage = (abs($one_stop_HR->{$wfamily} - $one_start_HR->{$wfamily}) + 1) / $seqlen;
   my $tot_coverage  = $nnts / $seqlen;
-  my $one_evalue2print = ($use_evalues) ? sprintf("%8g  ", $one_evalue_HR->{$wfamily}) : "";
+  my $one_evalue2print = ($have_evalues) ? sprintf("%8g  ", $one_evalue_HR->{$wfamily}) : "";
   my $two_evalue2print = undef;
   if(defined $two_model_HR->{$wfamily}) { 
-    $two_evalue2print = ($use_evalues) ? sprintf("%8g  ", $two_evalue_HR->{$wfamily}) : "";
+    $two_evalue2print = ($have_evalues) ? sprintf("%8g  ", $two_evalue_HR->{$wfamily}) : "";
   }
   
   # if we have a second-best model, determine score difference between best and second-best model
@@ -2184,11 +2199,12 @@ sub output_one_target {
                        $two_evalue2print);
     }
     else { 
-      printf $long_FH ("%6s  %-*s  %6s  %s", 
+      printf $long_FH ("%6s  %6s  %-*s  %6s  %s", 
+                       "-" , 
                        "-" , 
                        $width_HR->{"model"}, "-", 
                        "-", 
-                       ($use_evalues) ? "       -  " : "");
+                       ($have_evalues) ? "       -  " : "");
     }
     
     if($unusual_features eq "") { 
@@ -2249,6 +2265,7 @@ sub output_short_headers {
 #              
 # Arguments: 
 #   $FH:        file handle to output to
+#   $round:     '1' or '2', what round of searching we're in
 #   $opt_HHR:   ref to 2D options hash
 #   $width_HR:  ref to hash, key is "model" or "target", value 
 #               is width (maximum length) of any target/model
@@ -2259,11 +2276,11 @@ sub output_short_headers {
 #
 ################################################################# 
 sub output_long_headers { 
-  my $nargs_expected = 3;
+  my $nargs_expected = 4;
   my $sub_name = "output_long_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $opt_HHR, $width_HR) = (@_);
+  my ($FH, $round, $opt_HHR, $width_HR) = (@_);
 
   my $index_dash_str   = "#" . get_monocharacter_string($width_HR->{"index"}-1, "-");
   my $target_dash_str  = get_monocharacter_string($width_HR->{"target"}, "-");
@@ -2272,11 +2289,11 @@ sub output_long_headers {
   my $domain_dash_str  = get_monocharacter_string($width_HR->{"domain"}, "-");
   my $length_dash_str  = get_monocharacter_string($width_HR->{"length"}, "-");
 
-  my $use_evalues = opt_Get("--evalues", $opt_HHR);
+  my $have_evalues = determine_if_we_have_evalues($round, $opt_HHR);
 
   my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6;
-  if($use_evalues) { 
+  if($have_evalues) { 
     $best_model_group_width   += 2 + 8;
     $second_model_group_width += 2 + 8;
   }
@@ -2341,7 +2358,7 @@ sub output_long_headers {
               "tscore", 
               "bscore", 
               "b/nt",
-              ($use_evalues) ? " bevalue  " : "", 
+              ($have_evalues) ? " bevalue  " : "", 
               "tcov",
               "bcov",
               $width_HR->{"length"}, "bstart",
@@ -2350,7 +2367,7 @@ sub output_long_headers {
               "scd/nt",
               $width_HR->{"model"},  "model", 
               "tscore", 
-              ($use_evalues) ? "  evalue  " : "", 
+              ($have_evalues) ? "  evalue  " : "", 
               "unexpected_features");
 
   # line 4
@@ -2367,8 +2384,8 @@ sub output_long_headers {
               "---",
               "------", 
               "------", 
-              ($use_evalues) ? "--------  " : "",
               "----",
+              ($have_evalues) ? "--------  " : "",
               "-----",
               "-----",
               $width_HR->{"length"}, $length_dash_str,
@@ -2377,7 +2394,7 @@ sub output_long_headers {
               "------", 
               $width_HR->{"model"},  $model_dash_str, 
               "------", 
-              ($use_evalues) ? "--------  " : "",
+              ($have_evalues) ? "--------  " : "",
               "-------------------");
   return;
 }
@@ -2445,7 +2462,7 @@ sub output_long_tail {
 
   my ($FH, $round, $opt_HHR) = (@_);
 
-  my $use_evalues = opt_Get("--evalues", $opt_HHR);
+  my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR);
   my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
 
   my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
@@ -2475,7 +2492,7 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
   $column_ct++;
-  if($use_evalues) { 
+  if($have_evalues) { 
     printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
     $column_ct++;
   }
@@ -2499,7 +2516,7 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
   $column_ct++;
-  if($use_evalues) { 
+  if($have_evalues) { 
     printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
     $column_ct++;
   }
@@ -2990,6 +3007,45 @@ sub determine_if_we_have_model_coords {
 }
 
 #################################################################
+# Subroutine: determine_if_we_evalues()
+# Incept:     EPN, Fri May  5 10:51:03 2017
+#
+# Purpose:    Based on the command line options and what round
+#             we are in, determine the search output includes 
+#             E-values or not.
+#
+# Arguments:
+#   $round:   what round of searching we're in, '1' or '2'
+#   $opt_HHR: reference to 2D hash of cmdline options
+#
+# Returns:  '1' if we have model coords, else '0'
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_if_we_have_evalues { 
+  my $sub_name = "determine_if_we_have_evalues()";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($round, $opt_HHR) = (@_);
+
+  my $have_evalues = 0;
+  if($round == 1) { 
+    if(opt_Get("--1hmm",  $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1slow", $opt_HHR)) { $have_evalues = 1; }
+  }
+  elsif($round == 2) { 
+    $have_evalues = 1; # always true for round 2
+  }
+  else { 
+    die "ERROR in $sub_name, invalid round value of $round"; 
+  }
+
+  return $have_evalues;
+}
+
+#################################################################
 # Subroutine: get_overlap()
 # Incept:     EPN, Mon Apr 24 15:47:13 2017
 #
@@ -3385,7 +3441,7 @@ sub parse_round1_long_file {
       ($seqname, $model) = ($el_A[1], $el_A[7]);
       if($model ne "-") { 
         if(! exists $seqsub_HAR->{$model}) {
-          die "ERROR in $sub_name, unexpected model value: $model";
+          die "ERROR in $sub_name, unexpected model value: $model\nline: $line\n";
         }
         push(@{$seqsub_HAR->{$model}}, $seqname);
       }
