@@ -1195,13 +1195,23 @@ sub parse_sorted_tbl_file {
   my %second_model_HH; # 1st dim key are families (e.g. 'SSU', 'LSU')
                        # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
                        # values are 2nd dim attribute for best scoring hit in this family to current sequence
-#  my %one_model_H;  
-#  my %one_domain_H;  
-#  my %one_score_H;  
-#  my %one_evalue_H; 
-#  my %one_start_H;  
-#  my %one_stop_H;   
-#  my %one_strand_H; 
+
+  # for convenience, copies of current first and second values, to simplify writing them out
+  my $first_model  = undef;
+  my $first_domain = undef;
+  my $first_evalue = undef;
+  my $first_score  = undef;
+  my $first_start  = undef;
+  my $first_stop   = undef;
+  my $first_strand = undef;
+  
+  my $second_model  = undef;
+  my $second_domain = undef;
+  my $second_evalue = undef;
+  my $second_score  = undef;
+  my $second_start  = undef;
+  my $second_stop   = undef;
+  my $second_strand = undef;
 
   # statistics we keep track of per model and strand, used to detect various output statistics and
   # to report 'unexpected features'
@@ -1234,8 +1244,8 @@ sub parse_sorted_tbl_file {
 
   my ($target, $model, $domain, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
       (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
-  my $cur_becomes_one; # set to true for each hit if it is better than our current 'one' hit
-  my $cur_becomes_two; # set to true for each hit if it is better than our current 'two' hit
+  my $cur_becomes_first; # set to true for each hit if it is better than our current 'first' hit
+  my $cur_becomes_second; # set to true for each hit if it is better than our current 'second' hit
   my $cur_domain_or_model; # domain (default) or model (--samedomain) of current hit
   my $one_domain_or_model; # domain (default) or model (--samedomain) of current 'one' hit
   my $two_domain_or_model; # domain (default) or model (--samedomain) of current 'two' hit
@@ -1244,6 +1254,8 @@ sub parse_sorted_tbl_file {
   my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
   my $have_evalues           = determine_if_we_have_evalues($round, $opt_HHR);
   my $sort_by_evalues        = opt_Get("--evalues", $opt_HHR);
+
+  # for convenience, copies of current first and second values, to simplify writing them out
 
   if($sort_by_evalues && (! $have_evalues)) { 
     die "ERROR, trying to sort by E-values but we don't have them. Coding error."; 
@@ -1320,8 +1332,8 @@ sub parse_sorted_tbl_file {
     
     ###############################################################
     # Determine if this hit is either a new 'first' or 'second' hit
-    $cur_becomes_one     = 0;       # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
-    $cur_becomes_two     = 0;       # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
+    $cur_becomes_first     = 0;       # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
+    $cur_becomes_second     = 0;       # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
     $domain = $domain_HR->{$model}; # the domain for this model
     $one_domain_or_model = undef;   # top hit's domain (default) or model (if --samedomain)
     $two_domain_or_model = undef;   # second best hit's domain (default) or model (if --samedomain)
@@ -1338,47 +1350,63 @@ sub parse_sorted_tbl_file {
     push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "." . $mdlto)); 
     push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "." . $seqto)); 
 
+    $first_model  = $first_model_HH{$family}{"model"};
+    $first_domain = $first_model_HH{$family}{"domain"};
+    $first_evalue = $first_model_HH{$family}{"evalue"};
+    $first_score  = $first_model_HH{$family}{"score"};
+    $first_start  = $first_model_HH{$family}{"start"};
+    $first_stop   = $first_model_HH{$family}{"stop"};
+    $first_strand = $first_model_HH{$family}{"strand"};
+
+    $second_model  = $second_model_HH{$family}{"model"};
+    $second_domain = $second_model_HH{$family}{"domain"};
+    $second_evalue = $second_model_HH{$family}{"evalue"};
+    $second_score  = $second_model_HH{$family}{"score"};
+    $second_start  = $second_model_HH{$family}{"start"};
+    $second_stop   = $second_model_HH{$family}{"stop"};
+    $second_strand = $second_model_HH{$family}{"strand"};
+
     # first, enforce our global bit score minimum
     if((! defined $minsc) || ($score >= $minsc)) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits_above_thresh++;
-      if(! defined $first_model_HH{$family}{"score"}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-        $cur_becomes_one = 1; # no current, 'one' this will be it
+      if(! defined $first_model) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+        $cur_becomes_first = 1; # no current, 'one' this will be it
       }
       else { 
         # determine the domain (default) or model (--samedomain) of top hit and current hit we're looking at
         # if --samedomain, we require that top two hits be different models, not necessarily different domains
-        $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model_HH{$family}{"model"} : $first_model_HH{$family}{"domain"};
+        $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model : $first_domain;
         if($sort_by_evalues) { 
-          if(($evalue < $first_model_HH{$family}{"evalue"}) || # this E-value is better than (less than) our current 'first' E-value
-             ($evalue eq $first_model_HH{$family}{"evalue"} && $score > $first_model_HH{$family}{"score"})) { # this E-value equals current 'first' E-value, 
+          if(($evalue < $first_evalue) || # this E-value is better than (less than) our current 'first' E-value
+             ($evalue eq $first_evalue && $score > $first_score)) { # this E-value equals current 'first' E-value, 
             # but this score is better than current 'one' score
-            $cur_becomes_one = 1;
+            $cur_becomes_first = 1;
           }
         }
         else { # we don't have E-values
-          if($score > $first_model_HH{$family}{"score"}) { # score is better than current 'one' score
-            $cur_becomes_one = 1;
+          if($score > $first_score) { # score is better than current 'one' score
+            $cur_becomes_first = 1;
           }
         }
       }
-      # only possibly set $cur_becomes_two to TRUE if $cur_becomes_one is FALSE, and it's not the same model/domain as 'one'
-      if((! $cur_becomes_one) && ($cur_domain_or_model ne $one_domain_or_model)) { 
-        if(! defined $second_model_HH{$family}{"score"}) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-          $cur_becomes_two = 1;
+      # only possibly set $cur_becomes_second to TRUE if $cur_becomes_first is FALSE, and it's not the same model/domain as 'one'
+      if((! $cur_becomes_first) && ($cur_domain_or_model ne $one_domain_or_model)) { 
+        if(! defined $second_score) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
+          $cur_becomes_second = 1;
         }
         else { 
-          $two_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $second_model_HH{$family}{"model"} : $second_model_HH{$family}{"domain"};
+          $two_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $second_model : $second_domain;
           if($sort_by_evalues) { 
-            if(($evalue < $second_model_HH{$family}{"evalue"}) || # this E-value is better than (less than) our current 'two' E-value
-               ($evalue eq $second_model_HH{$family}{"evalue"} && $score > $second_model_HH{$family}{"score"})) { # this E-value equals current 'two' E-value, 
+            if(($evalue < $second_evalue) || # this E-value is better than (less than) our current 'two' E-value
+               ($evalue eq $second_evalue && $score > $second_score)) { # this E-value equals current 'two' E-value, 
               # but this score is better than current 'two' score
-              $cur_becomes_two = 1;
+              $cur_becomes_second = 1;
             }
           }
           else { # we don't have E-values
-            if($score > $second_model_HH{$family}{"score"}) { # score is better than current 'one' score
-              $cur_becomes_two = 1;
+            if($score > $second_score) { # score is better than current 'one' score
+              $cur_becomes_second = 1;
             }
           }
         }
@@ -1389,20 +1417,19 @@ sub parse_sorted_tbl_file {
     
     ##########################################################
     # if we have a new hit, update 'one' and/or 'two' data structures
-    if($cur_becomes_one) { 
+    if($cur_becomes_first) { 
       # new 'one' hit, update 'one' variables, 
       # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
       if((defined $one_domain_or_model) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-        set_vars($second_model_HH{$family}, $first_model_HH{$family}{"model"}, $first_model_HH{$family}{"domain"},  $first_model_HH{$family}{"score"},
-                 $first_model_HH{$family}{"evalue"},  $first_model_HH{$family}{"start"},  $first_model_HH{$family}{"stop"},  $first_model_HH{$family}{"strand"})
+        set_vars($second_model_HH{$family}, $first_model, $first_domain,  $first_score, $first_evalue,  $first_start, $first_stop,  $first_strand);
       }
       # now set new 'one' hit values
       set_vars($first_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand);
     }
-    elsif(($cur_becomes_two) && ($one_domain_or_model ne $cur_domain_or_model)) { 
+    elsif(($cur_becomes_second) && ($one_domain_or_model ne $cur_domain_or_model)) { 
       # new 'two' hit, set it
       # (we don't need to check that 'one_domain_or_model ne cur_domain_or_model' because we did that
-      #  above before we set cur_becomes_two to true)
+      #  above before we set cur_becomes_second to true)
       set_vars($second_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand);
     }
     # finished updating 'one' or 'two' data structures
@@ -1411,7 +1438,8 @@ sub parse_sorted_tbl_file {
     $prv_target = $target;
 
     # sanity check
-    if((defined $first_model_HH{$family}{"model"} && defined $second_model_HH{$family}{"model"}) && ($first_model_HH{$family}{"model"} eq $second_model_HH{$family}{"model"})) { 
+    if((defined $first_model_HH{$family}{"model"} && defined $second_model_HH{$family}{"model"}) && 
+       ($first_model_HH{$family}{"model"} eq $second_model_HH{$family}{"model"})) { 
       die "ERROR, coding error, first model and second model are identical for $family $target";
     }
   }
@@ -1935,7 +1963,7 @@ sub output_one_target {
   my $diff_low_str     = undef; # string that explains low bit score difference warning/failure
   my $diff_vlow_str    = undef; # string that explains very low bit score difference warning/failure
 
-  if(exists $second_model_HHR->{$wfamily}) { 
+  if(defined $second_model_HHR->{$wfamily}{"score"}) { 
     # determine score difference threshold
     $score_total_diff = ($first_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"});
     $score_ppos_diff  = $score_total_diff / abs($first_model_HHR->{$wfamily}{"stop"} - $first_model_HHR->{$wfamily}{"start"});
