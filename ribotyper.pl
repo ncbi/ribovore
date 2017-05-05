@@ -1680,6 +1680,80 @@ sub output_one_hitless_target_wrapper {
 }
 
 #################################################################
+# Subroutine : output_one_hitless_target()
+# Incept:      EPN, Thu Mar  2 11:37:13 2017
+#
+# Purpose:     Output information for current sequence with zero
+#              hits in either long or short mode. Short mode if 
+#              $do_short is true.
+#              
+# Arguments: 
+#   $short_FH:     file handle to output short output to (can be undef to not output short output)
+#   $long_FH:      file handle to output long output to (can be undef to not output long output)
+#   $opt_HHR:       reference to 2D hash of cmdline options
+#   $width_HR:      hash, key is "model" or "target", value 
+#                   is width (maximum length) of any target/model
+#   $target:        target name
+#   $seqidx:        index of target sequence
+#   $seqlen:        length of target sequence
+#
+# Returns:     Nothing.
+# 
+# Dies:        Never.
+#
+################################################################# 
+sub output_one_hitless_target { 
+  my $nargs_expected = 7;
+  my $sub_name = "output_one_hitless_target";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
+
+  my $pass_fail = "FAIL";
+  my $unusual_features = "*no_hits";
+  my $nfams = 0;
+  my $nhits = 0;
+
+  my $use_evalues = opt_Get("--evalues", $opt_HHR);
+
+  if(defined $short_FH) { 
+    printf $short_FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
+                      $width_HR->{"index"}, $seqidx,
+                      $width_HR->{"target"}, $target, 
+                      $width_HR->{"classification"}, "-",
+                      "-", $pass_fail, $unusual_features);
+  }
+  if(defined $long_FH) { 
+    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
+                     $width_HR->{"index"}, $seqidx,
+                     $width_HR->{"target"}, $target, 
+                     $pass_fail, 
+                     $width_HR->{"length"}, $seqlen, 
+                     $nfams,
+                     $width_HR->{"family"}, "-",
+                     $width_HR->{"domain"}, "-", 
+                     $width_HR->{"model"}, "-", 
+                     "-", 
+                     "-", 
+                     "-", 
+                     "-",
+                     "-",
+                     ($use_evalues) ? "       -  " : "",
+                     "-",
+                     "-", 
+                     $width_HR->{"length"}, "-", 
+                     $width_HR->{"length"}, "-");
+    printf $long_FH ("%6s  %6s  %-*s  %6s  %s%s\n", 
+                     "-" , 
+                     "-" , 
+                     $width_HR->{"model"}, "-", 
+                     "-", 
+                     ($use_evalues) ? "       -  " : "", $unusual_features);
+  }
+  return;
+}
+
+#################################################################
 # Subroutine : output_one_target()
 # Incept:      EPN, Tue Dec 13 15:30:12 2016
 #
@@ -2102,8 +2176,9 @@ sub output_one_target {
                      $width_HR->{"length"}, $one_stop_HR->{$wfamily});
     
     if(defined $two_model_HR->{$wfamily}) { 
-      printf $long_FH ("%6.1f  %-*s  %6.1f  %s", 
+      printf $long_FH ("%6.1f  %6.3f  %-*s  %6.1f  %s", 
                        $one_tbits - $two_tbits,
+                       ($one_tbits - $two_tbits) / $nnts,
                        $width_HR->{"model"}, $two_model_HR->{$wfamily}, 
                        $two_tbits,
                        $two_evalue2print);
@@ -2126,78 +2201,6 @@ sub output_one_target {
   return;
 }
 
-#################################################################
-# Subroutine : output_one_hitless_target()
-# Incept:      EPN, Thu Mar  2 11:37:13 2017
-#
-# Purpose:     Output information for current sequence with zero
-#              hits in either long or short mode. Short mode if 
-#              $do_short is true.
-#              
-# Arguments: 
-#   $short_FH:     file handle to output short output to (can be undef to not output short output)
-#   $long_FH:      file handle to output long output to (can be undef to not output long output)
-#   $opt_HHR:       reference to 2D hash of cmdline options
-#   $width_HR:      hash, key is "model" or "target", value 
-#                   is width (maximum length) of any target/model
-#   $target:        target name
-#   $seqidx:        index of target sequence
-#   $seqlen:        length of target sequence
-#
-# Returns:     Nothing.
-# 
-# Dies:        Never.
-#
-################################################################# 
-sub output_one_hitless_target { 
-  my $nargs_expected = 7;
-  my $sub_name = "output_one_hitless_target";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
-
-  my $pass_fail = "FAIL";
-  my $unusual_features = "*no_hits";
-  my $nfams = 0;
-  my $nhits = 0;
-
-  my $use_evalues = opt_Get("--evalues", $opt_HHR);
-
-  if(defined $short_FH) { 
-    printf $short_FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
-                      $width_HR->{"index"}, $seqidx,
-                      $width_HR->{"target"}, $target, 
-                      $width_HR->{"classification"}, "-",
-                      "-", $pass_fail, $unusual_features);
-  }
-  if(defined $long_FH) { 
-    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
-                     $width_HR->{"index"}, $seqidx,
-                     $width_HR->{"target"}, $target, 
-                     $pass_fail, 
-                     $width_HR->{"length"}, $seqlen, 
-                     $nfams,
-                     $width_HR->{"family"}, "-",
-                     $width_HR->{"domain"}, "-", 
-                     $width_HR->{"model"}, "-", 
-                     "-", 
-                     "-", 
-                     "-", 
-                     "-",
-                     "-",
-                     ($use_evalues) ? "       -  " : "",
-                     "-",
-                     "-", 
-                     $width_HR->{"length"}, "-", 
-                     $width_HR->{"length"}, "-");
-    printf $long_FH ("%6s  %-*s  %6s  %s%s\n", 
-                     "-" , 
-                     $width_HR->{"model"}, "-", 
-                     "-", 
-                     ($use_evalues) ? "       -  " : "", $unusual_features);
-  }
-  return;
-}
 
 #################################################################
 # Subroutine : output_short_headers()
@@ -2272,7 +2275,7 @@ sub output_long_headers {
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
   my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
-  my $second_model_group_width = $width_HR->{"model"} + 2 + 6 ;
+  my $second_model_group_width = $width_HR->{"model"} + 2 + 6;
   if($use_evalues) { 
     $best_model_group_width   += 2 + 8;
     $second_model_group_width += 2 + 8;
@@ -2296,7 +2299,7 @@ sub output_long_headers {
   my $second_model_group_dash_str = get_monocharacter_string($second_model_group_width, "-");
   
   # line 1
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %-*s  %s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s  %-*s  %s\n", 
               $width_HR->{"index"},  "#",
               $width_HR->{"target"}, "",
               "", 
@@ -2306,10 +2309,11 @@ sub output_long_headers {
               $width_HR->{"domain"}, "", 
               $best_model_group_width, center_string($best_model_group_width, "best-scoring model"), 
               "", 
+              "", 
               $second_model_group_width, center_string($second_model_group_width, (opt_Get("--samedomain", $opt_HHR)) ? "second best-scoring model" : "different domain's best-scoring model"), 
               "");
   # line 2
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %-*s  %s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s  %-*s  %s\n", 
               $width_HR->{"index"},  "#",
               $width_HR->{"target"}, "",
               "", 
@@ -2319,10 +2323,11 @@ sub output_long_headers {
               $width_HR->{"domain"}, "", 
               $best_model_group_width, $best_model_group_dash_str, 
               "", 
+              "", 
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %3s  %6s  %6s  %s%4s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -2335,20 +2340,21 @@ sub output_long_headers {
               "#ht", 
               "tscore", 
               "bscore", 
-              ($use_evalues) ? " bevalue  " : "", 
               "b/nt",
+              ($use_evalues) ? " bevalue  " : "", 
               "tcov",
               "bcov",
               $width_HR->{"length"}, "bstart",
               $width_HR->{"length"}, "bstop",
               "scdiff",
+              "scd/nt",
               $width_HR->{"model"},  "model", 
-              "score", 
+              "tscore", 
               ($use_evalues) ? "  evalue  " : "", 
               "unexpected_features");
 
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %3s  %6s  %6s  %s%4s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %3s  %6s  %6s  %s%4s  %5s  %5s  %*s  %*s  %6s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -2367,6 +2373,7 @@ sub output_long_headers {
               "-----",
               $width_HR->{"length"}, $length_dash_str,
               $width_HR->{"length"}, $length_dash_str,
+              "------", 
               "------", 
               $width_HR->{"model"},  $model_dash_str, 
               "------", 
