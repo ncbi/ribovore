@@ -290,23 +290,6 @@ push(@arg_A, $modelinfo_file);
 output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
-my $r1_unsrt_long_out_file  = $out_root . ".r1.unsrt.long.out";
-my $r1_unsrt_short_out_file = $out_root . ".r1.unsrt.short.out";
-my $r1_srt_long_out_file    = $out_root . ".r1.long.out";
-my $r1_srt_short_out_file   = $out_root . ".r1.short.out";
-my $r1_unsrt_long_out_FH;  # output file handle for unsorted long output file
-my $r1_unsrt_short_out_FH; # output file handle for unsorted short output file
-my $r1_srt_long_out_FH;    # output file handle for sorted long output file
-my $r1_srt_short_out_FH;   # output file handle for sorted short output file
-if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $r1_unsrt_long_out_file);
-  push(@to_remove_A, $r1_unsrt_short_out_file);
-}
-open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for writing";
-open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for writing";
-open($r1_srt_long_out_FH,    ">", $r1_srt_long_out_file)    || die "ERROR unable to open $r1_srt_long_out_file for writing";
-open($r1_srt_short_out_FH,   ">", $r1_srt_short_out_file)   || die "ERROR unable to open $r1_srt_short_out_file for writing";
-
 ##############################################
 # determine search methods for rounds 1 and 2
 ##############################################
@@ -323,6 +306,53 @@ if(! opt_Get("--1slow", \%opt_HH)) {
   elsif(! opt_Get("--1hmm", \%opt_HH)) { 
     $alg2 = "hmmonly";
   }
+}
+
+###############################
+# defined and open output files
+###############################
+my $r1_unsrt_long_out_file  = $out_root . ".r1.unsrt.long.out";
+my $r1_unsrt_short_out_file = $out_root . ".r1.unsrt.short.out";
+my $r1_srt_long_out_file    = $out_root . ".r1.long.out";
+my $r1_srt_short_out_file   = $out_root . ".r1.short.out";
+my $r2_unsrt_long_out_file  = undef;
+my $r2_unsrt_short_out_file = undef;
+my $r2_srt_long_out_file    = undef;
+my $r2_srt_short_out_file   = undef;
+if(defined $alg2) { 
+  $r2_unsrt_long_out_file  = $out_root . ".r2.unsrt.long.out";
+  $r2_unsrt_short_out_file = $out_root . ".r2.unsrt.short.out";
+  $r2_srt_long_out_file    = $out_root . ".r2.long.out";
+  $r2_srt_short_out_file   = $out_root . ".r2.short.out";
+}
+
+my $r1_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file
+my $r1_unsrt_short_out_FH = undef; # output file handle for unsorted short output file
+my $r1_srt_long_out_FH    = undef; # output file handle for sorted long output file
+my $r1_srt_short_out_FH   = undef; # output file handle for sorted short output file
+my $r2_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file
+my $r2_unsrt_short_out_FH = undef; # output file handle for unsorted short output file
+my $r2_srt_long_out_FH    = undef; # output file handle for unsorted long output file
+my $r2_srt_short_out_FH   = undef; # output file handle for unsorted short output file
+
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $r1_unsrt_long_out_file);
+  push(@to_remove_A, $r1_unsrt_short_out_file);
+  if(defined $alg2) { 
+    push(@to_remove_A, $r2_unsrt_long_out_file);
+    push(@to_remove_A, $r2_unsrt_short_out_file);
+  }
+}
+
+open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for writing";
+open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for writing";
+open($r1_srt_long_out_FH,    ">", $r1_srt_long_out_file)    || die "ERROR unable to open $r1_srt_long_out_file for writing";
+open($r1_srt_short_out_FH,   ">", $r1_srt_short_out_file)   || die "ERROR unable to open $r1_srt_short_out_file for writing";
+if(defined $alg2) { 
+  open($r2_unsrt_long_out_FH,  ">", $r2_unsrt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for writing";
+  open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for writing";
+  open($r2_srt_long_out_FH,    ">", $r2_srt_long_out_file)    || die "ERROR unable to open $r2_srt_long_out_file for writing";
+  open($r2_srt_short_out_FH,   ">", $r2_srt_short_out_file)   || die "ERROR unable to open $r2_srt_short_out_file for writing";
 }
 
 ###################################################
@@ -422,6 +452,11 @@ if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
 # now that we know the max sequence name length, we can output headers to the output files
 output_long_headers($r1_srt_long_out_FH,     \%opt_HH, \%width_H);
 output_short_headers($r1_srt_short_out_FH,             \%width_H);
+if(defined $alg2) { 
+  output_long_headers($r2_srt_long_out_FH,     \%opt_HH, \%width_H);
+  output_short_headers($r2_srt_short_out_FH,             \%width_H);
+}
+
 ###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
@@ -488,8 +523,7 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 5: Add data for sequences with 0 hits and then sort the output files 
-#         based on sequence index
-#         from original input file
+#         based on sequence index from original input file.
 ###########################################################################
 $start_secs = output_progress_prior("Sorting and finalizing round 1 output files", $progress_w, undef, *STDOUT);
 output_hitless_targets($r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 1: round 1
@@ -603,48 +637,85 @@ if(defined $alg2) {
 ###########################################################################
 my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
 $r2_all_tblout_file = $out_root . ".r2.all.cmsearch.tbl";
-if($nr2 >= 1) { 
-  $start_secs = output_progress_prior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
-  $cat_cmd = "cat $r2_tblout_file_A[0] ";
-  for($midx = 1; $midx < $nr2; $midx++) { 
-    $cat_cmd .= "$r2_tblout_file_A[$midx] ";
+if(defined $alg2) { 
+  if($nr2 >= 1) { 
+    $start_secs = output_progress_prior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
+    $cat_cmd = "cat $r2_tblout_file_A[0] ";
+    for($midx = 1; $midx < $nr2; $midx++) { 
+      $cat_cmd .= "$r2_tblout_file_A[$midx] ";
+    }
+    $cat_cmd .= "> " . $r2_all_tblout_file;
+    run_command($cat_cmd, opt_Get("-v", \%opt_HH));
+    output_progress_complete($start_secs, undef, undef, *STDOUT);
   }
-  $cat_cmd .= "> " . $r2_all_tblout_file;
 }
-run_command($cat_cmd, opt_Get("-v", \%opt_HH));
-output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 9: Sort round 2 output
 ###########################################################################
-$start_secs = output_progress_prior("Sorting tabular round 2 search results", $progress_w, undef, *STDOUT);
-$r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
-$r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
-run_command($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+if(defined $alg2) { 
+  $start_secs = output_progress_prior("Sorting tabular round 2 search results", $progress_w, undef, *STDOUT);
+  $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
+  $r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
+  run_command($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
+  output_progress_complete($start_secs, undef, undef, *STDOUT);
+}
 
 ###########################################################################
 # Step 10: Parse round 2 sorted output
 ###########################################################################
-$start_secs = output_progress_prior("Parsing tabular round 2 search results", $progress_w, undef, *STDOUT);
-my $r2_unsrt_long_out_file  = $out_root . ".r2.all.unsrt.long.out";
-my $r2_unsrt_short_out_file = $out_root . ".r2.all.unsrt.short.out";
-my $r2_unsrt_long_out_FH;  # output file handle for unsorted long output file
-my $r2_unsrt_short_out_FH; # output file handle for unsorted short output file
-open($r2_unsrt_long_out_FH,  ">", $r2_unsrt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for writing";
-open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for writing";
-parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
-                      \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
-output_progress_complete($start_secs, undef, undef, *STDOUT);
-###########################################################################
+if(defined $alg2) { 
+  $start_secs = output_progress_prior("Parsing tabular round 2 search results", $progress_w, undef, *STDOUT);
+  parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
+                        \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
+  output_progress_complete($start_secs, undef, undef, *STDOUT);
+}
 
-# remove files we don't want anymore, then exit
-foreach my $file (@to_remove_A) { 
-#  unlink $file;
+###########################################################################
+# Step 11: Add data for sequences with 0 hits and then sort the output files 
+#          based on sequence index from original input file.
+###########################################################################
+if(defined $alg2) { 
+  $start_secs = output_progress_prior("Sorting and finalizing round 2 output files", $progress_w, undef, *STDOUT);
+  output_hitless_targets($r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 2: round 2
+
+  # now close the unsorted file handles (we're done with these) 
+  # and also the sorted file handles (so we can output directly to them using system())
+  # Remember, we already output the headers to these files above
+  close($r2_unsrt_long_out_FH);
+  close($r2_unsrt_short_out_FH);
+  close($r2_srt_long_out_FH);
+  close($r2_srt_short_out_FH);
+
+  $cmd = "sort -n $r2_unsrt_short_out_file >> $r2_srt_short_out_file";
+  run_command($cmd, opt_Get("-v", \%opt_HH));
+
+  $cmd = "sort -n $r2_unsrt_long_out_file >> $r2_srt_long_out_file";
+  run_command($cmd, opt_Get("-v", \%opt_HH));
+
+  # reopen them, and add tails to the output files
+  # now that we know the max sequence name length, we can output headers to the output files
+  open($r2_srt_long_out_FH,  ">>", $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for appending";
+  open($r2_srt_short_out_FH, ">>", $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for appending";
+  output_long_tail($r2_srt_long_out_FH, 2, \%opt_HH); # 2: round 2 of searching
+  output_short_tail($r2_srt_short_out_FH, \%opt_HH);
+  close($r2_srt_short_out_FH);
+  close($r2_srt_long_out_FH);
+
+  output_progress_complete($start_secs, undef, undef, *STDOUT);
+
+  # remove files we don't want anymore, then exit
+  foreach my $file (@to_remove_A) { 
+  #  unlink $file;
+  }
 }
 
 printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file.\n");
 printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
+if(defined $alg2) { 
+  printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file.\n");
+  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file.\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
+}
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
@@ -1598,8 +1669,7 @@ sub output_one_hitless_target_wrapper {
   my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR) = @_;
 
   # output to short and long output files
-  output_one_hitless_target($long_FH,  0, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}); 
-  output_one_hitless_target($short_FH, 1, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, $seqlen_HR->{$target}); 
+  output_one_hitless_target($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target})); 
 
   $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
   
@@ -2055,8 +2125,8 @@ sub output_one_target {
 #              $do_short is true.
 #              
 # Arguments: 
-#   $FH:            file handle to output to
-#   $do_short:      TRUE to output in 'short' concise mode, else do long mode
+#   $short_FH:     file handle to output short output to (can be undef to not output short output)
+#   $long_FH:      file handle to output long output to (can be undef to not output long output)
 #   $opt_HHR:       reference to 2D hash of cmdline options
 #   $width_HR:      hash, key is "model" or "target", value 
 #                   is width (maximum length) of any target/model
@@ -2074,7 +2144,7 @@ sub output_one_hitless_target {
   my $sub_name = "output_one_hitless_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $do_short, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
+  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen) = @_;
 
   my $pass_fail = "FAIL";
   my $unusual_features = "*no_hits";
@@ -2083,38 +2153,37 @@ sub output_one_hitless_target {
 
   my $use_evalues = opt_Get("--evalues", $opt_HHR);
 
-  if($do_short) { 
-    printf $FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
-                $width_HR->{"index"}, $seqidx,
-                $width_HR->{"target"}, $target, 
-                $width_HR->{"classification"}, "-",
-                "-", $pass_fail, $unusual_features);
+  if(defined $short_FH) { 
+    printf $short_FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
+                      $width_HR->{"index"}, $seqidx,
+                      $width_HR->{"target"}, $target, 
+                      $width_HR->{"classification"}, "-",
+                      "-", $pass_fail, $unusual_features);
   }
-  else { 
-    printf $FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6s  %4s  %s%3s  %5s  %5s  %*s  %*s  ", 
-                $width_HR->{"index"}, $seqidx,
-                $width_HR->{"target"}, $target, 
-                $pass_fail, 
-                $width_HR->{"length"}, $seqlen, 
-                $nfams,
-                $width_HR->{"family"}, "-",
-                $width_HR->{"domain"}, "-", 
-                $width_HR->{"model"}, "-", 
-                "-", 
-                "-", 
-                "-",
-                ($use_evalues) ? "       -  " : "",
-                "-",
-                "-",
-                "-", 
-                $width_HR->{"length"}, "-", 
-                $width_HR->{"length"}, "-");
-    printf $FH ("%6s  %-*s  %6s  %s%s\n", 
-                "-" , 
-                $width_HR->{"model"}, "-", 
-                "-", 
-                ($use_evalues) ? "       -  " : "", $unusual_features);
-    
+  if(defined $long_FH) { 
+    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6s  %4s  %s%3s  %5s  %5s  %*s  %*s  ", 
+                     $width_HR->{"index"}, $seqidx,
+                     $width_HR->{"target"}, $target, 
+                     $pass_fail, 
+                     $width_HR->{"length"}, $seqlen, 
+                     $nfams,
+                     $width_HR->{"family"}, "-",
+                     $width_HR->{"domain"}, "-", 
+                     $width_HR->{"model"}, "-", 
+                     "-", 
+                     "-", 
+                     "-",
+                     ($use_evalues) ? "       -  " : "",
+                     "-",
+                     "-",
+                     "-", 
+                     $width_HR->{"length"}, "-", 
+                     $width_HR->{"length"}, "-");
+    printf $long_FH ("%6s  %-*s  %6s  %s%s\n", 
+                     "-" , 
+                     $width_HR->{"model"}, "-", 
+                     "-", 
+                     ($use_evalues) ? "       -  " : "", $unusual_features);
   }
   return;
 }
