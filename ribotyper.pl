@@ -313,17 +313,25 @@ if(! opt_Get("--1slow", \%opt_HH)) {
 ###############################
 my $r1_unsrt_long_out_file  = $out_root . ".r1.unsrt.long.out";
 my $r1_unsrt_short_out_file = $out_root . ".r1.unsrt.short.out";
-my $r1_srt_long_out_file    = $out_root . ".r1.long.out";
-my $r1_srt_short_out_file   = $out_root . ".r1.short.out";
+my $r1_srt_long_out_file    = undef;
+my $r1_srt_short_out_file   = undef;
 my $r2_unsrt_long_out_file  = undef;
 my $r2_unsrt_short_out_file = undef;
 my $r2_srt_long_out_file    = undef;
 my $r2_srt_short_out_file   = undef;
+my $final_long_out_file     = $out_root . ".long.out";  # the final long output file, created combining r1 and r2 files (or copying r1 file, if r2 is skipped)
+my $final_short_out_file    = $out_root . ".short.out"; # the final short output file, created combining r1 and r2 files (or copying r1 file, if r2 is skipped)
 if(defined $alg2) { 
+  $r1_srt_long_out_file    = $out_root . ".r1.long.out";
+  $r1_srt_short_out_file   = $out_root . ".r1.short.out";
   $r2_unsrt_long_out_file  = $out_root . ".r2.unsrt.long.out";
   $r2_unsrt_short_out_file = $out_root . ".r2.unsrt.short.out";
   $r2_srt_long_out_file    = $out_root . ".r2.long.out";
   $r2_srt_short_out_file   = $out_root . ".r2.short.out";
+}
+else { 
+  $r1_srt_long_out_file    = $out_root . ".long.out";  # same name as $final_long_out_file, which is ok, the r1 file is the final file
+  $r1_srt_short_out_file   = $out_root . ".short.out"; # same name as $final_short_out_file, which is ok, the r1 file is the final file
 }
 
 my $r1_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file
@@ -334,6 +342,8 @@ my $r2_unsrt_long_out_FH  = undef; # output file handle for unsorted long output
 my $r2_unsrt_short_out_FH = undef; # output file handle for unsorted short output file
 my $r2_srt_long_out_FH    = undef; # output file handle for unsorted long output file
 my $r2_srt_short_out_FH   = undef; # output file handle for unsorted short output file
+my $final_long_out_FH     = undef; # output file handle for final long output file
+my $final_short_out_FH    = undef; # output file handle for final short output file
 
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_unsrt_long_out_file);
@@ -353,6 +363,8 @@ if(defined $alg2) {
   open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for writing";
   open($r2_srt_long_out_FH,    ">", $r2_srt_long_out_file)    || die "ERROR unable to open $r2_srt_long_out_file for writing";
   open($r2_srt_short_out_FH,   ">", $r2_srt_short_out_file)   || die "ERROR unable to open $r2_srt_short_out_file for writing";
+  open($final_long_out_FH,     ">", $final_long_out_file)     || die "ERROR unable to open $final_long_out_file for writing";
+  open($final_short_out_FH,    ">", $final_short_out_file)    || die "ERROR unable to open $final_short_out_file for writing";
 }
 
 ###################################################
@@ -453,8 +465,10 @@ if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
 output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H);
 output_short_headers($r1_srt_short_out_FH, \%width_H);
 if(defined $alg2) { 
-  output_long_headers($r2_srt_long_out_FH, 2,\%opt_HH, \%width_H);
+  output_long_headers($r2_srt_long_out_FH, 2, \%opt_HH, \%width_H);
   output_short_headers($r2_srt_short_out_FH, \%width_H);
+  output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H);
+  output_short_headers($final_short_out_FH, \%width_H);
 }
 
 ###########################################################################
@@ -709,6 +723,22 @@ if(defined $alg2) {
   #  unlink $file;
   }
 }
+###########################################################################
+# Step 12: Combine the round 1 and round 2 output files to create the 
+#          final output file.
+###########################################################################
+if(defined $alg2) { 
+  $start_secs = output_progress_prior("Combining info from rounds 1 and 2 to get final output", $progress_w, undef, *STDOUT);
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
+  open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
+  open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
+  open($r2_srt_short_out_FH, $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for reading";
+  output_combined_short_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, \%opt_HH);
+  #output_combined_long_file($final_long_out_FH, $r1_srt_long_out_FH, $r2_srt_long_out_FH, \%opt_HH);
+}
+output_short_tail($final_short_out_FH, \%opt_HH);
+close($final_short_out_FH);
+  
 
 printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
 printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
@@ -736,8 +766,8 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
 # Helper functions for parse_sorted_tbl_file():
-# init_model_vars:                 initialize variables for parse_sorted_tbl_file()
-# set_vars:                  set variables for parse_sorted_tbl_file()
+# init_model_vars:          initialize variables for parse_sorted_tbl_file()
+# set_modelvars:            set variables for parse_sorted_tbl_file()
 # 
 # Functions for output: 
 # output_one_target_wrapper: wrapper function for outputting info on one target sequence
@@ -1197,21 +1227,25 @@ sub parse_sorted_tbl_file {
                        # values are 2nd dim attribute for best scoring hit in this family to current sequence
 
   # for convenience, copies of current first and second values, to simplify writing them out
-  my $first_model  = undef;
-  my $first_domain = undef;
-  my $first_evalue = undef;
-  my $first_score  = undef;
-  my $first_start  = undef;
-  my $first_stop   = undef;
-  my $first_strand = undef;
+  my $first_model    = undef;
+  my $first_domain   = undef;
+  my $first_evalue   = undef;
+  my $first_score    = undef;
+  my $first_start    = undef;
+  my $first_stop     = undef;
+  my $first_strand   = undef;
+  my $first_mdlstart = undef;
+  my $first_mdlstop  = undef;
   
-  my $second_model  = undef;
-  my $second_domain = undef;
-  my $second_evalue = undef;
-  my $second_score  = undef;
-  my $second_start  = undef;
-  my $second_stop   = undef;
-  my $second_strand = undef;
+  my $second_model    = undef;
+  my $second_domain   = undef;
+  my $second_evalue   = undef;
+  my $second_score    = undef;
+  my $second_start    = undef;
+  my $second_stop     = undef;
+  my $second_strand   = undef;
+  my $second_mdlstart = undef;
+  my $second_mdlstop  = undef;
 
   # statistics we keep track of per model and strand, used to detect various output statistics and
   # to report 'unexpected features'
@@ -1350,21 +1384,25 @@ sub parse_sorted_tbl_file {
     push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "." . $mdlto)); 
     push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "." . $seqto)); 
 
-    $first_model  = $first_model_HH{$family}{"model"};
-    $first_domain = $first_model_HH{$family}{"domain"};
-    $first_evalue = $first_model_HH{$family}{"evalue"};
-    $first_score  = $first_model_HH{$family}{"score"};
-    $first_start  = $first_model_HH{$family}{"start"};
-    $first_stop   = $first_model_HH{$family}{"stop"};
-    $first_strand = $first_model_HH{$family}{"strand"};
+    $first_model    = $first_model_HH{$family}{"model"};
+    $first_domain   = $first_model_HH{$family}{"domain"};
+    $first_evalue   = $first_model_HH{$family}{"evalue"};
+    $first_score    = $first_model_HH{$family}{"score"};
+    $first_start    = $first_model_HH{$family}{"start"};
+    $first_stop     = $first_model_HH{$family}{"stop"};
+    $first_strand   = $first_model_HH{$family}{"strand"};
+    $first_mdlstart = $first_model_HH{$family}{"mdlstart"};
+    $first_mdlstop  = $first_model_HH{$family}{"mdlstop"};
 
-    $second_model  = $second_model_HH{$family}{"model"};
-    $second_domain = $second_model_HH{$family}{"domain"};
-    $second_evalue = $second_model_HH{$family}{"evalue"};
-    $second_score  = $second_model_HH{$family}{"score"};
-    $second_start  = $second_model_HH{$family}{"start"};
-    $second_stop   = $second_model_HH{$family}{"stop"};
-    $second_strand = $second_model_HH{$family}{"strand"};
+    $second_model    = $second_model_HH{$family}{"model"};
+    $second_domain   = $second_model_HH{$family}{"domain"};
+    $second_evalue   = $second_model_HH{$family}{"evalue"};
+    $second_score    = $second_model_HH{$family}{"score"};
+    $second_start    = $second_model_HH{$family}{"start"};
+    $second_stop     = $second_model_HH{$family}{"stop"};
+    $second_strand   = $second_model_HH{$family}{"strand"};
+    $second_mdlstart = $second_model_HH{$family}{"mdlstart"};
+    $second_mdlstop  = $second_model_HH{$family}{"mdlstop"};
 
     # first, enforce our global bit score minimum
     if((! defined $minsc) || ($score >= $minsc)) { 
@@ -1421,16 +1459,16 @@ sub parse_sorted_tbl_file {
       # new 'one' hit, update 'one' variables, 
       # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
       if((defined $one_domain_or_model) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-        set_vars($second_model_HH{$family}, $first_model, $first_domain,  $first_score, $first_evalue,  $first_start, $first_stop,  $first_strand);
+        set_model_vars($second_model_HH{$family}, $first_model, $first_domain, $first_score, $first_evalue, $first_start, $first_stop, $first_strand, $first_mdlstart, $first_mdlstop);
       }
       # now set new 'one' hit values
-      set_vars($first_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand);
+      set_model_vars($first_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
     }
     elsif(($cur_becomes_second) && ($one_domain_or_model ne $cur_domain_or_model)) { 
       # new 'two' hit, set it
       # (we don't need to check that 'one_domain_or_model ne cur_domain_or_model' because we did that
       #  above before we set cur_becomes_second to true)
-      set_vars($second_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand);
+      set_model_vars($second_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
     }
     # finished updating 'one' or 'two' data structures
     ##########################################################
@@ -1489,7 +1527,7 @@ sub init_model_vars {
 }
 
 #################################################################
-# Subroutine : set_vars()
+# Subroutine : set_model_vars()
 # Incept:      EPN, Tue Dec 13 14:53:37 2016
 #
 # Purpose:     Set values of a hash.
@@ -1500,29 +1538,33 @@ sub init_model_vars {
 #   $domain:    value to set $HR->{"domain"} to 
 #   $score:     value to set $HR->{"score"} to
 #   $evalue:    value to set $HR->{"evalue"} to
-#   $start:     value to set $HR->{"start" to
+#   $start:     value to set $HR->{"start"} to
 #   $stop:      value to set $HR->{"stop"} to 
 #   $strand:    value to set $HR->{"strand"} to
+#   $mdlstart:  value to set $HR->{"mdlstart"} to
+#   $mdlstop:   value to set $HR->{"mdlstop"} to 
 #
 # Returns:     Nothing.
 # 
 # Dies:        Never.
 #
 ################################################################# 
-sub set_vars { 
-  my $nargs_expected = 8;
-  my $sub_name = "set_vars";
+sub set_model_vars { 
+  my $nargs_expected = 10;
+  my $sub_name = "set_model_vars";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($HR, $model, $domain, $score, $evalue, $start, $stop, $strand) = @_;
+  my ($HR, $model, $domain, $score, $evalue, $start, $stop, $strand, $mdlstart, $mdlstop) = @_;
 
-  $HR->{"model"}  = $model;
-  $HR->{"domain"} = $domain;
-  $HR->{"score"}  = $score;
-  $HR->{"evalue"} = $evalue;
-  $HR->{"start"}  = $start;
-  $HR->{"stop"}   = $stop;
-  $HR->{"strand"} = $strand;
+  $HR->{"model"}    = $model;
+  $HR->{"domain"}   = $domain;
+  $HR->{"score"}    = $score;
+  $HR->{"evalue"}   = $evalue;
+  $HR->{"start"}    = $start;
+  $HR->{"stop"}     = $stop;
+  $HR->{"strand"}   = $strand;
+  $HR->{"mdlstart"} = $mdlstart;
+  $HR->{"mdlstop"}  = $mdlstop;
 
   return;
 }
@@ -1619,19 +1661,20 @@ sub output_hitless_targets {
 
   my $target;
 
-  my $have_evalues = determine_if_we_have_evalues($round, $opt_HHR);
+  my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR);
+  my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
 
-  if($round == 1) { 
+  if($round eq "1") { 
     foreach $target (keys %seqlen_H) { 
       if($seqlen_H{$target} >= 0) { # in round 1, positive sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues);
+        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
       }
     }
   }
-  elsif($round == 2) { 
+  elsif($round eq "2") { 
     foreach $target (keys %seqlen_H) { 
       if($seqlen_H{$target} <= 0) { # in round 2, negative sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues);
+        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
       }
     }
   }
@@ -1647,15 +1690,16 @@ sub output_hitless_targets {
 #              with zero hits.
 #              
 # Arguments: 
-#   $long_FH:       file handle to output long data to
-#   $short_FH:      file handle to output short data to
-#   $opt_HHR:       reference to 2D hash of cmdline options
-#   $width_HR:      hash, key is "model" or "target", value 
-#                   is width (maximum length) of any target/model
-#   $target:        target name
-#   $seqidx_HR:     hash of target sequence indices
-#   $seqlen_HR:     hash of target sequence lengths
-#   $have_evalues:  '1' to print space for E-values
+#   $long_FH:            file handle to output long data to
+#   $short_FH:           file handle to output short data to
+#   $opt_HHR:            reference to 2D hash of cmdline options
+#   $width_HR:           hash, key is "model" or "target", value 
+#                        is width (maximum length) of any target/model
+#   $target:             target name
+#   $seqidx_HR:          hash of target sequence indices
+#   $seqlen_HR:          hash of target sequence lengths
+#   $have_evalues:       '1' to print space for E-values
+#   $have_model_coords:  '1' if we have model coord info, else '0'
 #
 # Returns:     Nothing.
 # 
@@ -1663,14 +1707,14 @@ sub output_hitless_targets {
 #
 ################################################################# 
 sub output_one_hitless_target_wrapper { 
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   my $sub_name = "output_one_hitless_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR, $have_evalues) = @_;
+  my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR, $have_evalues, $have_model_coords) = @_;
 
   # output to short and long output files
-  output_one_hitless_target($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues); 
+  output_one_hitless_target($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues, $have_model_coords); 
 
   $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
   
@@ -1686,15 +1730,16 @@ sub output_one_hitless_target_wrapper {
 #              $do_short is true.
 #              
 # Arguments: 
-#   $short_FH:     file handle to output short output to (can be undef to not output short output)
-#   $long_FH:      file handle to output long output to (can be undef to not output long output)
-#   $opt_HHR:       reference to 2D hash of cmdline options
-#   $width_HR:      hash, key is "model" or "target", value 
-#                   is width (maximum length) of any target/model
-#   $target:        target name
-#   $seqidx:        index of target sequence
-#   $seqlen:        length of target sequence
-#   $have_evalues:  '1' to print space for E-values
+#   $short_FH:          file handle to output short output to (can be undef to not output short output)
+#   $long_FH:           file handle to output long output to (can be undef to not output long output)
+#   $opt_HHR:           reference to 2D hash of cmdline options
+#   $width_HR:          hash, key is "model" or "target", value 
+#                       is width (maximum length) of any target/model
+#   $target:            target name
+#   $seqidx:            index of target sequence
+#   $seqlen:            length of target sequence
+#   $have_evalues:      '1' to print space for E-values
+#   $have_model_coords: '1' to print space for E-values
 #
 # Returns:     Nothing.
 # 
@@ -1702,11 +1747,11 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_hitless_target { 
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   my $sub_name = "output_one_hitless_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues) = @_;
+  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues, $have_model_coords) = @_;
 
   my $pass_fail = "FAIL";
   my $unusual_features = "*no_hits";
@@ -1740,6 +1785,9 @@ sub output_one_hitless_target {
                      "-", 
                      $width_HR->{"length"}, "-", 
                      $width_HR->{"length"}, "-");
+    if($have_model_coords) { 
+      printf $long_FH ("%5s  %5s  ", "-", "-");
+    }
     printf $long_FH ("%6s  %6s  %-*s  %6s  %s%s\n", 
                      "-" , 
                      "-" , 
@@ -2158,7 +2206,12 @@ sub output_one_target {
                      $best_coverage, 
                      $width_HR->{"length"}, $first_model_HHR->{$wfamily}{"start"}, 
                      $width_HR->{"length"}, $first_model_HHR->{$wfamily}{"stop"});
-    
+    if($have_model_coords) { 
+      printf $long_FH ("%5d  %5d  ", 
+                       $first_model_HHR->{$wfamily}{"mdlstart"},
+                       $first_model_HHR->{$wfamily}{"mdlstop"});
+    }
+
     if(defined $second_model_HHR->{$wfamily}{"model"}) { 
       printf $long_FH ("%6.1f  %6.3f  %-*s  %6.1f  %s", 
                        $one_tbits - $two_tbits,
@@ -2258,13 +2311,18 @@ sub output_long_headers {
   my $domain_dash_str  = get_monocharacter_string($width_HR->{"domain"}, "-");
   my $length_dash_str  = get_monocharacter_string($width_HR->{"length"}, "-");
 
-  my $have_evalues = determine_if_we_have_evalues($round, $opt_HHR);
+  my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
+  my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR);
 
   my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6;
   if($have_evalues) { 
     $best_model_group_width   += 2 + 8;
     $second_model_group_width += 2 + 8;
+  }
+  if($have_model_coords) { 
+    $best_model_group_width   += 2 + 5 + 2 + 5;
+    $second_model_group_width += 2 + 5 + 2 + 5;
   }
 
   if(length("best-scoring model") > $best_model_group_width) { 
@@ -2313,7 +2371,7 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  %6s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  ",
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -2330,8 +2388,16 @@ sub output_long_headers {
               ($have_evalues) ? " bevalue  " : "", 
               "tcov",
               "bcov",
-              $width_HR->{"length"}, "bstart",
-              $width_HR->{"length"}, "bstop",
+              $width_HR->{"length"}, "bfrom",
+              $width_HR->{"length"}, "bto");
+
+  if($have_model_coords) { 
+    printf $FH ("%5s  %5s  ", 
+                "mfrom",
+                "mto");
+  }
+
+  printf $FH ("%6s  %6s  %-*s  %6s  %s%s\n",  
               "scdiff",
               "scd/nt",
               $width_HR->{"model"},  "model", 
@@ -2339,8 +2405,9 @@ sub output_long_headers {
               ($have_evalues) ? "  evalue  " : "", 
               "unexpected_features");
 
+
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %3s  %6s  %6s  %s%4s  %5s  %5s  %*s  %*s  %6s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -2358,7 +2425,14 @@ sub output_long_headers {
               "-----",
               "-----",
               $width_HR->{"length"}, $length_dash_str,
-              $width_HR->{"length"}, $length_dash_str,
+              $width_HR->{"length"}, $length_dash_str);
+
+  if($have_model_coords) { 
+    printf $FH ("%5s  %5s  ", 
+                "-----",
+                "-----");
+  }
+  printf $FH ("%6s  %6s  %-*s  %6s  %s%s\n", 
               "------", 
               "------", 
               $width_HR->{"model"},  $model_dash_str, 
@@ -2922,11 +2996,11 @@ sub determine_if_coverage_is_accurate {
   my ($round, $opt_HHR) = (@_);
 
   my $have_accurate_coverage = 0;
-  if($round == 1) { 
+  if($round eq "1") { 
     if(opt_Get("--1hmm",  $opt_HHR)) { $have_accurate_coverage = 1; }
     if(opt_Get("--1slow", $opt_HHR)) { $have_accurate_coverage = 1; }
   }
-  elsif($round == 2) { 
+  elsif($round eq "2" || $round eq "final") { 
     $have_accurate_coverage = 1; # always true for round 2
   }
   else { 
@@ -2961,11 +3035,11 @@ sub determine_if_we_have_model_coords {
   my ($round, $opt_HHR) = (@_);
 
   my $have_model_coords = 0;
-  if($round == 1) { 
+  if($round eq "1") { 
     if(opt_Get("--1hmm",  $opt_HHR)) { $have_model_coords = 1; }
     if(opt_Get("--1slow", $opt_HHR)) { $have_model_coords = 1; }
   }
-  elsif($round == 2) { 
+  elsif($round eq "2" || $round eq "final") { 
     $have_model_coords = 1; # always true for round 2
   }
   else { 
@@ -3000,11 +3074,11 @@ sub determine_if_we_have_evalues {
   my ($round, $opt_HHR) = (@_);
 
   my $have_evalues = 0;
-  if($round == 1) { 
+  if($round eq "1") { 
     if(opt_Get("--1hmm",  $opt_HHR)) { $have_evalues = 1; }
     if(opt_Get("--1slow", $opt_HHR)) { $have_evalues = 1; }
   }
-  elsif($round == 2) { 
+  elsif($round eq "2" || $round eq "final") { 
     $have_evalues = 1; # always true for round 2
   }
   else { 
@@ -3454,6 +3528,132 @@ sub write_array_to_file {
     print OUT $el . "\n"; 
   }
   close(OUT);
+
+  return;
+}
+
+#################################################################
+# Subroutine : output_combined_short_file()
+# Incept:      EPN, Fri May  5 16:03:17 2017
+#
+# Purpose:     Combine the round 1 and round 2 short output files 
+#              to create the final file.
+#              
+# Arguments: 
+#   $out_FH:   file handle to print to
+#   $r1_in_FH: file handle of open round 1 short file
+#   $r2_in_FH: file handle of open round 2 short file
+#   $opt_HHR:  reference to 2D hash of cmdline options
+#
+# Returns:  Nothing.
+# 
+# Dies:     If there are not the same sequences in 
+#           the same order in the round 1 and round 2 files.
+#
+################################################################# 
+sub output_combined_short_file { 
+  my $nargs_expected = 4;
+  my $sub_name = "output_combined_short_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $opt_HHR) = @_;
+
+  my $r1_line;             # line from round 1 file
+  my $r2_line;             # line from round 2 file 
+  my $r1_lidx;             # line index in round 1 file
+  my $r2_lidx;             # line index in round 2 file
+  my $keep_going = 1;      # flag to keep reading the input files, set to '0' to stop
+  my @r1_el_A = ();        # array of space-delimited tokens in a round 1 line
+  my @r2_el_A = ();        # array of space-delimited tokens in a round 1 line
+  my @r1_ufeatures_A = (); # array of unexpected features in round 1 line
+  my $ufeature = undef;    # a single unexpected feature
+  my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
+  my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
+
+  # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
+  $r1_line = <$r1_in_FH>;
+  $r1_lidx++;
+  while((defined $r1_line) && ($r1_line =~ m/^\#/)) { 
+    $r1_line = <$r1_in_FH>; 
+    $r1_lidx++;
+  }
+
+  $r2_line = <$r2_in_FH>;
+  $r2_lidx++;
+  while((defined $r2_line) && ($r2_line =~ m/^\#/)) { 
+    $r2_line = <$r2_in_FH>; 
+    $r2_lidx++;
+  }
+
+  while($keep_going) { 
+    my $have_r1_line = ((defined $r1_line) && ($r1_line !~ m/^\#/)) ? 1 : 0;
+    my $have_r2_line = ((defined $r2_line) && ($r2_line !~ m/^\#/)) ? 1 : 0;
+    if($have_r1_line && $have_r2_line) { 
+      chomp $r1_line;
+      chomp $r2_line;
+      # example
+      #idx  target                                         classification         strnd   p/f  unexpected_features
+      #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
+      #15   00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
+      #16   01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
+      @r1_el_A = split(/\s+/, $r1_line);
+      @r2_el_A = split(/\s+/, $r2_line);
+      if($r1_el_A[1] ne $r2_el_A[1]) { 
+        die "ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")"; 
+      }
+      # look for the two types unexpected error that we want from round 1 to add to round 2:
+      # 1) low_score_difference_between_top_two...
+      # 2) very_low_score_difference_between_top_two... 
+      # either one can have a "*" at the beginning of it, which we want to capture
+      # we append these to the end of our current unexpected_features
+      if($r1_el_A[5] ne $r2_el_A[5]) { 
+        $did_edit_r2_line = 0;
+        $did_make_fail    = 0;
+        @r1_ufeatures_A = split(";", $r1_el_A[5]); 
+        foreach $ufeature (@r1_ufeatures_A) { 
+          if($ufeature =~ m/low\_score\_difference\_between\_top\_two/) { 
+            $did_edit_r2_line = 1;
+            if($ufeature =~ m/^\*/) { 
+              $did_make_fail = 1;
+            }
+            if($r2_el_A[5] eq "-") { 
+              $r2_el_A[5] = $ufeature;
+            }
+            else { 
+              $r2_el_A[5] .= ";" . $ufeature;
+            }
+          }
+        }
+        if($did_edit_r2_line) { 
+          if($did_make_fail) { 
+            # sequence 'FAILs' now
+            $r2_line =~ s/\s\s\S+\s\s\S+$//; # remove two final columns
+            $r2_line .= "  FAIL  " . $r2_el_A[5];
+          }
+          else { 
+            $r2_line =~ s/\s\s\S+$//; # remove final column
+            $r2_line .= "  " . $r2_el_A[5];
+          }
+        }
+      }
+      print $out_FH $r2_line . "\n";
+
+      # get new lines
+      $r1_line = <$r1_in_FH>; 
+      $r2_line = <$r2_in_FH>; 
+    }
+    # check for some unexpected errors
+    elsif(($have_r1_line) && (! $have_r2_line)) { 
+      die "ERROR in $sub_name, ran out of sequences from round 1 output before round 2"; 
+    }
+    elsif((! $have_r1_line) && ($have_r2_line)) { 
+      die "ERROR in $sub_name, ran out of sequences from round 2 output before round 1"; 
+    }
+    else { # don't have either line
+      $keep_going = 0;
+    }
+  }
+      
 
   return;
 }
