@@ -2072,7 +2072,7 @@ sub output_one_target {
                       $pass_fail, $unusual_features);
   }
   if(defined $long_FH) { 
-    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6.1f  %4.2f  %s%3d  %5.3f  %5.3f  %*d  %*d  ", 
+    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %3d  %6.1f  %4.2f  %s%5.3f  %5.3f  %*d  %*d  ", 
                      $width_HR->{"index"}, $seqidx,
                      $width_HR->{"target"}, $target, 
                      $pass_fail, 
@@ -2082,10 +2082,10 @@ sub output_one_target {
                      $width_HR->{"domain"}, $domain_HR->{$one_model_HR->{$wfamily}}, 
                      $width_HR->{"model"}, $one_model_HR->{$wfamily}, 
                      ($one_strand_HR->{$wfamily} eq "+") ? "plus" : "minus", 
+                     $nhits, 
                      $one_score_HR->{$wfamily}, 
                      $bits_per_posn, 
                      $one_evalue2print, 
-                     $nhits, 
                      $tot_coverage, 
                      $best_coverage, 
                      $width_HR->{"length"}, $one_start_HR->{$wfamily}, 
@@ -2161,7 +2161,7 @@ sub output_one_hitless_target {
                       "-", $pass_fail, $unusual_features);
   }
   if(defined $long_FH) { 
-    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %6s  %4s  %s%3s  %5s  %5s  %*s  %*s  ", 
+    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %3s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
                      $width_HR->{"index"}, $seqidx,
                      $width_HR->{"target"}, $target, 
                      $pass_fail, 
@@ -2173,8 +2173,8 @@ sub output_one_hitless_target {
                      "-", 
                      "-", 
                      "-",
-                     ($use_evalues) ? "       -  " : "",
                      "-",
+                     ($use_evalues) ? "       -  " : "",
                      "-",
                      "-", 
                      $width_HR->{"length"}, "-", 
@@ -2305,7 +2305,7 @@ sub output_long_headers {
               $second_model_group_width, $second_model_group_dash_str, 
               "");
   # line 3
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %6s  %s%4s  %3s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %3s  %6s  %s%4s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n",  
               $width_HR->{"index"},  "#idx", 
               $width_HR->{"target"}, "target",
               "p/f", 
@@ -2315,10 +2315,10 @@ sub output_long_headers {
               $width_HR->{"domain"}, "domain", 
               $width_HR->{"model"},  "model", 
               "strnd",
+              "#ht", 
               "score", 
               ($use_evalues) ? "  evalue  " : "", 
               "b/nt",
-              "#ht", 
               "tcov",
               "bcov",
               $width_HR->{"length"}, "bstart",
@@ -2330,7 +2330,7 @@ sub output_long_headers {
               "unexpected_features");
 
   # line 4
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %6s  %s%4s  %3s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %3s  %6s  %s%4s  %5s  %5s  %*s  %*s  %6s  %-*s  %6s  %s%s\n", 
               $width_HR->{"index"},  $index_dash_str,
               $width_HR->{"target"}, $target_dash_str, 
               "----", 
@@ -2340,10 +2340,10 @@ sub output_long_headers {
               $width_HR->{"domain"}, $domain_dash_str, 
               $width_HR->{"model"},  $model_dash_str,
               "-----", 
+              "---",
               "------", 
               ($use_evalues) ? "--------  " : "",
               "----",
-              "---",
               "-----",
               "-----",
               $width_HR->{"length"}, $length_dash_str,
