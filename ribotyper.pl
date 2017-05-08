@@ -744,11 +744,13 @@ output_long_tail($final_long_out_FH, "final", \%opt_HH);
 close($final_short_out_FH);
   
 printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
-printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", $have_evalues_r1 ? 20 : 18);
+printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(1, \%opt_HH));
 if(defined $alg2) { 
   printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file\n");
-  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", $have_evalues_r2 ? 20 : 18);
+  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(2, \%opt_HH));
 }
+printf("#\n# Final short (6 column) output saved to file $r1_srt_short_out_file\n");
+printf("# Final long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file("final", \%opt_HH));
 printf("#\n#[RIBO-SUCCESS]\n");
 
 # cat the output file
@@ -2112,7 +2114,7 @@ sub output_one_target {
   # determine if the sequence has a 'low_score'
   # it does if bits per position (of entire sequence not just hit)
   # is below the threshold (--lowppossc) minimum
-  my $bits_per_posn = $first_model_HHR->{$wfamily}{"score"} / $seqlen;
+  my $bits_per_posn = $one_tbits / $seqlen;
   if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
     if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--scfail", $opt_HHR)) { 
@@ -2134,8 +2136,8 @@ sub output_one_target {
   # two domains
   if(defined $second_model_HHR->{$wfamily}{"model"}) { 
     # determine score difference threshold
-    $score_total_diff = ($first_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"});
-    $score_ppos_diff  = $score_total_diff / abs($first_model_HHR->{$wfamily}{"stop"} - $first_model_HHR->{$wfamily}{"start"});
+    $score_total_diff = $one_tbits - $two_tbits; 
+    $score_ppos_diff  = $score_total_diff / $nnts;
     if($do_ppos_score_diff) { 
       # default: per position score difference, dependent on length of hit
       $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
@@ -2180,6 +2182,7 @@ sub output_one_target {
     }
   }
   # determine if there are more than one hit to the best model
+  $nhits = $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   if($nhits > 1) {
     if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--multfail", $opt_HHR)) { 
@@ -2228,8 +2231,8 @@ sub output_one_target {
     if($round ne "2") { # we never have info for a second model if round is 2
       if(defined $second_model_HHR->{$wfamily}{"model"}) { 
         printf $long_FH ("%6.1f  %6.3f  %-*s  %6.1f  %s", 
-                         $one_tbits - $two_tbits,
-                         ($one_tbits - $two_tbits) / $nnts,
+                         $score_total_diff, 
+                         $score_ppos_diff,
                          $width_HR->{"model"}, $second_model_HHR->{$wfamily}{"model"}, 
                          $two_tbits,
                          $two_evalue2print);
@@ -2420,7 +2423,7 @@ sub output_long_headers {
               "#ht", 
               "tscore", 
               "bscore", 
-              "b/nt",
+              "s/nt",
               ($have_evalues) ? " bevalue  " : "", 
               "tcov",
               "bcov",
@@ -2438,7 +2441,7 @@ sub output_long_headers {
                 "scd/nt",
                 $width_HR->{"model"},  "model", 
                 "tscore", 
-                ($have_evalues_r1) ? "  evalue  " : "");
+                ($have_evalues_r1) ? "  bevalue  " : "");
   }
   printf $FH ("%s\n",
               "unexpected_features");
@@ -2513,7 +2516,7 @@ sub output_short_tail {
   printf $FH ("# Column 3 [classification]:      classification of sequence\n");
   printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit\n");
 #  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (see below for more on FAIL)\n");
-  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL\n");
+  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)\n");
 #  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below for more)\n");
   printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)\n");
   
@@ -2551,6 +2554,7 @@ sub output_long_tail {
   my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR);  # 
   my $have_evalues_r1        = determine_if_we_have_evalues     (1, $opt_HHR);       # do we have E-values in round 1? 
   my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
+  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
 
   my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
 
@@ -2563,7 +2567,7 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [target]:              name of target sequence\n", $column_ct); 
   $column_ct++;
-  printf $FH ("# Column %2d [p/f]:                 PASS or FAIL (see below for more on FAIL)\n", $column_ct);
+  printf $FH ("# Column %2d [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)\n", $column_ct);
   $column_ct++;
   printf $FH ("# Column %2d [length]:              length of target sequence (nt)\n", $column_ct);
   $column_ct++;
@@ -2577,35 +2581,45 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [strnd]:               strand ('plus' or 'minus') of best-scoring hit\n", $column_ct);
   $column_ct++;
-  printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
+  printf $FH ("# Column %2d [#ht]:                 number of hits to best model on strand of best hit (no score threshold enforced)\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [tscore]:              summed bit scores of all hits between best model and this sequence (no score threshold enforced)\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [bscore]:              bit score of best-scoring hit between best model and this sequence (above threshold)\n", $column_ct);
+  $column_ct++;
+  printf $FH ("# Column %2d [s/nt]:                summed bit scores of all hits divided by length of the sequence\n", $column_ct);
   $column_ct++;
   if($have_evalues) { 
-    printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
+    printf $FH ("# Column %2d [bevalue]:             E-value of best-scoring hit to this sequence\n", $column_ct);
     $column_ct++;
   }
-  printf $FH ("# Column %2d [b/nt]:                bits per nucleotide (bits/hit_length) of best-scoring hit to this sequence\n", $column_ct);
-  $column_ct++;
-  printf $FH ("# Column %2d [#ht]:                 number of hits of best-scoring model to this sequence (no threshold enforced)\n", $column_ct);
-  $column_ct++;
   printf $FH ("# Column %2d [tcov]:                fraction of target sequence included in all (non-overlapping) hits to the best-scoring model\n", $column_ct);
   if(! $have_accurate_coverage) { print $FH $inaccurate_cov_str; }
   $column_ct++;
   printf $FH ("# Column %2d [bcov]:                fraction of target sequence included in single best-scoring hit\n", $column_ct);
   if(! $have_accurate_coverage) { print $FH $inaccurate_cov_str; }
   $column_ct++;
-  printf $FH ("# Column %2d [bstart]:              start position of best-scoring hit\n", $column_ct);
+  printf $FH ("# Column %2d [bfrom]:               start position in the sequence of best-scoring hit\n", $column_ct);
   $column_ct++;
-  printf $FH ("# Column %2d [bstop]:               stop position of best-scoring hit\n", $column_ct);
+  printf $FH ("# Column %2d [bto]:                 stop position in the sequence of best-scoring hit\n", $column_ct);
   $column_ct++;
+  if($have_model_coords) { 
+    printf $FH ("# Column %2d [mfrom]:               start position in the model of best-scoring hit\n", $column_ct);
+    $column_ct++;
+    printf $FH ("# Column %2d [mto]:                 stop position in the model of best-scoring hit\n", $column_ct);
+    $column_ct++;
+  }
   if($round eq "1" || $round eq "final") { 
-    printf $FH ("# Column %2d [scdiff]:              difference in score between top scoring hit in best model and top scoring hit in second best model\n", $column_ct);
+    printf $FH ("# Column %2d [scdiff]:              difference in score between summed scores of hits to best model and summed scores of hits to second best model\n", $column_ct);
+    $column_ct++;
+    printf $FH ("# Column %2d [scd/nt]:              score difference per position: 'scdiff' value divided by total length of all hits to best model\n", $column_ct);
     $column_ct++;
     printf $FH ("# Column %2d [model]:               name of second best-scoring model\n", $column_ct);
     $column_ct++;
-    printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
+    printf $FH ("# Column %2d [tscore]:              summed bit scores of all hits between second-best model and this sequence (no score threshold enforced)\n", $column_ct);
     $column_ct++;
     if($have_evalues_r1) { 
-      printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
+      printf $FH ("# Column %2d [bevalue]:             E-value of best-scoring hit between second-best model and this sequence\n", $column_ct);
       $column_ct++;
     }
   }
