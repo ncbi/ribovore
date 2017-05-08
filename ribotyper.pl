@@ -366,6 +366,8 @@ if(defined $alg2) {
   open($final_long_out_FH,     ">", $final_long_out_file)     || die "ERROR unable to open $final_long_out_file for writing";
   open($final_short_out_FH,    ">", $final_short_out_file)    || die "ERROR unable to open $final_short_out_file for writing";
 }
+my $have_evalues_r1 = determine_if_we_have_evalues(1, \%opt_HH);
+my $have_evalues_r2 = determine_if_we_have_evalues(2, \%opt_HH);
 
 ###################################################
 # make sure the required executables are executable
@@ -739,12 +741,11 @@ if(defined $alg2) {
 output_short_tail($final_short_out_FH, \%opt_HH);
 close($final_short_out_FH);
   
-
 printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
-printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
+printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", $have_evalues_r1 ? 20 : 18);
 if(defined $alg2) { 
   printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file\n");
-  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", (opt_Get("--evalues", \%opt_HH) ? 20 : 18));
+  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", $have_evalues_r2 ? 20 : 18);
 }
 printf("#\n#[RIBO-SUCCESS]\n");
 
@@ -1667,14 +1668,14 @@ sub output_hitless_targets {
   if($round eq "1") { 
     foreach $target (keys %seqlen_H) { 
       if($seqlen_H{$target} >= 0) { # in round 1, positive sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
+        output_one_hitless_target_wrapper($long_FH, $short_FH, $round, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
       }
     }
   }
   elsif($round eq "2") { 
     foreach $target (keys %seqlen_H) { 
       if($seqlen_H{$target} <= 0) { # in round 2, negative sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
+        output_one_hitless_target_wrapper($long_FH, $short_FH, $round, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
       }
     }
   }
@@ -1692,6 +1693,7 @@ sub output_hitless_targets {
 # Arguments: 
 #   $long_FH:            file handle to output long data to
 #   $short_FH:           file handle to output short data to
+#   $round:              '1' or '2', what round of searching we're in
 #   $opt_HHR:            reference to 2D hash of cmdline options
 #   $width_HR:           hash, key is "model" or "target", value 
 #                        is width (maximum length) of any target/model
@@ -1707,14 +1709,14 @@ sub output_hitless_targets {
 #
 ################################################################# 
 sub output_one_hitless_target_wrapper { 
-  my $nargs_expected = 9;
+  my $nargs_expected = 10;
   my $sub_name = "output_one_hitless_target_wrapper";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR, $have_evalues, $have_model_coords) = @_;
+  my ($long_FH, $short_FH, $round, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR, $have_evalues, $have_model_coords) = @_;
 
   # output to short and long output files
-  output_one_hitless_target($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues, $have_model_coords); 
+  output_one_hitless_target($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues, $have_model_coords); 
 
   $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
   
@@ -1732,6 +1734,7 @@ sub output_one_hitless_target_wrapper {
 # Arguments: 
 #   $short_FH:          file handle to output short output to (can be undef to not output short output)
 #   $long_FH:           file handle to output long output to (can be undef to not output long output)
+#   $round:             '1' or '2', what round of searching we're in
 #   $opt_HHR:           reference to 2D hash of cmdline options
 #   $width_HR:          hash, key is "model" or "target", value 
 #                       is width (maximum length) of any target/model
@@ -1747,11 +1750,11 @@ sub output_one_hitless_target_wrapper {
 #
 ################################################################# 
 sub output_one_hitless_target { 
-  my $nargs_expected = 9;
+  my $nargs_expected = 10;
   my $sub_name = "output_one_hitless_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($short_FH, $long_FH, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues, $have_model_coords) = @_;
+  my ($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues, $have_model_coords) = @_;
 
   my $pass_fail = "FAIL";
   my $unusual_features = "*no_hits";
@@ -1788,12 +1791,16 @@ sub output_one_hitless_target {
     if($have_model_coords) { 
       printf $long_FH ("%5s  %5s  ", "-", "-");
     }
-    printf $long_FH ("%6s  %6s  %-*s  %6s  %s%s\n", 
-                     "-" , 
-                     "-" , 
-                     $width_HR->{"model"}, "-", 
+    if($round ne "2") { 
+      printf $long_FH ("%6s  %6s  %-*s  %6s  %s", 
+                       "-" , 
+                       "-" , 
+                       $width_HR->{"model"}, "-", 
                      "-", 
-                     ($have_evalues) ? "       -  " : "", $unusual_features);
+                       ($have_evalues) ? "       -  " : "");
+    }
+    printf $long_FH ("%s\n", 
+                     $unusual_features);
   }
   return;
 }
@@ -1875,8 +1882,12 @@ sub output_one_target {
   my $nhits     = $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   my $one_tbits = $tbits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   my $two_tbits = undef;
+
   if(defined $second_model_HHR->{$wfamily}{"model"}) { 
     $two_tbits = $tbits_HHR->{$second_model_HHR->{$wfamily}{"model"}}{$second_model_HHR->{$wfamily}{"strand"}};
+    if($round eq "2") { # sanity check
+      die "ERROR in $sub_name, round 2, but we have hits to more than one model"; 
+    }
   }
 
   # determine if we have hits on both strands, and if so, build up failure string
@@ -2177,7 +2188,7 @@ sub output_one_target {
   }
   if($unusual_features eq "") { $unusual_features = "-"; }
 
-
+  # finally, output
   if(defined $short_FH) { 
     printf $short_FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
                       $width_HR->{"index"}, $seqidx,
@@ -2212,21 +2223,23 @@ sub output_one_target {
                        $first_model_HHR->{$wfamily}{"mdlstop"});
     }
 
-    if(defined $second_model_HHR->{$wfamily}{"model"}) { 
-      printf $long_FH ("%6.1f  %6.3f  %-*s  %6.1f  %s", 
-                       $one_tbits - $two_tbits,
-                       ($one_tbits - $two_tbits) / $nnts,
-                       $width_HR->{"model"}, $second_model_HHR->{$wfamily}{"model"}, 
-                       $two_tbits,
-                       $two_evalue2print);
-    }
-    else { 
-      printf $long_FH ("%6s  %6s  %-*s  %6s  %s", 
-                       "-" , 
-                       "-" , 
-                       $width_HR->{"model"}, "-", 
-                       "-", 
-                       ($have_evalues) ? "       -  " : "");
+    if($round ne "2") { # we never have info for a second model if round is 2
+      if(defined $second_model_HHR->{$wfamily}{"model"}) { 
+        printf $long_FH ("%6.1f  %6.3f  %-*s  %6.1f  %s", 
+                         $one_tbits - $two_tbits,
+                         ($one_tbits - $two_tbits) / $nnts,
+                         $width_HR->{"model"}, $second_model_HHR->{$wfamily}{"model"}, 
+                         $two_tbits,
+                         $two_evalue2print);
+      }
+      else { 
+        printf $long_FH ("%6s  %6s  %-*s  %6s  %s", 
+                         "-" , 
+                         "-" , 
+                         $width_HR->{"model"}, "-", 
+                         "-", 
+                         ($have_evalues) ? "       -  " : "");
+      }
     }
     
     if($unusual_features eq "") { 
@@ -2343,7 +2356,7 @@ sub output_long_headers {
   my $second_model_group_dash_str = get_monocharacter_string($second_model_group_width, "-");
   
   # line 1
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s  %-*s  %s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s", 
               $width_HR->{"index"},  "#",
               $width_HR->{"target"}, "",
               "", 
@@ -2353,11 +2366,15 @@ sub output_long_headers {
               $width_HR->{"domain"}, "", 
               $best_model_group_width, center_string($best_model_group_width, "best-scoring model"), 
               "", 
-              "", 
-              $second_model_group_width, center_string($second_model_group_width, (opt_Get("--samedomain", $opt_HHR)) ? "second best-scoring model" : "different domain's best-scoring model"), 
               "");
+  if($round ne "2") { # round 2: skip second model section
+    printf $FH ("  %-*s", 
+                $second_model_group_width, center_string($second_model_group_width, (opt_Get("--samedomain", $opt_HHR)) ? "second best-scoring model" : "different domain's best-scoring model"));
+  }
+  printf $FH ("  %s\n", "");
+  
   # line 2
-  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s  %-*s  %s\n", 
+  printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s",
               $width_HR->{"index"},  "#",
               $width_HR->{"target"}, "",
               "", 
@@ -2367,9 +2384,13 @@ sub output_long_headers {
               $width_HR->{"domain"}, "", 
               $best_model_group_width, $best_model_group_dash_str, 
               "", 
-              "", 
-              $second_model_group_width, $second_model_group_dash_str, 
               "");
+  if($round ne "2") { # round 2: skip second model section
+    printf $FH ("  %-*s", 
+                $second_model_group_width, $second_model_group_dash_str);
+  }
+  printf $FH ("  %s\n", "");
+  
   # line 3
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %-*s  %-*s  %-*s  %5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  ",
               $width_HR->{"index"},  "#idx", 
@@ -2396,15 +2417,16 @@ sub output_long_headers {
                 "mfrom",
                 "mto");
   }
-
-  printf $FH ("%6s  %6s  %-*s  %6s  %s%s\n",  
-              "scdiff",
-              "scd/nt",
-              $width_HR->{"model"},  "model", 
-              "tscore", 
-              ($have_evalues) ? "  evalue  " : "", 
+  if($round ne "2") { 
+    printf $FH ("%6s  %6s  %-*s  %6s  %s",  
+                "scdiff",
+                "scd/nt",
+                $width_HR->{"model"},  "model", 
+                "tscore", 
+                ($have_evalues) ? "  evalue  " : "");
+  }
+  printf $FH ("%s\n",
               "unexpected_features");
-
 
   # line 4
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %5s  %3s  %6s  %6s  %4s  %s%5s  %5s  %*s  %*s  ", 
@@ -2432,13 +2454,17 @@ sub output_long_headers {
                 "-----",
                 "-----");
   }
-  printf $FH ("%6s  %6s  %-*s  %6s  %s%s\n", 
-              "------", 
-              "------", 
-              $width_HR->{"model"},  $model_dash_str, 
-              "------", 
-              ($have_evalues) ? "--------  " : "",
+  if($round ne "2") { 
+    printf $FH ("%6s  %6s  %-*s  %6s  %s", 
+                "------", 
+                "------", 
+                $width_HR->{"model"},  $model_dash_str, 
+                "------", 
+                ($have_evalues) ? "--------  " : "");
+  }
+  printf $FH ("%s\n", 
               "-------------------");
+
   return;
 }
 
@@ -3655,6 +3681,185 @@ sub output_combined_short_file {
   }
       
 
+  return;
+}
+
+#################################################################
+# Subroutine : output_combined_short_or_long_file()
+# Incept:      EPN, Mon May  8 14:09:49 2017
+#
+# Purpose:     Combine the round 1 and round 2 long output files 
+#              to create the final file.
+#              
+# Arguments: 
+#   $out_FH:   file handle to print to
+#   $r1_in_FH: file handle of open round 1 long file
+#   $r2_in_FH: file handle of open round 2 long file
+#   $do_short: '1' if we're combining short files, '0' if 
+#              we're combining long files
+#   $opt_HHR:  reference to 2D hash of cmdline options
+#
+# Returns:  Nothing.
+# 
+# Dies:     If there are not the same sequences in 
+#           the same order in the round 1 and round 2 files.
+#
+################################################################# 
+sub output_combined_short_or_long_file { 
+  my $nargs_expected = 5;
+  my $sub_name = "output_combined_short_or_long_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $opt_HHR) = @_;
+
+  my $r1_line;             # line from round 1 file
+  my $r2_line;             # line from round 2 file 
+  my $r1_lidx;             # line index in round 1 file
+  my $r2_lidx;             # line index in round 2 file
+  my $keep_going = 1;      # flag to keep reading the input files, set to '0' to stop
+  my @r1_el_A = ();        # array of space-delimited tokens in a round 1 line
+  my @r2_el_A = ();        # array of space-delimited tokens in a round 1 line
+  my @r1_ufeatures_A = (); # array of unexpected features in round 1 line
+  my $ufeature = undef;    # a single unexpected feature
+  my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
+  my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
+  my $have_evalues_r1 = determine_if_we_have_evalues(1, $opt_HHR);
+  my $have_evalues_r2 = determine_if_we_have_evalues(2, $opt_HHR);
+  my $expected_ncols_r1 = 0; # number of columns we expect in round 1 file
+  my $expected_ncols_r2 = 0; # number of columns we expect in round 2 file
+  my $ncols_r1          = 0; # actual number of columns in round 1 line
+  my $ncols_r2          = 0; # actual number of columns in round 2 line
+  if($do_short) { 
+    $expected_ncols_r1 = 5;
+    $expected_ncols_r2 = 5;
+  }
+  else { 
+    $expected_ncols_r1 = ($have_evalues_r1) ? 20 : 18;
+    $expected_ncols_r2 = ($have_evalues_r2) ? 20 : 18;
+  }
+
+  # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
+  $r1_line = <$r1_in_FH>;
+  $r1_lidx++;
+  while((defined $r1_line) && ($r1_line =~ m/^\#/)) { 
+    $r1_line = <$r1_in_FH>; 
+    $r1_lidx++;
+  }
+
+  $r2_line = <$r2_in_FH>;
+  $r2_lidx++;
+  while((defined $r2_line) && ($r2_line =~ m/^\#/)) { 
+    $r2_line = <$r2_in_FH>; 
+    $r2_lidx++;
+  }
+
+  while($keep_going) { 
+    my $have_r1_line = ((defined $r1_line) && ($r1_line !~ m/^\#/)) ? 1 : 0;
+    my $have_r2_line = ((defined $r2_line) && ($r2_line !~ m/^\#/)) ? 1 : 0;
+    if($have_r1_line && $have_r2_line) { 
+      chomp $r1_line;
+      chomp $r2_line;
+      # example short lines:
+      #idx  target                                         classification         strnd   p/f  unexpected_features
+      #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
+      #15   00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
+      #16   01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
+      #
+      # example long lines:
+      # (without e-values)
+      #                                                                                                                                    best-scoring model                                                        different domain's best-scoring model  
+      #                                                                                               ---------------------------------------------------------------------------------------------                  -------------------------------------  
+      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   tcov   bcov   bfrom     bto  scdiff  scd/nt  model                          tscore  unexpected_features
+      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  -----  -----  ------  ------  ------  ------  -----------------------------  ------  -------------------
+      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  1.000  1.000     600       1   378.6   0.631  SSU_rRNA_microsporidia          232.6  opposite_strand
+      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.7  2076.7  1.02  1.000  1.000       1    2046  1253.1   0.612  SSU_rRNA_microsporidia          823.6  -
+      #
+      # (with e-values)
+      #                                                                                                                                                best-scoring model                                                                                different domain's best-scoring model              
+      #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  -------------------------------------------------------------  
+      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  scdiff  scd/nt  model                          tscore    evalue  unexpected_features
+      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  ------  ------  -----------------------------  ------  --------  -------------------
+      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266       -       -  -                                   -         -  opposite_strand
+      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850       -       -  -                                   -         -  -
+
+      @r1_el_A = split(/\s+/, $r1_line);
+      @r2_el_A = split(/\s+/, $r2_line);
+      if($r1_el_A[1] ne $r2_el_A[1]) { 
+        die "ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")"; 
+      }
+      $ncols_r1 = scalar(@r1_el_A);
+      $ncols_r2 = scalar(@r2_el_A);
+      if($ncols_r1 != $expected_ncols_r1) { 
+        die "ERROR in $sub_name, read unexpected number of columns on line $r1_lidx of round 1 file (" . $ncols_r1 . " != " . $expected_ncols_r1 . ")";
+      }
+      if($ncols_r2 != $expected_ncols_r2) { 
+        die "ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")";
+      }
+      
+      if(! $do_short) { 
+        # we want to replace round 2 columns 'scdiff', 'scd/nt' 'model', 'tscore' and 'evalue' with the values from round 1
+      }
+
+      # look for the two types unexpected error that we want from round 1 to add to round 2:
+      # 1) low_score_difference_between_top_two...
+      # 2) very_low_score_difference_between_top_two... 
+      # either one can have a "*" at the beginning of it, which we want to capture
+      # we append these to the end of our current unexpected_features
+      if($r1_el_A[($ncols_r1-1)] ne $r2_el_A[($ncols_r2-1)]) { 
+        $did_edit_r2_line = 0;
+        $did_make_fail    = 0;
+        @r1_ufeatures_A = split(";", $r1_el_A[($ncols_r1-1)]); 
+        foreach $ufeature (@r1_ufeatures_A) { 
+          if($ufeature =~ m/low\_score\_difference\_between\_top\_two/) { 
+            $did_edit_r2_line = 1;
+            if($ufeature =~ m/^\*/) { 
+              $did_make_fail = 1;
+            }
+            if($r2_el_A[($ncols_r2-1)] eq "-") { 
+              $r2_el_A[($ncols_r2-1)] = $ufeature;
+            }
+            else { 
+              $r2_el_A[($ncols_r2-1)] .= ";" . $ufeature;
+            }
+          }
+        }
+        if($did_edit_r2_line) { 
+          if($did_make_fail) { 
+            # sequence 'FAILs' now
+            if($do_short) { # short file, change the PASS to FAIL
+              if($r2_line =~ /(^\d+\s+\S+\s+\S+\s+\S+\s+)PASS(\s+.+$)/) { 
+                $r2_line = $1 . "FAIL" . $2;
+              }
+            }
+            else { # long file, change the PASS to FAIL if it exists
+              if($r2_line =~ /(^\d+\s+\S+\s+)PASS(\s+.+$)/) { 
+                $r2_line = $1 . "FAIL" . $2;
+              }
+            }
+          }
+          # now append round 1 error to final column of round 2 output:
+          $r2_line =~ s/\s\s\S+$//; # remove final column
+          $r2_line .= "  " . $r2_el_A[($ncols_r2-1)];
+        }
+      }
+      print $out_FH $r2_line . "\n";
+
+      # get new lines
+      $r1_line = <$r1_in_FH>; 
+      $r2_line = <$r2_in_FH>; 
+    }
+    # check for some unexpected errors
+    elsif(($have_r1_line) && (! $have_r2_line)) { 
+      die "ERROR in $sub_name, ran out of sequences from round 1 output before round 2"; 
+    }
+    elsif((! $have_r1_line) && ($have_r2_line)) { 
+      die "ERROR in $sub_name, ran out of sequences from round 2 output before round 1"; 
+    }
+    else { # don't have either line
+      $keep_going = 0;
+    }
+  }
+      
   return;
 }
 
