@@ -735,10 +735,12 @@ if(defined $alg2) {
   open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
   open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
   open($r2_srt_short_out_FH, $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for reading";
-  output_combined_short_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, \%opt_HH);
-  #output_combined_long_file($final_long_out_FH, $r1_srt_long_out_FH, $r2_srt_long_out_FH, \%opt_HH);
+#  output_combined_short_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, \%opt_HH);
+  output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1, \%width_H, \%opt_HH);
+  output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0, \%width_H, \%opt_HH);
 }
 output_short_tail($final_short_out_FH, \%opt_HH);
+output_long_tail($final_long_out_FH, "final", \%opt_HH);
 close($final_short_out_FH);
   
 printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
@@ -2300,7 +2302,9 @@ sub output_short_headers {
 #              
 # Arguments: 
 #   $FH:        file handle to output to
-#   $round:     '1' or '2', what round of searching we're in
+#   $round:     '1', '2', or 'final' the round of the file that
+#               we're outputting for (final is the combined file
+#               created from both rounds 1 and 2)
 #   $opt_HHR:   ref to 2D options hash
 #   $width_HR:  ref to hash, key is "model" or "target", value 
 #               is width (maximum length) of any target/model
@@ -2326,16 +2330,27 @@ sub output_long_headers {
 
   my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
   my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR);
+  my $have_evalues_r1   = determine_if_we_have_evalues(1, $opt_HHR);
 
   my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6;
+
   if($have_evalues) { 
     $best_model_group_width   += 2 + 8;
-    $second_model_group_width += 2 + 8;
   }
+  if($round eq "final") { # final round is special, second model E-values will come from round 1
+    if($have_evalues_r1) { 
+      $second_model_group_width += 2 + 8;
+    }
+  }
+  else { # not final round, second model E-values come from current round
+    if($have_evalues) { 
+      $second_model_group_width += 2 + 8;
+    }
+  }
+
   if($have_model_coords) { 
     $best_model_group_width   += 2 + 5 + 2 + 5;
-    $second_model_group_width += 2 + 5 + 2 + 5;
   }
 
   if(length("best-scoring model") > $best_model_group_width) { 
@@ -2423,7 +2438,7 @@ sub output_long_headers {
                 "scd/nt",
                 $width_HR->{"model"},  "model", 
                 "tscore", 
-                ($have_evalues) ? "  evalue  " : "");
+                ($have_evalues_r1) ? "  evalue  " : "");
   }
   printf $FH ("%s\n",
               "unexpected_features");
@@ -2460,7 +2475,7 @@ sub output_long_headers {
                 "------", 
                 $width_HR->{"model"},  $model_dash_str, 
                 "------", 
-                ($have_evalues) ? "--------  " : "");
+                ($have_evalues_r1) ? "--------  " : "");
   }
   printf $FH ("%s\n", 
               "-------------------");
@@ -2516,7 +2531,9 @@ sub output_short_tail {
 #              
 # Arguments: 
 #   $FH:       file handle to output to
-#   $round:    '1' or '2', what round of searching we're in
+#   $round:    '1', '2' or 'final', indicates which file we're
+#              output this for, round 1, round 2, or the final
+#              output file.
 #   $opt_HHR:  reference to options 2D hash
 #
 # Returns:     Nothing.
@@ -2531,7 +2548,8 @@ sub output_long_tail {
 
   my ($FH, $round, $opt_HHR) = (@_);
 
-  my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR);
+  my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR);  # 
+  my $have_evalues_r1        = determine_if_we_have_evalues     (1, $opt_HHR);       # do we have E-values in round 1? 
   my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
 
   my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
@@ -2579,15 +2597,17 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [bstop]:               stop position of best-scoring hit\n", $column_ct);
   $column_ct++;
-  printf $FH ("# Column %2d [scdiff]:              difference in score between top scoring hit in best model and top scoring hit in second best model\n", $column_ct);
-  $column_ct++;
-  printf $FH ("# Column %2d [model]:               name of second best-scoring model\n", $column_ct);
-  $column_ct++;
-  printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
-  $column_ct++;
-  if($have_evalues) { 
-    printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
+  if($round eq "1" || $round eq "final") { 
+    printf $FH ("# Column %2d [scdiff]:              difference in score between top scoring hit in best model and top scoring hit in second best model\n", $column_ct);
     $column_ct++;
+    printf $FH ("# Column %2d [model]:               name of second best-scoring model\n", $column_ct);
+    $column_ct++;
+    printf $FH ("# Column %2d [score]:               bit score of best-scoring hit to this sequence\n", $column_ct);
+    $column_ct++;
+    if($have_evalues_r1) { 
+      printf $FH ("# Column %2d [evalue]:              E-value of best-scoring hit to this sequence\n", $column_ct);
+      $column_ct++;
+    }
   }
 #  printf $FH ("# Column %2d [unexpected_features]: unusual/unexpected features of sequence (see below for more)\n", $column_ct);
   printf $FH ("# Column %2d [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)\n", $column_ct);
@@ -3006,7 +3026,7 @@ sub center_string {
 #             some options like --hmm and --slow, they are.
 #
 # Arguments:
-#   $round:    what round of searching we're in, '1' or '2'
+#   $round:    what round of searching we're in, '1', '2', or 'final'
 #   $opt_HHR:  reference to 2D hash of cmdline options
 #
 # Returns:  '1' if coverage is accurate, else '0'
@@ -3045,7 +3065,7 @@ sub determine_if_coverage_is_accurate {
 #             model coordinates or not.
 #
 # Arguments:
-#   $round:   what round of searching we're in, '1' or '2'
+#   $round:   what round of searching we're in, '1', '2', or 'final'
 #   $opt_HHR: reference to 2D hash of cmdline options
 #
 # Returns:  '1' if we have model coords, else '0'
@@ -3084,7 +3104,7 @@ sub determine_if_we_have_model_coords {
 #             E-values or not.
 #
 # Arguments:
-#   $round:   what round of searching we're in, '1' or '2'
+#   $round:   what round of searching we're in, '1', '2', or 'final'
 #   $opt_HHR: reference to 2D hash of cmdline options
 #
 # Returns:  '1' if we have model coords, else '0'
@@ -3697,6 +3717,8 @@ sub output_combined_short_file {
 #   $r2_in_FH: file handle of open round 2 long file
 #   $do_short: '1' if we're combining short files, '0' if 
 #              we're combining long files
+#   $width_HR: hash, key is "model" or "target", value 
+#              is width (maximum length) of any target/model
 #   $opt_HHR:  reference to 2D hash of cmdline options
 #
 # Returns:  Nothing.
@@ -3706,11 +3728,11 @@ sub output_combined_short_file {
 #
 ################################################################# 
 sub output_combined_short_or_long_file { 
-  my $nargs_expected = 5;
+  my $nargs_expected = 6;
   my $sub_name = "output_combined_short_or_long_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $opt_HHR) = @_;
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $width_HR, $opt_HHR) = @_;
 
   my $r1_line;             # line from round 1 file
   my $r2_line;             # line from round 2 file 
@@ -3723,19 +3745,24 @@ sub output_combined_short_or_long_file {
   my $ufeature = undef;    # a single unexpected feature
   my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
   my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
-  my $have_evalues_r1 = determine_if_we_have_evalues(1, $opt_HHR);
-  my $have_evalues_r2 = determine_if_we_have_evalues(2, $opt_HHR);
+  my $have_evalues_r1      = determine_if_we_have_evalues(1, $opt_HHR);
+  my $have_evalues_r2      = determine_if_we_have_evalues(2, $opt_HHR);
+  my $have_model_coords_r1 = determine_if_we_have_model_coords(1, $opt_HHR);
+  my $have_model_coords_r2 = determine_if_we_have_model_coords(2, $opt_HHR);
   my $expected_ncols_r1 = 0; # number of columns we expect in round 1 file
   my $expected_ncols_r2 = 0; # number of columns we expect in round 2 file
   my $ncols_r1          = 0; # actual number of columns in round 1 line
   my $ncols_r2          = 0; # actual number of columns in round 2 line
+  my $r2_to_add         = undef; # string to add to r2 line, the 'second-best model' columns from r1 line
+  my $r2_final_column   = undef; # final column of r2 line
+
   if($do_short) { 
-    $expected_ncols_r1 = 5;
-    $expected_ncols_r2 = 5;
+    $expected_ncols_r1 = 6;
+    $expected_ncols_r2 = 6;
   }
   else { 
-    $expected_ncols_r1 = ($have_evalues_r1) ? 20 : 18;
-    $expected_ncols_r2 = ($have_evalues_r2) ? 20 : 18;
+    $expected_ncols_r1 = determine_number_of_columns_in_long_output_file("1",     $opt_HHR);
+    $expected_ncols_r2 = determine_number_of_columns_in_long_output_file("2",     $opt_HHR);
   }
 
   # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
@@ -3766,7 +3793,7 @@ sub output_combined_short_or_long_file {
       #16   01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
       #
       # example long lines:
-      # (without e-values)
+      # (round 1 without e-values)
       #                                                                                                                                    best-scoring model                                                        different domain's best-scoring model  
       #                                                                                               ---------------------------------------------------------------------------------------------                  -------------------------------------  
       #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   tcov   bcov   bfrom     bto  scdiff  scd/nt  model                          tscore  unexpected_features
@@ -3774,13 +3801,13 @@ sub output_combined_short_or_long_file {
       #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  1.000  1.000     600       1   378.6   0.631  SSU_rRNA_microsporidia          232.6  opposite_strand
       #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.7  2076.7  1.02  1.000  1.000       1    2046  1253.1   0.612  SSU_rRNA_microsporidia          823.6  -
       #
-      # (with e-values)
-      #                                                                                                                                                best-scoring model                                                                                different domain's best-scoring model              
-      #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  -------------------------------------------------------------  
-      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  scdiff  scd/nt  model                          tscore    evalue  unexpected_features
-      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  ------  ------  -----------------------------  ------  --------  -------------------
-      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266       -       -  -                                   -         -  opposite_strand
-      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850       -       -  -                                   -         -  -
+      # (round 2 with e-values)
+      #                                                                                                                                                best-scoring model                                                                    
+      #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
+      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
+      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
+      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
+      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
 
       @r1_el_A = split(/\s+/, $r1_line);
       @r2_el_A = split(/\s+/, $r2_line);
@@ -3796,10 +3823,35 @@ sub output_combined_short_or_long_file {
         die "ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")";
       }
       
+      # pick out the r1 columns: 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' to add to the $r2_line
+      $r2_to_add = undef;
       if(! $do_short) { 
-        # we want to replace round 2 columns 'scdiff', 'scd/nt' 'model', 'tscore' and 'evalue' with the values from round 1
+        # we want to add round 1 columns 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' 
+        # to round 2 lines to get final lines
+        if($have_evalues_r1) { 
+          $r2_to_add = sprintf("  %6s  %6s  %-*s  %6s  %8s", 
+                               $r1_el_A[($ncols_r1-6)],  # 'scdiff'
+                               $r1_el_A[($ncols_r1-5)],  # 'scd/nt'
+                               $width_HR->{"model"}, $r1_el_A[($ncols_r1-4)],  # 'model'
+                               $r1_el_A[($ncols_r1-3)], # 'tscore'
+                               $r1_el_A[($ncols_r1-2)]); # 'evalue'
+        }
+        else { 
+          $r2_to_add = sprintf("  %6s  %6s  %-*s  %6s", 
+                               $r1_el_A[($ncols_r1-5)], # 'scdiff'
+                               $r1_el_A[($ncols_r1-4)], # 'scd/nt'
+                               $width_HR->{"model"}, $r1_el_A[($ncols_r1-3)],  # 'model'
+                               $r1_el_A[($ncols_r1-2)]); # 'tscore'
+        }
+        # now save the final column:
+        $r2_final_column = $r2_el_A[($ncols_r2-1)];
+        # remove final column 
+        $r2_line =~ s/\s\s\S+$//; # remove final column
+        # now stick in the $r2_to_add
+        $r2_line .= $r2_to_add . "  " . $r2_final_column;
       }
 
+      # Final step, which we do for both short and long output files: 
       # look for the two types unexpected error that we want from round 1 to add to round 2:
       # 1) low_score_difference_between_top_two...
       # 2) very_low_score_difference_between_top_two... 
@@ -3863,3 +3915,42 @@ sub output_combined_short_or_long_file {
   return;
 }
 
+
+#################################################################
+# Subroutine: determine_number_columns_long_output_file()
+# Incept:     EPN, Mon May  8 15:32:52 2017
+#
+# Purpose:    Determine how many columns should be in the long 
+#             output file for a given round.
+#
+# Arguments:
+#   $round:   what round of searching we're interested in, '1', '2', or 'final'
+#   $opt_HHR: reference to 2D hash of cmdline options
+#
+# Returns:  Number of columns.
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_number_of_columns_in_long_output_file { 
+  my $sub_name = "determine_number_of_columns_in_long_output_file";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($round, $opt_HHR) = (@_);
+
+  my $have_evalues      = determine_if_we_have_evalues($round, \%opt_HH);
+  my $have_evalues_r1   = determine_if_we_have_evalues(1, \%opt_HH);
+  my $have_model_coords = determine_if_we_have_model_coords($round, \%opt_HH);
+
+  my $ncols = 18;
+  if($have_evalues)      { $ncols++; }
+  if($have_model_coords) { $ncols += 2; }
+  if($round ne "2") { # add in columns for 'second-best model'
+    # no 'second-best model' for round 2, never ever
+    $ncols += 4; # 'scdiff', 'scd/nt', 'model', 'tscore';
+    if($have_evalues_r1) { $ncols++; } # 'e-value' column in 2nd best model
+  }
+
+  return $ncols;
+}
