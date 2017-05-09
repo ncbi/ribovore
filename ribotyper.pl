@@ -52,20 +52,20 @@ $opt_group_desc_H{"1"} = "basic options";
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 0,                        1,    undef,"--ssualign","use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 0,                        1,    undef, undef,      "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  0,                        1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
-opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   "--slow",   "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
-opt_Add("--1slow",         "boolean", 0,                       2,  undef,   "--hmm",    "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
+opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   "--slow",  "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                       2,  undef,   "--hmm",   "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
-#       option               type   default                group  requires incompat           preamble-output                        help-output    
-opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow",        "run second round in slow CM mode",    "run second round in slow CM mode",    \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat    preamble-output                        help-output    
+opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"4"} = "options related to bit score REPORTING thresholds";
-#     option                 type   default                group   requires incompat    preamble-output                                 help-output    
+#     option                 type   default                group   requires incompat   preamble-output                                 help-output    
 opt_Add("--minsc",         "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--nominsc",    "boolean",   0,                       4,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
 
@@ -86,13 +86,14 @@ opt_Add("--vlowpdiff",     "real",   "0.04",                   6,  undef,   "--a
 opt_Add("--absdiff",    "boolean",   0,                        6,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
 opt_Add("--lowadiff",      "real",   "100.",                   6,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failue to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failure to <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                     help-output    
 opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
+#       option               type   default                group  requires incompat    preamble-output                   help-output    
 opt_Add("--mid",          "boolean", 0,                       8,"--slow",  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--max",          "boolean", 0,                       8,"--slow",  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef,      "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
@@ -740,7 +741,8 @@ foreach my $file (@to_remove_A) {
 }
 
 output_summary_statistics(*STDOUT, \%class_stats_HH);
-output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs);
+$total_seconds += seconds_since_epoch();
+output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
   
 #printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
 #printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(1, \%opt_HH));
@@ -748,8 +750,8 @@ output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs);
 #  printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file\n");
 #  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(2, \%opt_HH));
 #}
-printf("#\n# Short (6 column) output saved to file $r1_srt_short_out_file\n");
-printf("# Long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file("final", \%opt_HH));
+printf("#\n# Short (6 column) output saved to file $final_short_out_file\n");
+printf("# Long (%d column) output saved to file $final_long_out_file\n", determine_number_of_columns_in_long_output_file("final", \%opt_HH));
 printf("#\n#[RIBO-SUCCESS]\n");
 
 ###########################################################################
@@ -3775,9 +3777,11 @@ sub output_combined_short_or_long_file {
       }
 
       # Final step, which we do for both short and long output files: 
-      # look for the two types unexpected error that we want from round 1 to add to round 2:
+      # look for the three types of unexpected error that we want from round 1 to add to round 2:
       # 1) low_score_difference_between_top_two...
       # 2) very_low_score_difference_between_top_two... 
+      # 3) hits_to_more_than_one_family...
+      # 4) other_family_hits...
       # either one can have a "*" at the beginning of it, which we want to capture
       # we append these to the end of our current unexpected_features
       if($r1_el_A[($ncols_r1-1)] ne $r2_el_A[($ncols_r2-1)]) { 
@@ -3785,7 +3789,10 @@ sub output_combined_short_or_long_file {
         $did_make_fail    = 0;
         @r1_ufeatures_A = split(";", $r1_el_A[($ncols_r1-1)]); 
         foreach $ufeature (@r1_ufeatures_A) { 
-          if($ufeature =~ m/low\_score\_difference\_between\_top\_two/) { 
+
+          if(($ufeature =~ m/low\_score\_difference\_between\_top\_two/) ||
+             ($ufeature =~ m/hits\_to\_more\_than\_one\_family/) || 
+             ($ufeature =~ m/other\_family\_hits/)) { 
             $did_edit_r2_line = 1;
             if($ufeature =~ m/^\*/) { 
               $did_make_fail = 1;
@@ -4096,6 +4103,7 @@ sub output_summary_statistics {
 #   $ncpu:            number of CPUs used to do searches
 #   $r1_secs:         number of seconds required for round 1 searches
 #   $r2_secs:         number of seconds required for round 2 searches
+#   $tot_secs:        number of seconds required for entire script
 #
 # Returns:  Nothing.
 # 
@@ -4104,10 +4112,10 @@ sub output_summary_statistics {
 #################################################################
 sub output_timing_statistics { 
   my $sub_name = "output_timing_statistics";
-  my $nargs_expected = 5;
+  my $nargs_expected = 6;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs) = (@_);
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs, $tot_secs) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -4171,14 +4179,14 @@ sub output_timing_statistics {
                   $width_H{"total"},    get_time_string($r2_secs));
   
   
-  $class = "combined";
+  $class = "total";
   printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
-                  $width_H{"seqsec"},   $r1_nseq / ($r1_secs + $r2_secs),
-                  $width_H{"ntsec"},    $r1_nnt  / ($r1_secs + $r2_secs), 
-                  $width_H{"ntseccpu"}, ($r1_nnt  / ($r1_secs + $r2_secs)) / $ncpu, 
-                  $width_H{"total"},    get_time_string($r1_secs + $r2_secs));
+                  $width_H{"seqsec"},   $r1_nseq / $tot_secs,
+                  $width_H{"ntsec"},    $r1_nnt  / $tot_secs,
+                  $width_H{"ntseccpu"}, ($r1_nnt  / $tot_secs) / $ncpu, 
+                  $width_H{"total"},    get_time_string($tot_secs));
                   
   printf $out_FH ("#\n");
   
