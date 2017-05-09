@@ -215,9 +215,12 @@ if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) {
   }
 }
 
-my $cmd;                             # a command to be run by run_command()
-my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
+my $cmd         = undef;                    # a command to be run by run_command()
+my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @to_remove_A = (); # array of files to remove at end
+my $r1_secs     = undef; # number of seconds required for round 1 search
+my $r2_secs     = undef; # number of seconds required for round 2 search
+
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
 if(opt_Get("--skipsearch", \%opt_HH)) { 
@@ -521,7 +524,7 @@ if(! opt_Get("--keep", \%opt_HH)) {
     push(@to_remove_A, $r1_searchout_file);
   }
 }
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+$r1_secs = output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 4: Sort round 1 output
@@ -643,7 +646,7 @@ if(defined $alg2) {
     }
   }
   $nr2 = $midx;
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  $r2_secs = output_progress_complete($start_secs, undef, undef, *STDOUT);
 
   # concatenate round 2 tblout files 
   my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
@@ -713,14 +716,18 @@ if(defined $alg2) {
 # Step 10: Combine the round 1 and round 2 output files to create the 
 #          final output file.
 ###########################################################################
+my %class_stats_HH = (); # hash of hashes with summary statistics 
+                         # 1D key: class name (e.g. "SSU.Bacteria") or "*all*" or "*none*" or "*input*"
+                         # 2D key: "nseq", "nnt_cov", "nnt_tot"
+
 if(defined $alg2) { 
   $start_secs = output_progress_prior("Creating final output files", $progress_w, undef, *STDOUT);
   open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
   open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
   open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
   open($r2_srt_short_out_FH, $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for reading";
-  output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1, \%width_H, \%opt_HH);
-  output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0, \%width_H, \%opt_HH);
+  output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1, undef,            \%width_H, \%opt_HH);
+  output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0, \%class_stats_HH, \%width_H, \%opt_HH);
   output_short_tail($final_short_out_FH, \%opt_HH);
   output_long_tail($final_long_out_FH, "final", \%opt_HH);
   close($final_short_out_FH);
@@ -729,8 +736,11 @@ if(defined $alg2) {
 
 # remove files we don't want anymore, then exit
 foreach my $file (@to_remove_A) { 
-  #  unlink $file;
+  unlink $file;
 }
+
+output_summary_statistics(*STDOUT, \%class_stats_HH);
+output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs);
   
 #printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
 #printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(1, \%opt_HH));
@@ -2596,7 +2606,12 @@ sub output_long_tail {
     $column_ct++;
   }
   if($round eq "1" || $round eq "final") { 
-    printf $FH ("# Column %2d [scdiff]:              difference in score between summed scores of hits to best model and summed scores of hits to second best model\n", $column_ct);
+    if($round eq "final") { 
+      printf $FH ("# Column %2d [scdiff]:              difference in score from classification stage between summed score of hits to best model and summed scores of hits to second best model\n", $column_ct);
+    }
+    elsif($round eq "1") { 
+      printf $FH ("# Column %2d [scdiff]:              difference in score between summed scores of hits to best model and summed scores of hits to second best model\n", $column_ct);
+    }
     $column_ct++;
     printf $FH ("# Column %2d [scd/nt]:              score difference per position: 'scdiff' value divided by total length of all hits to best model\n", $column_ct);
     $column_ct++;
@@ -3586,14 +3601,18 @@ sub write_array_to_file {
 #              to create the final file.
 #              
 # Arguments: 
-#   $out_FH:   file handle to print to
-#   $r1_in_FH: file handle of open round 1 long file
-#   $r2_in_FH: file handle of open round 2 long file
-#   $do_short: '1' if we're combining short files, '0' if 
-#              we're combining long files
-#   $width_HR: hash, key is "model" or "target", value 
-#              is width (maximum length) of any target/model
-#   $opt_HHR:  reference to 2D hash of cmdline options
+#   $out_FH:    file handle to print to
+#   $r1_in_FH:  file handle of open round 1 long file
+#   $r2_in_FH:  file handle of open round 2 long file
+#   $do_short:  '1' if we're combining short files, '0' if 
+#               we're combining long files
+#   $stats_HHR: ref to 2D hash of stats:
+#               1D key: model name, "*all*" or "*none*"
+#               2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
+#               filled here, can and should be undef if $do_short is '1'
+#   $width_HR:  hash, key is "model" or "target", value 
+#               is width (maximum length) of any target/model
+#   $opt_HHR:   reference to 2D hash of cmdline options
 #
 # Returns:  Nothing.
 # 
@@ -3602,11 +3621,11 @@ sub write_array_to_file {
 #
 ################################################################# 
 sub output_combined_short_or_long_file { 
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   my $sub_name = "output_combined_short_or_long_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $width_HR, $opt_HHR) = @_;
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $width_HR, $opt_HHR) = @_;
 
   my $r1_line;             # line from round 1 file
   my $r2_line;             # line from round 2 file 
@@ -3629,10 +3648,26 @@ sub output_combined_short_or_long_file {
   my $ncols_r2          = 0; # actual number of columns in round 2 line
   my $r2_to_add         = undef; # string to add to r2 line, the 'second-best model' columns from r1 line
   my $r2_final_column   = undef; # final column of r2 line
+  # variables for a single target related to updating %{$stats_HHR}
+  my $class  = undef; # classification
+  my $pf     = undef; # 'PASS' or 'FAIL'
+  my $nnt    = undef; # size of current target
+  my $fam    = undef; # family of current target
+  my $domain = undef; # domain of current target
+  my $model  = undef; # model of current target
+  my $tcov   = undef; # total coverage of current target
+  if(defined $stats_HHR) { 
+    initialize_class_stats(\%{$stats_HHR->{"*input*"}});
+    initialize_class_stats(\%{$stats_HHR->{"*none*"}});
+    initialize_class_stats(\%{$stats_HHR->{"*all*"}});
+  }
 
   if($do_short) { 
     $expected_ncols_r1 = 6;
     $expected_ncols_r2 = 6;
+    if(defined $stats_HHR) { 
+      die "ERROR in $sub_name, do_short is true and stats_HHR is defined";
+    }
   }
   else { 
     $expected_ncols_r1 = determine_number_of_columns_in_long_output_file("1",     $opt_HHR);
@@ -3695,6 +3730,20 @@ sub output_combined_short_or_long_file {
       }
       if($ncols_r2 != $expected_ncols_r2) { 
         die "ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")";
+      }
+
+      # update %{$stats_HHR}
+      if(defined $stats_HHR) { 
+        # we know that $do_short if FALSE, so we're dealing with the long file
+        ($pf, $nnt, $fam, $domain, $model, $tcov) = ($r2_el_A[2], $r2_el_A[3], $r2_el_A[5], $r2_el_A[6], $r2_el_A[7], $r2_el_A[14]);
+        $class = $fam . "." . $domain;
+        if($class eq "-.-") { $class = "*none*"; }
+        if(! defined $stats_HHR->{$class}) { 
+          initialize_class_stats(\%{$stats_HHR->{$class}})
+        }
+        update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, $pf eq "PASS" ? 1 : 0);
+        update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
+        update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, $pf eq "PASS" ? 1 : 0);
       }
       
       # pick out the r1 columns: 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' to add to the $r2_line
@@ -3789,6 +3838,70 @@ sub output_combined_short_or_long_file {
   return;
 }
 
+#################################################################
+# Subroutine: update_class_stats
+# Incept:     EPN, Tue May  9 09:35:07 2017
+#
+# Purpose:    Update a class_stats hash given the relevant info
+#             for one sequence.
+#
+# Arguments:
+#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
+#   $tcov:     total fractional coverage for this sequence
+#   $nnt:      number of nucleotides for this sequence
+#   $pass:     '1' if sequence passes, else '0'
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub update_class_stats { 
+  my $sub_name = "update_class_stats";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($stats_HR, $tcov, $nnt, $pass) = (@_);
+
+  if($tcov eq "-") { $tcov = 0.; }
+
+  $stats_HR->{"nseq"}++;
+  $stats_HR->{"summed_tcov"} += $tcov;
+  $stats_HR->{"nnt_tot"}     += $nnt;
+  if($pass) { $stats_HR->{"npass"}++; }
+
+  return;
+}
+
+#################################################################
+# Subroutine: initialize_class_stats
+# Incept:     EPN, Tue May  9 10:51:08 2017
+#
+# Purpose:    Initialize a class_stats hash.
+#
+# Arguments:
+#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub initialize_class_stats { 
+  my $sub_name = "initialize_class_stats";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($stats_HR) = (@_);
+
+  %{$stats_HR} = ();
+  $stats_HR->{"nseq"}        = 0;
+  $stats_HR->{"summed_tcov"} = 0.;
+  $stats_HR->{"nnt_tot"}     = 0;
+  $stats_HR->{"npass"}       = 0;
+
+  return;
+}
 
 #################################################################
 # Subroutine: determine_number_columns_long_output_file()
@@ -3827,4 +3940,134 @@ sub determine_number_of_columns_in_long_output_file {
   }
 
   return $ncols;
+}
+
+
+#################################################################
+# Subroutine: output_summary_statistics()
+# Incept:     EPN, Tue May  9 09:42:59 2017
+#
+# Purpose:    Output the tabular summary statistics.
+#
+# Arguments:
+#   $out_FH:          output file handle
+#   $class_stats_HHR: ref to the class statistics 2D hash
+#
+# Returns:  Nothing.
+# 
+# Dies:     Never.
+#
+#################################################################
+sub output_summary_statistics { 
+  my $sub_name = "output_summary_statistics";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_FH, $class_stats_HHR) = (@_);
+
+  # determine max width of each column
+  my %width_H = ();  # key: name of column, value max width for column
+  my $class;         # a class, 1D key in ${%class_stats_HHR}
+
+  $width_H{"class"}    = length("class");
+  $width_H{"nseq"}     = length("of seqs");
+  $width_H{"fraction"} = length("fraction");
+  $width_H{"length"}   = length("average");
+  $width_H{"coverage"} = length("coverage");
+  $width_H{"pass"}     = length("that PASS");
+  $width_H{"fail"}     = length("that FAIL");
+
+  foreach my $class (keys %{$class_stats_HHR}) { 
+    if(length($class) > $width_H{"class"}) { 
+      $width_H{"class"} = length($class);
+    }
+    if(length($class_stats_HHR->{$class}{"nseq"}) > $width_H{"nseq"}) { 
+      $width_H{"nseq"} = length($class_stats_HHR->{$class}{"nseq"});
+    }
+    if(length($class_stats_HHR->{$class}{"npass"}) > $width_H{"pass"}) { 
+      $width_H{"pass"} = length($class_stats_HHR->{$class}{"npass"});
+    }
+    if(length($class_stats_HHR->{$class}{"nseq"}) > $width_H{"fail"}) { 
+      $width_H{"fail"} = length($class_stats_HHR->{$class}{"nseq"});
+    }
+  }    
+  
+  printf $out_FH ("#\n");
+  printf $out_FH ("# Summary statistics:\n");
+  printf $out_FH ("#\n");
+  
+  # line 1
+  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
+                  $width_H{"class"},    "",
+                  $width_H{"nseq"},     "number",
+                  $width_H{"fraction"}, "fraction",
+                  $width_H{"length"},   "average",
+                  $width_H{"coverage"}, "average",
+                  $width_H{"pass"},     "fraction",
+                  $width_H{"fail"},     "number");
+  # line 2
+  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
+                  $width_H{"class"},    "class",
+                  $width_H{"nseq"},     "of seqs",
+                  $width_H{"fraction"}, "of total",
+                  $width_H{"length"},   "length",
+                  $width_H{"coverage"}, "coverage",
+                  $width_H{"pass"},     "that PASS",
+                  $width_H{"fail"},     "that FAIL");
+  # line 2
+  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
+                  $width_H{"class"},    get_monocharacter_string($width_H{"class"}, "-"),
+                  $width_H{"nseq"},     get_monocharacter_string($width_H{"nseq"}, "-"),
+                  $width_H{"fraction"}, get_monocharacter_string($width_H{"fraction"}, "-"),
+                  $width_H{"length"},   get_monocharacter_string($width_H{"length"}, "-"),
+                  $width_H{"coverage"}, get_monocharacter_string($width_H{"coverage"}, "-"),
+                  $width_H{"pass"},     get_monocharacter_string($width_H{"pass"}, "-"),
+                  $width_H{"fail"},     get_monocharacter_string($width_H{"fail"}, "-"));
+  
+  $class = "*input*";
+  printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*s  %*s\n", 
+                  $width_H{"class"},    $class,
+                  $width_H{"nseq"},     $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"fraction"}, $class_stats_HHR->{$class}{"nseq"} / $class_stats_HHR->{"*input*"}{"nseq"},
+                  $width_H{"length"},   $class_stats_HHR->{$class}{"nnt_tot"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"coverage"}, $class_stats_HHR->{$class}{"summed_tcov"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"pass"},     "-",
+                  $width_H{"fail"},     "-");
+  
+  printf $out_FH ("#\n");
+  foreach $class (sort keys (%{$class_stats_HHR})) { 
+    if($class ne "*input*" && $class ne "*all*" && $class ne "*none*") { 
+      printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*.4f  %*d\n", 
+                      $width_H{"class"},    $class,
+                      $width_H{"nseq"},     $class_stats_HHR->{$class}{"nseq"},
+                      $width_H{"fraction"}, $class_stats_HHR->{$class}{"nseq"} / $class_stats_HHR->{"*input*"}{"nseq"},
+                      $width_H{"length"},   $class_stats_HHR->{$class}{"nnt_tot"} / $class_stats_HHR->{$class}{"nseq"},
+                      $width_H{"coverage"}, $class_stats_HHR->{$class}{"summed_tcov"} / $class_stats_HHR->{$class}{"nseq"},
+                      $width_H{"pass"},     $class_stats_HHR->{$class}{"npass"} / $class_stats_HHR->{$class}{"nseq"},
+                      $width_H{"fail"},     $class_stats_HHR->{$class}{"nseq"} - $class_stats_HHR->{$class}{"npass"});
+    }
+  }
+  printf $out_FH ("#\n");
+
+  $class = "*all*";
+  printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*.4f  %*d\n", 
+                  $width_H{"class"},    $class,
+                  $width_H{"nseq"},     $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"fraction"}, $class_stats_HHR->{$class}{"nseq"} / $class_stats_HHR->{"*input*"}{"nseq"},
+                  $width_H{"length"},   $class_stats_HHR->{$class}{"nnt_tot"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"coverage"}, $class_stats_HHR->{$class}{"summed_tcov"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"pass"},     $class_stats_HHR->{$class}{"npass"} / $class_stats_HHR->{$class}{"nseq"}, 
+                  $width_H{"fail"},     $class_stats_HHR->{$class}{"nseq"} - $class_stats_HHR->{$class}{"npass"});
+
+  $class = "*none*";
+  printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*.4f  %*d\n", 
+                  $width_H{"class"},    $class,
+                  $width_H{"nseq"},     $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"fraction"}, $class_stats_HHR->{$class}{"nseq"} / $class_stats_HHR->{"*input*"}{"nseq"},
+                  $width_H{"length"},   $class_stats_HHR->{$class}{"nnt_tot"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"coverage"}, $class_stats_HHR->{$class}{"summed_tcov"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"pass"},     $class_stats_HHR->{$class}{"npass"} / $class_stats_HHR->{$class}{"nseq"},
+                  $width_H{"fail"},     $class_stats_HHR->{$class}{"nseq"} - $class_stats_HHR->{$class}{"npass"});
+         
+  return;
 }
