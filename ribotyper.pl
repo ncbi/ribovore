@@ -381,10 +381,10 @@ validate_executable_hash(\%execs_H);
 
 ###########################################################################
 ###########################################################################
-# Step 1: Parse/validate input files and run esl-seqstat to get sequence lengths.
-my $progress_w = 74; # the width of the left hand column in our progress output, hard-coded
-my $start_secs = output_progress_prior("Parsing and validating input files and determining target sequence lengths", $progress_w, undef, *STDOUT);
-###########################################################################
+# Step 1: Parse/validate input files
+my $progress_w = 48; # the width of the left hand column in our progress output, hard-coded
+my $start_secs = output_progress_prior("Validating input files", $progress_w, undef, *STDOUT);
+
 # parse model info file, which checks that all CM files exist
 # variables related to fams and domains
 my %family_H      = (); # hash of fams,    key: model name, value: name of family model belongs to (e.g. SSU)
@@ -437,8 +437,12 @@ if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) {
     die "ERROR, tried to create $ssi_file, but failed"; 
   }
 }
+output_progress_complete($start_secs, undef, undef, *STDOUT);
 
-# run esl-seqstat to get sequence lengths
+###########################################################################
+# Step 2: Use esl-seqstat to determine sequence lengths of all target seqs
+###########################################################################
+$start_secs = output_progress_prior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
 my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
@@ -472,17 +476,14 @@ if(defined $alg2) {
   output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H);
   output_short_headers($final_short_out_FH, \%width_H);
 }
-
-###########################################################################
 output_progress_complete($start_secs, undef, undef, *STDOUT);
-###########################################################################
-###########################################################################
 
 ###########################################################################
-# Step 2: run round 1 search algorithm
+# Step 3: classify sequences using round 1 search algorithm
 # determine which algorithm to use and options to use as well
 # as the command for sorting the output and parsing the output
 # set up defaults
+###########################################################################
 my $alg1_opts = "";
 my $r1_tblout_file = "";
 my $r1_sorted_tblout_file = "";
@@ -490,7 +491,7 @@ my $r1_searchout_file = "";
 my $r1_search_cmd = "";
 my $r1_sort_cmd = "";
 
-$alg1_opts          = determine_cmsearch_opts($alg1, \%opt_HH);
+$alg1_opts             = determine_cmsearch_opts($alg1, \%opt_HH);
 $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
 $r1_sorted_tblout_file = $r1_tblout_file . "sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
@@ -498,10 +499,10 @@ $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorte
 $r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = output_progress_prior("Performing round 1 cmsearch-$alg1 search ", $progress_w, undef, *STDOUT);
+  $start_secs = output_progress_prior("Classifying sequences", $progress_w, undef, *STDOUT);
 }
 else { 
-  $start_secs = output_progress_prior("Skipping round 1 cmsearch-$alg1 search stage (using results from previous run)", $progress_w, undef, *STDOUT);
+  $start_secs = output_progress_prior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   run_command($r1_search_cmd, opt_Get("-v", \%opt_HH));
@@ -523,25 +524,22 @@ if(! opt_Get("--keep", \%opt_HH)) {
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
-# Step 3: Sort round 1 output
-$start_secs = output_progress_prior("Sorting tabular round 1 search results", $progress_w, undef, *STDOUT);
+# Step 4: Sort round 1 output
+###########################################################################
+$start_secs = output_progress_prior("Sorting classification results", $progress_w, undef, *STDOUT);
 run_command($r1_sort_cmd, opt_Get("-v", \%opt_HH));
 output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
-# Step 4: Parse round 1 sorted output
-$start_secs = output_progress_prior("Parsing tabular round 1 search results", $progress_w, undef, *STDOUT);
+# Step 5: Parse round 1 sorted output
+###########################################################################
+$start_secs = output_progress_prior("Processing classification results", $progress_w, undef, *STDOUT);
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
                       \%family_H, \%domain_H, \%accept_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
-output_progress_complete($start_secs, undef, undef, *STDOUT);
-###########################################################################
 
-###########################################################################
-# Step 5: Add data for sequences with 0 hits and then sort the output files 
-#         based on sequence index from original input file.
-###########################################################################
-$start_secs = output_progress_prior("Sorting and finalizing round 1 output files", $progress_w, undef, *STDOUT);
+# add data for sequences with 0 hits and then sort the output files 
+# based on sequence index from original input file.
 output_hitless_targets($r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 1: round 1
 
 # now close the unsorted file handles (we're done with these) 
@@ -575,8 +573,8 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 if(defined $alg2) { # only do this if we're doing a second round of searching
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = output_progress_prior("Fetch sequence subsets for round 2 single model searches", $progress_w, undef, *STDOUT);
-
+    $start_secs = output_progress_prior("Fetching per-model sequence sets", $progress_w, undef, *STDOUT);
+    
     my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
     # first initialize all arrays to empty
     foreach $model (keys %family_H) { 
@@ -620,10 +618,10 @@ my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
 if(defined $alg2) { 
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = output_progress_prior("Performing round 2 cmsearch-$alg2 search(es) ", $progress_w, undef, *STDOUT);
+    $start_secs = output_progress_prior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
   }
   else { 
-    $start_secs = output_progress_prior("Skipping round 2 cmsearch-$alg2 search stage (using results from previous run)", $progress_w, undef, *STDOUT);
+    $start_secs = output_progress_prior("Skipping sequence search (using results from previous run)", $progress_w, undef, *STDOUT);
   }
   my $cmd  = undef;
   foreach $model (sort keys %family_H) { 
@@ -646,31 +644,29 @@ if(defined $alg2) {
   }
   $nr2 = $midx;
   output_progress_complete($start_secs, undef, undef, *STDOUT);
-}
 
-###########################################################################
-# Step 8: Concatenate round 2 tblout files 
-###########################################################################
-my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
-$r2_all_tblout_file = $out_root . ".r2.all.cmsearch.tbl";
-if(defined $alg2) { 
-  if($nr2 >= 1) { 
-    $start_secs = output_progress_prior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
-    $cat_cmd = "cat $r2_tblout_file_A[0] ";
-    for($midx = 1; $midx < $nr2; $midx++) { 
-      $cat_cmd .= "$r2_tblout_file_A[$midx] ";
+  # concatenate round 2 tblout files 
+  my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
+  $r2_all_tblout_file = $out_root . ".r2.all.cmsearch.tbl";
+  if(defined $alg2) { 
+    if($nr2 >= 1) { 
+      $start_secs = output_progress_prior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
+      $cat_cmd = "cat $r2_tblout_file_A[0] ";
+      for($midx = 1; $midx < $nr2; $midx++) { 
+        $cat_cmd .= "$r2_tblout_file_A[$midx] ";
+      }
+      $cat_cmd .= "> " . $r2_all_tblout_file;
+      run_command($cat_cmd, opt_Get("-v", \%opt_HH));
+      output_progress_complete($start_secs, undef, undef, *STDOUT);
     }
-    $cat_cmd .= "> " . $r2_all_tblout_file;
-    run_command($cat_cmd, opt_Get("-v", \%opt_HH));
-    output_progress_complete($start_secs, undef, undef, *STDOUT);
   }
 }
 
 ###########################################################################
-# Step 9: Sort round 2 output
+# Step 8: Sort round 2 output
 ###########################################################################
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Sorting tabular round 2 search results", $progress_w, undef, *STDOUT);
+  $start_secs = output_progress_prior("Sorting search results", $progress_w, undef, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
   run_command($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
@@ -678,21 +674,14 @@ if(defined $alg2) {
 }
 
 ###########################################################################
-# Step 10: Parse round 2 sorted output
+# Step 9: Parse round 2 sorted output
 ###########################################################################
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Parsing tabular round 2 search results", $progress_w, undef, *STDOUT);
+  $start_secs = output_progress_prior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
   parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
                         \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
-}
-
-###########################################################################
-# Step 11: Add data for sequences with 0 hits and then sort the output files 
-#          based on sequence index from original input file.
-###########################################################################
-if(defined $alg2) { 
-  $start_secs = output_progress_prior("Sorting and finalizing round 2 output files", $progress_w, undef, *STDOUT);
+  # add data for sequences with 0 hits and then sort the output files 
+  # based on sequence index from original input file.
   output_hitless_targets($r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 2: round 2
 
   # now close the unsorted file handles (we're done with these) 
@@ -717,45 +706,42 @@ if(defined $alg2) {
   output_short_tail($r2_srt_short_out_FH, \%opt_HH);
   close($r2_srt_short_out_FH);
   close($r2_srt_long_out_FH);
-
+  
   output_progress_complete($start_secs, undef, undef, *STDOUT);
-
-  # remove files we don't want anymore, then exit
-  foreach my $file (@to_remove_A) { 
-  #  unlink $file;
-  }
 }
 ###########################################################################
-# Step 12: Combine the round 1 and round 2 output files to create the 
+# Step 10: Combine the round 1 and round 2 output files to create the 
 #          final output file.
 ###########################################################################
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Combining info from rounds 1 and 2 to get final output", $progress_w, undef, *STDOUT);
+  $start_secs = output_progress_prior("Creating final output files", $progress_w, undef, *STDOUT);
   open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
   open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
   open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
   open($r2_srt_short_out_FH, $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for reading";
-#  output_combined_short_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, \%opt_HH);
   output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1, \%width_H, \%opt_HH);
   output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0, \%width_H, \%opt_HH);
+  output_short_tail($final_short_out_FH, \%opt_HH);
+  output_long_tail($final_long_out_FH, "final", \%opt_HH);
+  close($final_short_out_FH);
+  output_progress_complete($start_secs, undef, undef, *STDOUT);
 }
-output_short_tail($final_short_out_FH, \%opt_HH);
-output_long_tail($final_long_out_FH, "final", \%opt_HH);
-close($final_short_out_FH);
+
+# remove files we don't want anymore, then exit
+foreach my $file (@to_remove_A) { 
+  #  unlink $file;
+}
   
-printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
-printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(1, \%opt_HH));
-if(defined $alg2) { 
-  printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file\n");
-  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(2, \%opt_HH));
-}
-printf("#\n# Final short (6 column) output saved to file $r1_srt_short_out_file\n");
-printf("# Final long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file("final", \%opt_HH));
+#printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
+#printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(1, \%opt_HH));
+#if(defined $alg2) { 
+#  printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file\n");
+#  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(2, \%opt_HH));
+#}
+printf("#\n# Short (6 column) output saved to file $r1_srt_short_out_file\n");
+printf("# Long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file("final", \%opt_HH));
 printf("#\n#[RIBO-SUCCESS]\n");
 
-# cat the output file
-#run_command("cat $short_out_file", opt_Get("-v", \%opt_HH));
-#run_command("cat $long_out_file", opt_Get("-v", \%opt_HH));
 ###########################################################################
 
 #####################################################################
@@ -3588,132 +3574,6 @@ sub write_array_to_file {
     print OUT $el . "\n"; 
   }
   close(OUT);
-
-  return;
-}
-
-#################################################################
-# Subroutine : output_combined_short_file()
-# Incept:      EPN, Fri May  5 16:03:17 2017
-#
-# Purpose:     Combine the round 1 and round 2 short output files 
-#              to create the final file.
-#              
-# Arguments: 
-#   $out_FH:   file handle to print to
-#   $r1_in_FH: file handle of open round 1 short file
-#   $r2_in_FH: file handle of open round 2 short file
-#   $opt_HHR:  reference to 2D hash of cmdline options
-#
-# Returns:  Nothing.
-# 
-# Dies:     If there are not the same sequences in 
-#           the same order in the round 1 and round 2 files.
-#
-################################################################# 
-sub output_combined_short_file { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_combined_short_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($out_FH, $r1_in_FH, $r2_in_FH, $opt_HHR) = @_;
-
-  my $r1_line;             # line from round 1 file
-  my $r2_line;             # line from round 2 file 
-  my $r1_lidx;             # line index in round 1 file
-  my $r2_lidx;             # line index in round 2 file
-  my $keep_going = 1;      # flag to keep reading the input files, set to '0' to stop
-  my @r1_el_A = ();        # array of space-delimited tokens in a round 1 line
-  my @r2_el_A = ();        # array of space-delimited tokens in a round 1 line
-  my @r1_ufeatures_A = (); # array of unexpected features in round 1 line
-  my $ufeature = undef;    # a single unexpected feature
-  my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
-  my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
-
-  # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
-  $r1_line = <$r1_in_FH>;
-  $r1_lidx++;
-  while((defined $r1_line) && ($r1_line =~ m/^\#/)) { 
-    $r1_line = <$r1_in_FH>; 
-    $r1_lidx++;
-  }
-
-  $r2_line = <$r2_in_FH>;
-  $r2_lidx++;
-  while((defined $r2_line) && ($r2_line =~ m/^\#/)) { 
-    $r2_line = <$r2_in_FH>; 
-    $r2_lidx++;
-  }
-
-  while($keep_going) { 
-    my $have_r1_line = ((defined $r1_line) && ($r1_line !~ m/^\#/)) ? 1 : 0;
-    my $have_r2_line = ((defined $r2_line) && ($r2_line !~ m/^\#/)) ? 1 : 0;
-    if($have_r1_line && $have_r2_line) { 
-      chomp $r1_line;
-      chomp $r2_line;
-      # example
-      #idx  target                                         classification         strnd   p/f  unexpected_features
-      #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
-      #15   00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
-      #16   01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
-      @r1_el_A = split(/\s+/, $r1_line);
-      @r2_el_A = split(/\s+/, $r2_line);
-      if($r1_el_A[1] ne $r2_el_A[1]) { 
-        die "ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")"; 
-      }
-      # look for the two types unexpected error that we want from round 1 to add to round 2:
-      # 1) low_score_difference_between_top_two...
-      # 2) very_low_score_difference_between_top_two... 
-      # either one can have a "*" at the beginning of it, which we want to capture
-      # we append these to the end of our current unexpected_features
-      if($r1_el_A[5] ne $r2_el_A[5]) { 
-        $did_edit_r2_line = 0;
-        $did_make_fail    = 0;
-        @r1_ufeatures_A = split(";", $r1_el_A[5]); 
-        foreach $ufeature (@r1_ufeatures_A) { 
-          if($ufeature =~ m/low\_score\_difference\_between\_top\_two/) { 
-            $did_edit_r2_line = 1;
-            if($ufeature =~ m/^\*/) { 
-              $did_make_fail = 1;
-            }
-            if($r2_el_A[5] eq "-") { 
-              $r2_el_A[5] = $ufeature;
-            }
-            else { 
-              $r2_el_A[5] .= ";" . $ufeature;
-            }
-          }
-        }
-        if($did_edit_r2_line) { 
-          if($did_make_fail) { 
-            # sequence 'FAILs' now
-            $r2_line =~ s/\s\s\S+\s\s\S+$//; # remove two final columns
-            $r2_line .= "  FAIL  " . $r2_el_A[5];
-          }
-          else { 
-            $r2_line =~ s/\s\s\S+$//; # remove final column
-            $r2_line .= "  " . $r2_el_A[5];
-          }
-        }
-      }
-      print $out_FH $r2_line . "\n";
-
-      # get new lines
-      $r1_line = <$r1_in_FH>; 
-      $r2_line = <$r2_in_FH>; 
-    }
-    # check for some unexpected errors
-    elsif(($have_r1_line) && (! $have_r2_line)) { 
-      die "ERROR in $sub_name, ran out of sequences from round 1 output before round 2"; 
-    }
-    elsif((! $have_r1_line) && ($have_r2_line)) { 
-      die "ERROR in $sub_name, ran out of sequences from round 2 output before round 1"; 
-    }
-    else { # don't have either line
-      $keep_going = 0;
-    }
-  }
-      
 
   return;
 }
