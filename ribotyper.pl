@@ -4014,7 +4014,7 @@ sub output_summary_statistics {
                   $width_H{"coverage"}, "coverage",
                   $width_H{"pass"},     "that PASS",
                   $width_H{"fail"},     "that FAIL");
-  # line 2
+  # line 3
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
                   $width_H{"class"},    get_monocharacter_string($width_H{"class"}, "-"),
                   $width_H{"nseq"},     get_monocharacter_string($width_H{"nseq"}, "-"),
@@ -4060,14 +4060,191 @@ sub output_summary_statistics {
                   $width_H{"fail"},     $class_stats_HHR->{$class}{"nseq"} - $class_stats_HHR->{$class}{"npass"});
 
   $class = "*none*";
-  printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*.4f  %*d\n", 
-                  $width_H{"class"},    $class,
-                  $width_H{"nseq"},     $class_stats_HHR->{$class}{"nseq"},
-                  $width_H{"fraction"}, $class_stats_HHR->{$class}{"nseq"} / $class_stats_HHR->{"*input*"}{"nseq"},
-                  $width_H{"length"},   $class_stats_HHR->{$class}{"nnt_tot"} / $class_stats_HHR->{$class}{"nseq"},
-                  $width_H{"coverage"}, $class_stats_HHR->{$class}{"summed_tcov"} / $class_stats_HHR->{$class}{"nseq"},
-                  $width_H{"pass"},     $class_stats_HHR->{$class}{"npass"} / $class_stats_HHR->{$class}{"nseq"},
-                  $width_H{"fail"},     $class_stats_HHR->{$class}{"nseq"} - $class_stats_HHR->{$class}{"npass"});
-         
+  if($class_stats_HHR->{$class}{"nseq"} == 0) { 
+    printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*.4f  %*d\n", 
+                    $width_H{"class"},    $class,
+                    $width_H{"nseq"},     0,
+                    $width_H{"fraction"}, 0.,
+                    $width_H{"length"},   0.,
+                    $width_H{"coverage"}, 0.,
+                    $width_H{"pass"},     0., 
+                    $width_H{"fail"},     0);
+  }
+  else { 
+    printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*.4f  %*d\n", 
+                    $width_H{"class"},    $class,
+                    $width_H{"nseq"},     $class_stats_HHR->{$class}{"nseq"},
+                    $width_H{"fraction"}, $class_stats_HHR->{$class}{"nseq"} / $class_stats_HHR->{"*input*"}{"nseq"},
+                    $width_H{"length"},   $class_stats_HHR->{$class}{"nnt_tot"} / $class_stats_HHR->{$class}{"nseq"},
+                    $width_H{"coverage"}, $class_stats_HHR->{$class}{"summed_tcov"} / $class_stats_HHR->{$class}{"nseq"},
+                    $width_H{"pass"},     $class_stats_HHR->{$class}{"npass"} / $class_stats_HHR->{$class}{"nseq"},
+                    $width_H{"fail"},     $class_stats_HHR->{$class}{"nseq"} - $class_stats_HHR->{$class}{"npass"});
+  }
+  
   return;
 }
+
+#################################################################
+# Subroutine: output_timing_statistics()
+# Incept:     EPN, Tue May  9 11:03:08 2017
+#
+# Purpose:    Output timing statistics.
+#
+# Arguments:
+#   $out_FH:          output file handle
+#   $class_stats_HHR: ref to the class statistics 2D hash
+#   $ncpu:            number of CPUs used to do searches
+#   $r1_secs:         number of seconds required for round 1 searches
+#   $r2_secs:         number of seconds required for round 2 searches
+#
+# Returns:  Nothing.
+# 
+# Dies:     Never.
+#
+#################################################################
+sub output_timing_statistics { 
+  my $sub_name = "output_timing_statistics";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs) = (@_);
+
+  if($ncpu == 0) { $ncpu = 1; } 
+
+  # get total number of sequences and nucleotides for each round from %{$class_stats_HHR}
+  my $r1_nseq = $class_stats_HHR->{"*input*"}{"nseq"};
+  my $r1_nnt  = $class_stats_HHR->{"*input*"}{"nnt_tot"};
+  my $r2_nseq = $class_stats_HHR->{"*input*"}{"nseq"} - $class_stats_HHR->{"*none*"}{"nseq"};
+  my $r2_nnt  = $class_stats_HHR->{"*input*"}{"nnt_tot"} - $class_stats_HHR->{"*none*"}{"nnt_tot"};
+  my $tot_nseq = $r1_nseq;
+  my $tot_nnt  = $r2_nnt;
+
+  # determine max width of each column
+  my %width_H = ();  # key: name of column, value max width for column
+  my $class;         # a class, 1D key in ${%class_stats_HHR}
+
+  $width_H{"class"}    = length("classification");
+  $width_H{"nseq"}     = length("num seqs");
+  $width_H{"seqsec"}   = 8;
+  $width_H{"ntsec"}    = 12;
+  $width_H{"ntseccpu"} = 10;
+  $width_H{"total"}    = 10;
+  
+  printf $out_FH ("#\n");
+  printf $out_FH ("# Timing statistics:\n");
+  printf $out_FH ("#\n");
+
+  # line 1
+  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
+                  $width_H{"class"},    "stage",
+                  $width_H{"nseq"},     "num seqs",
+                  $width_H{"seqsec"},   "seq/sec",
+                  $width_H{"ntsec"},    "nt/sec",
+                  $width_H{"ntseccpu"}, "nt/sec/cpu",
+                  $width_H{"total"},    "total_time");
+  
+  # line 2
+  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
+                  $width_H{"class"},    get_monocharacter_string($width_H{"class"}, "-"),
+                  $width_H{"nseq"},     get_monocharacter_string($width_H{"nseq"}, "-"),
+                  $width_H{"seqsec"},   get_monocharacter_string($width_H{"seqsec"}, "-"),
+                  $width_H{"ntsec"},    get_monocharacter_string($width_H{"ntsec"}, "-"),
+                  $width_H{"ntseccpu"}, get_monocharacter_string($width_H{"ntseccpu"}, "-"),
+                  $width_H{"total"},    get_monocharacter_string($width_H{"total"}, "-"));
+  
+  $class = "classification";
+  printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
+                  $width_H{"class"},    $class,
+                  $width_H{"nseq"},     $r1_nseq,
+                  $width_H{"seqsec"},   $r1_nseq / $r1_secs,
+                  $width_H{"ntsec"},    $r1_nnt  / $r1_secs, 
+                  $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
+                  $width_H{"total"},    get_time_string($r1_secs));
+
+  $class = "search";
+  printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
+                  $width_H{"class"},    $class,
+                  $width_H{"nseq"},     $r2_nseq,
+                  $width_H{"seqsec"},   $r2_nseq / $r2_secs,
+                  $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
+                  $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
+                  $width_H{"total"},    get_time_string($r2_secs));
+  
+  
+  $class = "combined";
+  printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
+                  $width_H{"class"},    $class,
+                  $width_H{"nseq"},     $r1_nseq,
+                  $width_H{"seqsec"},   $r1_nseq / ($r1_secs + $r2_secs),
+                  $width_H{"ntsec"},    $r1_nnt  / ($r1_secs + $r2_secs), 
+                  $width_H{"ntseccpu"}, ($r1_nnt  / ($r1_secs + $r2_secs)) / $ncpu, 
+                  $width_H{"total"},    get_time_string($r1_secs + $r2_secs));
+                  
+  printf $out_FH ("#\n");
+  
+  return;
+
+}
+
+#####################################################################
+# Subroutine: get_time_string()
+# Incept:     EPN, Tue May  9 11:09:12 2017 
+#             EPN, Tue Jun 16 08:52:08 2009 [ssu-align:ssu.pm:PrintTiming]
+# 
+# Purpose:    Print a timing in hhhh:mm:ss format.
+# 
+# Arguments:
+# $inseconds: number of seconds
+#
+# Returns:    Nothing.
+# 
+####################################################################
+sub get_time_string { 
+    my $nargs_expected = 1;
+    my $sub_name = "get_time_string()";
+    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+    
+    my ($inseconds) = @_;
+
+    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $ndig_hours);
+
+    $hours = int($inseconds / 3600);
+    $inseconds -= ($hours * 3600);
+    $minutes = int($inseconds / 60);
+    $inseconds -= ($minutes * 60);
+    $seconds = $inseconds;
+    $thours   = sprintf("%02d", $hours);
+    $tminutes = sprintf("%02d", $minutes);
+    $ndig_hours = number_of_digits($hours);
+    if($ndig_hours < 2) { $ndig_hours = 2; }
+    $tseconds = sprintf("%05.2f", $seconds);
+
+    return sprintf("%*s:%2s:%5s  (hh:mm:ss)", $ndig_hours, $thours, $tminutes, $tseconds);
+}
+
+#################################################################
+# Subroutine : number_of_digits()
+# Incept:      EPN, Tue May  9 11:33:50 2017
+#              EPN, Fri Nov 13 06:17:25 2009 [ssu-align:ssu.pm:NumberOfDigits()]
+# 
+# Purpose:     Return the number of digits in a number before
+#              the decimal point. (ex: 1234.56 would return 4).
+# Arguments:
+# $num:        the number
+# 
+# Returns:     the number of digits before the decimal point
+#
+################################################################# 
+sub number_of_digits { 
+    my $nargs_expected = 1;
+    my $sub_name = "number_of_digits()";
+    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+    my ($num) = (@_);
+
+    my $ndig = 1; 
+    while($num > 10) { $ndig++; $num /= 10.; }
+
+    return $ndig;
+}
+
