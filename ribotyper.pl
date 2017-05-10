@@ -352,9 +352,13 @@ my $final_short_out_FH    = undef; # output file handle for final short output f
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_unsrt_long_out_file);
   push(@to_remove_A, $r1_unsrt_short_out_file);
+  push(@to_remove_A, $r1_srt_long_out_file);
+  push(@to_remove_A, $r1_srt_short_out_file);
   if(defined $alg2) { 
     push(@to_remove_A, $r2_unsrt_long_out_file);
     push(@to_remove_A, $r2_unsrt_short_out_file);
+    push(@to_remove_A, $r2_srt_long_out_file);
+    push(@to_remove_A, $r2_srt_short_out_file);
   }
 }
 
@@ -384,8 +388,8 @@ $execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
 validate_executable_hash(\%execs_H);
 
 ###########################################################################
-###########################################################################
 # Step 1: Parse/validate input files
+###########################################################################
 my $progress_w = 48; # the width of the left hand column in our progress output, hard-coded
 my $start_secs = output_progress_prior("Validating input files", $progress_w, undef, *STDOUT);
 
@@ -594,6 +598,9 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
       if(scalar(@{$seqsub_HA{$model}}) > 0) { 
         $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
         write_array_to_file($seqsub_HA{$model}, $sfetchfile_H{$model}); 
+        if(! opt_Get("--keep", \%opt_HH)) { 
+          push(@to_remove_A, $sfetchfile_H{$model});
+        }
       }
     }
     output_progress_complete($start_secs, undef, undef, *STDOUT);
@@ -602,6 +609,9 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
         run_command($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        if(! opt_Get("--keep", \%opt_HH)) { 
+          push(@to_remove_A, $seqfile_H{$model});
+        }
       }
     }
   }
@@ -637,6 +647,13 @@ if(defined $alg2) {
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
         run_command($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
+        if(! opt_Get("--keep", \%opt_HH)) { 
+          push(@to_remove_A, $r2_tblout_file_A[$midx]);
+          if(($alg2 ne "slow") && 
+             (! opt_Get("--noali", \%opt_HH))) { 
+            push(@to_remove_A, $r2_searchout_file_A[$midx]);
+          }
+        }
       }
       else { 
         if(! -s $r2_tblout_file_A[$midx]) { 
@@ -662,6 +679,9 @@ if(defined $alg2) {
       $cat_cmd .= "> " . $r2_all_tblout_file;
       run_command($cat_cmd, opt_Get("-v", \%opt_HH));
       output_progress_complete($start_secs, undef, undef, *STDOUT);
+      if(! opt_Get("--keep", \%opt_HH)) { 
+        push(@to_remove_A, $r2_all_tblout_file);
+      }
     }
   }
 }
@@ -674,6 +694,9 @@ if(defined $alg2) {
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
   run_command($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
+  if(! opt_Get("--keep", \%opt_HH)) { 
+    push(@to_remove_A, $r2_all_sorted_tblout_file);
+  }
   output_progress_complete($start_secs, undef, undef, *STDOUT);
 }
 
@@ -4327,7 +4350,7 @@ sub output_timing_statistics {
   $width_H{"nseq"}     = length("num seqs");
   $width_H{"seqsec"}   = 7;
   $width_H{"ntsec"}    = 10;
-  $width_H{"ntseccpu"} = 8;
+  $width_H{"ntseccpu"} = 10;
   $width_H{"total"}    = 10;
   
   printf $out_FH ("#\n");
