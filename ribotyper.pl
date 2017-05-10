@@ -721,14 +721,20 @@ my %class_stats_HH = (); # hash of hashes with summary statistics
                          # 1D key: class name (e.g. "SSU.Bacteria") or "*all*" or "*none*" or "*input*"
                          # 2D key: "nseq", "nnt_cov", "nnt_tot"
 
+my @ufeature_A    = (); # array of unexpected feature strings
+my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elements of @{$ufeature_A})
+initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
+
 if(defined $alg2) { 
   $start_secs = output_progress_prior("Creating final output files", $progress_w, undef, *STDOUT);
   open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
   open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
   open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
   open($r2_srt_short_out_FH, $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for reading";
-  output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1, undef,            \%width_H, \%opt_HH);
-  output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0, \%class_stats_HH, \%width_H, \%opt_HH);
+  output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1,  # 1: $do_short = TRUE
+                                     undef, undef, \%width_H, \%opt_HH);
+  output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0,  # 0: $do_short = FALSE
+                                     \%class_stats_HH, \%ufeature_ct_H, \%width_H, \%opt_HH);
   output_short_tail($final_short_out_FH, \%opt_HH);
   output_long_tail($final_long_out_FH, "final", \%opt_HH);
   close($final_short_out_FH);
@@ -741,6 +747,8 @@ foreach my $file (@to_remove_A) {
 }
 
 output_summary_statistics(*STDOUT, \%class_stats_HH);
+output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
+
 $total_seconds += seconds_since_epoch();
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
   
@@ -1899,12 +1907,12 @@ sub output_one_target {
   if(exists $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} && 
      $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} > 0) { 
     $nhits += $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand};
-    $both_strands_fail_str  = "hits_on_both_strands(" . $first_model_HHR->{$wfamily}{"strand"} . ":";
+    $both_strands_fail_str  = "hits_on_both_strands:(" . $first_model_HHR->{$wfamily}{"strand"} . ":";
     $both_strands_fail_str .= $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}} . "_hit(s)"; 
     if($have_accurate_coverage) { 
       $both_strands_fail_str .= "[" . $nnts_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}} . "_nt]";
     }
-    $both_strands_fail_str .= ";" . $other_strand . ":";
+    $both_strands_fail_str .= "," . $other_strand . ":";
     $both_strands_fail_str .= $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} . "_hit(s)";
     if($have_accurate_coverage) { 
       $both_strands_fail_str .= "[" . $nnts_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} . "_nt])";
@@ -2056,12 +2064,13 @@ sub output_one_target {
   # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
   # - hits to best model on both strands 
   # - hits overlap on model (duplicate model region)
+  # - inconsistent hit order
   # 
   # Optional failure criteria, require a specific command line option to cause a failure
   #  but always get printed to unusual_features columns)
   # - winning hit is to unacceptable model (requires --inaccept to FAIL or get reported)
   # - hit is on minus strand (requires --minusfail to FAIL, always reported))
-  # - low score, bits per position below threshold (requires --
+  # - low score, bits per position below threshold (requires --scfail)
   # - low coverage (requires --covfail)
   # - score difference between top two models is below $diff_thresh (requires --difffail)
   # - number of this to best model is > 1 (requires --multfail)
@@ -2074,7 +2083,7 @@ sub output_one_target {
   if($nfams > 1) { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*hits_to_more_than_one_family($nfams_fail_str);other_family_hits:$other_hits_string";
+    $unusual_features .= "*hits_to_more_than_one_family:($nfams_fail_str),other_family_hits($other_hits_string)";
   }
   # hits on both strands to best model?
   if($both_strands_fail_str ne "") { 
@@ -2088,6 +2097,7 @@ sub output_one_target {
     if($unusual_features ne "") { $unusual_features .= ";"; }
     $unusual_features .= "*" . $duplicate_model_region_str;
   }    
+  # hits in inconsistent order
   if($out_of_order_str ne "") { 
     $pass_fail = "FAIL";
     if($unusual_features ne "") { $unusual_features .= ";"; }
@@ -2119,7 +2129,7 @@ sub output_one_target {
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("low_score_per_posn(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
+    $unusual_features .= sprintf("low_score_per_posn:(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
   }
   # determine if coverage is low
   if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
@@ -2128,7 +2138,7 @@ sub output_one_target {
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("low_total_coverage(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
+    $unusual_features .= sprintf("low_total_coverage:(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
   }
   # determine if the sequence has a low score difference between the top
   # two domains
@@ -2146,7 +2156,7 @@ sub output_one_target {
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
       }
       elsif($score_ppos_diff < $diff_low_thresh) { 
         if($unusual_features ne "") { $unusual_features .= ";"; }
@@ -2154,7 +2164,7 @@ sub output_one_target {
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_%s(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
       }
     }
     else { 
@@ -2167,7 +2177,7 @@ sub output_one_target {
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
       }
       elsif($score_total_diff < $diff_low_thresh) { 
         if($unusual_features ne "") { $unusual_features .= ";"; }
@@ -2175,7 +2185,7 @@ sub output_one_target {
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_%s(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
       }
     }
   }
@@ -2187,7 +2197,7 @@ sub output_one_target {
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= "multiple_hits_to_best_model($nhits)";
+    $unusual_features .= "multiple_hits_to_best_model:($nhits)";
   }
   if($unusual_features eq "") { $unusual_features = "-"; }
 
@@ -3603,18 +3613,20 @@ sub write_array_to_file {
 #              to create the final file.
 #              
 # Arguments: 
-#   $out_FH:    file handle to print to
-#   $r1_in_FH:  file handle of open round 1 long file
-#   $r2_in_FH:  file handle of open round 2 long file
-#   $do_short:  '1' if we're combining short files, '0' if 
-#               we're combining long files
-#   $stats_HHR: ref to 2D hash of stats:
-#               1D key: model name, "*all*" or "*none*"
-#               2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
-#               filled here, can and should be undef if $do_short is '1'
-#   $width_HR:  hash, key is "model" or "target", value 
-#               is width (maximum length) of any target/model
-#   $opt_HHR:   reference to 2D hash of cmdline options
+#   $out_FH:         file handle to print to
+#   $r1_in_FH:       file handle of open round 1 long file
+#   $r2_in_FH:       file handle of open round 2 long file
+#   $do_short:       '1' if we're combining short files, '0' if 
+#                    we're combining long files
+#   $stats_HHR:      ref to 2D hash of stats:
+#                    1D key: model name, "*all*" or "*none*"
+#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
+#                    filled here, can and should be undef if $do_short is '1'
+#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
+#                    filled here, can and should be undef if $do_short is '1'
+#   $width_HR:       hash, key is "model" or "target", value 
+#                    is width (maximum length) of any target/model
+#   $opt_HHR:        reference to 2D hash of cmdline options
 #
 # Returns:  Nothing.
 # 
@@ -3623,11 +3635,11 @@ sub write_array_to_file {
 #
 ################################################################# 
 sub output_combined_short_or_long_file { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "output_combined_short_or_long_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $width_HR, $opt_HHR) = @_;
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $ufeature_ct_HR, $width_HR, $opt_HHR) = @_;
 
   my $r1_line;             # line from round 1 file
   my $r2_line;             # line from round 2 file 
@@ -3781,7 +3793,6 @@ sub output_combined_short_or_long_file {
       # 1) low_score_difference_between_top_two...
       # 2) very_low_score_difference_between_top_two... 
       # 3) hits_to_more_than_one_family...
-      # 4) other_family_hits...
       # either one can have a "*" at the beginning of it, which we want to capture
       # we append these to the end of our current unexpected_features
       if($r1_el_A[($ncols_r1-1)] ne $r2_el_A[($ncols_r2-1)]) { 
@@ -3791,8 +3802,7 @@ sub output_combined_short_or_long_file {
         foreach $ufeature (@r1_ufeatures_A) { 
 
           if(($ufeature =~ m/low\_score\_difference\_between\_top\_two/) ||
-             ($ufeature =~ m/hits\_to\_more\_than\_one\_family/) || 
-             ($ufeature =~ m/other\_family\_hits/)) { 
+             ($ufeature =~ m/hits\_to\_more\_than\_one\_family/)) { 
             $did_edit_r2_line = 1;
             if($ufeature =~ m/^\*/) { 
               $did_make_fail = 1;
@@ -3824,6 +3834,12 @@ sub output_combined_short_or_long_file {
           $r2_line .= "  " . $r2_el_A[($ncols_r2-1)];
         }
       }
+
+      # update the ufeature counts hash if we have one
+      if(defined $ufeature_ct_HR) { 
+        update_one_ufeature_sequence($ufeature_ct_HR, $r2_el_A[($ncols_r2-1)]);
+      }
+
       print $out_FH $r2_line . "\n";
 
       # get new lines
@@ -3906,6 +3922,148 @@ sub initialize_class_stats {
   $stats_HR->{"summed_tcov"} = 0.;
   $stats_HR->{"nnt_tot"}     = 0;
   $stats_HR->{"npass"}       = 0;
+
+  return;
+}
+
+#################################################################
+# Subroutine: initialize_ufeature_stats
+# Incept:     EPN, Tue May  9 21:03:39 2017
+#
+# Purpose:    Initialize a ufeature array and counts hash.
+#             Array elements, which will be keys in the 
+#             counts hash, are unique messages/descriptions 
+#             of each possible unexpected feature. Hash
+#             values will be counts. 
+#
+# Arguments:
+#   $ufeature_AR:    ref to array of all unexpected feature strings
+#   $ufeature_ct_HR: ref to hash of counts
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub initialize_ufeature_stats { 
+  my $sub_name = "initialize_ufeature_stats";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature_AR, $ufeature_ct_HR, $opt_HHR) = (@_);
+
+  @{$ufeature_AR}    = ();
+  %{$ufeature_ct_HR} = ();
+
+  # first category is a special one, it will hold the counts of
+  # sequences with 0 unexpected features
+  push(@{$ufeature_AR}, "CLEAN(zero_unexpected_features)");
+
+  # next, we want the unexpected features that will cause failures 
+  # those that always cause failures (regardless of cmdline options):
+  push(@{$ufeature_AR}, "*no_hits");
+  push(@{$ufeature_AR}, "*unacceptable_model");
+  push(@{$ufeature_AR}, "*hits_to_more_than_one_family");
+  push(@{$ufeature_AR}, "*hits_on_both_strands");
+  push(@{$ufeature_AR}, "*duplicate_model_region");
+  push(@{$ufeature_AR}, "*inconsistent_hit_order");
+
+  # those that can cause failure, if they do so:
+  if(opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "*opposite_strand"); }
+  if(opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "*low_score_per_posn"); }
+  if(opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*low_total_coverage"); }
+  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*low_score_difference_between_top_two_domains"); }
+  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*very_low_score_difference_between_top_two_domains"); }
+  if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*multiple_hits_to_best_model"); }
+
+  # those that don't cause failure, if they don't
+  if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "opposite_strand"); }
+  if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "low_score_per_posn"); }
+  if(! opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "low_total_coverage"); }
+  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "low_score_difference_between_top_two_domains"); }
+  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "very_low_score_difference_between_top_two_domains"); }
+  if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "multiple_hits_to_best_model"); }
+
+  foreach my $ufeature (@{$ufeature_AR}) { 
+    $ufeature_ct_HR->{$ufeature} = 0;
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine: update_one_ufeature_sequence
+# Incept:     EPN, Tue May  9 15:36:32 2017
+#
+# Purpose:    Call update_one_ufeature_count for each 
+#             unusual feature for a sequence.
+#
+# Arguments:
+#   $ufeature_ct_HR: ref to hash
+#   $ufeature_str:   the ufeature string with potentially >= 1 
+#                    unexpected features.
+#
+# Returns:  void
+# 
+# Dies:     - If $ufeature_str contains a $ufeature that does not exist 
+#             in %{$ufeature_ct_HR}
+#
+#################################################################
+sub update_one_ufeature_sequence { 
+  my $sub_name = "update_one_ufeature_sequence";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature_ct_HR, $ufeature_str) = (@_);
+
+  # print("in $sub_name, string is $ufeature_str\n");
+
+  my @ufeatures_A = ();
+  if($ufeature_str eq "-") { 
+    update_one_ufeature_count($ufeature_ct_HR, "CLEAN(zero_unexpected_features)");
+  }
+  else { 
+    my @ufeatures_A = split(";", $ufeature_str);
+    foreach my $ufeature (@ufeatures_A) { 
+      update_one_ufeature_count($ufeature_ct_HR, $ufeature);
+    }
+  }
+
+  return; 
+}
+
+#################################################################
+# Subroutine: update_one_ufeature_count
+# Incept:     EPN, Tue May  9 15:19:40 2017
+#
+# Purpose:    Update a ufeature counts hash by incrementing 
+#             the relevant count by 1.
+#
+# Arguments:
+#   $ufeature_ct_HR: ref to hash
+#   $ufeature:       the ufeature to update
+#
+# Returns:  void
+# 
+# Dies:     - If $ufeature that does not exist in %{$ufeature_ct_HR}
+#
+#################################################################
+sub update_one_ufeature_count { 
+  my $sub_name = "update_one_ufeature_count";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature_ct_HR, $ufeature) = (@_);
+
+  # remove ':' and anything after, this removes any hit/sequence specific information
+  $ufeature =~ s/\:.+$//;
+
+  if(! exists $ufeature_ct_HR->{$ufeature}) { 
+    die "ERROR in $sub_name, unknown unusual feature: $ufeature";
+  }
+
+  $ufeature_ct_HR->{$ufeature}++;
 
   return;
 }
@@ -4192,6 +4350,92 @@ sub output_timing_statistics {
   
   return;
 
+}
+
+#################################################################
+# Subroutine: output_ufeature_statistics()
+# Incept:     EPN, Tue May  9 15:30:14 2017
+#
+# Purpose:    Output counts of each unexpected feature.
+#
+# Arguments:
+#   $out_FH:         output file handle
+#   $ufeature_ct_HR: ref to the ufeature count hash
+#   $ufeature_AR:    ref to array of ufeature strings
+#   $tot_nseq:       total number of sequences in input file
+#
+# Returns:  Nothing.
+# 
+# Dies:     Never.
+#
+#################################################################
+sub output_ufeature_statistics { 
+  my $sub_name = "output_ufeature_statistics";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_FH, $ufeature_ct_HR, $ufeature_AR, $tot_nseq) = (@_);
+
+  my $ufeature = undef; # an unexpected feature
+
+  # determine max width of each column
+  my %width_H = ();  # key: name of column, value max width for column
+
+  $width_H{"ufeature"} = length("unexpected feature");
+  $width_H{"fail"}     = length("failure?");
+  $width_H{"seqs"}     = length("of seqs");
+  $width_H{"fraction"} = length("fraction");
+
+  # want to skip other_family_hits
+  foreach $ufeature (@{$ufeature_AR}) { 
+    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(zero_unexpected_features)")) { 
+      if(length($ufeature) > $width_H{"ufeature"}) { 
+        $width_H{"ufeature"} = length($ufeature);
+      }
+      if(length($ufeature_ct_HR->{$ufeature}) > $width_H{"seqs"}) {
+        $width_H{"seqs"} = length($ufeature_ct_HR->{$ufeature});
+      }
+    }
+  }
+  
+  printf $out_FH ("#\n");
+  printf $out_FH ("# Unexpected feature statistics:\n");
+  printf $out_FH ("#\n");
+  
+  # line 1 
+  printf $out_FH ("# %-*s  %-*s  %*s  %*s\n",
+                  $width_H{"ufeature"}, "", 
+                  $width_H{"fail"},     "causes",
+                  $width_H{"seqs"},     "number",
+                  $width_H{"fraction"}, "fraction");
+  
+  # line 2
+  printf $out_FH ("# %-*s  %-*s  %*s  %*s\n",
+                  $width_H{"ufeature"}, "unexpected feature",
+                  $width_H{"fail"},     "failure?",
+                  $width_H{"seqs"},     "of seqs",
+                  $width_H{"fraction"}, "of seqs");
+
+  # line 3
+  printf $out_FH ("# %-*s  %-*s  %*s  %*s\n", 
+                  $width_H{"ufeature"}, get_monocharacter_string($width_H{"ufeature"}, "-"),
+                  $width_H{"fail"},     get_monocharacter_string($width_H{"fail"}, "-"),
+                  $width_H{"seqs"},     get_monocharacter_string($width_H{"seqs"}, "-"),
+                  $width_H{"fraction"}, get_monocharacter_string($width_H{"fraction"}, "-"));
+
+  foreach $ufeature (@{$ufeature_AR}) { 
+    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(zero_unexpected_features)")) { 
+      printf $out_FH ("  %-*s  %-*s  %*d  %*.3f\n", 
+                      $width_H{"ufeature"}, $ufeature,
+                      $width_H{"fail"},     ($ufeature =~ m/^\*/) ? "yes" : "no",
+                      $width_H{"seqs"},     $ufeature_ct_HR->{$ufeature},
+                      $width_H{"fraction"}, $ufeature_ct_HR->{$ufeature} / $tot_nseq);
+    }
+  }
+  printf $out_FH ("#\n");
+  
+  return;
+  
 }
 
 #####################################################################
