@@ -3746,20 +3746,6 @@ sub output_combined_short_or_long_file {
         die "ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")";
       }
 
-      # update %{$stats_HHR}
-      if(defined $stats_HHR) { 
-        # we know that $do_short if FALSE, so we're dealing with the long file
-        ($pf, $nnt, $fam, $domain, $model, $tcov) = ($r2_el_A[2], $r2_el_A[3], $r2_el_A[5], $r2_el_A[6], $r2_el_A[7], $r2_el_A[14]);
-        $class = $fam . "." . $domain;
-        if($class eq "-.-") { $class = "*none*"; }
-        if(! defined $stats_HHR->{$class}) { 
-          initialize_class_stats(\%{$stats_HHR->{$class}})
-        }
-        update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, $pf eq "PASS" ? 1 : 0);
-        update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
-        update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, $pf eq "PASS" ? 1 : 0);
-      }
-      
       # pick out the r1 columns: 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' to add to the $r2_line
       $r2_to_add = undef;
       if(! $do_short) { 
@@ -3788,7 +3774,6 @@ sub output_combined_short_or_long_file {
         $r2_line .= $r2_to_add . "  " . $r2_final_column;
       }
 
-      # Final step, which we do for both short and long output files: 
       # look for the three types of unexpected error that we want from round 1 to add to round 2:
       # 1) low_score_difference_between_top_two...
       # 2) very_low_score_difference_between_top_two... 
@@ -3819,11 +3804,13 @@ sub output_combined_short_or_long_file {
           if($did_make_fail) { 
             # sequence 'FAILs' now
             if($do_short) { # short file, change the PASS to FAIL
+              $r2_el_A[4] = "FAIL";
               if($r2_line =~ /(^\d+\s+\S+\s+\S+\s+\S+\s+)PASS(\s+.+$)/) { 
                 $r2_line = $1 . "FAIL" . $2;
               }
             }
             else { # long file, change the PASS to FAIL if it exists
+              $r2_el_A[2] = "FAIL";
               if($r2_line =~ /(^\d+\s+\S+\s+)PASS(\s+.+$)/) { 
                 $r2_line = $1 . "FAIL" . $2;
               }
@@ -3833,6 +3820,20 @@ sub output_combined_short_or_long_file {
           $r2_line =~ s/\s\s\S+$//; # remove final column
           $r2_line .= "  " . $r2_el_A[($ncols_r2-1)];
         }
+      }
+
+      # update %{$stats_HHR}
+      if(defined $stats_HHR) { 
+        # we know that $do_short if FALSE, so we're dealing with the long file
+        ($pf, $nnt, $fam, $domain, $model, $tcov) = ($r2_el_A[2], $r2_el_A[3], $r2_el_A[5], $r2_el_A[6], $r2_el_A[7], $r2_el_A[14]);
+        $class = $fam . "." . $domain;
+        if($class eq "-.-") { $class = "*none*"; }
+        if(! defined $stats_HHR->{$class}) { 
+          initialize_class_stats(\%{$stats_HHR->{$class}})
+        }
+        update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+        update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
+        update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
       }
 
       # update the ufeature counts hash if we have one
@@ -3892,6 +3893,39 @@ sub update_class_stats {
   $stats_HR->{"summed_tcov"} += $tcov;
   $stats_HR->{"nnt_tot"}     += $nnt;
   if($pass) { $stats_HR->{"npass"}++; }
+
+  return;
+}
+
+#################################################################
+# Subroutine: debug_print_class_stats
+# Incept:     EPN, Wed May 10 12:10:03 2017
+#
+# Purpose:    Output all values in a class_stats hash.
+#
+# Arguments:
+#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
+#   $class:    name of class
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub debug_print_class_stats { 
+  my $sub_name = "debug_print_class_stats";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($stats_HR, $class) = (@_);
+
+  printf("debug_print_class_stats, class: $class\n");
+
+  printf("nseq:        %d\n", $stats_HR->{"nseq"});
+  printf("summed_tcov: %f\n", $stats_HR->{"summed_tcov"});
+  printf("nnt_tot:     %d\n", $stats_HR->{"nnt_tot"});
+  printf("npass:       %d\n", $stats_HR->{"npass"});
+  printf("\n");
 
   return;
 }
@@ -4291,9 +4325,9 @@ sub output_timing_statistics {
 
   $width_H{"class"}    = length("classification");
   $width_H{"nseq"}     = length("num seqs");
-  $width_H{"seqsec"}   = 8;
-  $width_H{"ntsec"}    = 12;
-  $width_H{"ntseccpu"} = 10;
+  $width_H{"seqsec"}   = 7;
+  $width_H{"ntsec"}    = 10;
+  $width_H{"ntseccpu"} = 8;
   $width_H{"total"}    = 10;
   
   printf $out_FH ("#\n");
@@ -4319,7 +4353,7 @@ sub output_timing_statistics {
                   $width_H{"total"},    get_monocharacter_string($width_H{"total"}, "-"));
   
   $class = "classification";
-  printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
+  printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
                   $width_H{"seqsec"},   $r1_nseq / $r1_secs,
@@ -4328,7 +4362,7 @@ sub output_timing_statistics {
                   $width_H{"total"},    get_time_string($r1_secs));
 
   $class = "search";
-  printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
+  printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r2_nseq,
                   $width_H{"seqsec"},   $r2_nseq / $r2_secs,
@@ -4338,7 +4372,7 @@ sub output_timing_statistics {
   
   
   $class = "total";
-  printf $out_FH ("  %-*s  %*d  %*.3f  %*.2f  %*.2f  %*s\n", 
+  printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
                   $width_H{"seqsec"},   $r1_nseq / $tot_secs,
