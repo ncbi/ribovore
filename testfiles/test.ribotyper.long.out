@@ -1,43 +1,48 @@
-#                                                                                                                                best-scoring model                                            different domain's best-scoring model  
-#                                                                                               -------------------------------------------------------------------------------------          -------------------------------------  
-#idx  target                                          p/f  length  #fm  fam  domain             model                          strnd   score  b/nt  #ht   tcov   bcov  bstart   bstop  scdiff  model                           score  unexpected_features
-#---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ------  ----  ---  -----  -----  ------  ------  ------  -----------------------------  ------  -------------------
-1     00052::Halobacterium_sp.::AE005128             PASS    1473    1  SSU  Archaea            SSU_rRNA_archaea               plus   2018.3  1.37    1  1.000  1.000       1    1473  1369.1  SSU_rRNA_bacteria               649.2  -
-2     00013::Methanobacterium_formicicum::M36508     PASS    1476    1  SSU  Archaea            SSU_rRNA_archaea               plus   2019.5  1.37    1  1.000  1.000       1    1476  1199.7  SSU_rRNA_bacteria               819.8  -
-3     00004::Nanoarchaeum_equitans::AJ318041         PASS     867    1  SSU  Archaea            SSU_rRNA_archaea               plus    975.0  1.12    1  1.000  1.000       1     867   653.3  SSU_rRNA_bacteria               321.7  -
-4     00121::Thermococcus_celer::M21529              PASS    1780    1  SSU  Archaea            SSU_rRNA_archaea               plus   2022.0  1.14    1  1.000  1.000       1    1780  1248.2  SSU_rRNA_bacteria               773.8  -
-5     random                                         FAIL    1000    0  -    -                  -                              -           -     -    -      -      -       -       -       -  -                                   -  no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     PASS     922    1  SSU  Archaea            SSU_rRNA_archaea               minus  1245.8  1.35    1  1.000  1.000     922       1   774.8  SSU_rRNA_bacteria               471.0  opposite_strand
-7     00035::Bacteroides_fragilis::M61006|g143965    PASS    1537    1  SSU  Bacteria           SSU_rRNA_bacteria              plus   1757.4  1.14    1  1.000  1.000       1    1537   776.7  SSU_rRNA_chloroplast            980.7  -
-8     01106::Bacillus_subtilis::K00637               PASS    1552    1  SSU  Bacteria           SSU_rRNA_bacteria              plus   2068.5  1.33    1  1.000  1.000       1    1552   563.7  SSU_rRNA_chloroplast           1504.8  -
-9     00072::Chlamydia_trachomatis.::AE001345        PASS     887    1  SSU  Bacteria           SSU_rRNA_bacteria              plus    989.2  1.12    1  1.000  1.000       1     887   356.7  SSU_rRNA_chloroplast            632.5  -
-10    01351::Mycoplasma_gallisepticum::M22441        PASS     881    1  SSU  Bacteria           SSU_rRNA_bacteria              minus   890.8  1.01    1  1.000  1.000     881       1   377.0  SSU_rRNA_chloroplast            513.8  opposite_strand
-11    00224::Rickettsia_prowazekii.::AJ235272        PASS    1620    1  SSU  Bacteria           SSU_rRNA_bacteria              plus   1904.9  1.18    1  1.000  1.000       1    1620   523.4  SSU_rRNA_chloroplast           1381.5  -
-12    01223::Audouinella_hermannii.::AF026040        PASS    1771    1  SSU  Eukarya            SSU_rRNA_eukarya               plus   1864.4  1.05    1  1.000  1.000       1    1771  1112.7  SSU_rRNA_microsporidia          751.7  -
-13    01240::Batrachospermum_gelatinosum.::AF026045  PASS    1765    1  SSU  Eukarya            SSU_rRNA_eukarya               plus   1852.3  1.05    1  1.000  1.000       1    1765  1099.2  SSU_rRNA_microsporidia          753.1  -
-14    00220::Euplotes_aediculatus.::M14590           PASS    1082    1  SSU  Eukarya            SSU_rRNA_eukarya               plus    888.0  0.82    1  1.000  1.000       1    1082   509.7  SSU_rRNA_microsporidia          378.3  -
-15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus   611.2  1.02    1  1.000  1.000     600       1   378.6  SSU_rRNA_microsporidia          232.6  opposite_strand
-16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus   2076.7  1.02    1  1.000  1.000       1    2046  1253.1  SSU_rRNA_microsporidia          823.6  -
+#                                                                                                                                                best-scoring model                                                                    different domain's best-scoring model  
+#                                                                                               ---------------------------------------------------------------------------------------------------------------------                  -------------------------------------  
+#idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  s/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  scdiff  scd/nt  model                          tscore  unexpected_features
+#---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  ------  ------  -----------------------------  ------  -------------------
+1     00052::Halobacterium_sp.::AE005128             PASS    1473    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2012.4  2012.4  1.37         0  1.000  1.000       1    1473      1   1477  1369.1   0.929  SSU_rRNA_bacteria               649.2  -
+2     00013::Methanobacterium_formicicum::M36508     PASS    1476    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2021.0  2021.0  1.37         0  0.999  0.999       3    1476      3   1477  1199.7   0.813  SSU_rRNA_bacteria               819.8  -
+3     00004::Nanoarchaeum_equitans::AJ318041         PASS     867    1  SSU  Archaea            SSU_rRNA_archaea               plus     1   965.1   965.1  1.11  1.2e-293  0.997  0.997       2     865    416   1288   653.3   0.754  SSU_rRNA_bacteria               321.7  -
+4     00121::Thermococcus_celer::M21529              PASS    1780    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2010.6  2010.6  1.13         0  0.835  0.835     202    1687      1   1477  1248.2   0.701  SSU_rRNA_bacteria               773.8  low_total_coverage:(0.835<0.880)
+5     random                                         FAIL    1000    0  -    -                  -                              -        -       -       -     -         -      -      -       -       -      -      -       -       -  -                                   -  *no_hits
+6     00115::Pyrococcus_furiosus::U20163|g643670     PASS     922    1  SSU  Archaea            SSU_rRNA_archaea               minus    1  1235.8  1235.8  1.34         0  1.000  1.000     922       1    370   1292   774.8   0.840  SSU_rRNA_bacteria               471.0  opposite_strand
+7     00035::Bacteroides_fragilis::M61006|g143965    PASS    1537    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1  1757.9  1757.9  1.14         0  0.993  0.993       9    1535      3   1533   776.7   0.505  SSU_rRNA_chloroplast            980.7  -
+8     01106::Bacillus_subtilis::K00637               PASS    1552    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1  2063.4  2063.4  1.33         0  0.997  0.997       4    1550      3   1533   563.7   0.363  SSU_rRNA_chloroplast           1504.8  -
+9     00072::Chlamydia_trachomatis.::AE001345        PASS     887    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1   986.2   986.2  1.11  1.1e-299  0.993  0.993       2     882    132    990   356.7   0.402  SSU_rRNA_chloroplast            632.5  -
+10    01351::Mycoplasma_gallisepticum::M22441        PASS     881    1  SSU  Bacteria           SSU_rRNA_bacteria              minus    1   889.0   889.0  1.01  2.1e-270  0.994  0.994     881       6    153   1013   377.0   0.428  SSU_rRNA_chloroplast            513.8  opposite_strand
+11    00224::Rickettsia_prowazekii.::AJ235272        PASS    1620    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1  1906.5  1906.5  1.18         0  0.922  0.922      98    1591      4   1532   523.4   0.323  SSU_rRNA_chloroplast           1381.5  -
+12    01223::Audouinella_hermannii.::AF026040        PASS    1771    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  1866.3  1866.3  1.05         0  0.998  0.998       2    1768      2   1849  1112.7   0.628  SSU_rRNA_microsporidia          751.7  -
+13    01240::Batrachospermum_gelatinosum.::AF026045  PASS    1765    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  1854.0  1854.0  1.05         0  0.998  0.998       2    1762      2   1849  1099.2   0.623  SSU_rRNA_microsporidia          753.1  -
+14    00220::Euplotes_aediculatus.::M14590           PASS    1082    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1   886.2   886.2  0.82  1.2e-269  0.999  0.999       1    1081    464   1521   509.7   0.471  SSU_rRNA_microsporidia          378.3  -
+15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266   378.6   0.631  SSU_rRNA_microsporidia          232.6  opposite_strand
+16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850  1253.1   0.612  SSU_rRNA_microsporidia          823.6  -
 #
 # Explanation of columns:
 #
 # Column  1 [idx]:                 index of sequence in input sequence file
 # Column  2 [target]:              name of target sequence
-# Column  3 [p/f]:                 PASS or FAIL (see below for more on FAIL)
+# Column  3 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)
 # Column  4 [length]:              length of target sequence (nt)
 # Column  5 [#fm]:                 number of different families detected in sequence
 # Column  6 [fam]:                 name of family the best-scoring model to this sequence belongs to
 # Column  7 [domain]:              name of domain the best-scoring model to this sequence belongs to
 # Column  8 [model]:               name of best-scoring model
-# Column  9 [strnd]:               strand ('plus' or 'minus') of sequence
-# Column 10 [score]:               bit score of best-scoring hit to this sequence
-# Column 11 [b/nt]:                bits per nucleotide (bits/hit_length) of best-scoring hit to this sequence
-# Column 12 [#ht]:                 number of hits of best-scoring model to this sequence (no threshold enforced)
-# Column 13 [tcov]:                fraction of target sequence included in all (non-overlapping) hits to the best-scoring model
-# Column 14 [bcov]:                fraction of target sequence included in single best-scoring hit
-# Column 15 [bstart]:              start position of best-scoring hit
-# Column 16 [bstop]:               stop position of best-scoring hit
-# Column 17 [scdiff]:              difference in score between top scoring hit in best model and top scoring hit in second best model
-# Column 18 [model]:               name of second best-scoring model
-# Column 19 [score]:               bit score of best-scoring hit to this sequence
-# Column 20 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)
+# Column  9 [strnd]:               strand ('plus' or 'minus') of best-scoring hit
+# Column 10 [#ht]:                 number of hits to best model on strand of best hit (no score threshold enforced)
+# Column 11 [tscore]:              summed bit scores of all hits between best model and this sequence (no score threshold enforced)
+# Column 12 [bscore]:              bit score of best-scoring hit between best model and this sequence (above threshold)
+# Column 13 [s/nt]:                summed bit scores of all hits divided by length of the sequence
+# Column 14 [bevalue]:             E-value of best-scoring hit to this sequence
+# Column 15 [tcov]:                fraction of target sequence included in all (non-overlapping) hits to the best-scoring model
+# Column 16 [bcov]:                fraction of target sequence included in single best-scoring hit
+# Column 17 [bfrom]:               start position in the sequence of best-scoring hit
+# Column 18 [bto]:                 stop position in the sequence of best-scoring hit
+# Column 19 [mfrom]:               start position in the model of best-scoring hit
+# Column 20 [mto]:                 stop position in the model of best-scoring hit
+# Column 21 [scdiff]:              difference in score from classification stage between summed score of hits to best model and summed scores of hits to second best model
+# Column 22 [scd/nt]:              score difference per position: 'scdiff' value divided by total length of all hits to best model
+# Column 23 [model]:               name of second best-scoring model
+# Column 24 [tscore]:              summed bit scores of all hits between second-best model and this sequence (no score threshold enforced)
+# Column 25 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)
