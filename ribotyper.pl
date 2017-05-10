@@ -4482,7 +4482,7 @@ sub output_ufeature_statistics {
 
   foreach $ufeature (@{$ufeature_AR}) { 
     if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(zero_unexpected_features)")) { 
-      printf $out_FH ("  %-*s  %-*s  %*d  %*.3f\n", 
+      printf $out_FH ("  %-*s  %-*s  %*d  %*.5f\n", 
                       $width_H{"ufeature"}, $ufeature,
                       $width_H{"fail"},     ($ufeature =~ m/^\*/) ? "yes" : "no",
                       $width_H{"seqs"},     $ufeature_ct_HR->{$ufeature},
