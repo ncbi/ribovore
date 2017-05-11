@@ -1,0 +1,54 @@
+EPN, Thu May 11 11:27:18 2017
+
+There are 3 files in this directory that are meant to be used for
+timing experiments.
+
+These files were created by randomly sampling sequences from GenBank
+as follows:
+
+r.10K.ssu.16S.fa: random sample of 10,000 sequences from the set of
+                  8,161,145 sequences that are returned with an Entrez
+                  query of "16S and 200:1799[Sequence Length]"^(see
+                  note below) fetched on May 10, 2017.
+
+r.10K.ssu.18S.fa: random sample of 10,000 sequences from the set of
+                  1,047,738 sequences that are returned with an Entrez
+                  query of "18S and 200:2209[Sequence Length]"^(see
+                  note below) fetched on May 11, 2017.
+
+r.10K.lsu.23S.fa: random sample of 10,000 sequences from the set of
+                  2,267,777 sequences that are returned with an Entrez
+                  query of "23S and 200:3529[Sequence Length]"^(see
+                  note below) fetched on May 11, 2017.
+
+Statistics on these files:
+$ esl-seqstat r.10K.ssu.16S.fa
+Format:              FASTA
+Alphabet type:       DNA
+Number of sequences: 10000
+Total # residues:    7495469
+Smallest:            200
+Largest:             1797
+Average length:      749.5
+
+$ esl-seqstat r.10K.ssu.18S.fa 
+Format:              FASTA
+Alphabet type:       DNA
+Number of sequences: 10000
+Total # residues:    7608525
+Smallest:            200
+Largest:             2208
+Average length:      760.9
+
+$ esl-seqstat r.10K.lsu.23S.fa 
+Format:              FASTA
+Alphabet type:       DNA
+Number of sequences: 10000
+Total # residues:    15581558
+Smallest:            201
+Largest:             3527
+Average length:      1558.2
+
+
+Full notes on how these files were created can be found here:
+/panfs/pan1/infernal/notebook/17_0510_ribo_speed_test_set/00LOG.txt
