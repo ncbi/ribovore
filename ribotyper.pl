@@ -66,9 +66,9 @@ $opt_group_desc_H{"3"} = "options for controlling the second round search algori
 opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"4"} = "options related to bit score REPORTING thresholds";
-#     option                 type   default                group   requires incompat   preamble-output                                 help-output    
-opt_Add("--minsc",         "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--nominsc",    "boolean",   0,                       4,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
+#     option                 type   default                group   requires incompat   preamble-output                                            help-output    
+opt_Add("--minpsc",        "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for primary hits to <x>",    "set minimum bit score cutoff for primary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--minssc",        "real",   "10.",                   4,  undef,   undef,      "set minimum bit score cutoff for secondary hits to <x>",  "set minimum bit score cutoff for secondary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"5"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
@@ -124,8 +124,8 @@ my $options_okay =
 # first round algorithm options
                 '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
-                'minsc=s'     => \$GetOptions_H{"--minsc"},
-                'nominsc'     => \$GetOptions_H{"--nominsc"},
+                'minpsc=s'    => \$GetOptions_H{"--minpsc"},
+                'minssc=s'    => \$GetOptions_H{"--minssc"},
                 'lowppossc'   => \$GetOptions_H{"--lowppossc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
@@ -155,7 +155,7 @@ my $options_okay =
                 'keep'         => \$GetOptions_H{"--keep"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"});
 
-my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
+my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
 my $version       = "0.02";
@@ -168,7 +168,7 @@ $| = 1;
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
-  riboOutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
+  ribo_OutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
   opt_OutputHelp(*STDOUT, $usage, \%opt_HH, \@opt_order_A, \%opt_group_desc_H);
   if(! $options_okay) { die "ERROR, unrecognized option;"; }
   else                { exit 0; } # -h, exit with 0 status
@@ -207,13 +207,34 @@ if(opt_Get("--noali", \%opt_HH)) {
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
   if(opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)) { 
     die sprintf("ERROR, with --lowpdiff <x> and --vlowpdiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
-                opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)); 
+                opt_Get("--lowpdiff",\%opt_HH), opt_Get("--vlowpdiff",\%opt_HH)); 
   }
 }
 if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) { 
   if(opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)) { 
     die sprintf("ERROR, with --lowadiff <x> and --vlowadiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
-                opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)); 
+                opt_Get("--lowadiff",\%opt_HH), opt_Get("--vlowadiff",\%opt_HH)); 
+  }
+}
+
+my $min_primary_sc   = opt_Get("--minpsc", \%opt_HH);
+my $min_secondary_sc = opt_Get("--minssc", \%opt_HH);
+if($min_secondary_sc < $min_primary_sc) { 
+  if((opt_IsUsed("--minpsc", \%opt_HH)) && (opt_IsUsed("--minssc", \%opt_HH))) { 
+    die sprintf("ERROR, with --minpsc <x> and --minssc <y>, <x> must be less than or equal to <y> (got <x>: %f, y: %f)\n", 
+                opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
+  }
+  elsif(opt_isUsed("--minpsc", \%opt_HH)) { 
+    die sprintf("ERROR, with --minpsc <x>, <x> must be less than or equal to <y>=%d (default value for --minssc)\nOr you must lower <y> with the --minssc option too.\n", 
+                opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
+  }
+  elsif(opt_isUsed("--minssc", \%opt_HH)) { 
+    die sprintf("ERROR, with --minssc <y>, <x> must be greater or equal to <x>=%d (default value for --minpsc)\nOr you must lower <x> with the --minpsc option too.\n", 
+                opt_Get("--minssc",\%opt_HH), opt_Get("--minpsc",\%opt_HH)); 
+  }
+  else { 
+    die "ERROR default values for --minpsc and --minssc are messed up." 
+    # this will only happen if the default values in this file are changed so that --minpsc default is less than --minssc default
   }
 }
 
@@ -452,6 +473,9 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 # Step 2: Use esl-seqstat to determine sequence lengths of all target seqs
 ###########################################################################
 $start_secs = ribo_OutputProgressPrior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
+my $tot_nnt = 0;   # total number of nucleotides in target sequence file (summed length of all seqs)
+my $Z_value = 0;   # total number of Mb of search space in target sequence file, 
+                   # this is (2*$tot_nnt)/1000000 (the 2 is because we search both strands)
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value multiplied by -1 after we output info for this sequence
@@ -461,13 +485,13 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # see it again before the next round, then we know the 
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
-
 # use esl-seqstat to determine sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
-ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
 output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H);
@@ -498,7 +522,7 @@ $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
 $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
 $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorted_tblout_file;
-$r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
+$r1_search_cmd         = $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, undef, *STDOUT);
@@ -637,7 +661,7 @@ if(defined $alg2) {
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
       push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
-      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
+      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
         ribo_RunCommand($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
@@ -768,7 +792,7 @@ foreach my $file (@to_remove_A) {
 output_summary_statistics(*STDOUT, \%class_stats_HH);
 output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
 
-$total_seconds += seconds_since_epoch();
+$total_seconds += ribo_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
   
 #printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
@@ -806,7 +830,6 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # output_long_headers:       output headers for long output file
 #
 # Miscellaneous functions:
-# seconds_since_epoch:      number of seconds since the epoch, for timings
 # debug_print:              print out info of a hit for debugging
 # get_monocharacter_string: return string of a specified length of a specified character
 # center_string:            center a string inside a string of whitespace of specified length
@@ -1139,10 +1162,7 @@ sub parse_sorted_tbl_file {
   }
 
   # determine minimum bit score cutoff
-  my $minsc = undef;
-  if(! opt_Get("--nominsc", $opt_HHR)) { 
-    $minsc = opt_Get("--minsc", $opt_HHR);
-  }
+  my $min_primary_sc = opt_Get("--minpsc", $opt_HHR);
   
   # Main data structures: 
   # 'first': current top scoring model for current sequence
@@ -1362,7 +1382,7 @@ sub parse_sorted_tbl_file {
     }
 
     # first, enforce our global bit score minimum
-    if((! defined $minsc) || ($score >= $minsc)) { 
+    if($score >= $min_primary_sc) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits_above_thresh++;
       if(! defined $first_model) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
@@ -1406,7 +1426,7 @@ sub parse_sorted_tbl_file {
           }
         }
       }
-    } # end of 'if((! defined $minsc) || ($score >= $minsc))'
+    } # end of 'if($score >= $min_primary_sc))'
     # finished determining if this hit is a new 'one' or 'two' hit
     ##########################################################
     
@@ -2548,32 +2568,6 @@ sub output_banner {
   printf $FH ("#\n");
 
   return;
-}
-
-
-
-
-#################################################################
-# Subroutine : seconds_since_epoch()
-# Incept:      EPN, Sat Feb 13 06:17:03 2016
-#
-# Purpose:     Return the seconds and microseconds since the 
-#              Unix epoch (Jan 1, 1970) using 
-#              Time::HiRes::gettimeofday().
-#
-# Arguments:   NONE
-# 
-# Returns:     Number of seconds and microseconds
-#              since the epoch.
-#
-################################################################# 
-sub seconds_since_epoch { 
-  my $nargs_expected = 0;
-  my $sub_name = "seconds_since_epoch()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($seconds, $microseconds) = gettimeofday();
-  return ($seconds + ($microseconds / 1000000.));
 }
 
 

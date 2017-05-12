@@ -16,6 +16,9 @@
 # Miscellaneous functions:
 # ribo_RunCommand:              run a command using system()
 # ribo_ValidateExecutableHash: validate executables exist and are executable
+# ribo_SecondsSinceEpoch:      number of seconds since the epoch, for timings
+use strict;
+use warnings;
 
 #####################################################################
 # Subroutine: ribo_OutputBanner()
@@ -86,7 +89,7 @@ sub ribo_OutputProgressPrior {
   if(defined $FH1) { printf $FH1 ("# %-*s ... ", $progress_w, $outstr); }
   if(defined $FH2) { printf $FH2 ("# %-*s ... ", $progress_w, $outstr); }
 
-  return seconds_since_epoch();
+  return ribo_SecondsSinceEpoch();
 }
 
 #################################################################
@@ -125,7 +128,7 @@ sub ribo_OutputProgressComplete {
 
   my $total_secs = undef;
   if(defined $start_secs) { 
-    $total_secs = seconds_since_epoch() - $start_secs;
+    $total_secs = ribo_SecondsSinceEpoch() - $start_secs;
   }
 
   if(defined $FH1) { printf $FH1 ("done."); }
@@ -256,9 +259,10 @@ sub ribo_ValidateExecutableHash {
 #   $seqidx_HR:    ref to hash of sequence indices to fill here
 #   $seqlen_HR:    ref to hash of sequence lengths to fill here
 #   $width_HR:     ref to hash to fill with max widths (see Purpose)
-#   $opt_HHR:      reference to 2D hash of cmdline options (needed to determine if -i was used)
+#   $opt_HHR:      reference to 2D hash of cmdline options
 # 
-# Returns:     void, fills %{$seqidx_HR}, %{$seqlen_HR}, and 
+# Returns:     total number of nucleotides in all sequences read, 
+#              fills %{$seqidx_HR}, %{$seqlen_HR}, and 
 #              %{$width_HR} (partially)
 #
 # Dies:        If the sequence file has two sequences with identical names.
@@ -278,13 +282,14 @@ sub ribo_ProcessSequenceFile {
   my $max_targetname_length = length("target"); # maximum length of any target name
   my $max_length_length     = length("length"); # maximum length of the string-ized length of any target
   my $nseq                  = 0; # number of sequences read
-  ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqidx_HR, $seqlen_HR); 
+  my $tot_length = ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqidx_HR, $seqlen_HR); 
+
   $width_HR->{"target"} = $max_targetname_length;
   $width_HR->{"length"} = $max_length_length;
   $width_HR->{"index"}  = length($nseq);
   if($width_HR->{"index"} < length("#idx")) { $width_HR->{"index"} = length("#idx"); }
 
-  return;
+  return $tot_length;
 }
 
 #################################################################
@@ -301,7 +306,8 @@ sub ribo_ProcessSequenceFile {
 #   $seqidx_HR:               REF to hash of sequence indices to fill here
 #   $seqlen_HR:               REF to hash of sequence lengths to fill here
 #
-# Returns:     Nothing. Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
+# Returns:     Total number of nucleotides read (summed length of all sequences). 
+#              Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
 #              $$max_targetname_length_R, $$max_length_length_R, and $$nseq_R.
 # 
 # Dies:        If the sequence file has two sequences with identical names.
@@ -318,11 +324,12 @@ sub ribo_ParseSeqstatFile {
 
   open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
 
-  my $nread = 0;
-  my $targetname_length;
-  my $seqlength_length;
-  my $targetname;
-  my $length;
+  my $nread = 0;            # number of sequences read
+  my $tot_length = 0;       # summed length of all sequences
+  my $targetname_length;    # length of a target name
+  my $seqlength_length;     # length (number of digits) of a sequence length
+  my $targetname;           # a target name
+  my $length;               # length of a target
   my %seqdups_H = ();       # key is a sequence name that exists more than once in seq file, value is number of occurences
   my $at_least_one_dup = 0; # set to 1 if we find any duplicate sequence names
 
@@ -347,6 +354,7 @@ sub ribo_ParseSeqstatFile {
         
       $seqidx_HR->{$targetname} = $nread;
       $seqlen_HR->{$targetname} = $length;
+      $tot_length += $length;
 
       $targetname_length = length($targetname);
       if($targetname_length > $$max_targetname_length_R) { 
@@ -376,7 +384,8 @@ sub ribo_ParseSeqstatFile {
   }
 
   $$nseq_R = $nread;
-  return;
+
+  return $tot_length;
 }
 
 #################################################################
@@ -423,6 +432,28 @@ sub ribo_CheckIfFileExistsAndIsNonEmpty {
   return 1;
 }
 
+#################################################################
+# Subroutine : ribo_SecondsSinceEpoch()
+# Incept:      EPN, Sat Feb 13 06:17:03 2016
+#
+# Purpose:     Return the seconds and microseconds since the 
+#              Unix epoch (Jan 1, 1970) using 
+#              Time::HiRes::gettimeofday().
+#
+# Arguments:   NONE
+# 
+# Returns:     Number of seconds and microseconds
+#              since the epoch.
+#
+################################################################# 
+sub ribo_SecondsSinceEpoch { 
+  my $nargs_expected = 0;
+  my $sub_name = "ribo_SecondsSinceEpoch()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($seconds, $microseconds) = gettimeofday();
+  return ($seconds + ($microseconds / 1000000.));
+}
 
 ###########################################################################
 # the next line is critical, a perl module must return a true value
