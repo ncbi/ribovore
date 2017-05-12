@@ -501,7 +501,7 @@ my $r1_sort_cmd = "";
 
 $alg1_opts             = determine_cmsearch_opts($alg1, \%opt_HH);
 $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
-$r1_sorted_tblout_file = $r1_tblout_file . "sorted";
+$r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
 $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorted_tblout_file;
 $r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
@@ -548,7 +548,7 @@ parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%s
 
 # add data for sequences with 0 hits and then sort the output files 
 # based on sequence index from original input file.
-output_hitless_targets($r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 1: round 1
+output_all_hitless_targets($r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 1: round 1
 
 # now close the unsorted file handles (we're done with these) 
 # and also the sorted file handles (so we can output directly to them using system())
@@ -689,7 +689,7 @@ if(defined $alg2) {
 ###########################################################################
 # Step 8: Sort round 2 output
 ###########################################################################
-if(defined $alg2) { 
+if((defined $alg2) && ($nr2 > 0)) { 
   $start_secs = output_progress_prior("Sorting search results", $progress_w, undef, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
@@ -705,11 +705,13 @@ if(defined $alg2) {
 ###########################################################################
 if(defined $alg2) { 
   $start_secs = output_progress_prior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
-  parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
-                        \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
+  if($nr2 > 0) { 
+    parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
+                          \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
+  }
   # add data for sequences with 0 hits and then sort the output files 
   # based on sequence index from original input file.
-  output_hitless_targets($r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 2: round 2
+  output_all_hitless_targets($r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 2: round 2
 
   # now close the unsorted file handles (we're done with these) 
   # and also the sorted file handles (so we can output directly to them using system())
@@ -804,8 +806,6 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # set_modelvars:            set variables for parse_sorted_tbl_file()
 # 
 # Functions for output: 
-# output_one_target_wrapper: wrapper function for outputting info on one target sequence
-#                            helper for parse_sorted_tbl_file()
 # output_one_target:         output info on one target sequence
 #                            helper for parse_sorted_tbl_file()
 # output_short_headers:      output headers for short output file
@@ -1253,12 +1253,12 @@ sub parse_sorted_tbl_file {
   # 
   # keys for all below are families (e.g. 'SSU' or 'LSU')
   # values are for the best scoring hit in this family to current sequence
-  my %first_model_HH;  # 1st dim key are families (e.g. 'SSU', 'LSU')
-                       # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
-                       # values are 2nd dim attribute for best scoring hit in this family to current sequence
-  my %second_model_HH; # 1st dim key are families (e.g. 'SSU', 'LSU')
-                       # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
-                       # values are 2nd dim attribute for best scoring hit in this family to current sequence
+  my %first_model_HH = ();  # 1st dim key are families (e.g. 'SSU', 'LSU')
+                            # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
+                            # values are 2nd dim attribute for best scoring hit in this family to current sequence
+  my %second_model_HH = (); # 1st dim key are families (e.g. 'SSU', 'LSU')
+                            # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
+                            # values are 2nd dim attribute for best scoring hit in this family to current sequence
 
   # for convenience, copies of current first and second values, to simplify writing them out
   my $first_model    = undef;
@@ -1306,9 +1306,6 @@ sub parse_sorted_tbl_file {
   my $family     = undef; # family of current model
 
   open(IN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
-
-  init_model_vars(\%first_model_HH);
-  init_model_vars(\%second_model_HH);
 
   my ($target, $model, $domain, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
       (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
@@ -1383,12 +1380,15 @@ sub parse_sorted_tbl_file {
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
-        output_one_target_wrapper($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                                  $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
-                                  \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
-                                  \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                                  \%first_model_HH, \%second_model_HH);
+        output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
+                          $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
+                          \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
+                          \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
+                          \%first_model_HH, \%second_model_HH);
+        $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
       }
+      %first_model_HH       = ();
+      %second_model_HH      = ();
       $nhits_above_thresh   = 0;
       %nhits_per_model_HH   = ();
       %tbits_per_model_HH   = ();
@@ -1418,25 +1418,50 @@ sub parse_sorted_tbl_file {
     push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "." . $mdlto)); 
     push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "." . $seqto)); 
 
-    $first_model    = $first_model_HH{$family}{"model"};
-    $first_domain   = $first_model_HH{$family}{"domain"};
-    $first_evalue   = $first_model_HH{$family}{"evalue"};
-    $first_score    = $first_model_HH{$family}{"score"};
-    $first_start    = $first_model_HH{$family}{"start"};
-    $first_stop     = $first_model_HH{$family}{"stop"};
-    $first_strand   = $first_model_HH{$family}{"strand"};
-    $first_mdlstart = $first_model_HH{$family}{"mdlstart"};
-    $first_mdlstop  = $first_model_HH{$family}{"mdlstop"};
-
-    $second_model    = $second_model_HH{$family}{"model"};
-    $second_domain   = $second_model_HH{$family}{"domain"};
-    $second_evalue   = $second_model_HH{$family}{"evalue"};
-    $second_score    = $second_model_HH{$family}{"score"};
-    $second_start    = $second_model_HH{$family}{"start"};
-    $second_stop     = $second_model_HH{$family}{"stop"};
-    $second_strand   = $second_model_HH{$family}{"strand"};
-    $second_mdlstart = $second_model_HH{$family}{"mdlstart"};
-    $second_mdlstop  = $second_model_HH{$family}{"mdlstop"};
+    if(exists $first_model_HH{$family}) { 
+      $first_model    = $first_model_HH{$family}{"model"};
+      $first_domain   = $first_model_HH{$family}{"domain"};
+      $first_evalue   = $first_model_HH{$family}{"evalue"};
+      $first_score    = $first_model_HH{$family}{"score"};
+      $first_start    = $first_model_HH{$family}{"start"};
+      $first_stop     = $first_model_HH{$family}{"stop"};
+      $first_strand   = $first_model_HH{$family}{"strand"};
+      $first_mdlstart = $first_model_HH{$family}{"mdlstart"};
+      $first_mdlstop  = $first_model_HH{$family}{"mdlstop"};
+    }
+    else { 
+      $first_model    = undef;
+      $first_domain   = undef;
+      $first_evalue   = undef;
+      $first_score    = undef;
+      $first_start    = undef;
+      $first_stop     = undef;
+      $first_strand   = undef;
+      $first_mdlstart = undef;
+      $first_mdlstop  = undef;
+    }
+    if(exists $second_model_HH{$family}) { 
+      $second_model    = $second_model_HH{$family}{"model"};
+      $second_domain   = $second_model_HH{$family}{"domain"};
+      $second_evalue   = $second_model_HH{$family}{"evalue"};
+      $second_score    = $second_model_HH{$family}{"score"};
+      $second_start    = $second_model_HH{$family}{"start"};
+      $second_stop     = $second_model_HH{$family}{"stop"};
+      $second_strand   = $second_model_HH{$family}{"strand"};
+      $second_mdlstart = $second_model_HH{$family}{"mdlstart"};
+      $second_mdlstop  = $second_model_HH{$family}{"mdlstop"};
+    }
+    else { 
+      $second_model    = undef;
+      $second_domain   = undef;
+      $second_evalue   = undef;
+      $second_score    = undef;
+      $second_start    = undef;
+      $second_stop     = undef;
+      $second_strand   = undef;
+      $second_mdlstart = undef;
+      $second_mdlstop  = undef;
+    }
 
     # first, enforce our global bit score minimum
     if((! defined $minsc) || ($score >= $minsc)) { 
@@ -1493,24 +1518,26 @@ sub parse_sorted_tbl_file {
       # new 'one' hit, update 'one' variables, 
       # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
       if((defined $one_domain_or_model) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-        set_model_vars($second_model_HH{$family}, $first_model, $first_domain, $first_score, $first_evalue, $first_start, $first_stop, $first_strand, $first_mdlstart, $first_mdlstop);
+        set_model_vars(\%{$second_model_HH{$family}}, $first_model, $first_domain, $first_score, $first_evalue, $first_start, $first_stop, $first_strand, $first_mdlstart, $first_mdlstop);
       }
       # now set new 'one' hit values
-      set_model_vars($first_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
+      set_model_vars(\%{$first_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
     }
     elsif(($cur_becomes_second) && ($one_domain_or_model ne $cur_domain_or_model)) { 
       # new 'two' hit, set it
       # (we don't need to check that 'one_domain_or_model ne cur_domain_or_model' because we did that
       #  above before we set cur_becomes_second to true)
-      set_model_vars($second_model_HH{$family}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
+      set_model_vars(\%{$second_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
     }
+
     # finished updating 'one' or 'two' data structures
     ##########################################################
 
     $prv_target = $target;
 
     # sanity check
-    if((defined $first_model_HH{$family}{"model"} && defined $second_model_HH{$family}{"model"}) && 
+    if(((exists $first_model_HH{$family})  && (defined $first_model_HH{$family}{"model"})) && 
+       ((exists $second_model_HH{$family}) && (defined $second_model_HH{$family}{"model"})) && 
        ($first_model_HH{$family}{"model"} eq $second_model_HH{$family}{"model"})) { 
       die "ERROR, coding error, first model and second model are identical for $family $target";
     }
@@ -1518,47 +1545,28 @@ sub parse_sorted_tbl_file {
 
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
-    output_one_target_wrapper($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                              $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR, $seqlen_HR, 
-                              \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
-                              \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                              \%first_model_HH, \%second_model_HH);
+    output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
+                      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
+                      \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
+                      \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
+                      \%first_model_HH, \%second_model_HH);
+    $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
   }
+  $nhits_above_thresh   = 0;
+  %first_model_HH       = ();
+  %second_model_HH      = ();
+  %nhits_per_model_HH   = ();
+  %tbits_per_model_HH   = ();
+  %nnts_per_model_HH    = ();
+  %mdl_bd_per_model_HHA = ();
+  %seq_bd_per_model_HHA = ();
+
   # close file handle
   close(IN);
   
   return;
 }
 
-#################################################################
-# Subroutine : init_model_vars()
-# Incept:      EPN, Tue Dec 13 14:53:37 2016
-#
-# Purpose:     Initialize hit variables to undefined,
-#              given references to them.
-#              
-# Arguments: 
-#   $HHR:   REF to hash describing the best hit to a model
-#           1st dim key are families (e.g. 'SSU', 'LSU')
-#           2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
-#           values are 2nd dim attribute for best scoring hit in this family to current sequence
-# 
-# Returns:     Nothing.
-# 
-# Dies:        Never.
-#
-################################################################# 
-sub init_model_vars { 
-  my $nargs_expected = 1;
-  my $sub_name = "init_model_vars";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($HHR) = @_;
-
-  %{$HHR} = ();
-
-  return;
-}
 
 #################################################################
 # Subroutine : set_model_vars()
@@ -1604,68 +1612,7 @@ sub set_model_vars {
 }
 
 #################################################################
-# Subroutine : output_one_target_wrapper()
-# Incept:      EPN, Thu Dec 22 13:49:53 2016
-#
-# Purpose:     Call function to output information and reset variables.
-#              
-# Arguments: 
-#   $short_FH:               file handle to output short output to (can be undef to not output short output)
-#   $long_FH:                file handle to output long output to (can be undef to not output long output)
-#   $opt_HHR:                reference to 2D hash of cmdline options
-#   $round:                  '1' or '2', what round of searching we're in
-#   $have_accurate_coverage: '1' if we have accurate coverage, '0' if not
-#   $have_model_coords:      '1' if we have model coords, '0' if not
-#   $have_evalues:           '1' if we have E-values, '0' if not
-#   $sort_by_evalues:        '1' if we are sorting by E-values, '0' if not
-#   $width_HR:               hash, key is "model" or "target", value 
-#                            is width (maximum length) of any target/model
-#   $domain_HR:              reference to domain hash
-#   $accept_HR:              reference to the 'accept' hash, key is "model"
-#                            value is '1' if hits to model are "PASS"es '0'
-#                            if they are "FAIL"s
-#   $target:                 target name
-#   $seqidx_HR:              hash of target sequence indices
-#   $seqlen_HR:              hash of target sequence lengths
-#   $nhits_HHR:              reference to hash of num hits per model (key 1), per strand (key 2)
-#   $nnts_HHR:               reference to hash of num nucleotides in all hits per model (key 1), per strand (key 2)
-#   $tbits_HHR:              reference to hash of total (summed) bit score in all hits per model (key 1), per strand (key 2)
-#   $mdl_bd_HHAR:            reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
-#   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
-#   $first_model_HHR:        hit stats for first model (best model)
-#   $second_model_HHR:        hit stats for second model (second-best model)
-#
-# Returns:     Nothing.
-# 
-# Dies:        Never.
-#
-################################################################# 
-sub output_one_target_wrapper { 
-  my $nargs_expected = 21;
-  my $sub_name = "output_one_target_wrapper";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues,
-      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, 
-      $target, $seqidx_HR, $seqlen_HR, $nhits_HHR, $nnts_HHR, $tbits_HHR,
-      $mdl_bd_HHAR, $seq_bd_HHAR, $first_model_HHR, $second_model_HHR) = @_;
-
-  # output to short and long output files
-  output_one_target($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues,
-                    $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-                    $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $nhits_HHR, $nnts_HHR, $tbits_HHR,
-                    $mdl_bd_HHAR, $seq_bd_HHAR, $first_model_HHR, $second_model_HHR);
-
-  # reset vars
-  init_model_vars($first_model_HHR);
-  init_model_vars($second_model_HHR);
-  $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
-  
-  return;
-}
-
-#################################################################
-# Subroutine : output_hitless_targets()
+# Subroutine : output_all_hitless_targets()
 # Incept:      EPN, Fri May  5 09:09:01 2017
 #
 # Purpose:     Call function to output information for all targets
@@ -1686,9 +1633,9 @@ sub output_one_target_wrapper {
 # Dies:        Never.
 #
 ################################################################# 
-sub output_hitless_targets { 
+sub output_all_hitless_targets { 
   my $nargs_expected = 7;
-  my $sub_name = "output_hitless_targets";
+  my $sub_name = "output_all_hitless_targets";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($long_FH, $short_FH, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR) = @_;
@@ -1699,60 +1646,22 @@ sub output_hitless_targets {
   my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
 
   if($round eq "1") { 
-    foreach $target (keys %seqlen_H) { 
-      if($seqlen_H{$target} >= 0) { # in round 1, positive sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, $round, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
+    foreach $target (keys %{$seqlen_HR}) { 
+      if($seqlen_HR->{$target} >= 0) { # in round 1, positive sequence length values indicate no hits were found
+        output_one_hitless_target($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues, $have_model_coords);
+        $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
       }
     }
   }
   elsif($round eq "2") { 
-    foreach $target (keys %seqlen_H) { 
-      if($seqlen_H{$target} <= 0) { # in round 2, negative sequence length values indicate no hits were found
-        output_one_hitless_target_wrapper($long_FH, $short_FH, $round, \%opt_HH, \%width_H, $target, \%seqidx_H, \%seqlen_H, $have_evalues, $have_model_coords);
+    foreach $target (keys %{$seqlen_HR}) { 
+      if($seqlen_HR->{$target} <= 0) { # in round 2, negative sequence length values indicate no hits were found
+        output_one_hitless_target($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues, $have_model_coords);
+        $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
       }
     }
   }
 
-  return;
-}
-
-#################################################################
-# Subroutine : output_one_hitless_target_wrapper()
-# Incept:      EPN, Thu Mar  2 11:35:28 2017
-#
-# Purpose:     Call function to output information for a target
-#              with zero hits.
-#              
-# Arguments: 
-#   $long_FH:            file handle to output long data to
-#   $short_FH:           file handle to output short data to
-#   $round:              '1' or '2', what round of searching we're in
-#   $opt_HHR:            reference to 2D hash of cmdline options
-#   $width_HR:           hash, key is "model" or "target", value 
-#                        is width (maximum length) of any target/model
-#   $target:             target name
-#   $seqidx_HR:          hash of target sequence indices
-#   $seqlen_HR:          hash of target sequence lengths
-#   $have_evalues:       '1' to print space for E-values
-#   $have_model_coords:  '1' if we have model coord info, else '0'
-#
-# Returns:     Nothing.
-# 
-# Dies:        Never.
-#
-################################################################# 
-sub output_one_hitless_target_wrapper { 
-  my $nargs_expected = 10;
-  my $sub_name = "output_one_hitless_target_wrapper";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($long_FH, $short_FH, $round, $opt_HHR, $width_HR, $target, $seqidx_HR, $seqlen_HR, $have_evalues, $have_model_coords) = @_;
-
-  # output to short and long output files
-  output_one_hitless_target($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx_HR->{$target}, abs($seqlen_HR->{$target}), $have_evalues, $have_model_coords); 
-
-  $seqlen_HR->{$target} *= -1; # serves as a flag that we output info for this sequence
-  
   return;
 }
 
@@ -1891,6 +1800,7 @@ sub output_one_target {
   my $wfamily = undef;
   my $better_than_winning = 0;
   foreach my $family (keys %{$first_model_HHR}) { 
+    $better_than_winning = 0;
     # determine if this hit is better than our winning clan
     if(! defined $wfamily) { 
       $better_than_winning = 1; 
@@ -3758,7 +3668,7 @@ sub output_combined_short_or_long_file {
       @r1_el_A = split(/\s+/, $r1_line);
       @r2_el_A = split(/\s+/, $r2_line);
       if($r1_el_A[1] ne $r2_el_A[1]) { 
-        die "ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")"; 
+        die "ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")\nr1 line: $r1_line\nr2 line: $r2_line\n"; 
       }
       $ncols_r1 = scalar(@r1_el_A);
       $ncols_r2 = scalar(@r2_el_A);
@@ -3869,6 +3779,8 @@ sub output_combined_short_or_long_file {
       # get new lines
       $r1_line = <$r1_in_FH>; 
       $r2_line = <$r2_in_FH>; 
+      $r1_lidx++;
+      $r2_lidx++;
     }
     # check for some unexpected errors
     elsif(($have_r1_line) && (! $have_r2_line)) { 
@@ -4557,3 +4469,43 @@ sub number_of_digits {
     return $ndig;
 }
 
+#################################################################
+# Subroutine: debug_print_model_stats
+# Incept:     EPN, Thu May 11 14:13:27 2017
+#
+# Purpose:    Output all values in a model stats hash
+#
+# Arguments:
+#   $model_HHR: ref to 2D hash, 1D keys families, 2D keys:
+#               "model", "domain", "evalue", "score",
+#               "start", "stop", "strand", "mdlstart", "mdlstop"
+#   $name:      name of model 2D hash
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub debug_print_model_stats { 
+  my $sub_name = "debug_print_model_stats";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($model_HHR, $name) = (@_);
+
+  printf("$sub_name, name: $name\n");
+
+  foreach my $family (sort keys (%{$model_HHR})) { 
+    printf("family: $family\n");
+    foreach my $key ("model", "domain", "evalue", "score", "start", "stop", "strand", "mdlstart", "mdlstop") { 
+      printf("\t%10s: ", $key);
+      if(defined $model_HHR->{$family}{$key}) { 
+        printf($model_HHR->{$family}{$key} . "\n"); 
+      }
+      else { 
+        printf("undefined\n");
+      }
+    }
+  }
+  return;
+}
