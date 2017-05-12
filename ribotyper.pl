@@ -219,16 +219,16 @@ if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) {
 
 my $min_primary_sc   = opt_Get("--minpsc", \%opt_HH);
 my $min_secondary_sc = opt_Get("--minssc", \%opt_HH);
-if($min_secondary_sc < $min_primary_sc) { 
+if($min_secondary_sc > $min_primary_sc) { 
   if((opt_IsUsed("--minpsc", \%opt_HH)) && (opt_IsUsed("--minssc", \%opt_HH))) { 
     die sprintf("ERROR, with --minpsc <x> and --minssc <y>, <x> must be less than or equal to <y> (got <x>: %f, y: %f)\n", 
                 opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
   }
-  elsif(opt_isUsed("--minpsc", \%opt_HH)) { 
+  elsif(opt_IsUsed("--minpsc", \%opt_HH)) { 
     die sprintf("ERROR, with --minpsc <x>, <x> must be less than or equal to <y>=%d (default value for --minssc)\nOr you must lower <y> with the --minssc option too.\n", 
                 opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
   }
-  elsif(opt_isUsed("--minssc", \%opt_HH)) { 
+  elsif(opt_IsUsed("--minssc", \%opt_HH)) { 
     die sprintf("ERROR, with --minssc <y>, <x> must be greater or equal to <x>=%d (default value for --minpsc)\nOr you must lower <x> with the --minpsc option too.\n", 
                 opt_Get("--minssc",\%opt_HH), opt_Get("--minpsc",\%opt_HH)); 
   }
