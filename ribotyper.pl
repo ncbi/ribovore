@@ -5,6 +5,7 @@ use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
 require "epn-options.pm";
+require "ribo.pm";
 
 # make sure the DNAORGDIR environment variable is set
 my $ribodir = $ENV{'RIBODIR'};
@@ -167,7 +168,7 @@ $| = 1;
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
-  output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
+  riboOutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
   opt_OutputHelp(*STDOUT, $usage, \%opt_HH, \@opt_order_A, \%opt_group_desc_H);
   if(! $options_okay) { die "ERROR, unrecognized option;"; }
   else                { exit 0; } # -h, exit with 0 status
@@ -216,7 +217,7 @@ if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) {
   }
 }
 
-my $cmd         = undef;                    # a command to be run by run_command()
+my $cmd         = undef;                    # a command to be run by ribo_RunCommand()
 my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @to_remove_A = (); # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
@@ -239,18 +240,18 @@ else {  # --skipsearch not used, normal case
   # if $dir_out already exists remove it only if -f also used
   if(-d $dir_out) { 
     $cmd = "rm -rf $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
     else                        { die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
     else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   # if $dir_out does not exist, create it
   if(! -d $dir_out) { 
     $cmd = "mkdir $dir_out";
-    run_command($cmd, opt_Get("-v", \%opt_HH));
+    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
   }
 }
 my $dir_out_tail = $dir_out;
@@ -266,12 +267,12 @@ else {
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
 # make sure the sequence and modelinfo files exists
-check_if_file_exists_and_is_non_empty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
+ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
-  check_if_file_exists_and_is_non_empty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
 }
 else { # -i used on the command line
-  check_if_file_exists_and_is_non_empty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model file after we parse the model info file
 
@@ -291,7 +292,7 @@ push(@arg_A, $dir_out);
 push(@arg_desc_A, "model information input file");
 push(@arg_A, $modelinfo_file);
 
-output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
+ribo_OutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 ##############################################
@@ -385,13 +386,13 @@ $execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
 $execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
 $execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
 #$execs_H{"esl_ssplit"}    = $esl_ssplit;
-validate_executable_hash(\%execs_H);
+ribo_ValidateExecutableHash(\%execs_H);
 
 ###########################################################################
 # Step 1: Parse/validate input files
 ###########################################################################
 my $progress_w = 48; # the width of the left hand column in our progress output, hard-coded
-my $start_secs = output_progress_prior("Validating input files", $progress_w, undef, *STDOUT);
+my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w, undef, *STDOUT);
 
 # parse model info file, which checks that all CM files exist
 # variables related to fams and domains
@@ -439,23 +440,18 @@ else { # --inaccept not used, all models are acceptable
 # check for SSI index file for the sequence file,
 # if it doesn't exist, create it
 my $ssi_file = $seq_file . ".ssi";
-if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) { 
-  run_command($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
-  if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) { 
+if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
+  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
     die "ERROR, tried to create $ssi_file, but failed"; 
   }
 }
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 2: Use esl-seqstat to determine sequence lengths of all target seqs
 ###########################################################################
-$start_secs = output_progress_prior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
-my $seqstat_file = $out_root . ".seqstat";
-if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $seqstat_file);
-}
-run_command($execs_H{"esl-seqstat"} . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+$start_secs = ribo_OutputProgressPrior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value multiplied by -1 after we output info for this sequence
@@ -465,15 +461,13 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # see it again before the next round, then we know the 
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
-# parse esl-seqstat file to get lengths
-my $max_targetname_length = length("target"); # maximum length of any target name
-my $max_length_length     = length("length"); # maximum length of the string-ized length of any target
-my $nseq                  = 0; # number of sequences read
-parse_seqstat_file($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, \%seqidx_H, \%seqlen_H); 
-$width_H{"target"} = $max_targetname_length;
-$width_H{"length"} = $max_length_length;
-$width_H{"index"}  = length($nseq);
-if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
+
+# use esl-seqstat to determine sequence lengths
+my $seqstat_file = $out_root . ".seqstat";
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $seqstat_file);
+}
+ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 
 # now that we know the max sequence name length, we can output headers to the output files
 output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H);
@@ -484,7 +478,7 @@ if(defined $alg2) {
   output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H);
   output_short_headers($final_short_out_FH, \%width_H);
 }
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 3: classify sequences using round 1 search algorithm
@@ -507,13 +501,13 @@ $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorte
 $r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = output_progress_prior("Classifying sequences", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, undef, *STDOUT);
 }
 else { 
-  $start_secs = output_progress_prior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  run_command($r1_search_cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($r1_search_cmd, opt_Get("-v", \%opt_HH));
 }
 else { 
   if(! -s $r1_tblout_file) { 
@@ -529,20 +523,20 @@ if(! opt_Get("--keep", \%opt_HH)) {
     push(@to_remove_A, $r1_searchout_file);
   }
 }
-$r1_secs = output_progress_complete($start_secs, undef, undef, *STDOUT);
+$r1_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 4: Sort round 1 output
 ###########################################################################
-$start_secs = output_progress_prior("Sorting classification results", $progress_w, undef, *STDOUT);
-run_command($r1_sort_cmd, opt_Get("-v", \%opt_HH));
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+$start_secs = ribo_OutputProgressPrior("Sorting classification results", $progress_w, undef, *STDOUT);
+ribo_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH));
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
 # Step 5: Parse round 1 sorted output
 ###########################################################################
-$start_secs = output_progress_prior("Processing classification results", $progress_w, undef, *STDOUT);
+$start_secs = ribo_OutputProgressPrior("Processing classification results", $progress_w, undef, *STDOUT);
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
                       \%family_H, \%domain_H, \%accept_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
 
@@ -559,10 +553,10 @@ close($r1_srt_long_out_FH);
 close($r1_srt_short_out_FH);
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
-run_command($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
 $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
-run_command($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
 # reopen them, and add tails to the output files
 # now that we know the max sequence name length, we can output headers to the output files
@@ -573,7 +567,7 @@ output_short_tail($r1_srt_short_out_FH, \%opt_HH);
 close($r1_srt_short_out_FH);
 close($r1_srt_long_out_FH);
 
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 6: Parse the round 1 output to create sfetch files for fetching
@@ -581,7 +575,7 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 if(defined $alg2) { # only do this if we're doing a second round of searching
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = output_progress_prior("Fetching per-model sequence sets", $progress_w, undef, *STDOUT);
+    $start_secs = ribo_OutputProgressPrior("Fetching per-model sequence sets", $progress_w, undef, *STDOUT);
     
     my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
     # first initialize all arrays to empty
@@ -603,12 +597,12 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         }
       }
     }
-    output_progress_complete($start_secs, undef, undef, *STDOUT);
+    ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
     
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
-        run_command($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
         }
@@ -632,10 +626,10 @@ my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
 if(defined $alg2) { 
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = output_progress_prior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
+    $start_secs = ribo_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
   }
   else { 
-    $start_secs = output_progress_prior("Skipping sequence search (using results from previous run)", $progress_w, undef, *STDOUT);
+    $start_secs = ribo_OutputProgressPrior("Skipping sequence search (using results from previous run)", $progress_w, undef, *STDOUT);
   }
   my $cmd  = undef;
   foreach $model (sort keys %family_H) { 
@@ -646,7 +640,7 @@ if(defined $alg2) {
       push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        run_command($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $r2_tblout_file_A[$midx]);
           if(($alg2 ne "slow") && 
@@ -664,21 +658,21 @@ if(defined $alg2) {
     }
   }
   $nr2 = $midx;
-  $r2_secs = output_progress_complete($start_secs, undef, undef, *STDOUT);
+  $r2_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
   # concatenate round 2 tblout files 
   my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
   $r2_all_tblout_file = $out_root . ".r2.all.cmsearch.tbl";
   if(defined $alg2) { 
     if($nr2 >= 1) { 
-      $start_secs = output_progress_prior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
+      $start_secs = ribo_OutputProgressPrior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
       $cat_cmd = "cat $r2_tblout_file_A[0] ";
       for($midx = 1; $midx < $nr2; $midx++) { 
         $cat_cmd .= "$r2_tblout_file_A[$midx] ";
       }
       $cat_cmd .= "> " . $r2_all_tblout_file;
-      run_command($cat_cmd, opt_Get("-v", \%opt_HH));
-      output_progress_complete($start_secs, undef, undef, *STDOUT);
+      ribo_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH));
+      ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_all_tblout_file);
       }
@@ -690,21 +684,21 @@ if(defined $alg2) {
 # Step 8: Sort round 2 output
 ###########################################################################
 if((defined $alg2) && ($nr2 > 0)) { 
-  $start_secs = output_progress_prior("Sorting search results", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Sorting search results", $progress_w, undef, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
-  run_command($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $r2_all_sorted_tblout_file);
   }
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 
 ###########################################################################
 # Step 9: Parse round 2 sorted output
 ###########################################################################
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
   if($nr2 > 0) { 
     parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
                           \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
@@ -722,10 +716,10 @@ if(defined $alg2) {
   close($r2_srt_short_out_FH);
 
   $cmd = "sort -n $r2_unsrt_short_out_file >> $r2_srt_short_out_file";
-  run_command($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
   $cmd = "sort -n $r2_unsrt_long_out_file >> $r2_srt_long_out_file";
-  run_command($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
   # reopen them, and add tails to the output files
   # now that we know the max sequence name length, we can output headers to the output files
@@ -736,7 +730,7 @@ if(defined $alg2) {
   close($r2_srt_short_out_FH);
   close($r2_srt_long_out_FH);
   
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 ###########################################################################
 # Step 10: Combine the round 1 and round 2 output files to create the 
@@ -751,7 +745,7 @@ my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elemen
 initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
 
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Creating final output files", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Creating final output files", $progress_w, undef, *STDOUT);
   open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
   open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
   open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
@@ -763,7 +757,7 @@ if(defined $alg2) {
   output_short_tail($final_short_out_FH, \%opt_HH);
   output_long_tail($final_long_out_FH, "final", \%opt_HH);
   close($final_short_out_FH);
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 
 # remove files we don't want anymore, then exit
@@ -798,7 +792,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # parse_modelinfo_file:     parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
-# parse_seqstat_file:       parse esl-seqstat -a output file
+# ribo_ParseSeqstatFile:       parse esl-seqstat -a output file
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
 # Helper functions for parse_sorted_tbl_file():
@@ -810,13 +804,8 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #                            helper for parse_sorted_tbl_file()
 # output_short_headers:      output headers for short output file
 # output_long_headers:       output headers for long output file
-# output_banner:             output the banner with info on the script and options used
-# output_progress_prior:     output routine for a step, prior to running the step
-# output_progress_complete:  output routine for a step, after the running the step
 #
 # Miscellaneous functions:
-# run_command:              run a command using system()
-# validate_executable_hash: validate executables exist and are executable
 # seconds_since_epoch:      number of seconds since the epoch, for timings
 # debug_print:              print out info of a hit for debugging
 # get_monocharacter_string: return string of a specified length of a specified character
@@ -891,8 +880,8 @@ sub parse_modelinfo_file {
       $df_model_file = $df_model_dir . $cmfile;
       if($opt_i_used) { 
         $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
-        $in_nondf = check_if_file_exists_and_is_non_empty($non_df_model_file, undef, $sub_name, 0); # don't die if it doesn't exist
-        $in_df    = check_if_file_exists_and_is_non_empty($df_model_file,     undef, $sub_name, 0); # don't die if it doesn't exist
+        $in_nondf = ribo_CheckIfFileExistsAndIsNonEmpty($non_df_model_file, undef, $sub_name, 0); # don't die if it doesn't exist
+        $in_df    = ribo_CheckIfFileExistsAndIsNonEmpty($df_model_file,     undef, $sub_name, 0); # don't die if it doesn't exist
         if(($in_nondf != 0) && ($in_df != 0)) { # exists in two places
           die "ERROR in $sub_name, looking for model file $cmfile, found it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\nIt can only exist in one of these places, so either\nrename it or remove of the copies (do NOT remove the copy from the default model directory unless you put it there)\n."
         }
@@ -916,7 +905,7 @@ sub parse_modelinfo_file {
         }
       }     
       else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
-        check_if_file_exists_and_is_non_empty($df_model_file, "model file name read from default model info file", $sub_name, 1); # die if it doesn't exist
+        ribo_CheckIfFileExistsAndIsNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1); # die if it doesn't exist
         $cmfile = $df_model_file;
       }
         
@@ -1110,97 +1099,6 @@ sub parse_and_validate_model_files {
   return $model_width;
 }
 
-#################################################################
-# Subroutine : parse_seqstat_file()
-# Incept:      EPN, Wed Dec 14 16:16:22 2016
-#
-# Purpose:     Parse an esl-seqstat -a output file.
-#              
-# Arguments: 
-#   $seqstat_file:            file to parse
-#   $max_targetname_length_R: REF to the maximum length of any target name, updated here
-#   $max_length_length_R:     REF to the maximum length of string-ized length of any target seq, updated here
-#   $nseq_R:                  REF to the number of sequences read, updated here
-#   $seqidx_HR:               REF to hash of sequence indices to fill here
-#   $seqlen_HR:               REF to hash of sequence lengths to fill here
-#
-# Returns:     Nothing. Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
-#              $$max_targetname_length_R, $$max_length_length_R, and $$nseq_R.
-# 
-# Dies:        If the sequence file has two sequences with identical names.
-#              Error message will list all duplicates.
-#              If no sequences were read.
-#
-################################################################# 
-sub parse_seqstat_file { 
-  my $nargs_expected = 6;
-  my $sub_name = "parse_seqstat_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqidx_HR, $seqlen_HR) = @_;
-
-  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
-
-  my $nread = 0;
-  my $targetname_length;
-  my $seqlength_length;
-  my $targetname;
-  my $length;
-  my %seqdups_H = ();       # key is a sequence name that exists more than once in seq file, value is number of occurences
-  my $at_least_one_dup = 0; # set to 1 if we find any duplicate sequence names
-
-  while(my $line = <IN>) { 
-    # = lcl|dna_BP331_0.3k:467     1232 
-    # = lcl|dna_BP331_0.3k:10     1397 
-    # = lcl|dna_BP331_0.3k:1052     1414 
-    chomp $line;
-    #print $line . "\n";
-    if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
-      $nread++;
-      ($targetname, $length) = ($1, $2);
-      if(exists($seqidx_HR->{$targetname})) { 
-        if(exists($seqdups_H{$targetname})) { 
-          $seqdups_H{$targetname}++;
-        }
-        else { 
-          $seqdups_H{$targetname} = 2;
-        }
-        $at_least_one_dup = 1;
-      }
-        
-      $seqidx_HR->{$targetname} = $nread;
-      $seqlen_HR->{$targetname} = $length;
-
-      $targetname_length = length($targetname);
-      if($targetname_length > $$max_targetname_length_R) { 
-        $$max_targetname_length_R = $targetname_length;
-      }
-
-      $seqlength_length  = length($length);
-      if($seqlength_length > $$max_length_length_R) { 
-        $$max_length_length_R = $seqlength_length;
-      }
-
-    }
-  }
-  close(IN);
-  if($nread == 0) { 
-    die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
-  }
-  if($at_least_one_dup) { 
-    my $i = 1;
-    my $die_string = "\nERROR, not all sequences in input sequence file have a unique name. They must.\nList of sequences that occur more than once, with number of occurrences:\n";
-    foreach $targetname (sort keys %seqdups_H) { 
-      $die_string .= "\t($i) $targetname $seqdups_H{$targetname}\n";
-      $i++;
-    }
-    $die_string .= "\n";
-    die $die_string;
-  }
-
-  $$nseq_R = $nread;
-  return;
-}
 
 #################################################################
 # Subroutine : parse_sorted_tblout_file()
@@ -2651,191 +2549,9 @@ sub output_banner {
 
   return;
 }
-#################################################################
-# Subroutine : output_progress_prior()
-# Incept:      EPN, Fri Feb 12 17:22:24 2016 [dnaorg.pm]
-#
-# Purpose:      Output to $FH1 (and possibly $FH2) a message indicating
-#               that we're about to do 'something' as explained in
-#               $outstr.  
-#
-#               Caller should call *this* function, then do
-#               the 'something', then call output_progress_complete().
-#
-#               We return the number of seconds since the epoch, which
-#               should be passed into the downstream
-#               output_progress_complete() call if caller wants to
-#               output running time.
-#
-# Arguments: 
-#   $outstr:     string to print to $FH
-#   $progress_w: width of progress messages
-#   $FH1:        file handle to print to, can be undef
-#   $FH2:        another file handle to print to, can be undef
-# 
-# Returns:     Number of seconds and microseconds since the epoch.
-#
-################################################################# 
-sub output_progress_prior { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_progress_prior()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($outstr, $progress_w, $FH1, $FH2) = @_;
 
-  if(defined $FH1) { printf $FH1 ("# %-*s ... ", $progress_w, $outstr); }
-  if(defined $FH2) { printf $FH2 ("# %-*s ... ", $progress_w, $outstr); }
 
-  return seconds_since_epoch();
-}
 
-#################################################################
-# Subroutine : output_progress_complete()
-# Incept:      EPN, Fri Feb 12 17:28:19 2016 [dnaorg.pm]
-#
-# Purpose:     Output to $FH1 (and possibly $FH2) a 
-#              message indicating that we've completed 
-#              'something'.
-#
-#              Caller should call *this* function,
-#              after both a call to output_progress_prior()
-#              and doing the 'something'.
-#
-#              If $start_secs is defined, we determine the number
-#              of seconds the step took, output it, and 
-#              return it.
-#
-# Arguments: 
-#   $start_secs:    number of seconds either the step took
-#                   (if $secs_is_total) or since the epoch
-#                   (if !$secs_is_total)
-#   $extra_desc:    extra description text to put after timing
-#   $FH1:           file handle to print to, can be undef
-#   $FH2:           another file handle to print to, can be undef
-# 
-# Returns:     Number of seconds the step took (if $secs is defined,
-#              else 0)
-#
-################################################################# 
-sub output_progress_complete { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_progress_complete()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($start_secs, $extra_desc, $FH1, $FH2) = @_;
-
-  my $total_secs = undef;
-  if(defined $start_secs) { 
-    $total_secs = seconds_since_epoch() - $start_secs;
-  }
-
-  if(defined $FH1) { printf $FH1 ("done."); }
-  if(defined $FH2) { printf $FH2 ("done."); }
-
-  if(defined $total_secs || defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 (" ["); }
-    if(defined $FH2) { printf $FH2 (" ["); }
-  }
-  if(defined $total_secs) { 
-    if(defined $FH1) { printf $FH1 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
-    if(defined $FH2) { printf $FH2 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
-  }
-  if(defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 $extra_desc };
-    if(defined $FH2) { printf $FH2 $extra_desc };
-  }
-  if(defined $total_secs || defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 ("]"); }
-    if(defined $FH2) { printf $FH2 ("]"); }
-  }
-
-  if(defined $FH1) { printf $FH1 ("\n"); }
-  if(defined $FH2) { printf $FH2 ("\n"); }
-  
-  return (defined $total_secs) ? $total_secs : 0.;
-}
-
-#################################################################
-# Subroutine:  run_command()
-# Incept:      EPN, Mon Dec 19 10:43:45 2016
-#
-# Purpose:     Runs a command using system() and exits in error 
-#              if the command fails. If $be_verbose, outputs
-#              the command to stdout. If $FH_HR->{"cmd"} is
-#              defined, outputs command to that file handle.
-#
-# Arguments:
-#   $cmd:         command to run, with a "system" command;
-#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
-#
-# Returns:    amount of time the command took, in seconds
-#
-# Dies:       if $cmd fails
-#################################################################
-sub run_command {
-  my $sub_name = "run_command()";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($cmd, $be_verbose) = @_;
-  
-  if($be_verbose) { 
-    print ("Running cmd: $cmd\n"); 
-  }
-
-  my ($seconds, $microseconds) = gettimeofday();
-  my $start_time = ($seconds + ($microseconds / 1000000.));
-
-  system($cmd);
-
-  ($seconds, $microseconds) = gettimeofday();
-  my $stop_time = ($seconds + ($microseconds / 1000000.));
-
-  if($? != 0) { 
-    die "ERROR in $sub_name, the following command failed:\n$cmd\n";
-  }
-
-  return ($stop_time - $start_time);
-}
-
-#################################################################
-# Subroutine : validate_executable_hash()
-# Incept:      EPN, Sat Feb 13 06:27:51 2016
-#
-# Purpose:     Given a reference to a hash in which the 
-#              values are paths to executables, validate
-#              those files are executable.
-#
-# Arguments: 
-#   $execs_HR: REF to hash, keys are short names to executable
-#              e.g. "cmbuild", values are full paths to that
-#              executable, e.g. "/usr/local/infernal/1.1.1/bin/cmbuild"
-# 
-# Returns:     void
-#
-# Dies:        if one or more executables does not exist#
-#
-################################################################# 
-sub validate_executable_hash { 
-  my $nargs_expected = 1;
-  my $sub_name = "validate_executable_hash()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($execs_HR) = (@_);
-
-  my $fail_str = undef;
-  foreach my $key (sort keys %{$execs_HR}) { 
-    if(! -e $execs_HR->{$key}) { 
-      $fail_str .= "\t$execs_HR->{$key} does not exist.\n"; 
-    }
-    elsif(! -x $execs_HR->{$key}) { 
-      $fail_str .= "\t$execs_HR->{$key} exists but is not an executable file.\n"; 
-    }
-  }
-  
-  if(defined $fail_str) { 
-    die "ERROR in $sub_name(),\n$fail_str"; 
-  }
-
-  return;
-}
 
 #################################################################
 # Subroutine : seconds_since_epoch()
@@ -3350,50 +3066,6 @@ sub get_dir_path {
   
   if($orig_file eq "") { return "./";       }
   else                 { return $orig_file; }
-}
-
-#################################################################
-# Subroutine : check_if_file_exists_and_is_non_empty()
-# Incept:      EPN, Thu May  4 09:30:32 2017 [dnaorg.pm:validateFileExistsAndIsNonEmpty]
-#
-# Purpose:     Check if a file exists and is non-empty. 
-#
-# Arguments: 
-#   $filename:         file that we are checking on
-#   $filedesc:         description of file
-#   $calling_sub_name: name of calling subroutine (can be undef)
-#   $do_die:           '1' if we should die if it does not exist.  
-# 
-# Returns:     Return '1' if it does and is non empty, '0' if it does
-#              not exist, or '-1' if it exists but is empty.
-#
-# Dies:        If file does not exist or is empty and $do_die is 1.
-# 
-################################################################# 
-sub check_if_file_exists_and_is_non_empty { 
-  my $nargs_expected = 4;
-  my $sub_name = "check_if_file_exists_and_is_non_empty()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($filename, $filedesc, $calling_sub_name, $do_die) = @_;
-
-  if(! -e $filename) { 
-    if($do_die) { 
-      die sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
-                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : "")); 
-    }
-    return 0;
-  }
-  elsif(! -s $filename) { 
-    if($do_die) { 
-      die sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
-                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : "")); 
-    }
-    return -1;
-  }
-  
-  return 1;
 }
 
 #################################################################
