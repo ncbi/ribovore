@@ -583,7 +583,6 @@ $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
 ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
 # reopen them, and add tails to the output files
-# now that we know the max sequence name length, we can output headers to the output files
 open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for appending";
 open($r1_srt_short_out_FH, ">>", $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for appending";
 output_long_tail($r1_srt_long_out_FH, 1, \%opt_HH); # 1: round 1 of searching
@@ -2125,7 +2124,8 @@ sub output_one_target {
 #              
 # Arguments: 
 #   $FH:        file handle to output to
-#   $width_HR:  maximum length of any target name
+#   $width_HR:  ref to hash, keys include "model" and "target", 
+#               value is width (maximum length) of any target/model
 #
 # Returns:     Nothing.
 # 
@@ -2168,8 +2168,8 @@ sub output_short_headers {
 #               we're outputting for (final is the combined file
 #               created from both rounds 1 and 2)
 #   $opt_HHR:   ref to 2D options hash
-#   $width_HR:  ref to hash, key is "model" or "target", value 
-#               is width (maximum length) of any target/model
+#   $width_HR:  ref to hash, keys include "model" and "target", 
+#               value is width (maximum length) of any target/model
 #
 # Returns:     Nothing.
 # 
