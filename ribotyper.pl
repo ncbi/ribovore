@@ -1621,7 +1621,7 @@ sub output_one_hitless_target {
   my $nhits = 0;
 
   if(defined $short_FH) { 
-    printf $short_FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
+    printf $short_FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
                       $width_HR->{"index"}, $seqidx,
                       $width_HR->{"target"}, $target, 
                       $width_HR->{"classification"}, "-",
