@@ -455,6 +455,44 @@ sub ribo_SecondsSinceEpoch {
   return ($seconds + ($microseconds / 1000000.));
 }
 
+#################################################################
+# Subroutine: ribo_GetMonoCharacterString()
+# Incept:     EPN, Thu Mar 10 21:02:35 2016 [dnaorg.pm]
+#
+# Purpose:    Return a string of length $len of repeated instances
+#             of the character $char.
+#
+# Arguments:
+#   $len:   desired length of the string to return
+#   $char:  desired character
+#
+# Returns:  A string of $char repeated $len times.
+# 
+# Dies:     if $len is not a positive integer
+#
+#################################################################
+sub ribo_GetMonoCharacterString {
+  my $sub_name = "ribo_GetMonoCharacterString";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($len, $char) = @_;
+
+  if(! verify_integer($len)) { 
+    die "ERROR in $sub_name, passed in length ($len) is not a non-negative integer";
+  }
+  if($len < 0) { 
+    die "ERROR in $sub_name, passed in length ($len) is a negative integer";
+  }
+    
+  my $ret_str = "";
+  for(my $i = 0; $i < $len; $i++) { 
+    $ret_str .= $char;
+  }
+
+  return $ret_str;
+}
+
 ###########################################################################
 # the next line is critical, a perl module must return a true value
 return 1;
