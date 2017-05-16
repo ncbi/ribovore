@@ -493,7 +493,70 @@ sub ribo_GetMonoCharacterString {
   return $ret_str;
 }
 
+#####################################################################
+# Subroutine: ribo_GetTimeString()
+# Incept:     EPN, Tue May  9 11:09:12 2017 
+#             EPN, Tue Jun 16 08:52:08 2009 [ssu-align:ssu.pm:PrintTiming]
+# 
+# Purpose:    Print a timing in hhhh:mm:ss format.
+# 
+# Arguments:
+# $inseconds: number of seconds
+#
+# Returns:    Nothing.
+# 
+####################################################################
+sub ribo_GetTimeString { 
+    my $nargs_expected = 1;
+    my $sub_name = "ribo_GetTimeString()";
+    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+    
+    my ($inseconds) = @_;
+
+    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $ndig_hours);
+
+    $hours = int($inseconds / 3600);
+    $inseconds -= ($hours * 3600);
+    $minutes = int($inseconds / 60);
+    $inseconds -= ($minutes * 60);
+    $seconds = $inseconds;
+    $thours   = sprintf("%02d", $hours);
+    $tminutes = sprintf("%02d", $minutes);
+    $ndig_hours = ribo_NumberOfDigits($hours);
+    if($ndig_hours < 2) { $ndig_hours = 2; }
+    $tseconds = sprintf("%05.2f", $seconds);
+
+    return sprintf("%*s:%2s:%5s  (hh:mm:ss)", $ndig_hours, $thours, $tminutes, $tseconds);
+}
+
+#################################################################
+# Subroutine : ribo_NumberOfDigits()
+# Incept:      EPN, Tue May  9 11:33:50 2017
+#              EPN, Fri Nov 13 06:17:25 2009 [ssu-align:ssu.pm:NumberOfDigits()]
+# 
+# Purpose:     Return the number of digits in a number before
+#              the decimal point. (ex: 1234.56 would return 4).
+# Arguments:
+# $num:        the number
+# 
+# Returns:     the number of digits before the decimal point
+#
+################################################################# 
+sub ribo_NumberOfDigits { 
+    my $nargs_expected = 1;
+    my $sub_name = "ribo_NumberOfDigits()";
+    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+    my ($num) = (@_);
+
+    my $ndig = 1; 
+    while($num > 10) { $ndig++; $num /= 10.; }
+
+    return $ndig;
+}
+
 ###########################################################################
 # the next line is critical, a perl module must return a true value
 return 1;
 ###########################################################################
+

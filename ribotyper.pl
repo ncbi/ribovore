@@ -3891,7 +3891,7 @@ sub output_timing_statistics {
   $width_H{"seqsec"}   = 7;
   $width_H{"ntsec"}    = 10;
   $width_H{"ntseccpu"} = 10;
-  $width_H{"total"}    = 10;
+  $width_H{"total"}    = 23;
   
   printf $out_FH ("#\n");
   printf $out_FH ("# Timing statistics:\n");
@@ -3904,7 +3904,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   "seq/sec",
                   $width_H{"ntsec"},    "nt/sec",
                   $width_H{"ntseccpu"}, "nt/sec/cpu",
-                  $width_H{"total"},    "total_time");
+                  $width_H{"total"},    "total time");
   
   # line 2
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
@@ -3922,7 +3922,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r1_nseq / $r1_secs,
                   $width_H{"ntsec"},    $r1_nnt  / $r1_secs, 
                   $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
-                  $width_H{"total"},    get_time_string($r1_secs));
+                  $width_H{"total"},    ribo_GetTimeString($r1_secs));
 
   $class = "search";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -3931,7 +3931,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r2_nseq / $r2_secs,
                   $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
                   $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
-                  $width_H{"total"},    get_time_string($r2_secs));
+                  $width_H{"total"},    ribo_GetTimeString($r2_secs));
   
   
   $class = "total";
@@ -3941,7 +3941,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r1_nseq / $tot_secs,
                   $width_H{"ntsec"},    $r1_nnt  / $tot_secs,
                   $width_H{"ntseccpu"}, ($r1_nnt  / $tot_secs) / $ncpu, 
-                  $width_H{"total"},    get_time_string($tot_secs));
+                  $width_H{"total"},    ribo_GetTimeString($tot_secs));
                   
   printf $out_FH ("#\n");
   
@@ -4035,67 +4035,7 @@ sub output_ufeature_statistics {
   
 }
 
-#####################################################################
-# Subroutine: get_time_string()
-# Incept:     EPN, Tue May  9 11:09:12 2017 
-#             EPN, Tue Jun 16 08:52:08 2009 [ssu-align:ssu.pm:PrintTiming]
-# 
-# Purpose:    Print a timing in hhhh:mm:ss format.
-# 
-# Arguments:
-# $inseconds: number of seconds
-#
-# Returns:    Nothing.
-# 
-####################################################################
-sub get_time_string { 
-    my $nargs_expected = 1;
-    my $sub_name = "get_time_string()";
-    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-    
-    my ($inseconds) = @_;
 
-    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $ndig_hours);
-
-    $hours = int($inseconds / 3600);
-    $inseconds -= ($hours * 3600);
-    $minutes = int($inseconds / 60);
-    $inseconds -= ($minutes * 60);
-    $seconds = $inseconds;
-    $thours   = sprintf("%02d", $hours);
-    $tminutes = sprintf("%02d", $minutes);
-    $ndig_hours = number_of_digits($hours);
-    if($ndig_hours < 2) { $ndig_hours = 2; }
-    $tseconds = sprintf("%05.2f", $seconds);
-
-    return sprintf("%*s:%2s:%5s  (hh:mm:ss)", $ndig_hours, $thours, $tminutes, $tseconds);
-}
-
-#################################################################
-# Subroutine : number_of_digits()
-# Incept:      EPN, Tue May  9 11:33:50 2017
-#              EPN, Fri Nov 13 06:17:25 2009 [ssu-align:ssu.pm:NumberOfDigits()]
-# 
-# Purpose:     Return the number of digits in a number before
-#              the decimal point. (ex: 1234.56 would return 4).
-# Arguments:
-# $num:        the number
-# 
-# Returns:     the number of digits before the decimal point
-#
-################################################################# 
-sub number_of_digits { 
-    my $nargs_expected = 1;
-    my $sub_name = "number_of_digits()";
-    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-    my ($num) = (@_);
-
-    my $ndig = 1; 
-    while($num > 10) { $ndig++; $num /= 10.; }
-
-    return $ndig;
-}
 
 #################################################################
 # Subroutine: debug_print_model_stats
