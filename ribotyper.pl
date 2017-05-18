@@ -77,6 +77,8 @@ opt_Add("--scfail",     "boolean",   0,                        5,  undef,   unde
 opt_Add("--difffail",   "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--covfail",    "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--multfail",   "boolean",   0,                        5,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--shortfail",  "integer",   0,                        5,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--longfail",   "integer",   0,                        5,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
@@ -133,6 +135,8 @@ my $options_okay =
                 'difffail'     => \$GetOptions_H{"--difffail"},
                 'covfail'      => \$GetOptions_H{"--covfail"},
                 'multfail'     => \$GetOptions_H{"--multfail"},
+                'shortfail=s'  => \$GetOptions_H{"--shortfail"},
+                'longfail=s'   => \$GetOptions_H{"--longfail"},
 # options controlling thresholds for warnings and failures
                 'lowppossc'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"}, 
@@ -206,22 +210,27 @@ if(opt_Get("--noali", \%opt_HH)) {
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
   if(opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)) { 
-    die sprintf("ERROR, with --lowpdiff <x> and --vlowpdiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
+    die sprintf("ERROR, with --lowpdiff <x> and --vlowpdiff <y>, <x> must be less than <y> (got <x>: %f, <y>: %f)\n", 
                 opt_Get("--lowpdiff",\%opt_HH), opt_Get("--vlowpdiff",\%opt_HH)); 
   }
 }
 if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) { 
   if(opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)) { 
-    die sprintf("ERROR, with --lowadiff <x> and --vlowadiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
+    die sprintf("ERROR, with --lowadiff <x> and --vlowadiff <y>, <x> must be less than <y> (got <x>: %f, <y>: %f)\n", 
                 opt_Get("--lowadiff",\%opt_HH), opt_Get("--vlowadiff",\%opt_HH)); 
   }
+}
+if((opt_IsUsed("--shortfail",\%opt_HH) && opt_IsUsed("--longfail",\%opt_HH)) && 
+   (opt_Get("--shortfail",\%opt_HH) >= opt_Get("--longfail",\%opt_HH))) { 
+  die sprintf("ERROR, with --shortfail <n1> and --longfail <n2>, <n1> must be less than <n2> (got <n1>: %f, <n2>: %f)\n", 
+                opt_Get("--shortfail",\%opt_HH), opt_Get("--longfail",\%opt_HH)); 
 }
 
 my $min_primary_sc   = opt_Get("--minpsc", \%opt_HH);
 my $min_secondary_sc = opt_Get("--minssc", \%opt_HH);
 if($min_secondary_sc > $min_primary_sc) { 
   if((opt_IsUsed("--minpsc", \%opt_HH)) && (opt_IsUsed("--minssc", \%opt_HH))) { 
-    die sprintf("ERROR, with --minpsc <x> and --minssc <y>, <x> must be less than or equal to <y> (got <x>: %f, y: %f)\n", 
+    die sprintf("ERROR, with --minpsc <x> and --minssc <y>, <x> must be less than or equal to <y> (got <x>: %f, <y>: %f)\n", 
                 opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
   }
   elsif(opt_IsUsed("--minpsc", \%opt_HH)) { 
@@ -239,10 +248,11 @@ if($min_secondary_sc > $min_primary_sc) {
 }
 
 my $cmd         = undef;                    # a command to be run by ribo_RunCommand()
-my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @to_remove_A = (); # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
 my $r2_secs     = undef; # number of seconds required for round 2 search
+my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
+if($ncpu == 1) { $ncpu = 0; } # prefer --cpu 0 to --cpu 1
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -1925,6 +1935,10 @@ sub output_one_target {
   # - score difference between top two models is below $diff_thresh (requires --difffail)
   # - number of this to best model is > 1 (requires --multfail)
   # 
+  # Optional unusual features, these will automatically cause a sequence if FAIL if
+  # reported
+  # - sequence is less than <n1> nucleotides (requires --shortfail <n1>)
+  # - sequence is more than <n2> nucleotides (requires --longfail <n2>)
   my $pass_fail = "PASS";
   my $unusual_features = "";
 
@@ -2049,6 +2063,18 @@ sub output_one_target {
     }
     $unusual_features .= "multiple_hits_to_best_model:($nhits)";
   }
+  # optional unusual features (if any)
+  if((opt_IsUsed("--shortfail", $opt_HHR)) && ($seqlen < opt_Get("--shortfail", $opt_HHR))) { 
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $pass_fail = "FAIL";
+    $unusual_features .= "*too_short:($seqlen<" . opt_Get("--shortfail", $opt_HHR);
+  }
+  if((opt_IsUsed("--longfail", $opt_HHR)) && ($seqlen > opt_Get("--longfail", $opt_HHR))) { 
+    if($unusual_features ne "") { $unusual_features .= ";"; }
+    $pass_fail = "FAIL";
+    $unusual_features .= "*too_long:($seqlen>" . opt_Get("--longfail", $opt_HHR);
+  }
+  # if there are no unusual features, set the unusual feature string as '-'
   if($unusual_features eq "") { $unusual_features = "-"; }
 
   # finally, output
@@ -3574,6 +3600,10 @@ sub initialize_ufeature_stats {
   if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*very_low_score_difference_between_top_two_domains"); }
   if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*multiple_hits_to_best_model"); }
 
+  # those that are only reported if a specific option is enabled
+  if(opt_IsUsed("--shortfail", $opt_HHR)) { push(@{$ufeature_AR}, "*too_short"); }
+  if(opt_IsUsed("--longfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*too_long"); }
+
   # those that don't cause failure, if they don't
   if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "opposite_strand"); }
   if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "low_score_per_posn"); }
@@ -3581,6 +3611,7 @@ sub initialize_ufeature_stats {
   if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "low_score_difference_between_top_two_domains"); }
   if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "very_low_score_difference_between_top_two_domains"); }
   if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "multiple_hits_to_best_model"); }
+
 
   foreach my $ufeature (@{$ufeature_AR}) { 
     $ufeature_ct_HR->{$ufeature} = 0;
