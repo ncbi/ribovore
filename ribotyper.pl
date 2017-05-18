@@ -77,6 +77,7 @@ opt_Add("--scfail",     "boolean",   0,                        5,  undef,   unde
 opt_Add("--difffail",   "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--covfail",    "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--multfail",   "boolean",   0,                        5,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--questfail",  "boolean",   0,                        5,"--inaccept",undef,    "seqs that score best to questionable models FAIL",     "seqs that score best to questionable models FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--shortfail",  "integer",   0,                        5,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--longfail",   "integer",   0,                        5,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
 
@@ -92,8 +93,8 @@ opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",und
 opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failure to <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "optional input files";
-#       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat  preamble-output                                  help-output    
+opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable/questionable models from <s>",  "read acceptable/questionable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
 #       option               type   default                group  requires incompat    preamble-output                   help-output    
@@ -135,6 +136,7 @@ my $options_okay =
                 'difffail'     => \$GetOptions_H{"--difffail"},
                 'covfail'      => \$GetOptions_H{"--covfail"},
                 'multfail'     => \$GetOptions_H{"--multfail"},
+                'questfail'    => \$GetOptions_H{"--questfail"},
                 'shortfail=s'  => \$GetOptions_H{"--shortfail"},
                 'longfail=s'   => \$GetOptions_H{"--longfail"},
 # options controlling thresholds for warnings and failures
@@ -455,16 +457,19 @@ foreach $model (keys %domain_H) {
 }
 
 # parse input accept file, if nec
-my %accept_H = ();
+my %accept_H   = ();
+my %question_H = ();
 if(opt_IsUsed("--inaccept", \%opt_HH)) { 
   foreach $model (keys %domain_H) { 
     $accept_H{$model} = 0;
+    $question_H{$model} = 0;
   }    
-  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H);
+  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H, \%question_H);
 }
 else { # --inaccept not used, all models are acceptable
   foreach $model (keys %domain_H) { 
     $accept_H{$model} = 1;
+    # question_H stays as all 0s
   }   
 } 
 
@@ -572,7 +577,7 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 $start_secs = ribo_OutputProgressPrior("Processing classification results", $progress_w, undef, *STDOUT);
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
-                      \%family_H, \%domain_H, \%accept_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
+                      \%family_H, \%domain_H, \%accept_H, \%question_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
 
 # add data for sequences with 0 hits and then sort the output files 
 # based on sequence index from original input file.
@@ -734,7 +739,7 @@ if(defined $alg2) {
   $start_secs = ribo_OutputProgressPrior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
   if($nr2 > 0) { 
     parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
-                          \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
+                          \%family_H, \%domain_H, \%accept_H, \%question_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
   }
   # add data for sequences with 0 hits and then sort the output files 
   # based on sequence index from original input file.
@@ -982,23 +987,26 @@ sub parse_modelinfo_file {
 #   $inaccept_file:  file to parse
 #   $accept_HR:      ref to hash of names, key is model name, value is '1' if model is acceptable
 #                    This hash should already be defined with all model names and all values as '0'.
+#   $question_HR:    ref to hash of names, key is model name, value is '1' if model is questionable
+#                    This hash should already be defined with all model names and all values as '0'.
 #
-# Returns:     Nothing. Updates %{$accpep_HR}.
+# Returns:     Nothing. Updates %{$accept_HR} and %{$question_HR}.
 # 
-# Dies:        Never.
+# Dies:        If the file is in the wrong format.
 #
 ################################################################# 
 sub parse_inaccept_file { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "parse_inaccept_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($inaccept_file, $accept_HR) = @_;
+  my ($inaccept_file, $accept_HR, $question_HR) = @_;
 
   open(IN, $inaccept_file) || die "ERROR unable to open input accept file $inaccept_file for reading";
 
-# example line (one token per line)
-# SSU_rRNA_archaea
+# example lines (two token per line)
+# SSU_rRNA_archaea questionable
+# SSU_rRNA_bacteria acceptable
 
   # construct string of all valid model names to use for error message
   my $valid_name_str = "\n";
@@ -1007,21 +1015,39 @@ sub parse_inaccept_file {
     $valid_name_str .= "\t" . $model . "\n";
   }
 
+  my $accept_or_question; # second token from the inaccept file
   open(IN, $inaccept_file) || die "ERROR unable to open $inaccept_file for reading"; 
   while(my $line = <IN>) { 
     chomp $line;
-    if($line =~ m/\w/) { # skip blank lines
+    if(($line !~ m/^\#/) && ($line =~ m/\w/))  { # skip comment and blank lines
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 1) { 
-        die "ERROR didn't read 1 token in inaccept input file $inaccept_file, line $line\nEach line should have exactly 1 white-space delimited token, a valid model name"; 
+      if(scalar(@el_A) != 2) { 
+        die "ERROR, in $sub_name, didn't read 2 token in inaccept input file $inaccept_file, line $line\nEach line should have exactly 1 white-space delimited token, a valid model name"; 
       }
-      ($model) = (@el_A);
+      ($model, $accept_or_question) = (@el_A);
       
       if(! exists $accept_HR->{$model}) { 
-        die "ERROR read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+        die "ERROR, in $sub_name, read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
       }
-      
-      $accept_HR->{$model} = 1;
+      if(! exists $question_HR->{$model}) { 
+        die "ERROR, in $sub_name,  read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+      }
+
+      if($accept_or_question eq "acceptable") { 
+        if($question_HR->{$model}) { 
+          die "ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable";
+        }
+        $accept_HR->{$model} = 1;
+      }
+      elsif($accept_or_question eq "questionable") { 
+        if($accept_HR->{$model}) { 
+          die "ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable";
+        }
+        $question_HR->{$model} = 1;
+      }
+      else { 
+        die "ERROR, in $sub_name, read unexpected second token $accept_or_question on line: $line\n";
+      }
     }
   }
   close(IN);
@@ -1150,6 +1176,7 @@ sub parse_and_validate_model_files {
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $accept_HR:       ref to hash of acceptable models, key is model name, value is '1' if acceptable
+#   $question_HR:     ref to hash of questionable models, key is model name, value is '1' if questionable
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
 #
@@ -1159,11 +1186,11 @@ sub parse_and_validate_model_files {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 12;
+  my $nargs_expected = 13;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
@@ -1308,7 +1335,8 @@ sub parse_sorted_tbl_file {
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
         output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                          $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
+                          $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
+                          $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                           \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
                           \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                           \%first_model_HH, \%second_model_HH);
@@ -1473,7 +1501,8 @@ sub parse_sorted_tbl_file {
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
     output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
+                      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
+                      $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                       \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
                       \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                       \%first_model_HH, \%second_model_HH);
@@ -1695,8 +1724,11 @@ sub output_one_hitless_target {
 #                            is width (maximum length) of any target/model
 #   $domain_HR:              reference to domain hash
 #   $accept_HR:              reference to the 'accept' hash, key is "model"
-#                            value is '1' if hits to model are "PASS"es '0'
-#                            if they are "FAIL"s
+#                            value is '1' if hits to model should have unexpected_model
+#                            ufeature, 0 if not
+#   $question_HR:            reference to the 'question' hash, key is "model"
+#                            value is '1' if hits to model should have questionable_model
+#                            ufeature, 0 if not
 #   $target:                 target name
 #   $seqidx:                 index of target sequence
 #   $seqlen:                 length of target sequence
@@ -1714,12 +1746,12 @@ sub output_one_hitless_target {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 21;
+  my $nargs_expected = 22;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
+      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $first_model_HHR, $second_model_HHR) = @_;
 
@@ -1946,63 +1978,64 @@ sub output_one_target {
   # hits to more than one family?
   if($nfams > 1) { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*hits_to_more_than_one_family:($nfams_fail_str),other_family_hits($other_hits_string)";
+    $unusual_features .= "*hits_to_more_than_one_family:($nfams_fail_str),other_family_hits($other_hits_string);";
   }
   # hits on both strands to best model?
   if($both_strands_fail_str ne "") { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*" . $both_strands_fail_str;
+    $unusual_features .= "*" . $both_strands_fail_str . ";";
   }    
   # duplicate model region
   if($duplicate_model_region_str ne "") { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*" . $duplicate_model_region_str;
+    $unusual_features .= "*" . $duplicate_model_region_str . ";";
   }    
   # hits in inconsistent order
   if($out_of_order_str ne "") { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*" . $out_of_order_str;
+    $unusual_features .= "*" . $out_of_order_str . ";";
   }
 
   # check/enforce optional failure criteria
-  # determine if the sequence hits to an unacceptable model
-  if($accept_HR->{$first_model_HHR->{$wfamily}{"model"}} != 1) { 
+
+  # determine if the sequence hits to an questionable or unacceptable model
+  if($question_HR->{$first_model_HHR->{$wfamily}{"model"}} == 1) { 
+    if(opt_Get("--questfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= "questionable_model:(" . $first_model_HHR->{$wfamily}{"model"} . ");";
+  }
+  elsif($accept_HR->{$first_model_HHR->{$wfamily}{"model"}} != 1) { 
     $pass_fail = "FAIL";
-    $unusual_features .= "*unacceptable_model"
+    $unusual_features .= "*unacceptable_model:(" . $first_model_HHR->{$wfamily}{"model"} . ");";
   }
   # determine if sequence is on opposite strand
   if($first_model_HHR->{$wfamily}{"strand"} eq "-") { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--minusfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= "opposite_strand";
+    $unusual_features .= "opposite_strand;";
   }
   # determine if the sequence has a 'low_score'
   # it does if bits per position (of entire sequence not just hit)
   # is below the threshold (--lowppossc) minimum
   my $bits_per_posn = $one_tbits / $seqlen;
   if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--scfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("low_score_per_posn:(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
+    $unusual_features .= sprintf("low_score_per_posn:(%.2f<%.2f);", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
   }
   # determine if coverage is low
   if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--covfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("low_total_coverage:(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
+    $unusual_features .= sprintf("low_total_coverage:(%.3f<%.3f);", $tot_coverage, opt_Get("--tcov", $opt_HHR));
   }
   # determine if the sequence has a low score difference between the top
   # two domains
@@ -2015,20 +2048,18 @@ sub output_one_target {
       $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
       $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
       if($score_ppos_diff < $diff_vlow_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn);", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
       }
       elsif($score_ppos_diff < $diff_low_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn);", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
       }
     }
     else { 
@@ -2036,43 +2067,38 @@ sub output_one_target {
       $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR);
       $diff_low_thresh  = opt_Get("--lowadiff",  $opt_HHR);
       if($score_total_diff < $diff_vlow_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits);", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
       }
       elsif($score_total_diff < $diff_low_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits);", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
       }
     }
   }
   # determine if there are more than one hit to the best model
   $nhits = $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   if($nhits > 1) {
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--multfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= "multiple_hits_to_best_model:($nhits)";
+    $unusual_features .= "multiple_hits_to_best_model:($nhits);";
   }
   # optional unusual features (if any)
   if((opt_IsUsed("--shortfail", $opt_HHR)) && ($seqlen < opt_Get("--shortfail", $opt_HHR))) { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     $pass_fail = "FAIL";
-    $unusual_features .= "*too_short:($seqlen<" . opt_Get("--shortfail", $opt_HHR);
+    $unusual_features .= "*too_short:($seqlen<" . opt_Get("--shortfail", $opt_HHR) . ");";
   }
   if((opt_IsUsed("--longfail", $opt_HHR)) && ($seqlen > opt_Get("--longfail", $opt_HHR))) { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     $pass_fail = "FAIL";
-    $unusual_features .= "*too_long:($seqlen>" . opt_Get("--longfail", $opt_HHR);
+    $unusual_features .= "*too_long:($seqlen>" . opt_Get("--longfail", $opt_HHR) . ");";
   }
   # if there are no unusual features, set the unusual feature string as '-'
   if($unusual_features eq "") { $unusual_features = "-"; }
@@ -3593,6 +3619,7 @@ sub initialize_ufeature_stats {
   push(@{$ufeature_AR}, "*inconsistent_hit_order");
 
   # those that can cause failure, if they do so:
+  if(opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "*questionable_model"); }
   if(opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "*opposite_strand"); }
   if(opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "*low_score_per_posn"); }
   if(opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*low_total_coverage"); }
@@ -3605,13 +3632,13 @@ sub initialize_ufeature_stats {
   if(opt_IsUsed("--longfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*too_long"); }
 
   # those that don't cause failure, if they don't
+  if(! opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "questionable_model"); }
   if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "opposite_strand"); }
   if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "low_score_per_posn"); }
   if(! opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "low_total_coverage"); }
   if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "low_score_difference_between_top_two_domains"); }
   if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "very_low_score_difference_between_top_two_domains"); }
   if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "multiple_hits_to_best_model"); }
-
 
   foreach my $ufeature (@{$ufeature_AR}) { 
     $ufeature_ct_HR->{$ufeature} = 0;
