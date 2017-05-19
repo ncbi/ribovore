@@ -241,59 +241,59 @@ explained below in the descriptions of each unexpected feature.
 
 List of unexpected features:
 
-1: "no_hits": No hits to any models above the minimum score threshold
+1: "NoHits": No hits to any models above the minimum score threshold
 were found. The minimum score threshold is 20 bits, which should find
 all legitimate SSU/LSU sequences, but this minimum score threshold is
 changeable to <x> with the --minbit <x>. ALWAYS CAUSES FAILURE.
 
-2: "hits_to_more_than_one_family": hit to two or more 'families'
+2: "MultipleFamilies": hit to two or more 'families'
 (e.g. SSU or LSU) exists for the same sequence. This would happen, for
 example, if a single sequence had a fragment of an SSU sequence and a
 fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
 
-3. "hits_on_both_strands": At least 1 hit above minimum score
+3. "BothStrands": At least 1 hit above minimum score
 threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
 
-4. "duplicate_model_region": At least two hits overlap in model
+4. "DuplicateRegion": At least two hits overlap in model
 coordinates by X positions or more. X is 10 by default but can be
 changed to <x> with the --maxoverlap <x> option. ALWAYS CAUSES
 FAILURE.
 
-5. "inconsistent_hit_order": The hits to the best model are
+5. "InconsistentHits": The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
 and the model, possibly indicating a misassembly. ALWAYS CAUSES
 FAILURE.
 
-6. "unacceptable_model": Best hit is to a model that is
+6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 --inaccept <s> option. An example of using this file is given below 
 in the DEFINING ACCEPTABLE MODELS section. ALWAYS CAUSES FAILURE.
 
-7. "questionable_model": Best hit is to a model that is
+7. "QuestionableModel": Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
 can specify certain top-scoring models are 'questionable' using the
 --inaccept <s> option. An example of using this file is given below 
 in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS section. ONLY CAUSES
 FAILURE IF THE --questfail OPTION IS ENABLED.
 
-8. "opposite_strand": The best hit is on the minus strand. ONLY CAUSES
+8. "MinusStrand": The best hit is on the minus strand. ONLY CAUSES
 FAILURE IF THE --minusfail OPTION IS ENABLED.
 
-9. "low_score_per_posn": the bits per nucleotide
+9. "LowScore": the bits per nucleotide
 statistic (total bit score divided by length of total sequence (not
 just length of hit)) is below threshold. By default the threshold is
 0.5 bits per position, but this can be changed to <x> with the
 "--lowppossc <x>" option. ONLY CAUSES FAILURE IF THE --scfail OPTION
 IS ENABLED.
 
-10. "low_total_coverage": the total coverage of all hits to the best
+10. "LowCoverage": the total coverage of all hits to the best
 model (summed length of all hits divided by total sequence length) is
 below threshold. By default the threshold is 0.88, but can be changed
 to <x> with the --tcov <x> option. ONLY CAUSES FAILURE IF THE
 --covfail OPTION IS ENABLED.
 
-11. "low_score_difference_between_top_two_domains": the score
+11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
 threshold. By default this is the score per position difference, and
 the 'low' threshold is 0.10 bits per position, but this is changeable
@@ -303,7 +303,7 @@ option. If --absdiff is used, the threshold is 100 bits, but
 changeable to <x> with the --lowadiff <x> option. ONLY CAUSES FAILURE
 IF THE --difffail OPTION IS ENABLED.
 
-12. "very_low_score_difference_between_top_two_domains": the score
+12. "VeryLowScoreDifference": the score
 difference between the top two domains is below the 'very low'
 threshold. By default this is the score per position difference, and
 the 'very low' threshold is 0.04 bits per position, but this is
@@ -313,15 +313,15 @@ the --absdiff option. If --absdiff is used, the threshold is 40 bits,
 but changeable to <x> with the --vlowadiff <x> option. ONLY CAUSES
 FAILURE IF THE --difffail OPTION IS ENABLED.
 
-13. "multiple_hits_to_best_model": there are more than one hits to the
+13. "MultipleHits": there are more than one hits to the
 best scoring model. ONLY CAUSES FAILURE IF THE --multfail OPTION IS
 ENABLED.
 
-14. "too_short": the sequence is too short, less than <n1>. ALWAYS
+14. "TooShort": the sequence is too short, less than <n1>. ALWAYS
 CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --shortfail <n1>
 OPTION IS ENABLED.
 
-15. "too_long": the sequence is too long, more than <n2>. ALWAYS
+15. "TooLong": the sequence is too long, more than <n2>. ALWAYS
 CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --longfail <n2>
 OPTION IS ENABLED.
 
@@ -445,7 +445,7 @@ and SSU_rRNA_cyanobacteria as 'acceptable' from model file 1 is:
 # 'questionable' means that this model will have the
 # 'questionable_model' unusual feature reported for it.
 #
-# Any model not listed here will have the 'unacceptable_model'
+# Any model not listed here will have the 'UnacceptableModel'
 # unusual feature reported for it.
 SSU_rRNA_archaea questionable
 SSU_rRNA_bacteria acceptable
@@ -459,7 +459,7 @@ $ perl ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept testfiles/s
 
 Now the short output file will set any family that was classified as a
 model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs,
-and the string "*unacceptable_model" will be present in the
+and the string "*UnacceptableModel" will be present in the
 'unexpected_features' column.
 
 $ cat test/test.ribotyper.short.out 
