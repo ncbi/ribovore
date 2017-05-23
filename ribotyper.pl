@@ -1663,7 +1663,7 @@ sub output_one_hitless_target {
   my ($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues, $have_model_coords) = @_;
 
   my $pass_fail = "FAIL";
-  my $unusual_features = "*NoHits";
+  my $unusual_features = "*NoHits;";
   my $nfams = 0;
   my $nhits = 0;
 
@@ -2656,7 +2656,7 @@ sub determine_unexpected_feature_explanation {
   }
   elsif($ufeature =~ m/UnacceptableModel/ && (opt_IsUsed("--inaccept", $opt_HHR))) { 
     push(@{$exp_AR}, "Best hit is to a model that is 'unacceptable' as defined in");
-    push(@{$exp_AR}, "input file " . opt_Get("--inaccept", $opt_HHR) . " (--inaccept).\n");
+    push(@{$exp_AR}, "input file " . opt_Get("--inaccept", $opt_HHR) . " (--inaccept).");
   }
   elsif($ufeature =~ m/MultipleFamilies/) { 
     push(@{$exp_AR}, "One or more primary hits to two or more \"families\" (e.g. SSU");
@@ -2676,7 +2676,7 @@ sub determine_unexpected_feature_explanation {
   }
   elsif($ufeature =~ m/QuestionableModel/ && (opt_IsUsed("--inaccept", $opt_HHR))) { 
     push(@{$exp_AR}, "Best hit is to a model that is 'questionable' as defined in");
-    push(@{$exp_AR}, "input file " . opt_Get("--inaccept", $opt_HHR) . " (--inaccept).\n");
+    push(@{$exp_AR}, "input file " . opt_Get("--inaccept", $opt_HHR) . " (--inaccept).");
   }
   elsif($ufeature =~ m/MinusStrand/) { 
     push(@{$exp_AR}, "Best hit is on the minus strand.");
@@ -3749,7 +3749,7 @@ sub initialize_ufeature_stats {
 
   # first category is a special one, it will hold the counts of
   # sequences with 0 unexpected features
-  push(@{$ufeature_AR}, "CLEAN(ZeroUnexpectedFeatures)");
+  push(@{$ufeature_AR}, "CLEAN");
 
   # next, we want the unexpected features that will cause failures 
   # those that always cause failures (regardless of cmdline options):
@@ -3818,7 +3818,7 @@ sub update_one_ufeature_sequence {
 
   my @ufeatures_A = ();
   if($ufeature_str eq "-") { 
-    update_one_ufeature_count($ufeature_ct_HR, "CLEAN(ZeroUnexpectedFeatures)");
+    update_one_ufeature_count($ufeature_ct_HR, "CLEAN");
   }
   else { 
     my @ufeatures_A = split(";", $ufeature_str);
@@ -4185,7 +4185,7 @@ sub output_ufeature_statistics {
 
   # want to skip other_family_hits
   foreach $ufeature (@{$ufeature_AR}) { 
-    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(ZeroUnexpectedFeatures)")) { 
+    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN")) { 
       if(length($ufeature) > $width_H{"ufeature"}) { 
         $width_H{"ufeature"} = length($ufeature);
       }
@@ -4221,7 +4221,7 @@ sub output_ufeature_statistics {
                   $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-"));
 
   foreach $ufeature (@{$ufeature_AR}) { 
-    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(zero_unexpected_features)")) { 
+    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN")) { 
       printf $out_FH ("  %-*s  %-*s  %*d  %*.5f\n", 
                       $width_H{"ufeature"}, $ufeature,
                       $width_H{"fail"},     ($ufeature =~ m/^\*/) ? "yes" : "no",
