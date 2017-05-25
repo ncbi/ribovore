@@ -5,6 +5,7 @@ use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
 require "epn-options.pm";
+require "ribo.pm";
 
 # make sure the DNAORGDIR environment variable is set
 my $ribodir = $ENV{'RIBODIR'};
@@ -65,9 +66,9 @@ $opt_group_desc_H{"3"} = "options for controlling the second round search algori
 opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"4"} = "options related to bit score REPORTING thresholds";
-#     option                 type   default                group   requires incompat   preamble-output                                 help-output    
-opt_Add("--minsc",         "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for hits to <x>",  "set minimum bit score cutoff for hits to include to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--nominsc",    "boolean",   0,                       4,  undef,   undef,      "turn off minimum bit score cutoff for hits",    "turn off minimum bit score cutoff for hits", \%opt_HH, \@opt_order_A);
+#     option                 type   default                group   requires incompat   preamble-output                                            help-output    
+opt_Add("--minpsc",        "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for primary hits to <x>",    "set minimum bit score cutoff for primary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--minssc",        "real",   "10.",                   4,  undef,   undef,      "set minimum bit score cutoff for secondary hits to <x>",  "set minimum bit score cutoff for secondary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"5"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
@@ -76,6 +77,9 @@ opt_Add("--scfail",     "boolean",   0,                        5,  undef,   unde
 opt_Add("--difffail",   "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--covfail",    "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--multfail",   "boolean",   0,                        5,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--questfail",  "boolean",   0,                        5,"--inaccept",undef,    "seqs that score best to questionable models FAIL",     "seqs that score best to questionable models FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--shortfail",  "integer",   0,                        5,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--longfail",   "integer",   0,                        5,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
@@ -89,8 +93,8 @@ opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",und
 opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failure to <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "optional input files";
-#       option               type   default                group  requires incompat  preamble-output                     help-output    
-opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable models from <s>",  "read acceptable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat  preamble-output                                  help-output    
+opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable/questionable models from <s>",  "read acceptable/questionable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
 #       option               type   default                group  requires incompat    preamble-output                   help-output    
@@ -123,8 +127,8 @@ my $options_okay =
 # first round algorithm options
                 '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
-                'minsc=s'     => \$GetOptions_H{"--minsc"},
-                'nominsc'     => \$GetOptions_H{"--nominsc"},
+                'minpsc=s'    => \$GetOptions_H{"--minpsc"},
+                'minssc=s'    => \$GetOptions_H{"--minssc"},
                 'lowppossc'   => \$GetOptions_H{"--lowppossc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
@@ -132,6 +136,9 @@ my $options_okay =
                 'difffail'     => \$GetOptions_H{"--difffail"},
                 'covfail'      => \$GetOptions_H{"--covfail"},
                 'multfail'     => \$GetOptions_H{"--multfail"},
+                'questfail'    => \$GetOptions_H{"--questfail"},
+                'shortfail=s'  => \$GetOptions_H{"--shortfail"},
+                'longfail=s'   => \$GetOptions_H{"--longfail"},
 # options controlling thresholds for warnings and failures
                 'lowppossc'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"}, 
@@ -154,7 +161,7 @@ my $options_okay =
                 'keep'         => \$GetOptions_H{"--keep"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"});
 
-my $total_seconds = -1 * seconds_since_epoch(); # by multiplying by -1, we can just add another seconds_since_epoch call at end to get total time
+my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
 my $version       = "0.02";
@@ -167,7 +174,7 @@ $| = 1;
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
-  output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
+  ribo_OutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
   opt_OutputHelp(*STDOUT, $usage, \%opt_HH, \@opt_order_A, \%opt_group_desc_H);
   if(! $options_okay) { die "ERROR, unrecognized option;"; }
   else                { exit 0; } # -h, exit with 0 status
@@ -177,7 +184,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, do dnaorg_annotate.pl -h\n\n";
+  print "\nTo see more help on available options, do ribotyper.pl -h\n\n";
   exit(1);
 }
 my ($seq_file, $dir_out) = (@ARGV);
@@ -205,22 +212,49 @@ if(opt_Get("--noali", \%opt_HH)) {
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
   if(opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)) { 
-    die sprintf("ERROR, with --lowpdiff <x> and --vlowpdiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
-                opt_Get("--lowpdiff",\%opt_HH) < opt_Get("--vlowpdiff",\%opt_HH)); 
+    die sprintf("ERROR, with --lowpdiff <x> and --vlowpdiff <y>, <x> must be less than <y> (got <x>: %f, <y>: %f)\n", 
+                opt_Get("--lowpdiff",\%opt_HH), opt_Get("--vlowpdiff",\%opt_HH)); 
   }
 }
 if(opt_IsUsed("--lowadiff",\%opt_HH) || opt_IsUsed("--vlowadiff",\%opt_HH)) { 
   if(opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)) { 
-    die sprintf("ERROR, with --lowadiff <x> and --vlowadiff <y>, <x> must be less than <y> (got <x>: %f, y: %f)\n", 
-                opt_Get("--lowadiff",\%opt_HH) < opt_Get("--vlowadiff",\%opt_HH)); 
+    die sprintf("ERROR, with --lowadiff <x> and --vlowadiff <y>, <x> must be less than <y> (got <x>: %f, <y>: %f)\n", 
+                opt_Get("--lowadiff",\%opt_HH), opt_Get("--vlowadiff",\%opt_HH)); 
+  }
+}
+if((opt_IsUsed("--shortfail",\%opt_HH) && opt_IsUsed("--longfail",\%opt_HH)) && 
+   (opt_Get("--shortfail",\%opt_HH) >= opt_Get("--longfail",\%opt_HH))) { 
+  die sprintf("ERROR, with --shortfail <n1> and --longfail <n2>, <n1> must be less than <n2> (got <n1>: %f, <n2>: %f)\n", 
+                opt_Get("--shortfail",\%opt_HH), opt_Get("--longfail",\%opt_HH)); 
+}
+
+my $min_primary_sc   = opt_Get("--minpsc", \%opt_HH);
+my $min_secondary_sc = opt_Get("--minssc", \%opt_HH);
+if($min_secondary_sc > $min_primary_sc) { 
+  if((opt_IsUsed("--minpsc", \%opt_HH)) && (opt_IsUsed("--minssc", \%opt_HH))) { 
+    die sprintf("ERROR, with --minpsc <x> and --minssc <y>, <x> must be less than or equal to <y> (got <x>: %f, <y>: %f)\n", 
+                opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
+  }
+  elsif(opt_IsUsed("--minpsc", \%opt_HH)) { 
+    die sprintf("ERROR, with --minpsc <x>, <x> must be less than or equal to <y>=%d (default value for --minssc)\nOr you must lower <y> with the --minssc option too.\n", 
+                opt_Get("--minpsc",\%opt_HH), opt_Get("--minssc",\%opt_HH)); 
+  }
+  elsif(opt_IsUsed("--minssc", \%opt_HH)) { 
+    die sprintf("ERROR, with --minssc <y>, <x> must be greater or equal to <x>=%d (default value for --minpsc)\nOr you must lower <x> with the --minpsc option too.\n", 
+                opt_Get("--minssc",\%opt_HH), opt_Get("--minpsc",\%opt_HH)); 
+  }
+  else { 
+    die "ERROR default values for --minpsc and --minssc are messed up." 
+    # this will only happen if the default values in this file are changed so that --minpsc default is less than --minssc default
   }
 }
 
-my $cmd         = undef;                    # a command to be run by run_command()
-my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
+my $cmd         = undef;                    # a command to be run by ribo_RunCommand()
 my @to_remove_A = (); # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
 my $r2_secs     = undef; # number of seconds required for round 2 search
+my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
+if($ncpu == 1) { $ncpu = 0; } # prefer --cpu 0 to --cpu 1
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -239,18 +273,18 @@ else {  # --skipsearch not used, normal case
   # if $dir_out already exists remove it only if -f also used
   if(-d $dir_out) { 
     $cmd = "rm -rf $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
     else                        { die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { run_command($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
     else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   # if $dir_out does not exist, create it
   if(! -d $dir_out) { 
     $cmd = "mkdir $dir_out";
-    run_command($cmd, opt_Get("-v", \%opt_HH));
+    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
   }
 }
 my $dir_out_tail = $dir_out;
@@ -266,12 +300,12 @@ else {
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
 # make sure the sequence and modelinfo files exists
-check_if_file_exists_and_is_non_empty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
+ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
-  check_if_file_exists_and_is_non_empty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
 }
 else { # -i used on the command line
-  check_if_file_exists_and_is_non_empty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model file after we parse the model info file
 
@@ -291,7 +325,7 @@ push(@arg_A, $dir_out);
 push(@arg_desc_A, "model information input file");
 push(@arg_A, $modelinfo_file);
 
-output_banner(*STDOUT, $version, $releasedate, $synopsis, $date);
+ribo_OutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 ##############################################
@@ -312,9 +346,9 @@ if(! opt_Get("--1slow", \%opt_HH)) {
   }
 }
 
-###############################
-# defined and open output files
-###############################
+##############################
+# define and open output files
+##############################
 my $r1_unsrt_long_out_file  = $out_root . ".r1.unsrt.long.out";
 my $r1_unsrt_short_out_file = $out_root . ".r1.unsrt.short.out";
 my $r1_srt_long_out_file    = undef;
@@ -376,6 +410,9 @@ if(defined $alg2) {
 }
 my $have_evalues_r1 = determine_if_we_have_evalues(1, \%opt_HH);
 my $have_evalues_r2 = determine_if_we_have_evalues(2, \%opt_HH);
+my @ufeature_A    = (); # array of unexpected feature strings
+my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elements of @{$ufeature_A})
+initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
 
 ###################################################
 # make sure the required executables are executable
@@ -385,13 +422,13 @@ $execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
 $execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
 $execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
 #$execs_H{"esl_ssplit"}    = $esl_ssplit;
-validate_executable_hash(\%execs_H);
+ribo_ValidateExecutableHash(\%execs_H);
 
 ###########################################################################
 # Step 1: Parse/validate input files
 ###########################################################################
 my $progress_w = 48; # the width of the left hand column in our progress output, hard-coded
-my $start_secs = output_progress_prior("Validating input files", $progress_w, undef, *STDOUT);
+my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w, undef, *STDOUT);
 
 # parse model info file, which checks that all CM files exist
 # variables related to fams and domains
@@ -423,39 +460,40 @@ foreach $model (keys %domain_H) {
 }
 
 # parse input accept file, if nec
-my %accept_H = ();
+my %accept_H   = ();
+my %question_H = ();
 if(opt_IsUsed("--inaccept", \%opt_HH)) { 
   foreach $model (keys %domain_H) { 
-    $accept_H{$model} = 0;
+    $accept_H{$model}   = 0;
+    $question_H{$model} = 0;
   }    
-  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H);
+  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H, \%question_H);
 }
 else { # --inaccept not used, all models are acceptable
   foreach $model (keys %domain_H) { 
-    $accept_H{$model} = 1;
+    $accept_H{$model}   = 1;
+    $question_H{$model} = 0;
   }   
 } 
 
 # check for SSI index file for the sequence file,
 # if it doesn't exist, create it
 my $ssi_file = $seq_file . ".ssi";
-if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) { 
-  run_command($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
-  if(check_if_file_exists_and_is_non_empty($ssi_file, undef, undef, 0) != 1) { 
+if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
+  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
     die "ERROR, tried to create $ssi_file, but failed"; 
   }
 }
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 2: Use esl-seqstat to determine sequence lengths of all target seqs
 ###########################################################################
-$start_secs = output_progress_prior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
-my $seqstat_file = $out_root . ".seqstat";
-if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $seqstat_file);
-}
-run_command($execs_H{"esl-seqstat"} . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", \%opt_HH));
+$start_secs = ribo_OutputProgressPrior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
+my $tot_nnt = 0;   # total number of nucleotides in target sequence file (summed length of all seqs)
+my $Z_value = 0;   # total number of Mb of search space in target sequence file, 
+                   # this is (2*$tot_nnt)/1000000 (the 2 is because we search both strands)
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value multiplied by -1 after we output info for this sequence
@@ -465,15 +503,13 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # see it again before the next round, then we know the 
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
-# parse esl-seqstat file to get lengths
-my $max_targetname_length = length("target"); # maximum length of any target name
-my $max_length_length     = length("length"); # maximum length of the string-ized length of any target
-my $nseq                  = 0; # number of sequences read
-parse_seqstat_file($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, \%seqidx_H, \%seqlen_H); 
-$width_H{"target"} = $max_targetname_length;
-$width_H{"length"} = $max_length_length;
-$width_H{"index"}  = length($nseq);
-if($width_H{"index"} < length("#idx")) { $width_H{"index"} = length("#idx"); }
+# use esl-seqstat to determine sequence lengths
+my $seqstat_file = $out_root . ".seqstat";
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $seqstat_file);
+}
+$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
 output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H);
@@ -484,7 +520,7 @@ if(defined $alg2) {
   output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H);
   output_short_headers($final_short_out_FH, \%width_H);
 }
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 3: classify sequences using round 1 search algorithm
@@ -504,16 +540,16 @@ $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
 $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
 $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorted_tblout_file;
-$r1_search_cmd         = $execs_H{"cmsearch"} . " --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
+$r1_search_cmd         = $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = output_progress_prior("Classifying sequences", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, undef, *STDOUT);
 }
 else { 
-  $start_secs = output_progress_prior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  run_command($r1_search_cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($r1_search_cmd, opt_Get("-v", \%opt_HH));
 }
 else { 
   if(! -s $r1_tblout_file) { 
@@ -529,22 +565,22 @@ if(! opt_Get("--keep", \%opt_HH)) {
     push(@to_remove_A, $r1_searchout_file);
   }
 }
-$r1_secs = output_progress_complete($start_secs, undef, undef, *STDOUT);
+$r1_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 4: Sort round 1 output
 ###########################################################################
-$start_secs = output_progress_prior("Sorting classification results", $progress_w, undef, *STDOUT);
-run_command($r1_sort_cmd, opt_Get("-v", \%opt_HH));
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+$start_secs = ribo_OutputProgressPrior("Sorting classification results", $progress_w, undef, *STDOUT);
+ribo_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH));
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
 ###########################################################################
 # Step 5: Parse round 1 sorted output
 ###########################################################################
-$start_secs = output_progress_prior("Processing classification results", $progress_w, undef, *STDOUT);
+$start_secs = ribo_OutputProgressPrior("Processing classification results", $progress_w, undef, *STDOUT);
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
-                      \%family_H, \%domain_H, \%accept_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
+                      \%family_H, \%domain_H, \%accept_H, \%question_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
 
 # add data for sequences with 0 hits and then sort the output files 
 # based on sequence index from original input file.
@@ -559,21 +595,20 @@ close($r1_srt_long_out_FH);
 close($r1_srt_short_out_FH);
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
-run_command($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
 $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
-run_command($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
 # reopen them, and add tails to the output files
-# now that we know the max sequence name length, we can output headers to the output files
 open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for appending";
 open($r1_srt_short_out_FH, ">>", $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for appending";
-output_long_tail($r1_srt_long_out_FH, 1, \%opt_HH); # 1: round 1 of searching
-output_short_tail($r1_srt_short_out_FH, \%opt_HH);
+output_long_tail($r1_srt_long_out_FH, 1, \@ufeature_A, \%opt_HH); # 1: round 1 of searching
+output_short_tail($r1_srt_short_out_FH, \@ufeature_A, \%opt_HH);
 close($r1_srt_short_out_FH);
 close($r1_srt_long_out_FH);
 
-output_progress_complete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
 # Step 6: Parse the round 1 output to create sfetch files for fetching
@@ -581,7 +616,7 @@ output_progress_complete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 if(defined $alg2) { # only do this if we're doing a second round of searching
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = output_progress_prior("Fetching per-model sequence sets", $progress_w, undef, *STDOUT);
+    $start_secs = ribo_OutputProgressPrior("Fetching per-model sequence sets", $progress_w, undef, *STDOUT);
     
     my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
     # first initialize all arrays to empty
@@ -603,12 +638,12 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         }
       }
     }
-    output_progress_complete($start_secs, undef, undef, *STDOUT);
+    ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
     
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
-        run_command($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
         }
@@ -632,10 +667,10 @@ my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
 if(defined $alg2) { 
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = output_progress_prior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
+    $start_secs = ribo_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
   }
   else { 
-    $start_secs = output_progress_prior("Skipping sequence search (using results from previous run)", $progress_w, undef, *STDOUT);
+    $start_secs = ribo_OutputProgressPrior("Skipping sequence search (using results from previous run)", $progress_w, undef, *STDOUT);
   }
   my $cmd  = undef;
   foreach $model (sort keys %family_H) { 
@@ -643,10 +678,10 @@ if(defined $alg2) {
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
       push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
-      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
+      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        run_command($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $r2_tblout_file_A[$midx]);
           if(($alg2 ne "slow") && 
@@ -664,21 +699,21 @@ if(defined $alg2) {
     }
   }
   $nr2 = $midx;
-  $r2_secs = output_progress_complete($start_secs, undef, undef, *STDOUT);
+  $r2_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
   # concatenate round 2 tblout files 
   my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
   $r2_all_tblout_file = $out_root . ".r2.all.cmsearch.tbl";
   if(defined $alg2) { 
     if($nr2 >= 1) { 
-      $start_secs = output_progress_prior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
+      $start_secs = ribo_OutputProgressPrior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
       $cat_cmd = "cat $r2_tblout_file_A[0] ";
       for($midx = 1; $midx < $nr2; $midx++) { 
         $cat_cmd .= "$r2_tblout_file_A[$midx] ";
       }
       $cat_cmd .= "> " . $r2_all_tblout_file;
-      run_command($cat_cmd, opt_Get("-v", \%opt_HH));
-      output_progress_complete($start_secs, undef, undef, *STDOUT);
+      ribo_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH));
+      ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_all_tblout_file);
       }
@@ -690,24 +725,24 @@ if(defined $alg2) {
 # Step 8: Sort round 2 output
 ###########################################################################
 if((defined $alg2) && ($nr2 > 0)) { 
-  $start_secs = output_progress_prior("Sorting search results", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Sorting search results", $progress_w, undef, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = "grep -v ^\# " . $r2_all_tblout_file . " | sort -k1 > " . $r2_all_sorted_tblout_file;
-  run_command($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $r2_all_sorted_tblout_file);
   }
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 
 ###########################################################################
 # Step 9: Parse round 2 sorted output
 ###########################################################################
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
   if($nr2 > 0) { 
     parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
-                          \%family_H, \%domain_H, \%accept_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
+                          \%family_H, \%domain_H, \%accept_H, \%question_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
   }
   # add data for sequences with 0 hits and then sort the output files 
   # based on sequence index from original input file.
@@ -722,21 +757,21 @@ if(defined $alg2) {
   close($r2_srt_short_out_FH);
 
   $cmd = "sort -n $r2_unsrt_short_out_file >> $r2_srt_short_out_file";
-  run_command($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
   $cmd = "sort -n $r2_unsrt_long_out_file >> $r2_srt_long_out_file";
-  run_command($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
 
   # reopen them, and add tails to the output files
   # now that we know the max sequence name length, we can output headers to the output files
   open($r2_srt_long_out_FH,  ">>", $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for appending";
   open($r2_srt_short_out_FH, ">>", $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for appending";
-  output_long_tail($r2_srt_long_out_FH, 2, \%opt_HH); # 2: round 2 of searching
-  output_short_tail($r2_srt_short_out_FH, \%opt_HH);
+  output_long_tail($r2_srt_long_out_FH, 2, \@ufeature_A, \%opt_HH); # 2: round 2 of searching
+  output_short_tail($r2_srt_short_out_FH, \@ufeature_A, \%opt_HH);
   close($r2_srt_short_out_FH);
   close($r2_srt_long_out_FH);
   
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 ###########################################################################
 # Step 10: Combine the round 1 and round 2 output files to create the 
@@ -746,12 +781,8 @@ my %class_stats_HH = (); # hash of hashes with summary statistics
                          # 1D key: class name (e.g. "SSU.Bacteria") or "*all*" or "*none*" or "*input*"
                          # 2D key: "nseq", "nnt_cov", "nnt_tot"
 
-my @ufeature_A    = (); # array of unexpected feature strings
-my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elements of @{$ufeature_A})
-initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
-
 if(defined $alg2) { 
-  $start_secs = output_progress_prior("Creating final output files", $progress_w, undef, *STDOUT);
+  $start_secs = ribo_OutputProgressPrior("Creating final output files", $progress_w, undef, *STDOUT);
   open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
   open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
   open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
@@ -760,10 +791,10 @@ if(defined $alg2) {
                                      undef, undef, \%width_H, \%opt_HH);
   output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0,  # 0: $do_short = FALSE
                                      \%class_stats_HH, \%ufeature_ct_H, \%width_H, \%opt_HH);
-  output_short_tail($final_short_out_FH, \%opt_HH);
-  output_long_tail($final_long_out_FH, "final", \%opt_HH);
+  output_short_tail($final_short_out_FH, \@ufeature_A, \%opt_HH);
+  output_long_tail($final_long_out_FH, "final", \@ufeature_A, \%opt_HH);
   close($final_short_out_FH);
-  output_progress_complete($start_secs, undef, undef, *STDOUT);
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 
 # remove files we don't want anymore, then exit
@@ -774,7 +805,7 @@ foreach my $file (@to_remove_A) {
 output_summary_statistics(*STDOUT, \%class_stats_HH);
 output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
 
-$total_seconds += seconds_since_epoch();
+$total_seconds += ribo_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
   
 #printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
@@ -798,7 +829,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # parse_modelinfo_file:     parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
-# parse_seqstat_file:       parse esl-seqstat -a output file
+# ribo_ParseSeqstatFile:       parse esl-seqstat -a output file
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
 # Helper functions for parse_sorted_tbl_file():
@@ -810,16 +841,10 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #                            helper for parse_sorted_tbl_file()
 # output_short_headers:      output headers for short output file
 # output_long_headers:       output headers for long output file
-# output_banner:             output the banner with info on the script and options used
-# output_progress_prior:     output routine for a step, prior to running the step
-# output_progress_complete:  output routine for a step, after the running the step
 #
 # Miscellaneous functions:
-# run_command:              run a command using system()
-# validate_executable_hash: validate executables exist and are executable
-# seconds_since_epoch:      number of seconds since the epoch, for timings
 # debug_print:              print out info of a hit for debugging
-# get_monocharacter_string: return string of a specified length of a specified character
+# ribo_GetMonoCharacterString: return string of a specified length of a specified character
 # center_string:            center a string inside a string of whitespace of specified length
 # determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
 # get_overlap():            determine the extent of overlap of two regions
@@ -891,8 +916,8 @@ sub parse_modelinfo_file {
       $df_model_file = $df_model_dir . $cmfile;
       if($opt_i_used) { 
         $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
-        $in_nondf = check_if_file_exists_and_is_non_empty($non_df_model_file, undef, $sub_name, 0); # don't die if it doesn't exist
-        $in_df    = check_if_file_exists_and_is_non_empty($df_model_file,     undef, $sub_name, 0); # don't die if it doesn't exist
+        $in_nondf = ribo_CheckIfFileExistsAndIsNonEmpty($non_df_model_file, undef, $sub_name, 0); # don't die if it doesn't exist
+        $in_df    = ribo_CheckIfFileExistsAndIsNonEmpty($df_model_file,     undef, $sub_name, 0); # don't die if it doesn't exist
         if(($in_nondf != 0) && ($in_df != 0)) { # exists in two places
           die "ERROR in $sub_name, looking for model file $cmfile, found it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\nIt can only exist in one of these places, so either\nrename it or remove of the copies (do NOT remove the copy from the default model directory unless you put it there)\n."
         }
@@ -916,7 +941,7 @@ sub parse_modelinfo_file {
         }
       }     
       else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
-        check_if_file_exists_and_is_non_empty($df_model_file, "model file name read from default model info file", $sub_name, 1); # die if it doesn't exist
+        ribo_CheckIfFileExistsAndIsNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1); # die if it doesn't exist
         $cmfile = $df_model_file;
       }
         
@@ -961,23 +986,26 @@ sub parse_modelinfo_file {
 #   $inaccept_file:  file to parse
 #   $accept_HR:      ref to hash of names, key is model name, value is '1' if model is acceptable
 #                    This hash should already be defined with all model names and all values as '0'.
+#   $question_HR:    ref to hash of names, key is model name, value is '1' if model is questionable
+#                    This hash should already be defined with all model names and all values as '0'.
 #
-# Returns:     Nothing. Updates %{$accpep_HR}.
+# Returns:     Nothing. Updates %{$accept_HR} and %{$question_HR}.
 # 
-# Dies:        Never.
+# Dies:        If the file is in the wrong format.
 #
 ################################################################# 
 sub parse_inaccept_file { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "parse_inaccept_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($inaccept_file, $accept_HR) = @_;
+  my ($inaccept_file, $accept_HR, $question_HR) = @_;
 
   open(IN, $inaccept_file) || die "ERROR unable to open input accept file $inaccept_file for reading";
 
-# example line (one token per line)
-# SSU_rRNA_archaea
+# example lines (two token per line)
+# SSU_rRNA_archaea questionable
+# SSU_rRNA_bacteria acceptable
 
   # construct string of all valid model names to use for error message
   my $valid_name_str = "\n";
@@ -986,21 +1014,39 @@ sub parse_inaccept_file {
     $valid_name_str .= "\t" . $model . "\n";
   }
 
+  my $accept_or_question; # second token from the inaccept file
   open(IN, $inaccept_file) || die "ERROR unable to open $inaccept_file for reading"; 
   while(my $line = <IN>) { 
     chomp $line;
-    if($line =~ m/\w/) { # skip blank lines
+    if(($line !~ m/^\#/) && ($line =~ m/\w/))  { # skip comment and blank lines
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 1) { 
-        die "ERROR didn't read 1 token in inaccept input file $inaccept_file, line $line\nEach line should have exactly 1 white-space delimited token, a valid model name"; 
+      if(scalar(@el_A) != 2) { 
+        die "ERROR, in $sub_name, didn't read 2 token in inaccept input file $inaccept_file, line $line\nEach line should have exactly 1 white-space delimited token, a valid model name"; 
       }
-      ($model) = (@el_A);
+      ($model, $accept_or_question) = (@el_A);
       
       if(! exists $accept_HR->{$model}) { 
-        die "ERROR read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+        die "ERROR, in $sub_name, read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
       }
-      
-      $accept_HR->{$model} = 1;
+      if(! exists $question_HR->{$model}) { 
+        die "ERROR, in $sub_name,  read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+      }
+
+      if($accept_or_question eq "acceptable") { 
+        if($question_HR->{$model}) { 
+          die "ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable";
+        }
+        $accept_HR->{$model} = 1;
+      }
+      elsif($accept_or_question eq "questionable") { 
+        if($accept_HR->{$model}) { 
+          die "ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable";
+        }
+        $question_HR->{$model} = 1;
+      }
+      else { 
+        die "ERROR, in $sub_name, read unexpected second token $accept_or_question on line: $line\n";
+      }
     }
   }
   close(IN);
@@ -1110,97 +1156,6 @@ sub parse_and_validate_model_files {
   return $model_width;
 }
 
-#################################################################
-# Subroutine : parse_seqstat_file()
-# Incept:      EPN, Wed Dec 14 16:16:22 2016
-#
-# Purpose:     Parse an esl-seqstat -a output file.
-#              
-# Arguments: 
-#   $seqstat_file:            file to parse
-#   $max_targetname_length_R: REF to the maximum length of any target name, updated here
-#   $max_length_length_R:     REF to the maximum length of string-ized length of any target seq, updated here
-#   $nseq_R:                  REF to the number of sequences read, updated here
-#   $seqidx_HR:               REF to hash of sequence indices to fill here
-#   $seqlen_HR:               REF to hash of sequence lengths to fill here
-#
-# Returns:     Nothing. Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
-#              $$max_targetname_length_R, $$max_length_length_R, and $$nseq_R.
-# 
-# Dies:        If the sequence file has two sequences with identical names.
-#              Error message will list all duplicates.
-#              If no sequences were read.
-#
-################################################################# 
-sub parse_seqstat_file { 
-  my $nargs_expected = 6;
-  my $sub_name = "parse_seqstat_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqidx_HR, $seqlen_HR) = @_;
-
-  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
-
-  my $nread = 0;
-  my $targetname_length;
-  my $seqlength_length;
-  my $targetname;
-  my $length;
-  my %seqdups_H = ();       # key is a sequence name that exists more than once in seq file, value is number of occurences
-  my $at_least_one_dup = 0; # set to 1 if we find any duplicate sequence names
-
-  while(my $line = <IN>) { 
-    # = lcl|dna_BP331_0.3k:467     1232 
-    # = lcl|dna_BP331_0.3k:10     1397 
-    # = lcl|dna_BP331_0.3k:1052     1414 
-    chomp $line;
-    #print $line . "\n";
-    if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
-      $nread++;
-      ($targetname, $length) = ($1, $2);
-      if(exists($seqidx_HR->{$targetname})) { 
-        if(exists($seqdups_H{$targetname})) { 
-          $seqdups_H{$targetname}++;
-        }
-        else { 
-          $seqdups_H{$targetname} = 2;
-        }
-        $at_least_one_dup = 1;
-      }
-        
-      $seqidx_HR->{$targetname} = $nread;
-      $seqlen_HR->{$targetname} = $length;
-
-      $targetname_length = length($targetname);
-      if($targetname_length > $$max_targetname_length_R) { 
-        $$max_targetname_length_R = $targetname_length;
-      }
-
-      $seqlength_length  = length($length);
-      if($seqlength_length > $$max_length_length_R) { 
-        $$max_length_length_R = $seqlength_length;
-      }
-
-    }
-  }
-  close(IN);
-  if($nread == 0) { 
-    die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
-  }
-  if($at_least_one_dup) { 
-    my $i = 1;
-    my $die_string = "\nERROR, not all sequences in input sequence file have a unique name. They must.\nList of sequences that occur more than once, with number of occurrences:\n";
-    foreach $targetname (sort keys %seqdups_H) { 
-      $die_string .= "\t($i) $targetname $seqdups_H{$targetname}\n";
-      $i++;
-    }
-    $die_string .= "\n";
-    die $die_string;
-  }
-
-  $$nseq_R = $nread;
-  return;
-}
 
 #################################################################
 # Subroutine : parse_sorted_tblout_file()
@@ -1220,6 +1175,7 @@ sub parse_seqstat_file {
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $accept_HR:       ref to hash of acceptable models, key is model name, value is '1' if acceptable
+#   $question_HR:     ref to hash of questionable models, key is model name, value is '1' if questionable
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
 #
@@ -1229,11 +1185,11 @@ sub parse_seqstat_file {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 12;
+  my $nargs_expected = 13;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $long_out_FH, $short_out_FH) = @_;
 
   # validate search method (sanity check) 
   if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
@@ -1241,10 +1197,7 @@ sub parse_sorted_tbl_file {
   }
 
   # determine minimum bit score cutoff
-  my $minsc = undef;
-  if(! opt_Get("--nominsc", $opt_HHR)) { 
-    $minsc = opt_Get("--minsc", $opt_HHR);
-  }
+  my $min_primary_sc = opt_Get("--minpsc", $opt_HHR);
   
   # Main data structures: 
   # 'first': current top scoring model for current sequence
@@ -1286,8 +1239,13 @@ sub parse_sorted_tbl_file {
   my %nnts_per_model_HH  = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
                                  # nucleotides in all hits (no threshold applied) to model for that strand for 
                                  # current target sequence
+  my %nnts_at_per_model_HH  = ();# hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                                 # nucleotides in all hits above threshold to model for that strand for 
+                                 # current target sequence
   my %nhits_per_model_HH = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
                                  # hits to model (no threshold applied) for that strand for current target sequence
+  my %nhits_at_per_model_HH = ();# hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
+                                 # hits to model above threshold for that strand for current target sequence
   my %tbits_per_model_HH = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: total (summed)
                                  # bit score for all hits to model (no threshold applied) for that current target sequence
   my %mdl_bd_per_model_HHA = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: an array of model 
@@ -1381,20 +1339,23 @@ sub parse_sorted_tbl_file {
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
         output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                          $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
-                          \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
-                          \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
+                          $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
+                          $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
+                          \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
+                          \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                           \%first_model_HH, \%second_model_HH);
         $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
       }
-      %first_model_HH       = ();
-      %second_model_HH      = ();
-      $nhits_above_thresh   = 0;
-      %nhits_per_model_HH   = ();
-      %tbits_per_model_HH   = ();
-      %nnts_per_model_HH    = ();
-      %mdl_bd_per_model_HHA = ();
-      %seq_bd_per_model_HHA = ();
+      %first_model_HH        = ();
+      %second_model_HH       = ();
+      $nhits_above_thresh    = 0;
+      %nhits_per_model_HH    = ();
+      %nhits_at_per_model_HH = ();
+      %tbits_per_model_HH    = ();
+      %nnts_per_model_HH     = ();
+      %nnts_at_per_model_HH  = ();
+      %mdl_bd_per_model_HHA  = ();
+      %seq_bd_per_model_HHA  = ();
     }
     ##############################################################
     
@@ -1464,9 +1425,11 @@ sub parse_sorted_tbl_file {
     }
 
     # first, enforce our global bit score minimum
-    if((! defined $minsc) || ($score >= $minsc)) { 
+    if($score >= $min_primary_sc) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits_above_thresh++;
+      $nhits_at_per_model_HH{$model}{$strand}++;
+      $nnts_at_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
       if(! defined $first_model) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
         $cur_becomes_first = 1; # no current, 'one' this will be it
       }
@@ -1508,7 +1471,7 @@ sub parse_sorted_tbl_file {
           }
         }
       }
-    } # end of 'if((! defined $minsc) || ($score >= $minsc))'
+    } # end of 'if($score >= $min_primary_sc))'
     # finished determining if this hit is a new 'one' or 'two' hit
     ##########################################################
     
@@ -1546,9 +1509,10 @@ sub parse_sorted_tbl_file {
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
     output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
-                      \%nhits_per_model_HH, \%nnts_per_model_HH, \%tbits_per_model_HH,
-                      \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
+                      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
+                      $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
+                      \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
+                      \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
                       \%first_model_HH, \%second_model_HH);
     $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
   }
@@ -1699,12 +1663,12 @@ sub output_one_hitless_target {
   my ($short_FH, $long_FH, $round, $opt_HHR, $width_HR, $target, $seqidx, $seqlen, $have_evalues, $have_model_coords) = @_;
 
   my $pass_fail = "FAIL";
-  my $unusual_features = "*no_hits";
+  my $unusual_features = "*NoHits;";
   my $nfams = 0;
   my $nhits = 0;
 
   if(defined $short_FH) { 
-    printf $short_FH ("%-*s  %-*s  %-*s  %5s  %s  %s\n", 
+    printf $short_FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
                       $width_HR->{"index"}, $seqidx,
                       $width_HR->{"target"}, $target, 
                       $width_HR->{"classification"}, "-",
@@ -1768,13 +1732,18 @@ sub output_one_hitless_target {
 #                            is width (maximum length) of any target/model
 #   $domain_HR:              reference to domain hash
 #   $accept_HR:              reference to the 'accept' hash, key is "model"
-#                            value is '1' if hits to model are "PASS"es '0'
-#                            if they are "FAIL"s
+#                            value is '1' if hits to model should have unexpected_model
+#                            ufeature, 0 if not
+#   $question_HR:            reference to the 'question' hash, key is "model"
+#                            value is '1' if hits to model should have questionable_model
+#                            ufeature, 0 if not
 #   $target:                 target name
 #   $seqidx:                 index of target sequence
 #   $seqlen:                 length of target sequence
-#   $nhits_HHR:              reference to hash of num hits per model (key 1), strand (key 2)
-#   $nnts_HHR:               reference to hash of num nucleotides in all hits per model (key 1), strand (key 2)
+#   $nhits_HHR:              reference to hash of num hits (no threshold) per model (key 1), strand (key 2)
+#   $nhits_at_HHR:           reference to hash of num hits above threshold per model (key 1), strand (key 2)
+#   $nnts_HHR:               reference to hash of num nucleotides (no threshold) in all hits per model (key 1), strand (key 2)
+#   $nnts_at_HHR:            reference to hash of num nucleotides above threshold in all hits per model (key 1), strand (key 2)
 #   $tbits_HHR:              reference to hash of total (summed) bit score in all hits per model (key 1), per strand (key 2)
 #   $mdl_bd_HHAR:            reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
 #   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
@@ -1787,13 +1756,13 @@ sub output_one_hitless_target {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 21;
+  my $nargs_expected = 24;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $target, 
-      $seqidx, $seqlen, $nhits_HHR, $nnts_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
+      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
+      $seqidx, $seqlen, $nhits_HHR, $nhits_at_HHR, $nnts_HHR, $nnts_at_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $first_model_HHR, $second_model_HHR) = @_;
 
   # determine the winning family
@@ -1823,6 +1792,7 @@ sub output_one_target {
   my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
                                  # more than one hit to different families for this sequence
   my $nhits     = $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
+  my $nhits_at  = $nhits_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   my $one_tbits = $tbits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   my $two_tbits = undef;
 
@@ -1837,18 +1807,18 @@ sub output_one_target {
   my $both_strands_fail_str = "";
   # add a '.' followed by <d>, where <d> is number of hits on opposite strand of best hit, if <d> > 0
   my $other_strand = ($first_model_HHR->{$wfamily}{"strand"} eq "+") ? "-" : "+";
-  if(exists $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} && 
-     $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} > 0) { 
-    $nhits += $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand};
-    $both_strands_fail_str  = "hits_on_both_strands:(" . $first_model_HHR->{$wfamily}{"strand"} . ":";
-    $both_strands_fail_str .= $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}} . "_hit(s)"; 
+  if(exists $nhits_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} && 
+     $nhits_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} > 0) { 
+    $nhits_at += $nhits_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand};
+    $both_strands_fail_str  = "BothStrands:(" . $first_model_HHR->{$wfamily}{"strand"} . ":";
+    $both_strands_fail_str .= $nhits_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}} . "_hit(s)"; 
     if($have_accurate_coverage) { 
-      $both_strands_fail_str .= "[" . $nnts_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}} . "_nt]";
+      $both_strands_fail_str .= "[" . $nnts_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}} . "_nt]";
     }
     $both_strands_fail_str .= "," . $other_strand . ":";
     $both_strands_fail_str .= $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} . "_hit(s)";
     if($have_accurate_coverage) { 
-      $both_strands_fail_str .= "[" . $nnts_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} . "_nt])";
+      $both_strands_fail_str .= "[" . $nnts_at_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$other_strand} . "_nt])";
     }
   }
 
@@ -1864,7 +1834,7 @@ sub output_one_target {
         my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
         if($noverlap > $noverlap_allowed) { 
           if($duplicate_model_region_str eq "") { 
-            $duplicate_model_region_str .= "duplicate_model_region:"; 
+            $duplicate_model_region_str .= "DuplicateRegion:"; 
           }
           else { 
             $duplicate_model_region_str .= ",";
@@ -1906,7 +1876,7 @@ sub output_one_target {
         }
       }
       if($out_of_order_flag) { 
-        $out_of_order_str = "inconsistent_hit_order:seq_order(" . $seq_hit_order_str . "[";
+        $out_of_order_str = "*InconsistentHits:seq_order(" . $seq_hit_order_str . "[";
         for($i = 0; $i < $nhits; $i++) { 
           $out_of_order_str .= $seq_bd_HHAR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}}[$i]; 
           if($i < ($nhits-1)) { $out_of_order_str .= ","; }
@@ -2008,6 +1978,10 @@ sub output_one_target {
   # - score difference between top two models is below $diff_thresh (requires --difffail)
   # - number of this to best model is > 1 (requires --multfail)
   # 
+  # Optional unusual features, these will automatically cause a sequence if FAIL if
+  # reported
+  # - sequence is less than <n1> nucleotides (requires --shortfail <n1>)
+  # - sequence is more than <n2> nucleotides (requires --longfail <n2>)
   my $pass_fail = "PASS";
   my $unusual_features = "";
 
@@ -2015,63 +1989,64 @@ sub output_one_target {
   # hits to more than one family?
   if($nfams > 1) { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*hits_to_more_than_one_family:($nfams_fail_str),other_family_hits($other_hits_string)";
+    $unusual_features .= "*MultipleFamilies:($nfams_fail_str,$other_hits_string);";
   }
   # hits on both strands to best model?
   if($both_strands_fail_str ne "") { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*" . $both_strands_fail_str;
+    $unusual_features .= "*" . $both_strands_fail_str . ";";
   }    
   # duplicate model region
   if($duplicate_model_region_str ne "") { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*" . $duplicate_model_region_str;
+    $unusual_features .= "*" . $duplicate_model_region_str . ";";
   }    
   # hits in inconsistent order
   if($out_of_order_str ne "") { 
     $pass_fail = "FAIL";
-    if($unusual_features ne "") { $unusual_features .= ";"; }
-    $unusual_features .= "*" . $out_of_order_str;
+    $unusual_features .= $out_of_order_str . ";";
   }
 
   # check/enforce optional failure criteria
-  # determine if the sequence hits to an unacceptable model
-  if($accept_HR->{$first_model_HHR->{$wfamily}{"model"}} != 1) { 
+
+  # determine if the sequence hits to an questionable or unacceptable model
+  if($question_HR->{$first_model_HHR->{$wfamily}{"model"}} == 1) { 
+    if(opt_Get("--questfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= "QuestionableModel:(" . $first_model_HHR->{$wfamily}{"model"} . ");";
+  }
+  elsif($accept_HR->{$first_model_HHR->{$wfamily}{"model"}} != 1) { 
     $pass_fail = "FAIL";
-    $unusual_features .= "*unacceptable_model"
+    $unusual_features .= "*UnacceptableModel:(" . $first_model_HHR->{$wfamily}{"model"} . ");";
   }
   # determine if sequence is on opposite strand
   if($first_model_HHR->{$wfamily}{"strand"} eq "-") { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--minusfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= "opposite_strand";
+    $unusual_features .= "MinusStrand;";
   }
   # determine if the sequence has a 'low_score'
   # it does if bits per position (of entire sequence not just hit)
   # is below the threshold (--lowppossc) minimum
   my $bits_per_posn = $one_tbits / $seqlen;
   if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--scfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("low_score_per_posn:(%.2f<%.2f)", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
+    $unusual_features .= sprintf("LowScore:(%.2f<%.2f);", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
   }
   # determine if coverage is low
   if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--covfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("low_total_coverage:(%.3f<%.3f)", $tot_coverage, opt_Get("--tcov", $opt_HHR));
+    $unusual_features .= sprintf("LowCoverage:(%.3f<%.3f);", $tot_coverage, opt_Get("--tcov", $opt_HHR));
   }
   # determine if the sequence has a low score difference between the top
   # two domains
@@ -2084,20 +2059,18 @@ sub output_one_target {
       $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
       $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
       if($score_ppos_diff < $diff_vlow_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("VeryLowScoreDifference:(%.3f<%.3f_bits_per_posn);", $score_ppos_diff, $diff_vlow_thresh);
       }
       elsif($score_ppos_diff < $diff_low_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_bits_per_posn)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_ppos_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("LowScoreDifference:(%.3f<%.3f_bits_per_posn);", $score_ppos_diff, $diff_low_thresh);
       }
     }
     else { 
@@ -2105,33 +2078,40 @@ sub output_one_target {
       $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR);
       $diff_low_thresh  = opt_Get("--lowadiff",  $opt_HHR);
       if($score_total_diff < $diff_vlow_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("very_low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_vlow_thresh);
+        $unusual_features .= sprintf("VeryLowScoreDifference:(%.3f<%.3f_total_bits);", $score_total_diff, $diff_vlow_thresh);
       }
       elsif($score_total_diff < $diff_low_thresh) { 
-        if($unusual_features ne "") { $unusual_features .= ";"; }
         if(opt_Get("--difffail", $opt_HHR)) { 
           $pass_fail = "FAIL"; 
           $unusual_features .= "*";
         }
-        $unusual_features .= sprintf("low_score_difference_between_top_two_%s:(%.3f<%.3f_total_bits)", (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains"), $score_total_diff, $diff_low_thresh);
+        $unusual_features .= sprintf("LowScoreDifference:(%.3f<%.3f_total_bits);", $score_total_diff, $diff_low_thresh);
       }
     }
   }
   # determine if there are more than one hit to the best model
   $nhits = $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   if($nhits > 1) {
-    if($unusual_features ne "") { $unusual_features .= ";"; }
     if(opt_Get("--multfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= "multiple_hits_to_best_model:($nhits)";
+    $unusual_features .= "MultipleHits:($nhits);";
   }
+  # optional unusual features (if any)
+  if((opt_IsUsed("--shortfail", $opt_HHR)) && ($seqlen < opt_Get("--shortfail", $opt_HHR))) { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*TooShort:($seqlen<" . opt_Get("--shortfail", $opt_HHR) . ");";
+  }
+  if((opt_IsUsed("--longfail", $opt_HHR)) && ($seqlen > opt_Get("--longfail", $opt_HHR))) { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*TooLong:($seqlen>" . opt_Get("--longfail", $opt_HHR) . ");";
+  }
+  # if there are no unusual features, set the unusual feature string as '-'
   if($unusual_features eq "") { $unusual_features = "-"; }
 
   # finally, output
@@ -2207,7 +2187,8 @@ sub output_one_target {
 #              
 # Arguments: 
 #   $FH:        file handle to output to
-#   $width_HR:  maximum length of any target name
+#   $width_HR:  ref to hash, keys include "model" and "target", 
+#               value is width (maximum length) of any target/model
 #
 # Returns:     Nothing.
 # 
@@ -2221,9 +2202,9 @@ sub output_short_headers {
 
   my ($FH, $width_HR) = (@_);
 
-  my $index_dash_str  = "#" . get_monocharacter_string($width_HR->{"index"}-1, "-");
-  my $target_dash_str = get_monocharacter_string($width_HR->{"target"}, "-");
-  my $class_dash_str  = get_monocharacter_string($width_HR->{"classification"}, "-");
+  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
+  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
+  my $class_dash_str  = ribo_GetMonoCharacterString($width_HR->{"classification"}, "-");
 
   printf $FH ("%-*s  %-*s  %-*s  %5s  %4s  %s\n", 
               $width_HR->{"index"}, "#idx", 
@@ -2250,8 +2231,8 @@ sub output_short_headers {
 #               we're outputting for (final is the combined file
 #               created from both rounds 1 and 2)
 #   $opt_HHR:   ref to 2D options hash
-#   $width_HR:  ref to hash, key is "model" or "target", value 
-#               is width (maximum length) of any target/model
+#   $width_HR:  ref to hash, keys include "model" and "target", 
+#               value is width (maximum length) of any target/model
 #
 # Returns:     Nothing.
 # 
@@ -2265,12 +2246,12 @@ sub output_long_headers {
 
   my ($FH, $round, $opt_HHR, $width_HR) = (@_);
 
-  my $index_dash_str   = "#" . get_monocharacter_string($width_HR->{"index"}-1, "-");
-  my $target_dash_str  = get_monocharacter_string($width_HR->{"target"}, "-");
-  my $model_dash_str   = get_monocharacter_string($width_HR->{"model"},  "-");
-  my $family_dash_str  = get_monocharacter_string($width_HR->{"family"}, "-");
-  my $domain_dash_str  = get_monocharacter_string($width_HR->{"domain"}, "-");
-  my $length_dash_str  = get_monocharacter_string($width_HR->{"length"}, "-");
+  my $index_dash_str   = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
+  my $target_dash_str  = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
+  my $model_dash_str   = ribo_GetMonoCharacterString($width_HR->{"model"},  "-");
+  my $family_dash_str  = ribo_GetMonoCharacterString($width_HR->{"family"}, "-");
+  my $domain_dash_str  = ribo_GetMonoCharacterString($width_HR->{"domain"}, "-");
+  my $length_dash_str  = ribo_GetMonoCharacterString($width_HR->{"length"}, "-");
 
   my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
   my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR);
@@ -2311,8 +2292,8 @@ sub output_long_headers {
     } 
   }
 
-  my $best_model_group_dash_str   = get_monocharacter_string($best_model_group_width, "-");
-  my $second_model_group_dash_str = get_monocharacter_string($second_model_group_width, "-");
+  my $best_model_group_dash_str   = ribo_GetMonoCharacterString($best_model_group_width, "-");
+  my $second_model_group_dash_str = ribo_GetMonoCharacterString($second_model_group_width, "-");
   
   # line 1
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s", 
@@ -2434,8 +2415,9 @@ sub output_long_headers {
 # Purpose:     Output explanation of columns to short output file.
 #              
 # Arguments: 
-#   $FH:       file handle to output to
-#   $opt_HHR:  reference to options 2D hash
+#   $FH:           file handle to output to
+#   $ufeature_AR:  ref to array of all unexpected feature strings
+#   $opt_HHR:      reference to options 2D hash
 #
 # Returns:     Nothing.
 # 
@@ -2443,13 +2425,14 @@ sub output_long_headers {
 #
 ################################################################# 
 sub output_short_tail { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_short_tail";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $opt_HHR) = (@_);
+  my ($FH, $ufeature_AR, $opt_HHR) = (@_);
 
   printf $FH ("#\n");
+  printf $FH ("# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
   printf $FH ("# Explanation of columns:\n");
   printf $FH ("#\n");
   printf $FH ("# Column 1 [idx]:                 index of sequence in input sequence file\n");
@@ -2458,10 +2441,9 @@ sub output_short_tail {
   printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit\n");
 #  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (see below for more on FAIL)\n");
   printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)\n");
-#  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below for more)\n");
-  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)\n");
+  printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below)\n");
   
-  output_unexpected_features_explanation($FH, $opt_HHR);
+  output_unexpected_features_explanation($FH, $ufeature_AR, $opt_HHR);
 
   return;
 }
@@ -2474,11 +2456,12 @@ sub output_short_tail {
 # Purpose:     Output explanation of columns to long output file.
 #              
 # Arguments: 
-#   $FH:       file handle to output to
-#   $round:    '1', '2' or 'final', indicates which file we're
-#              output this for, round 1, round 2, or the final
-#              output file.
-#   $opt_HHR:  reference to options 2D hash
+#   $FH:           file handle to output to
+#   $round:        '1', '2' or 'final', indicates which file we're
+#                  output this for, round 1, round 2, or the final
+#                  output file.
+#   $ufeature_AR:  ref to array of all unexpected feature strings
+#   $opt_HHR:      reference to options 2D hash
 #
 # Returns:     Nothing.
 # 
@@ -2486,11 +2469,11 @@ sub output_short_tail {
 #
 ################################################################# 
 sub output_long_tail { 
-  my $nargs_expected = 3;
+  my $nargs_expected = 4;
   my $sub_name = "output_long_tail";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $round, $opt_HHR) = (@_);
+  my ($FH, $round, $ufeature_AR, $opt_HHR) = (@_);
 
   my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR);  # 
   my $have_evalues_r1        = determine_if_we_have_evalues     (1, $opt_HHR);       # do we have E-values in round 1? 
@@ -2569,15 +2552,13 @@ sub output_long_tail {
       $column_ct++;
     }
   }
-#  printf $FH ("# Column %2d [unexpected_features]: unusual/unexpected features of sequence (see below for more)\n", $column_ct);
-  printf $FH ("# Column %2d [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)\n", $column_ct);
+  printf $FH ("# Column %2d [unexpected_features]: unexpected/unusual features of sequence (see below)\n", $column_ct);
   $column_ct++;
   
-  output_unexpected_features_explanation($FH, $opt_HHR);
+  output_unexpected_features_explanation($FH, $ufeature_AR, $opt_HHR);
 
   return;
 }
-
 
 #################################################################
 # Subroutine : output_unexpected_features_explanation()
@@ -2595,27 +2576,157 @@ sub output_long_tail {
 #
 ################################################################# 
 sub output_unexpected_features_explanation { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_unexpected_features_explanation";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $opt_HHR) = (@_);
+  my ($FH, $ufeature_AR, $opt_HHR) = (@_);
 
-#  print $FH ("#\n");
-#  print $FH ("# Explanation of possible values in unexpected_features column:\n");
-#  print $FH ("#\n");
-#  print $FH ("# This column will include a '-' if none of the features listed below are detected.\n");
-#  print $FH ("# Or it will contain one or more of the following types of messages. There are no\n");
-#  print $FH ("# whitespaces in this field, instead underscore '_' are used to make parsing easier.\n");
-#  print $FH ("#\n");
-#  print $FH ("# There are two types of unexpected features: those that cause a sequence to FAIL and\n");
-#  print $FH ("# those that do not\n");
-#  print $FH ("# Unexpected features There are two types of unexpected features: those that cause a sequence to FAIL and\n");
-#  print $FH ("# those that do not\n");
+  my $u_ctr               = 1;     # counter of unexpected features
+  my $ufeature            = undef; # an unusual feature
+  my @explanation_lines_A = (); # explanation of an unusual feature
 
-  return;
+  print $FH ("# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
+  print $FH ("#\n");
+  print $FH ("# Explanation of possible values in unexpected_features column:\n");
+  print $FH ("#\n");
+  print $FH ("# This column will include a '-' if none of the features listed below are detected.\n");
+  print $FH ("# Or it will contain one or more of the following types of messages. There are no\n");
+  print $FH ("# whitespaces in this field, to make parsing easier.\n");
+  print $FH ("#\n");
+  print $FH ("# Values that begin with \"*\" automatically cause a sequence to FAIL.\n");
+  print $FH ("# Values that do not begin with \"*\" do not cause a sequence to FAIL.\n");
+  print $FH ("#\n");
+
+  my $u_width = 0;
+  foreach $ufeature (@{$ufeature_AR}) { 
+    if($ufeature !~ m/CLEAN/) { 
+      if(length($ufeature) > $u_width) {
+        $u_width = length($ufeature);
+      }
+    }
+  }
+  foreach $ufeature (@{$ufeature_AR}) { 
+    if($ufeature !~ m/CLEAN/) { 
+      determine_unexpected_feature_explanation($ufeature, \@explanation_lines_A, $opt_HHR);
+      for(my $i = 0; $i < scalar(@explanation_lines_A); $i++) { 
+        printf $FH ("# %3s  %-*s  %s\n", 
+                    ($i == 0) ? sprintf("%2d.", $u_ctr) : "",
+                    $u_width, 
+                    ($i == 0) ? $ufeature               : "", 
+                    $explanation_lines_A[$i]);
+      }
+      if(scalar(@explanation_lines_A) > 0) { 
+        #printf $FH ("#\n");
+        $u_ctr++;
+      }
+    }
+  }
+  printf $FH("#\n");
 }
 
+#################################################################
+# Subroutine : determine_unexpected_feature_explanation()
+# Incept:      EPN, Fri May 19 09:32:37 2017
+#
+# Purpose:     Return an explanation of an unexpected feature.
+#              
+# Arguments: 
+#   $ufeature: feature to return explanation of
+#   $exp_AR:   ref to array to fill with >= 1 lines of explanation
+#   $opt_HHR:  reference to options 2D hash
+#
+# Returns:     Nothing. Fills @{$exp_AR}.
+# 
+# Dies:        If $ufeature is not an expected unexpected feature.
+#
+################################################################# 
+sub determine_unexpected_feature_explanation { 
+  my $nargs_expected = 3;
+  my $sub_name = "determine_unexpected_feature_explanation()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature, $exp_AR, $opt_HHR) = (@_);
+
+  # max width of a line is 55 characters
+  @{$exp_AR} = ();
+  if($ufeature =~ m/NoHits/) { 
+    push(@{$exp_AR}, "No primary hits to any models above the minimum primary score");
+    push(@{$exp_AR}, sprintf("threshold of %d bits (--minpsc) were found.", opt_Get("--minpsc", $opt_HHR)));
+  }
+  elsif($ufeature =~ m/UnacceptableModel/ && (opt_IsUsed("--inaccept", $opt_HHR))) { 
+    push(@{$exp_AR}, "Best hit is to a model that is 'unacceptable' as defined in");
+    push(@{$exp_AR}, "input file " . opt_Get("--inaccept", $opt_HHR) . " (--inaccept).");
+  }
+  elsif($ufeature =~ m/MultipleFamilies/) { 
+    push(@{$exp_AR}, "One or more primary hits to two or more \"families\" (e.g. SSU");
+    push(@{$exp_AR}, "or LSU) exists for the same sequence.");
+  }
+  elsif($ufeature =~ m/BothStrands/) { 
+    push(@{$exp_AR}, "One or more primary hits above the minimum primary score threshold");
+    push(@{$exp_AR}, sprintf("of %d bits (--minpsc) were found on each strand.", opt_Get("--minpsc", $opt_HHR)));
+  }
+  elsif($ufeature =~ m/DuplicateRegion/) { 
+    push(@{$exp_AR}, "At least two hits (primary or secondary) on the same strand overlap");
+    push(@{$exp_AR}, "in model coordinates by " . opt_Get("--maxoverlap", $opt_HHR) . " (--maxoverlap) positions or more");
+  }
+  elsif($ufeature =~ m/InconsistentHits/) { 
+    push(@{$exp_AR}, "Not all hits (primary or secondary) are in the same order in the");
+    push(@{$exp_AR}, "sequence and in the model.");
+  }
+  elsif($ufeature =~ m/QuestionableModel/ && (opt_IsUsed("--inaccept", $opt_HHR))) { 
+    push(@{$exp_AR}, "Best hit is to a model that is 'questionable' as defined in");
+    push(@{$exp_AR}, "input file " . opt_Get("--inaccept", $opt_HHR) . " (--inaccept).");
+  }
+  elsif($ufeature =~ m/MinusStrand/) { 
+    push(@{$exp_AR}, "Best hit is on the minus strand.");
+  }
+  elsif($ufeature =~ m/LowScore/) { 
+    push(@{$exp_AR}, "The bits per nucleotide (total bit score divided by total length");
+    push(@{$exp_AR}, "of sequence) is below threshold of " . opt_Get("--lowppossc", $opt_HHR) . " (--lowppossc).");
+  }
+  elsif($ufeature =~ m/LowCoverage/) { 
+    push(@{$exp_AR}, "The total coverage of all hits (primary and secondary) to the best");
+    push(@{$exp_AR}, "model (summed length of all hits divided by total length of sequence)");
+    push(@{$exp_AR}, "is below threshold of " . opt_Get("--tcov", $opt_HHR) . " (--tcov).");
+  }
+  elsif($ufeature =~ m/VeryLowScoreDifference/) { # important to put this before LowScoreDifference in elsif
+    if(opt_Get("--absdiff")) { 
+      push(@{$exp_AR}, "The difference between the top two " . (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains") . " is below the \'very low\'");
+      push(@{$exp_AR}, "threshold of " . opt_Get("--vlowadiff", $opt_HHR) . " (--vlowadiff) bits.");
+    }
+    else { 
+      push(@{$exp_AR}, "The difference between the top two " . (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains") . " is below the \'very low\'");
+      push(@{$exp_AR}, "threshold of " . opt_Get("--vlowpdiff", $opt_HHR) . " (--vlowpdiff) bits per position (total bit score");
+      push(@{$exp_AR}, "divided by summed length of all hits).");
+    }
+  }
+  elsif($ufeature =~ m/LowScoreDifference/) { 
+    if(opt_Get("--absdiff", $opt_HHR)) { 
+      push(@{$exp_AR}, "The difference between the top two " . (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains") . " is below the \'low\'");
+      push(@{$exp_AR}, "threshold of " . opt_Get("--lowadiff", $opt_HHR) . " (--lowadiff) bits.");
+    }
+    else { 
+      push(@{$exp_AR}, "The difference between the top two " . (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains") . " is below the \'low\'");
+      push(@{$exp_AR}, "threshold of " . opt_Get("--lowpdiff", $opt_HHR) . " (--lowpdiff) bits per position (total bit score");
+      push(@{$exp_AR}, "divided by summed length of all hits).");
+    }
+  }
+  elsif($ufeature =~ m/MultipleHits/) { 
+    push(@{$exp_AR}, "There is more than one hit to the best scoring model on the same strand.");
+  }
+  elsif($ufeature =~ m/TooShort/) { 
+    if(opt_Get("--shortfail", $opt_HHR)) { 
+      push(@{$exp_AR}, "Sequence is below minimum length threshold of " . opt_Get("--shortfail", $opt_HHR) . " (--shortfail).");
+    }
+  }
+  elsif($ufeature =~ m/TooLong/) { 
+    if(opt_Get("--longfail", $opt_HHR)) { 
+      push(@{$exp_AR}, "Sequence is above maximum length threshold of " . opt_Get("--longfail", $opt_HHR) . " (--longfail).");
+    }
+  }
+  return;
+}
 
 #####################################################################
 # Subroutine: output_banner()
@@ -2650,214 +2761,6 @@ sub output_banner {
   printf $FH ("#\n");
 
   return;
-}
-#################################################################
-# Subroutine : output_progress_prior()
-# Incept:      EPN, Fri Feb 12 17:22:24 2016 [dnaorg.pm]
-#
-# Purpose:      Output to $FH1 (and possibly $FH2) a message indicating
-#               that we're about to do 'something' as explained in
-#               $outstr.  
-#
-#               Caller should call *this* function, then do
-#               the 'something', then call output_progress_complete().
-#
-#               We return the number of seconds since the epoch, which
-#               should be passed into the downstream
-#               output_progress_complete() call if caller wants to
-#               output running time.
-#
-# Arguments: 
-#   $outstr:     string to print to $FH
-#   $progress_w: width of progress messages
-#   $FH1:        file handle to print to, can be undef
-#   $FH2:        another file handle to print to, can be undef
-# 
-# Returns:     Number of seconds and microseconds since the epoch.
-#
-################################################################# 
-sub output_progress_prior { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_progress_prior()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($outstr, $progress_w, $FH1, $FH2) = @_;
-
-  if(defined $FH1) { printf $FH1 ("# %-*s ... ", $progress_w, $outstr); }
-  if(defined $FH2) { printf $FH2 ("# %-*s ... ", $progress_w, $outstr); }
-
-  return seconds_since_epoch();
-}
-
-#################################################################
-# Subroutine : output_progress_complete()
-# Incept:      EPN, Fri Feb 12 17:28:19 2016 [dnaorg.pm]
-#
-# Purpose:     Output to $FH1 (and possibly $FH2) a 
-#              message indicating that we've completed 
-#              'something'.
-#
-#              Caller should call *this* function,
-#              after both a call to output_progress_prior()
-#              and doing the 'something'.
-#
-#              If $start_secs is defined, we determine the number
-#              of seconds the step took, output it, and 
-#              return it.
-#
-# Arguments: 
-#   $start_secs:    number of seconds either the step took
-#                   (if $secs_is_total) or since the epoch
-#                   (if !$secs_is_total)
-#   $extra_desc:    extra description text to put after timing
-#   $FH1:           file handle to print to, can be undef
-#   $FH2:           another file handle to print to, can be undef
-# 
-# Returns:     Number of seconds the step took (if $secs is defined,
-#              else 0)
-#
-################################################################# 
-sub output_progress_complete { 
-  my $nargs_expected = 4;
-  my $sub_name = "output_progress_complete()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($start_secs, $extra_desc, $FH1, $FH2) = @_;
-
-  my $total_secs = undef;
-  if(defined $start_secs) { 
-    $total_secs = seconds_since_epoch() - $start_secs;
-  }
-
-  if(defined $FH1) { printf $FH1 ("done."); }
-  if(defined $FH2) { printf $FH2 ("done."); }
-
-  if(defined $total_secs || defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 (" ["); }
-    if(defined $FH2) { printf $FH2 (" ["); }
-  }
-  if(defined $total_secs) { 
-    if(defined $FH1) { printf $FH1 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
-    if(defined $FH2) { printf $FH2 (sprintf("%.1f seconds%s", $total_secs, (defined $extra_desc) ? ", " : "")); }
-  }
-  if(defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 $extra_desc };
-    if(defined $FH2) { printf $FH2 $extra_desc };
-  }
-  if(defined $total_secs || defined $extra_desc) { 
-    if(defined $FH1) { printf $FH1 ("]"); }
-    if(defined $FH2) { printf $FH2 ("]"); }
-  }
-
-  if(defined $FH1) { printf $FH1 ("\n"); }
-  if(defined $FH2) { printf $FH2 ("\n"); }
-  
-  return (defined $total_secs) ? $total_secs : 0.;
-}
-
-#################################################################
-# Subroutine:  run_command()
-# Incept:      EPN, Mon Dec 19 10:43:45 2016
-#
-# Purpose:     Runs a command using system() and exits in error 
-#              if the command fails. If $be_verbose, outputs
-#              the command to stdout. If $FH_HR->{"cmd"} is
-#              defined, outputs command to that file handle.
-#
-# Arguments:
-#   $cmd:         command to run, with a "system" command;
-#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
-#
-# Returns:    amount of time the command took, in seconds
-#
-# Dies:       if $cmd fails
-#################################################################
-sub run_command {
-  my $sub_name = "run_command()";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($cmd, $be_verbose) = @_;
-  
-  if($be_verbose) { 
-    print ("Running cmd: $cmd\n"); 
-  }
-
-  my ($seconds, $microseconds) = gettimeofday();
-  my $start_time = ($seconds + ($microseconds / 1000000.));
-
-  system($cmd);
-
-  ($seconds, $microseconds) = gettimeofday();
-  my $stop_time = ($seconds + ($microseconds / 1000000.));
-
-  if($? != 0) { 
-    die "ERROR in $sub_name, the following command failed:\n$cmd\n";
-  }
-
-  return ($stop_time - $start_time);
-}
-
-#################################################################
-# Subroutine : validate_executable_hash()
-# Incept:      EPN, Sat Feb 13 06:27:51 2016
-#
-# Purpose:     Given a reference to a hash in which the 
-#              values are paths to executables, validate
-#              those files are executable.
-#
-# Arguments: 
-#   $execs_HR: REF to hash, keys are short names to executable
-#              e.g. "cmbuild", values are full paths to that
-#              executable, e.g. "/usr/local/infernal/1.1.1/bin/cmbuild"
-# 
-# Returns:     void
-#
-# Dies:        if one or more executables does not exist#
-#
-################################################################# 
-sub validate_executable_hash { 
-  my $nargs_expected = 1;
-  my $sub_name = "validate_executable_hash()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($execs_HR) = (@_);
-
-  my $fail_str = undef;
-  foreach my $key (sort keys %{$execs_HR}) { 
-    if(! -e $execs_HR->{$key}) { 
-      $fail_str .= "\t$execs_HR->{$key} does not exist.\n"; 
-    }
-    elsif(! -x $execs_HR->{$key}) { 
-      $fail_str .= "\t$execs_HR->{$key} exists but is not an executable file.\n"; 
-    }
-  }
-  
-  if(defined $fail_str) { 
-    die "ERROR in $sub_name(),\n$fail_str"; 
-  }
-
-  return;
-}
-
-#################################################################
-# Subroutine : seconds_since_epoch()
-# Incept:      EPN, Sat Feb 13 06:17:03 2016
-#
-# Purpose:     Return the seconds and microseconds since the 
-#              Unix epoch (Jan 1, 1970) using 
-#              Time::HiRes::gettimeofday().
-#
-# Arguments:   NONE
-# 
-# Returns:     Number of seconds and microseconds
-#              since the epoch.
-#
-################################################################# 
-sub seconds_since_epoch { 
-  my $nargs_expected = 0;
-  my $sub_name = "seconds_since_epoch()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($seconds, $microseconds) = gettimeofday();
-  return ($seconds + ($microseconds / 1000000.));
 }
 
 
@@ -2907,43 +2810,6 @@ sub debug_print {
   return;
 }
 
-#################################################################
-# Subroutine: get_monocharacter_string()
-# Incept:     EPN, Thu Mar 10 21:02:35 2016 [dnaorg.pm]
-#
-# Purpose:    Return a string of length $len of repeated instances
-#             of the character $char.
-#
-# Arguments:
-#   $len:   desired length of the string to return
-#   $char:  desired character
-#
-# Returns:  A string of $char repeated $len times.
-# 
-# Dies:     if $len is not a positive integer
-#
-#################################################################
-sub get_monocharacter_string {
-  my $sub_name = "get_monocharacter_string";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($len, $char) = @_;
-
-  if(! verify_integer($len)) { 
-    die "ERROR in $sub_name, passed in length ($len) is not a non-negative integer";
-  }
-  if($len < 0) { 
-    die "ERROR in $sub_name, passed in length ($len) is a negative integer";
-  }
-    
-  my $ret_str = "";
-  for(my $i = 0; $i < $len; $i++) { 
-    $ret_str .= $char;
-  }
-
-  return $ret_str;
-}
 
 #################################################################
 # Subroutine: center_string()
@@ -2973,7 +2839,7 @@ sub center_string {
   my $nspaces_to_prepend = int(($width - length($str)) / 2);
   if($nspaces_to_prepend < 0) { $nspaces_to_prepend = 0; }
 
-  return get_monocharacter_string($nspaces_to_prepend, " ") . $str; 
+  return ribo_GetMonoCharacterString($nspaces_to_prepend, " ") . $str; 
 }
 
 #################################################################
@@ -3353,50 +3219,6 @@ sub get_dir_path {
 }
 
 #################################################################
-# Subroutine : check_if_file_exists_and_is_non_empty()
-# Incept:      EPN, Thu May  4 09:30:32 2017 [dnaorg.pm:validateFileExistsAndIsNonEmpty]
-#
-# Purpose:     Check if a file exists and is non-empty. 
-#
-# Arguments: 
-#   $filename:         file that we are checking on
-#   $filedesc:         description of file
-#   $calling_sub_name: name of calling subroutine (can be undef)
-#   $do_die:           '1' if we should die if it does not exist.  
-# 
-# Returns:     Return '1' if it does and is non empty, '0' if it does
-#              not exist, or '-1' if it exists but is empty.
-#
-# Dies:        If file does not exist or is empty and $do_die is 1.
-# 
-################################################################# 
-sub check_if_file_exists_and_is_non_empty { 
-  my $nargs_expected = 4;
-  my $sub_name = "check_if_file_exists_and_is_non_empty()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($filename, $filedesc, $calling_sub_name, $do_die) = @_;
-
-  if(! -e $filename) { 
-    if($do_die) { 
-      die sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
-                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : "")); 
-    }
-    return 0;
-  }
-  elsif(! -s $filename) { 
-    if($do_die) { 
-      die sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
-                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : "")); 
-    }
-    return -1;
-  }
-  
-  return 1;
-}
-
-#################################################################
 # Subroutine : determine_cmsearch_opts()
 # Incept:      EPN, Thu May  4 13:14:10 2017
 #
@@ -3719,17 +3541,17 @@ sub output_combined_short_or_long_file {
         @r1_ufeatures_A = split(";", $r1_el_A[($ncols_r1-1)]); 
         foreach $ufeature (@r1_ufeatures_A) { 
 
-          if(($ufeature =~ m/low\_score\_difference\_between\_top\_two/) ||
-             ($ufeature =~ m/hits\_to\_more\_than\_one\_family/)) { 
+          if(($ufeature =~ m/LowScoreDifference/) ||
+             ($ufeature =~ m/MultipleFamilies/)) { 
             $did_edit_r2_line = 1;
             if($ufeature =~ m/^\*/) { 
               $did_make_fail = 1;
             }
             if($r2_el_A[($ncols_r2-1)] eq "-") { 
-              $r2_el_A[($ncols_r2-1)] = $ufeature;
+              $r2_el_A[($ncols_r2-1)] = $ufeature . ";";
             }
             else { 
-              $r2_el_A[($ncols_r2-1)] .= ";" . $ufeature;
+              $r2_el_A[($ncols_r2-1)] .= $ufeature . ";";
             }
           }
         }
@@ -3927,32 +3749,38 @@ sub initialize_ufeature_stats {
 
   # first category is a special one, it will hold the counts of
   # sequences with 0 unexpected features
-  push(@{$ufeature_AR}, "CLEAN(zero_unexpected_features)");
+  push(@{$ufeature_AR}, "CLEAN");
 
   # next, we want the unexpected features that will cause failures 
   # those that always cause failures (regardless of cmdline options):
-  push(@{$ufeature_AR}, "*no_hits");
-  push(@{$ufeature_AR}, "*unacceptable_model");
-  push(@{$ufeature_AR}, "*hits_to_more_than_one_family");
-  push(@{$ufeature_AR}, "*hits_on_both_strands");
-  push(@{$ufeature_AR}, "*duplicate_model_region");
-  push(@{$ufeature_AR}, "*inconsistent_hit_order");
+  push(@{$ufeature_AR}, "*NoHits");
+  push(@{$ufeature_AR}, "*UnacceptableModel");
+  push(@{$ufeature_AR}, "*MultipleFamilies");
+  push(@{$ufeature_AR}, "*BothStrands");
+  push(@{$ufeature_AR}, "*DuplicateRegion");
+  push(@{$ufeature_AR}, "*InconsistentHits");
 
   # those that can cause failure, if they do so:
-  if(opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "*opposite_strand"); }
-  if(opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "*low_score_per_posn"); }
-  if(opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*low_total_coverage"); }
-  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*low_score_difference_between_top_two_domains"); }
-  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*very_low_score_difference_between_top_two_domains"); }
-  if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*multiple_hits_to_best_model"); }
+  if(opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "*QuestionableModel"); }
+  if(opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "*MinusStrand"); }
+  if(opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "*LowScore"); }
+  if(opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*LowCoverage"); }
+  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*LowScoreDifference"); }
+  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*VeryLowScoreDifference"); }
+  if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*MultipleHits"); }
+
+  # those that are only reported if a specific option is enabled
+  if(opt_IsUsed("--shortfail", $opt_HHR)) { push(@{$ufeature_AR}, "*TooShort"); }
+  if(opt_IsUsed("--longfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*TooLong"); }
 
   # those that don't cause failure, if they don't
-  if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "opposite_strand"); }
-  if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "low_score_per_posn"); }
-  if(! opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "low_total_coverage"); }
-  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "low_score_difference_between_top_two_domains"); }
-  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "very_low_score_difference_between_top_two_domains"); }
-  if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "multiple_hits_to_best_model"); }
+  if(! opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "QuestionableModel"); }
+  if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "MinusStrand"); }
+  if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "LowScore"); }
+  if(! opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "LowCoverage"); }
+  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "LowScoreDifference"); }
+  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "VeryLowScoreDifference"); }
+  if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "MultipleHits"); }
 
   foreach my $ufeature (@{$ufeature_AR}) { 
     $ufeature_ct_HR->{$ufeature} = 0;
@@ -3990,7 +3818,7 @@ sub update_one_ufeature_sequence {
 
   my @ufeatures_A = ();
   if($ufeature_str eq "-") { 
-    update_one_ufeature_count($ufeature_ct_HR, "CLEAN(zero_unexpected_features)");
+    update_one_ufeature_count($ufeature_ct_HR, "CLEAN");
   }
   else { 
     my @ufeatures_A = split(";", $ufeature_str);
@@ -4150,13 +3978,13 @@ sub output_summary_statistics {
                   $width_H{"fail"},     "that FAIL");
   # line 3
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
-                  $width_H{"class"},    get_monocharacter_string($width_H{"class"}, "-"),
-                  $width_H{"nseq"},     get_monocharacter_string($width_H{"nseq"}, "-"),
-                  $width_H{"fraction"}, get_monocharacter_string($width_H{"fraction"}, "-"),
-                  $width_H{"length"},   get_monocharacter_string($width_H{"length"}, "-"),
-                  $width_H{"coverage"}, get_monocharacter_string($width_H{"coverage"}, "-"),
-                  $width_H{"pass"},     get_monocharacter_string($width_H{"pass"}, "-"),
-                  $width_H{"fail"},     get_monocharacter_string($width_H{"fail"}, "-"));
+                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-"),
+                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-"),
+                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-"),
+                  $width_H{"length"},   ribo_GetMonoCharacterString($width_H{"length"}, "-"),
+                  $width_H{"coverage"}, ribo_GetMonoCharacterString($width_H{"coverage"}, "-"),
+                  $width_H{"pass"},     ribo_GetMonoCharacterString($width_H{"pass"}, "-"),
+                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-"));
   
   $class = "*input*";
   printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*s  %*s\n", 
@@ -4263,7 +4091,7 @@ sub output_timing_statistics {
   $width_H{"seqsec"}   = 7;
   $width_H{"ntsec"}    = 10;
   $width_H{"ntseccpu"} = 10;
-  $width_H{"total"}    = 10;
+  $width_H{"total"}    = 23;
   
   printf $out_FH ("#\n");
   printf $out_FH ("# Timing statistics:\n");
@@ -4276,16 +4104,16 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   "seq/sec",
                   $width_H{"ntsec"},    "nt/sec",
                   $width_H{"ntseccpu"}, "nt/sec/cpu",
-                  $width_H{"total"},    "total_time");
+                  $width_H{"total"},    "total time");
   
   # line 2
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
-                  $width_H{"class"},    get_monocharacter_string($width_H{"class"}, "-"),
-                  $width_H{"nseq"},     get_monocharacter_string($width_H{"nseq"}, "-"),
-                  $width_H{"seqsec"},   get_monocharacter_string($width_H{"seqsec"}, "-"),
-                  $width_H{"ntsec"},    get_monocharacter_string($width_H{"ntsec"}, "-"),
-                  $width_H{"ntseccpu"}, get_monocharacter_string($width_H{"ntseccpu"}, "-"),
-                  $width_H{"total"},    get_monocharacter_string($width_H{"total"}, "-"));
+                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-"),
+                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-"),
+                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"}, "-"),
+                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"}, "-"),
+                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-"),
+                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-"));
   
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -4294,7 +4122,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r1_nseq / $r1_secs,
                   $width_H{"ntsec"},    $r1_nnt  / $r1_secs, 
                   $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
-                  $width_H{"total"},    get_time_string($r1_secs));
+                  $width_H{"total"},    ribo_GetTimeString($r1_secs));
 
   $class = "search";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -4303,7 +4131,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r2_nseq / $r2_secs,
                   $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
                   $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
-                  $width_H{"total"},    get_time_string($r2_secs));
+                  $width_H{"total"},    ribo_GetTimeString($r2_secs));
   
   
   $class = "total";
@@ -4313,7 +4141,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r1_nseq / $tot_secs,
                   $width_H{"ntsec"},    $r1_nnt  / $tot_secs,
                   $width_H{"ntseccpu"}, ($r1_nnt  / $tot_secs) / $ncpu, 
-                  $width_H{"total"},    get_time_string($tot_secs));
+                  $width_H{"total"},    ribo_GetTimeString($tot_secs));
                   
   printf $out_FH ("#\n");
   
@@ -4357,7 +4185,7 @@ sub output_ufeature_statistics {
 
   # want to skip other_family_hits
   foreach $ufeature (@{$ufeature_AR}) { 
-    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(zero_unexpected_features)")) { 
+    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN")) { 
       if(length($ufeature) > $width_H{"ufeature"}) { 
         $width_H{"ufeature"} = length($ufeature);
       }
@@ -4387,13 +4215,13 @@ sub output_ufeature_statistics {
 
   # line 3
   printf $out_FH ("# %-*s  %-*s  %*s  %*s\n", 
-                  $width_H{"ufeature"}, get_monocharacter_string($width_H{"ufeature"}, "-"),
-                  $width_H{"fail"},     get_monocharacter_string($width_H{"fail"}, "-"),
-                  $width_H{"seqs"},     get_monocharacter_string($width_H{"seqs"}, "-"),
-                  $width_H{"fraction"}, get_monocharacter_string($width_H{"fraction"}, "-"));
+                  $width_H{"ufeature"}, ribo_GetMonoCharacterString($width_H{"ufeature"}, "-"),
+                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-"),
+                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-"),
+                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-"));
 
   foreach $ufeature (@{$ufeature_AR}) { 
-    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN(zero_unexpected_features)")) { 
+    if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN")) { 
       printf $out_FH ("  %-*s  %-*s  %*d  %*.5f\n", 
                       $width_H{"ufeature"}, $ufeature,
                       $width_H{"fail"},     ($ufeature =~ m/^\*/) ? "yes" : "no",
@@ -4407,67 +4235,7 @@ sub output_ufeature_statistics {
   
 }
 
-#####################################################################
-# Subroutine: get_time_string()
-# Incept:     EPN, Tue May  9 11:09:12 2017 
-#             EPN, Tue Jun 16 08:52:08 2009 [ssu-align:ssu.pm:PrintTiming]
-# 
-# Purpose:    Print a timing in hhhh:mm:ss format.
-# 
-# Arguments:
-# $inseconds: number of seconds
-#
-# Returns:    Nothing.
-# 
-####################################################################
-sub get_time_string { 
-    my $nargs_expected = 1;
-    my $sub_name = "get_time_string()";
-    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-    
-    my ($inseconds) = @_;
 
-    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $ndig_hours);
-
-    $hours = int($inseconds / 3600);
-    $inseconds -= ($hours * 3600);
-    $minutes = int($inseconds / 60);
-    $inseconds -= ($minutes * 60);
-    $seconds = $inseconds;
-    $thours   = sprintf("%02d", $hours);
-    $tminutes = sprintf("%02d", $minutes);
-    $ndig_hours = number_of_digits($hours);
-    if($ndig_hours < 2) { $ndig_hours = 2; }
-    $tseconds = sprintf("%05.2f", $seconds);
-
-    return sprintf("%*s:%2s:%5s  (hh:mm:ss)", $ndig_hours, $thours, $tminutes, $tseconds);
-}
-
-#################################################################
-# Subroutine : number_of_digits()
-# Incept:      EPN, Tue May  9 11:33:50 2017
-#              EPN, Fri Nov 13 06:17:25 2009 [ssu-align:ssu.pm:NumberOfDigits()]
-# 
-# Purpose:     Return the number of digits in a number before
-#              the decimal point. (ex: 1234.56 would return 4).
-# Arguments:
-# $num:        the number
-# 
-# Returns:     the number of digits before the decimal point
-#
-################################################################# 
-sub number_of_digits { 
-    my $nargs_expected = 1;
-    my $sub_name = "number_of_digits()";
-    if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-    my ($num) = (@_);
-
-    my $ndig = 1; 
-    while($num > 10) { $ndig++; $num /= 10.; }
-
-    return $ndig;
-}
 
 #################################################################
 # Subroutine: debug_print_model_stats

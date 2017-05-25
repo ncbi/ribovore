@@ -226,9 +226,9 @@ and reported in the final column of both the short and long output
 files. These unexpected features can cause a sequence to FAIL, as
 explained below. 
 
-There are 12 possible unexpected features that get reported, some of
-which are related to each other. Six of these will always cause a
-sequence to fail. The other six *can* cause a sequence to fail but only
+There are 15 possible unexpected features that get reported, some of
+which are related to each other. Eight of these will always cause a
+sequence to fail. The other seven *can* cause a sequence to fail but only
 if specific command line options are used. 
 
 You can tell which unexpected features cause sequences to FAIL for a
@@ -241,52 +241,59 @@ explained below in the descriptions of each unexpected feature.
 
 List of unexpected features:
 
-1: "no_hits": No hits to any models above the minimum score threshold
+1: "NoHits": No hits to any models above the minimum score threshold
 were found. The minimum score threshold is 20 bits, which should find
 all legitimate SSU/LSU sequences, but this minimum score threshold is
 changeable to <x> with the --minbit <x>. ALWAYS CAUSES FAILURE.
 
-2: "hits_to_more_than_one_family": hit to two or more 'families'
+2: "MultipleFamilies": hit to two or more 'families'
 (e.g. SSU or LSU) exists for the same sequence. This would happen, for
 example, if a single sequence had a fragment of an SSU sequence and a
 fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
 
-3. "hits_on_both_strands": At least 1 hit above minimum score
+3. "BothStrands": At least 1 hit above minimum score
 threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
 
-4. "duplicate_model_region": At least two hits overlap in model
+4. "DuplicateRegion": At least two hits overlap in model
 coordinates by X positions or more. X is 10 by default but can be
 changed to <x> with the --maxoverlap <x> option. ALWAYS CAUSES
 FAILURE.
 
-5. "inconsistent_hit_order": The hits to the best model are
+5. "InconsistentHits": The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
 and the model, possibly indicating a misassembly. ALWAYS CAUSES
 FAILURE.
 
-6. "unacceptable_model": Best hit is to a model that is
+6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 --inaccept <s> option. An example of using this file is given below 
 in the DEFINING ACCEPTABLE MODELS section. ALWAYS CAUSES FAILURE.
 
-7. "opposite_strand": The best hit is on the minus strand. ONLY CAUSES
+7. "QuestionableModel": Best hit is to a model that is
+'questionable'. By default, no models are questionable, but the user
+can specify certain top-scoring models are 'questionable' using the
+--inaccept <s> option. An example of using this file is given below 
+in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS section. ONLY CAUSES
+FAILURE IF THE --questfail OPTION IS ENABLED.
+
+8. "MinusStrand": The best hit is on the minus strand. ONLY CAUSES
 FAILURE IF THE --minusfail OPTION IS ENABLED.
 
-8. "low_score_per_posn": the bits per nucleotide
+9. "LowScore": the bits per nucleotide
 statistic (total bit score divided by length of total sequence (not
 just length of hit)) is below threshold. By default the threshold is
 0.5 bits per position, but this can be changed to <x> with the
 "--lowppossc <x>" option. ONLY CAUSES FAILURE IF THE --scfail OPTION
 IS ENABLED.
 
-9. "low_total_coverage": the total coverage of all hits to the best
+10. "LowCoverage": the total coverage of all hits to the best
 model (summed length of all hits divided by total sequence length) is
 below threshold. By default the threshold is 0.88, but can be changed
 to <x> with the --tcov <x> option. ONLY CAUSES FAILURE IF THE
 --covfail OPTION IS ENABLED.
 
-10. "low_score_difference_between_top_two_domains": the score
+11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
 threshold. By default this is the score per position difference, and
 the 'low' threshold is 0.10 bits per position, but this is changeable
@@ -296,7 +303,7 @@ option. If --absdiff is used, the threshold is 100 bits, but
 changeable to <x> with the --lowadiff <x> option. ONLY CAUSES FAILURE
 IF THE --difffail OPTION IS ENABLED.
 
-11. "very_low_score_difference_between_top_two_domains": the score
+12. "VeryLowScoreDifference": the score
 difference between the top two domains is below the 'very low'
 threshold. By default this is the score per position difference, and
 the 'very low' threshold is 0.04 bits per position, but this is
@@ -306,9 +313,17 @@ the --absdiff option. If --absdiff is used, the threshold is 40 bits,
 but changeable to <x> with the --vlowadiff <x> option. ONLY CAUSES
 FAILURE IF THE --difffail OPTION IS ENABLED.
 
-12. "multiple_hits_to_best_model": there are more than one hits to the
+13. "MultipleHits": there are more than one hits to the
 best scoring model. ONLY CAUSES FAILURE IF THE --multfail OPTION IS
 ENABLED.
+
+14. "TooShort": the sequence is too short, less than <n1>. ALWAYS
+CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --shortfail <n1>
+OPTION IS ENABLED.
+
+15. "TooLong": the sequence is too long, more than <n2>. ALWAYS
+CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --longfail <n2>
+OPTION IS ENABLED.
 
 ##############################################################################
 THE DEFAULT MODEL FILE
@@ -398,70 +413,88 @@ highest score.
 ~~~~~~~~~~~~~~~~~~~~
 
 ##############################################################################
-DEFINING ACCEPTABLE MODELS
+DEFINING ACCEPTABLE/QUESTIONABLE MODELS
 
 The user can provide an additional input file that specifies which
-models are 'acceptable'. All sequences for which the top hit is NOT
-one of these acceptable models, will FAIL for Reason 4 above. 
-This is done using the --inaccept option as shown below. 
+models are 'acceptable' or 'questionable'. All sequences for which the
+top hit is NOT one of the acceptable or questionable models, will FAIL
+for Reason 6 above. All sequences for which the top hit is one of the
+questionable models will be reported with 'questionable_model' in
+their unusual feature string (and will FAIL if the --questfail option
+is enabled) (Reason 7 above).
 
 **If the --inaccept option is not used, then ALL models will be
-  considered acceptable.
+  considered acceptable and none will be considered questionable.
 
 An example input file that specifies that only the SSU_rRNA_bacteria
 and SSU_rRNA_cyanobacteria as 'acceptable' from model file 1 is:
 
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/ssu.bac.accept
 
-$ cat testfiles/ssu.bac.accept
+<[(ribotyper-v1)]> cat testfiles/ssu.arc.quest.bac.accept
 ~~~~~~~~~~~~~~~~~~~~~~~
-SSU_rRNA_bacteria
-SSU_rRNA_cyanobacteria
+# A list of 'acceptable' and 'questionable' models.
+# Each non-# prefixed line has 2 tokens, separated by a space.
+# First token is the name of a model. 
+# Second token is either 'acceptable' or 'questionable'.
+#
+# 'acceptable' means that this model is allowed and no 'unusual
+# features' will be reported for sequences for which this model is the
+# best-scoring model
+#
+# 'questionable' means that this model will have the
+# 'questionable_model' unusual feature reported for it.
+#
+# Any model not listed here will have the 'UnacceptableModel'
+# unusual feature reported for it.
+SSU_rRNA_archaea questionable
+SSU_rRNA_bacteria acceptable
+SSU_rRNA_cyanobacteria acceptable
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 To use this on the example run from above, you will use the --inaccept
 option, like this:
 
-$ perl ribotyper.pl -f --inaccept testfiles/ssu.bac.accept testfiles/seed-15.fa test
+$ perl ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept testfiles/seed-15.fa test
 
 Now the short output file will set any family that was classified as a
 model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs,
-and the string "*unacceptable_model" will be present in the
+and the string "*UnacceptableModel" will be present in the
 'unexpected_features' column.
 
 $ cat test/test.ribotyper.short.out 
 #idx  target                                         classification         strnd   p/f  unexpected_features
 #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
-1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   FAIL  *unacceptable_model
-2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   FAIL  *unacceptable_model
-3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   FAIL  *unacceptable_model
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   FAIL  *unacceptable_model;low_total_coverage:(0.835<0.880)
-5     random                                         -                          -  FAIL  *no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  FAIL  *unacceptable_model;opposite_strand
+1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);
+2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);
+3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);low_total_coverage:(0.835<0.880);
+5     random                                         -                      -      FAIL  *no_hits
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  questionable_model:(SSU_rRNA_archaea);opposite_strand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  opposite_strand
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  opposite_strand;
 11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS  -
-12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL  *unacceptable_model
-13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL  *unacceptable_model
-14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL  *unacceptable_model
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  *unacceptable_model;opposite_strand
-16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL  *unacceptable_model
-
+12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
+13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
+14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  *unacceptable_model:(SSU_rRNA_eukarya);opposite_strand;
+16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
+#
 ##############################################################################
 ALL COMMAND LINE OPTIONS
 
 You can see all the available command line options to ribotyper.pl by
 calling it at the command line with the -h option:
 
-$ ./ribotyper.pl -h
+$ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # ribotyper 0.02 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed May 10 13:14:19 2017
+# date:    Thu May 18 15:53:29 2017
 #
-Usage: ribotyper.pl [-options] <fasta file to annotate> <model file> <fam/domain info file> <output directory>
+Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
 
 basic options:
@@ -478,15 +511,18 @@ options for controlling the second round search algorithm:
   --2slow : run second round in slow CM mode
 
 options related to bit score REPORTING thresholds:
-  --minsc <x> : set minimum bit score cutoff for hits to include to <x> bits [20.]
-  --nominsc   : turn off minimum bit score cutoff for hits
+  --minpsc <x> : set minimum bit score cutoff for primary hits to include to <x> bits [20.]
+  --minssc <x> : set minimum bit score cutoff for secondary hits to include to <x> bits [10.]
 
 options for controlling which sequences PASS/FAIL (turning on optional failure criteria):
-  --minusfail : hits on negative (minus) strand defined as FAILures
-  --scfail    : seqs that fall below low score threshold FAIL
-  --difffail  : seqs that fall below low score difference threshold FAIL
-  --covfail   : seqs that fall below low coverage threshold FAIL
-  --multfail  : seqs that have more than one hit to best model FAIL
+  --minusfail     : hits on negative (minus) strand defined as FAILures
+  --scfail        : seqs that fall below low score threshold FAIL
+  --difffail      : seqs that fall below low score difference threshold FAIL
+  --covfail       : seqs that fall below low coverage threshold FAIL
+  --multfail      : seqs that have more than one hit to best model FAIL
+  --questfail     : seqs that score best to questionable models FAIL
+  --shortfail <n> : seqs that are shorter than <n> nucleotides FAIL [0]
+  --longfail <n>  : seqs that are longer than <n> nucleotides FAIL [0]
 
 options for controlling thresholds for failure/warning criteria:
   --lowppossc <x>  : set minimum bit per position threshold for reporting suspiciously low scores to <x> bits [0.5]
@@ -499,7 +535,7 @@ options for controlling thresholds for failure/warning criteria:
   --maxoverlap <n> : set maximum allowed number of model positions to overlap before failure to <n> [10]
 
 optional input files:
-  --inaccept <s> : read acceptable domains/models from file <s>
+  --inaccept <s> : read acceptable/questionable domains/models from file <s>
 
 options that modify the behavior of --1slow or --2slow:
   --mid         : with --1slow/--2slow use cmsearch --mid option instead of --rfam
@@ -513,6 +549,6 @@ advanced options:
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
 
-Last updated: EPN, Wed May 10 13:02:58 2017
+Last updated: EPN, Thu May 18 15:53:20 2017
 
 --------------------------------------
