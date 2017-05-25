@@ -4,19 +4,19 @@
 #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  ------  ------  -----------------------------  ------  -------------------
 1     00052::Halobacterium_sp.::AE005128             PASS    1473    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2012.4  2012.4  1.37         0  1.000  1.000       1    1473      1   1477  1369.1   0.929  SSU_rRNA_bacteria               649.2  -
 2     00013::Methanobacterium_formicicum::M36508     PASS    1476    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2021.0  2021.0  1.37         0  0.999  0.999       3    1476      3   1477  1199.7   0.813  SSU_rRNA_bacteria               819.8  -
-3     00004::Nanoarchaeum_equitans::AJ318041         PASS     867    1  SSU  Archaea            SSU_rRNA_archaea               plus     1   965.1   965.1  1.11  1.2e-293  0.997  0.997       2     865    416   1288   653.3   0.754  SSU_rRNA_bacteria               321.7  -
-4     00121::Thermococcus_celer::M21529              PASS    1780    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2010.6  2010.6  1.13         0  0.835  0.835     202    1687      1   1477  1248.2   0.701  SSU_rRNA_bacteria               773.8  low_total_coverage:(0.835<0.880)
-5     random                                         FAIL    1000    0  -    -                  -                              -        -       -       -     -         -      -      -       -       -      -      -       -       -  -                                   -  *no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     PASS     922    1  SSU  Archaea            SSU_rRNA_archaea               minus    1  1235.8  1235.8  1.34         0  1.000  1.000     922       1    370   1292   774.8   0.840  SSU_rRNA_bacteria               471.0  opposite_strand
+3     00004::Nanoarchaeum_equitans::AJ318041         PASS     867    1  SSU  Archaea            SSU_rRNA_archaea               plus     1   965.1   965.1  1.11  3.9e-293  0.997  0.997       2     865    416   1288   653.3   0.754  SSU_rRNA_bacteria               321.7  -
+4     00121::Thermococcus_celer::M21529              PASS    1780    1  SSU  Archaea            SSU_rRNA_archaea               plus     1  2010.6  2010.6  1.13         0  0.835  0.835     202    1687      1   1477  1248.2   0.701  SSU_rRNA_bacteria               773.8  LowCoverage:(0.835<0.880);
+5     random                                         FAIL    1000    0  -    -                  -                              -        -       -       -     -         -      -      -       -       -      -      -       -       -  -                                   -  *NoHits;
+6     00115::Pyrococcus_furiosus::U20163|g643670     PASS     922    1  SSU  Archaea            SSU_rRNA_archaea               minus    1  1235.8  1235.8  1.34         0  1.000  1.000     922       1    370   1292   774.8   0.840  SSU_rRNA_bacteria               471.0  MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    PASS    1537    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1  1757.9  1757.9  1.14         0  0.993  0.993       9    1535      3   1533   776.7   0.505  SSU_rRNA_chloroplast            980.7  -
 8     01106::Bacillus_subtilis::K00637               PASS    1552    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1  2063.4  2063.4  1.33         0  0.997  0.997       4    1550      3   1533   563.7   0.363  SSU_rRNA_chloroplast           1504.8  -
-9     00072::Chlamydia_trachomatis.::AE001345        PASS     887    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1   986.2   986.2  1.11  1.1e-299  0.993  0.993       2     882    132    990   356.7   0.402  SSU_rRNA_chloroplast            632.5  -
-10    01351::Mycoplasma_gallisepticum::M22441        PASS     881    1  SSU  Bacteria           SSU_rRNA_bacteria              minus    1   889.0   889.0  1.01  2.1e-270  0.994  0.994     881       6    153   1013   377.0   0.428  SSU_rRNA_chloroplast            513.8  opposite_strand
+9     00072::Chlamydia_trachomatis.::AE001345        PASS     887    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1   986.2   986.2  1.11  3.5e-299  0.993  0.993       2     882    132    990   356.7   0.402  SSU_rRNA_chloroplast            632.5  -
+10    01351::Mycoplasma_gallisepticum::M22441        PASS     881    1  SSU  Bacteria           SSU_rRNA_bacteria              minus    1   889.0   889.0  1.01  6.9e-270  0.994  0.994     881       6    153   1013   377.0   0.428  SSU_rRNA_chloroplast            513.8  MinusStrand;
 11    00224::Rickettsia_prowazekii.::AJ235272        PASS    1620    1  SSU  Bacteria           SSU_rRNA_bacteria              plus     1  1906.5  1906.5  1.18         0  0.922  0.922      98    1591      4   1532   523.4   0.323  SSU_rRNA_chloroplast           1381.5  -
 12    01223::Audouinella_hermannii.::AF026040        PASS    1771    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  1866.3  1866.3  1.05         0  0.998  0.998       2    1768      2   1849  1112.7   0.628  SSU_rRNA_microsporidia          751.7  -
 13    01240::Batrachospermum_gelatinosum.::AF026045  PASS    1765    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  1854.0  1854.0  1.05         0  0.998  0.998       2    1762      2   1849  1099.2   0.623  SSU_rRNA_microsporidia          753.1  -
-14    00220::Euplotes_aediculatus.::M14590           PASS    1082    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1   886.2   886.2  0.82  1.2e-269  0.999  0.999       1    1081    464   1521   509.7   0.471  SSU_rRNA_microsporidia          378.3  -
-15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266   378.6   0.631  SSU_rRNA_microsporidia          232.6  opposite_strand
+14    00220::Euplotes_aediculatus.::M14590           PASS    1082    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1   886.2   886.2  0.82  3.4e-269  0.999  0.999       1    1081    464   1521   509.7   0.471  SSU_rRNA_microsporidia          378.3  -
+15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  2.6e-186  0.915  0.915     549       1    720   1266   378.6   0.631  SSU_rRNA_microsporidia          232.6  MinusStrand;
 16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850  1253.1   0.612  SSU_rRNA_microsporidia          823.6  -
 #
 # Explanation of columns:
@@ -45,4 +45,37 @@
 # Column 22 [scd/nt]:              score difference per position: 'scdiff' value divided by total length of all hits to best model
 # Column 23 [model]:               name of second best-scoring model
 # Column 24 [tscore]:              summed bit scores of all hits between second-best model and this sequence (no score threshold enforced)
-# Column 25 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)
+# Column 25 [unexpected_features]: unexpected/unusual features of sequence (see below)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#
+# Explanation of possible values in unexpected_features column:
+#
+# This column will include a '-' if none of the features listed below are detected.
+# Or it will contain one or more of the following types of messages. There are no
+# whitespaces in this field, to make parsing easier.
+#
+# Values that begin with "*" automatically cause a sequence to FAIL.
+# Values that do not begin with "*" do not cause a sequence to FAIL.
+#
+#  1.  *NoHits                 No primary hits to any models above the minimum primary score
+#                              threshold of 20 bits (--minpsc) were found.
+#  2.  *MultipleFamilies       One or more primary hits to two or more "families" (e.g. SSU
+#                              or LSU) exists for the same sequence.
+#  3.  *BothStrands            One or more primary hits above the minimum primary score threshold
+#                              of 20 bits (--minpsc) were found on each strand.
+#  4.  *DuplicateRegion        At least two hits (primary or secondary) on the same strand overlap
+#                              in model coordinates by 10 (--maxoverlap) positions or more
+#  5.  *InconsistentHits       Not all hits (primary or secondary) are in the same order in the
+#                              sequence and in the model.
+#  6.  MinusStrand             Best hit is on the minus strand.
+#  7.  LowScore                The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+#  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
+#                              model (summed length of all hits divided by total length of sequence)
+#                              is below threshold of 0.88 (--tcov).
+#  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 11.  MultipleHits            There is more than one hit to the best scoring model on the same strand.
+#
