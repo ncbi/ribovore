@@ -8,8 +8,9 @@ SAMPLE RUN
 OUTPUT
 UNEXPECTED FEATURES AND REASONS FOR FAILURE
 RECOMMENDED MODEL FILES
+RIBOTYPER'S TWO ROUND SEARCH STRATEGY
+EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
 DEFINING ACCEPTABLE MODELS
-RUNNING TWO SUCCESSIVE ROUNDS OF RIBOTYPER
 ALL COMMAND LINE OPTIONS
 
 ##############################################################################
@@ -82,28 +83,28 @@ SAMPLE RUN
 This example runs the script on a sample file of 15 sequences. Go into
 a new directory and execute:
 
-ribotyper.pl $RIBODIR/testfiles/seed-15.fa $RIBODIR/models/ssu.7.enone.lsu.3.170306.cm $RIBODIR/models/ssu.7.enone.lsu.3.170306.modelinfo test
+ribotyper.pl $RIBODIR/testfiles/seed-15.fa test
 
-The script takes 4 command line arguments:
+The script takes 2 command line arguments:
 
 The first argument is the sequence file you want to annotate.
 
-The second argument is the model file which includes the profiles used
-to do the search.
-
-The third argument is a text file with information on the taxonomic
-classifications that each profile pertains to.
-
-The fourth argument is the name of the output directory that you would
+The second argument is the name of the output directory that you would
 like ribotyper to create. Output files will be placed in this output
 directory. If this directory already exists, the program will exit
 with an error message indicating that you need to either (a) remove
 the directory before rerunning, or (b) use the -f option with
 ribotyper.pl, in which case the directory will be overwritten.
 
-The $RIBODIR environment variable is used several times here. That is
+The $RIBODIR environment variable is used here. That is
 a hard-coded path that was set in the 'Setting up environment
 variables for Ribotyper:' section above. 
+
+In an older version of ribotyper additional command line arguments
+were required to specify the locations the model files to use and the
+model info file. These are no longer needed unless you want to use a
+non-default model, which you can do with the -i option. Email 
+nawrocke@ncbi.nlm.nih.gov if you want to do this. 
 
 ##############################################################################
 OUTPUT
@@ -111,27 +112,64 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# dnaorg 0.01 (Dec 2016)
+# ribotyper 0.03 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Mar  7 15:57:56 2017
+# date:    Thu May 25 14:50:11 2017
 #
 # target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/seed-15.fa                     
-# query model input file:        /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.cm       
-# model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.modelinfo
-# output directory name:         test                                                                                       
-# forcing directory overwrite:   yes [-f]                                                                                   
+# output directory name:         test                                                                                                     
+# model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Parsing and validating input files and determining target sequence lengths ... done. [0.0 seconds]
-# Performing cmsearch-fast search                                            ... done. [1.2 seconds]
-# Sorting tabular search results                                             ... done. [0.0 seconds]
-# Parsing tabular search results                                             ... done. [0.0 seconds]
-# Sorting and finalizing output files                                        ... done. [0.0 seconds]
+# Validating input files                           ... done. [1.2 seconds]
+# Determining target sequence lengths              ... done. [0.1 seconds]
+# Classifying sequences                            ... done. [2.0 seconds]
+# Sorting classification results                   ... done. [0.0 seconds]
+# Processing classification results                ... done. [0.0 seconds]
+# Fetching per-model sequence sets                 ... done. [0.0 seconds]
+# Searching sequences against best-matching models ... done. [1.6 seconds]
+# Concatenating tabular round 2 search results     ... done. [0.0 seconds]
+# Sorting search results                           ... done. [0.0 seconds]
+# Processing tabular round 2 search results        ... done. [0.0 seconds]
+# Creating final output files                      ... done. [0.0 seconds]
 #
-# Short (6 column) output saved to file test/test.ribotyper.short.out.
-# Long (17 column) output saved to file test/test.ribotyper.long.out.
+# Summary statistics:
+#
+#                number  fraction  average   average   fraction     number
+# class         of seqs  of total   length  coverage  that PASS  that FAIL
+# ------------  -------  --------  -------  --------  ---------  ---------
+  *input*            16    1.0000  1328.69    1.0000          -          -
+#
+  SSU.Archaea         5    0.3125  1303.60    0.9662     1.0000          0
+  SSU.Bacteria        5    0.3125  1295.40    0.9798     1.0000          0
+  SSU.Eukarya         5    0.3125  1452.80    0.9590     1.0000          0
+#
+  *all*              16    1.0000  1328.69    0.9078     0.9375          1
+  *none*              1    0.0625  1000.00    0.0000     0.0000          1
+#
+# Unexpected feature statistics:
+#
+#                     causes     number  fraction
+# unexpected feature  failure?  of seqs   of seqs
+# ------------------  --------  -------  --------
+  CLEAN               no             11   0.68750
+  *NoHits             yes             1   0.06250
+  MinusStrand         no              3   0.18750
+  LowCoverage         no              1   0.06250
+#
+#
+# Timing statistics:
+#
+# stage           num seqs  seq/sec      nt/sec  nt/sec/cpu               total time
+# --------------  --------  -------  ----------  ----------  -----------------------
+  classification        16      8.1     10759.0     10759.0  00:00:01.98  (hh:mm:ss)
+  search                15      9.4     12681.6     12681.6  00:00:01.60  (hh:mm:ss)
+  total                 16      3.0      3926.9      3926.9  00:00:05.41  (hh:mm:ss)
+#
+#
+# Short (6 column) output saved to file test/test.ribotyper.short.out
+# Long (25 column) output saved to file test/test.ribotyper.long.out
 #
 #[RIBO-SUCCESS]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -----------------
 Output files:
@@ -153,30 +191,63 @@ $ cat test/test.ribotyper.short.out
 1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  -
 2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  -
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  -
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  -
-5     random                                         -                          -  FAIL  no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  opposite_strand
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  LowCoverage:(0.835<0.880);
+5     random                                         -                      -      FAIL  *NoHits;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  opposite_strand
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  MinusStrand;
 11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS  -
 12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   PASS  -
 13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   PASS  -
 14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   PASS  -
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  MinusStrand;
 16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
 #
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Explanation of columns:
 #
 # Column 1 [idx]:                 index of sequence in input sequence file
 # Column 2 [target]:              name of target sequence
 # Column 3 [classification]:      classification of sequence
-# Column 4 [strnd]:               strand ('plus' or 'minus') of sequence
-# Column 5 [p/f]:                 PASS or FAIL
-# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)
+# Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit
+# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)
+# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#
+# Explanation of possible values in unexpected_features column:
+#
+# This column will include a '-' if none of the features listed below are detected.
+# Or it will contain one or more of the following types of messages. There are no
+# whitespaces in this field, to make parsing easier.
+#
+# Values that begin with "*" automatically cause a sequence to FAIL.
+# Values that do not begin with "*" do not cause a sequence to FAIL.
+#
+#  1.  *NoHits                 No primary hits to any models above the minimum primary score
+#                              threshold of 20 bits (--minpsc) were found.
+#  2.  *MultipleFamilies       One or more primary hits to two or more "families" (e.g. SSU
+#                              or LSU) exists for the same sequence.
+#  3.  *BothStrands            One or more primary hits above the minimum primary score threshold
+#                              of 20 bits (--minpsc) were found on each strand.
+#  4.  *DuplicateRegion        At least two hits (primary or secondary) on the same strand overlap
+#                              in model coordinates by 10 (--maxoverlap) positions or more
+#  5.  *InconsistentHits       Not all hits (primary or secondary) are in the same order in the
+#                              sequence and in the model.
+#  6.  MinusStrand             Best hit is on the minus strand.
+#  7.  LowScore                The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+#  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
+#                              model (summed length of all hits divided by total length of sequence)
+#                              is below threshold of 0.88 (--tcov).
+#  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 11.  MultipleHits            There is more than one hit to the best scoring model on the same strand.
+#
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The Long file is not shown because it is so wide. 
 An example is in testfiles/test.ribotyper.long.out 
 
@@ -186,65 +257,76 @@ UNEXPECTED FEATURES AND REASONS FOR FAILURE
 There are several 'unexpected features' of sequences that are detected
 and reported in the final column of both the short and long output
 files. These unexpected features can cause a sequence to FAIL, as
-explained below.
+explained below. 
 
-There are 13 possible unexpected features that get reported, some of
-which are related to each other. Seven of these will always cause a
-sequence to fail. The other 6 *can* cause a sequence to fail but only
-if specific command line options are used.
+There are 15 possible unexpected features that get reported, some of
+which are related to each other. Eight of these will always cause a
+sequence to fail. The other seven *can* cause a sequence to fail but only
+if specific command line options are used. 
+
+You can tell which unexpected features cause sequences to FAIL for a
+particular ribotyper run by looking unexpected feature column (final
+column) of the short or long output files: those that cause failures
+will begin with the '*' character (e.g. "*no_hits") and those that do
+not cause failures will not begin with a "*". You can control which
+unexpected features cause failures using command line options as
+explained below in the descriptions of each unexpected feature.
 
 List of unexpected features:
 
-1: "no_hits": No hits to any models above the minimum score threshold
+1: "NoHits": No hits to any models above the minimum score threshold
 were found. The minimum score threshold is 20 bits, which should find
 all legitimate SSU/LSU sequences, but this minimum score threshold is
 changeable to <x> with the --minbit <x>. ALWAYS CAUSES FAILURE.
 
-2: "hits_to_more_than_one_family": hit to two or more 'families'
+2: "MultipleFamilies": hit to two or more 'families'
 (e.g. SSU or LSU) exists for the same sequence. This would happen, for
 example, if a single sequence had a fragment of an SSU sequence and a
 fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
 
-3. "other_family_hits": ALWAYS (AND ONLY) OCCURS IN TANDEM WITH (2)
-"hits_to_more_than_one_family", details hits to other families. ALWAYS
-CAUSES FAILURE.
-
-4. "hits_on_both_strands": At least 1 hit above minimum score
+3. "BothStrands": At least 1 hit above minimum score
 threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
 
-5. "duplicate_model_region": At least two hits overlap in model
+4. "DuplicateRegion": At least two hits overlap in model
 coordinates by X positions or more. X is 10 by default but can be
 changed to <x> with the --maxoverlap <x> option. ALWAYS CAUSES
 FAILURE.
 
-6. "inconsistent_hit_order": The hits to the best model are
+5. "InconsistentHits": The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
 and the model, possibly indicating a misassembly. ALWAYS CAUSES
 FAILURE.
 
-7. "unacceptable_model": Best hit is to a model that is
+6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 --inaccept <s> option. An example of using this file is given below 
 in the DEFINING ACCEPTABLE MODELS section. ALWAYS CAUSES FAILURE.
 
-8. "opposite_strand": The best hit is on the minus strand. ONLY CAUSES
+7. "QuestionableModel": Best hit is to a model that is
+'questionable'. By default, no models are questionable, but the user
+can specify certain top-scoring models are 'questionable' using the
+--inaccept <s> option. An example of using this file is given below 
+in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS section. ONLY CAUSES
+FAILURE IF THE --questfail OPTION IS ENABLED.
+
+8. "MinusStrand": The best hit is on the minus strand. ONLY CAUSES
 FAILURE IF THE --minusfail OPTION IS ENABLED.
 
-9. "low_score_per_posn": the bits per nucleotide
+9. "LowScore": the bits per nucleotide
 statistic (total bit score divided by length of total sequence (not
 just length of hit)) is below threshold. By default the threshold is
 0.5 bits per position, but this can be changed to <x> with the
 "--lowppossc <x>" option. ONLY CAUSES FAILURE IF THE --scfail OPTION
 IS ENABLED.
 
-10. "low_total_coverage": the total coverage of all hits to the best
+10. "LowCoverage": the total coverage of all hits to the best
 model (summed length of all hits divided by total sequence length) is
 below threshold. By default the threshold is 0.88, but can be changed
 to <x> with the --tcov <x> option. ONLY CAUSES FAILURE IF THE
 --covfail OPTION IS ENABLED.
 
-11. "low_score_difference_between_top_two_domains": the score
+11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
 threshold. By default this is the score per position difference, and
 the 'low' threshold is 0.10 bits per position, but this is changeable
@@ -254,7 +336,7 @@ option. If --absdiff is used, the threshold is 100 bits, but
 changeable to <x> with the --lowadiff <x> option. ONLY CAUSES FAILURE
 IF THE --difffail OPTION IS ENABLED.
 
-12. "very_low_score_difference_between_top_two_domains": the score
+12. "VeryLowScoreDifference": the score
 difference between the top two domains is below the 'very low'
 threshold. By default this is the score per position difference, and
 the 'very low' threshold is 0.04 bits per position, but this is
@@ -264,292 +346,242 @@ the --absdiff option. If --absdiff is used, the threshold is 40 bits,
 but changeable to <x> with the --vlowadiff <x> option. ONLY CAUSES
 FAILURE IF THE --difffail OPTION IS ENABLED.
 
-13. "multiple_hits_to_best_model": there are more than one hits to the
+13. "MultipleHits": there are more than one hits to the
 best scoring model. ONLY CAUSES FAILURE IF THE --multfail OPTION IS
 ENABLED.
 
+14. "TooShort": the sequence is too short, less than <n1>. ALWAYS
+CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --shortfail <n1>
+OPTION IS ENABLED.
+
+15. "TooLong": the sequence is too long, more than <n2>. ALWAYS
+CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --longfail <n2>
+OPTION IS ENABLED.
+
 ##############################################################################
-RECOMMENDED MODEL FILES
+THE DEFAULT MODEL FILE
 
-There are currently four model files included with ribotyper:
-
--------------
-Model file 1. 
--------------
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.cm
+The default model file used by ribotyper is here:
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.cm
 
 This model includes 7 SSU rRNA profiles and 3 LSU rRNA profiles.
 
 The 'modelinfo' file for this model file lists the models and some
 additional information. That file is:
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.modelinfo
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 
 Here is the modelinfo file:
-$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.7.enone.lsu.3.170306.modelinfo
+$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo0.0p02.modelinfo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Each non-# prefixed line should have 3 white-space delimited tokens: 
-#<modelname> <family> <domain>
-#model                     family domain
-SSU_rRNA_archaea              SSU Archaea
-SSU_rRNA_bacteria             SSU Bacteria
-SSU_rRNA_eukarya              SSU Eukarya
-SSU_rRNA_microsporidia        SSU Euk-Microsporidia
-SSU_rRNA_chloroplast          SSU Chloroplast
-SSU_rRNA_mitochondria_metazoa SSU Mito-Metazoa
-SSU_rRNA_cyanobacteria        SSU Bacteria
-LSU_rRNA_archaea              LSU Archaea
-LSU_rRNA_bacteria             LSU Bacteria
-LSU_rRNA_eukarya              LSU Eukarya
+# Each non-# prefixed line should have 4 white-space delimited tokens: 
+#<modelname> <family> <domain> <CM-file-with-only-this-model>
+# The first line is special, it indicates the name of the master CM file
+# with all the models in it
+#model                     family domain             cmfile
+*all*                         -   -                  ribo.0p02.cm
+SSU_rRNA_archaea              SSU Archaea            ribo.0p02.SSU_rRNA_archaea.cm
+SSU_rRNA_bacteria             SSU Bacteria           ribo.0p02.SSU_rRNA_bacteria.cm
+SSU_rRNA_eukarya              SSU Eukarya            ribo.0p02.SSU_rRNA_eukarya.cm
+SSU_rRNA_microsporidia        SSU Euk-Microsporidia  ribo.0p02.SSU_rRNA_microsporidia.cm
+SSU_rRNA_chloroplast          SSU Chloroplast        ribo.0p02.SSU_rRNA_chloroplast.cm
+SSU_rRNA_mitochondria_metazoa SSU Mito-Metazoa       ribo.0p02.SSU_rRNA_mitochondria_metazoa.cm
+SSU_rRNA_cyanobacteria        SSU Bacteria           ribo.0p02.SSU_rRNA_cyanobacteria.cm
+LSU_rRNA_archaea              LSU Archaea            ribo.0p02.LSU_rRNA_archaea.cm
+LSU_rRNA_bacteria             LSU Bacteria           ribo.0p02.LSU_rRNA_bacteria.cm
+LSU_rRNA_eukarya              LSU Eukarya            ribo.0p02.LSU_rRNA_eukarya.cm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Using this file will classify sequences SSU and LSU sequences from any
 of the listed domains. 
 
--------------
-Model files 2-4.
+##############################################################################
+RIBOTYPER'S TWO ROUND SEARCH STRATEGY
 
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.arc.170306.cm
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.bac.170306.cm
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.cyb.170306.cm
-
-Each of these files includes a single model from the
-ssu.7.enone.lsu.3.170306.cm file. The archaeal SSU, bacterial SSU, and
-cyanobacterial SSU models, respectively. Each file has a corresponding
-modelinfo file
-(e.g. /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ssu.arc.170306.modelinfo).
-
-These are used in the RUNNING TWO SUCCESSIVE ROUNDS OF RIBOTYPER
-example below. 
+Ribotyper proceeds in two rounds. The first round is called the
+classification stage. In this round, all models are compared against
+all sequences using a fast profile HMM algorithm that does not do a
+good job at defining boundaries of SSU sequences, but is good at
+determining if a sequence is a SSU sequence or not. For each
+comparison, a bit score is reported. For each sequence, the model that
+gives that sequence the highest bit score is defined as the
+'best-matching' model for that sequence. 
+ 
+In the second round, each model that is the best-matching model to at
+least one sequence is searched again against only the set of sequences
+that have it as their best-matching model. This time, a slower but
+more powerful profile HMM algorithm is used that is better at defining
+sequence boundaries. This round takes about as much time as the first
+round even though the algorithm is slower because only 1 model is
+compared against each sequence. The results of this comparison are
+reported to the short and long output files. Ribotyper also attempts
+to detect certain 'unexpected features' for each sequence, as listed
+in the 'UNEXPECTED FEATURES AND REASONS FOR FAILURE' section. Some of
+these unexpected features, if they are detected for a sequence will
+cause that sequence to be designated as a FAIL. If a sequence has 0
+unexpected features, or only unexpected features that do not cause a
+FAIL, it will be designated as a PASS (see the UNEXPECTED FEATURES AND
+REASONS FOR FAILURE section for details).
 
 ##############################################################################
-DEFINING ACCEPTABLE MODELS
+EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
+
+Here is an example paragraph that could be sent to a submitter
+explaining what Ribotyper does:
+
+~~~~~~~~~~~~~~~~~~~~
+We compared each of your sequences against a set of profile HMMs built
+from representative alignments of SSU rRNA sequences.  Each profile
+HMM is a statistical model of the family it models (e.g. bacterial SSU
+rRNA) built from a multiple alignment of 50-100 representative
+sequences from the family. The source of several of the alignments,
+including the bacterial model, is the Rfam database (rfam.xfam.org). 
+Each profile HMM has position specific scores at each position of the
+model, which means that positions of the family that are highly
+conserved have a higher impact on the final score than do positions
+that are not as well conserved (unlike BLAST for which each position
+is treated identically). Each sequence is aligned to each profile and
+a score is computed based on well the sequence matches the
+profile. Each sequence is classified by the model that gave it the
+highest score. 
+~~~~~~~~~~~~~~~~~~~~
+
+##############################################################################
+DEFINING ACCEPTABLE/QUESTIONABLE MODELS
 
 The user can provide an additional input file that specifies which
-models are 'acceptable'. All sequences for which the top hit is NOT
-one of these acceptable models, will FAIL for Reason 4 above. 
-This is done using the --inaccept option as shown below. 
+models are 'acceptable' or 'questionable'. All sequences for which the
+top hit is NOT one of the acceptable or questionable models, will FAIL
+for Reason 6 above. All sequences for which the top hit is one of the
+questionable models will be reported with 'questionable_model' in
+their unusual feature string (and will FAIL if the --questfail option
+is enabled) (Reason 7 above).
 
 **If the --inaccept option is not used, then ALL models will be
-  considered acceptable.
+  considered acceptable and none will be considered questionable.
 
 An example input file that specifies that only the SSU_rRNA_bacteria
 and SSU_rRNA_cyanobacteria as 'acceptable' from model file 1 is:
 
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/ssu.bac.accept
 
-$ cat testfiles/ssu.bac.accept
+<[(ribotyper-v1)]> cat testfiles/ssu.arc.quest.bac.accept
 ~~~~~~~~~~~~~~~~~~~~~~~
-SSU_rRNA_bacteria
-SSU_rRNA_cyanobacteria
+# A list of 'acceptable' and 'questionable' models.
+# Each non-# prefixed line has 2 tokens, separated by a space.
+# First token is the name of a model. 
+# Second token is either 'acceptable' or 'questionable'.
+#
+# 'acceptable' means that this model is allowed and no 'unusual
+# features' will be reported for sequences for which this model is the
+# best-scoring model
+#
+# 'questionable' means that this model will have the
+# 'questionable_model' unusual feature reported for it.
+#
+# Any model not listed here will have the 'UnacceptableModel'
+# unusual feature reported for it.
+SSU_rRNA_archaea questionable
+SSU_rRNA_bacteria acceptable
+SSU_rRNA_cyanobacteria acceptable
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 To use this on the example run from above, you will use the --inaccept
 option, like this:
 
-$ perl ribotyper.pl -f --inaccept testfiles/ssu.bac.accept testfiles/seed-15.fa models/ssu.7.enone.lsu.3.170306.cm models/ssu.7.enone.lsu.3.170306.modelinfo test
+$ perl ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept testfiles/seed-15.fa test
 
 Now the short output file will set any family that was classified as a
-model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs:
+model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs,
+and the string "*UnacceptableModel" will be present in the
+'unexpected_features' column.
 
 $ cat test/test.ribotyper.short.out 
-#idx  target                                         classification         strnd   p/f  reason-for-failure
-#---  ---------------------------------------------  ---------------------  -----  ----  ------------------
-1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   FAIL  unacceptable_model
-2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   FAIL  unacceptable_model
-3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   FAIL  unacceptable_model
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   FAIL  unacceptable_model
-5     random                                         -                          -  FAIL  no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  FAIL  unacceptable_model;opposite_strand
+#idx  target                                         classification         strnd   p/f  unexpected_features
+#---  ---------------------------------------------  ---------------------  -----  ----  -------------------
+1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
+2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
+3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);LowCoverage:(0.835<0.880);
+5     random                                         -                      -      FAIL  *NoHits;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  QuestionableModel:(SSU_rRNA_archaea);MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  FAIL  opposite_strand
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  MinusStrand;
 11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS  -
-12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL  unacceptable_model
-13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL  unacceptable_model
-14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL  unacceptable_model
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  unacceptable_model;opposite_strand
-16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL  unacceptable_model
-
-##############################################################################
-RUNNING TWO SUCCESSIVE ROUNDS OF RIBOTYPER
-
-If you are interested in running ribotyper in slow mode, but want to
-do it as efficiently as possible, you can try the following:
-
-1. Run ribotyper in fast mode with a large set of models
-2. Extract the hits to each model you are interested in into a 
-   separate sequence file.
-3. For each sequence file from step 2, run ribotyper again in a slower
-   mode with a smaller model file.
-
-This is faster than running the slower mode for all sequences because
-step 1 defines the best model for each sequence, and only that model
-is used in the slow mode in step 3.
-
-Here's an example. Imagine you are only interested in bacterial and
-archaeal SSU sequences. First run ribotyper in default mode except use
-the --inaccept option with the file models/ssu.arc.bac.accept file
-which lists the 3 SSU models for archaea and bacteria. Also use the
---scfail option which causes sequences with low 'bits per position'
-values to fail. (There are other options for specifying which
-unexpected features cause sequences to fail. See the ALL COMMAND LINE
-OPTIONS section below. This one is just used as an example.)
-
-$ perl ribotyper.pl -f --inaccept models/ssu.arc.bac.accept --scfail testfiles/seed-15.fa models/ssu.7.enone.lsu.3.170306.cm models/ssu.7.enone.lsu.3.170306.modelinfo test2
-
-Then extract the sequences that match each of the following three
-models into separate sequence files and run ribotyper a second time on
-each of those using a single model for each of those three runs.
-
-First, we want to extract the sequences that match the archaea model
-that PASS. The next command will count those sequences:
-
-$ grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_archaea | awk '{ print $1 }' | wc -l
-5
-
-The output of '5' indicates there are 5 such sequences.
-
-Now, we want to extract only these 5 sequences from the input sequence
-file (testfiles/seed-15.fa), but first we need to 'index' that file
-with the 'esl-sfetch' program. This program is installed with Infernal
-1.1.2 which is a requirement for ribotyper to run.
-
-$ esl-sfetch --index testfiles/seed-15.fa 
-Creating SSI index for testfiles/seed-15.fa...    done.
-Indexed 16 sequences (16 names).
-SSI index written to file testfiles/seed-15.fa.ssi
-
-Now we can extract the 5 archaeal sequences like this:
-$ grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_archaea | awk '{ print $1 }' | esl-sfetch -f testfiles/seed-15.fa - > arc.fa
-
-Now we want to run ribotyper on only the arc.fa file, but this time
-using only the archaeal SSU model (we already know these are all
-archaeal SSU sequences) and using the --hmm option and --covfail
-options. The --hmm option makes ribotyper to use a slower algorithm
-that calculates more accurate coverage values. The --covfail options
-tells ribotyper to have any sequence with a low coverage value (below
-the default threshold of 0.88) to FAIL.
-
-$ perl ribotyper.pl -f --scfail --covfail arc.fa models/ssu.arc.170306.cm models/ssu.arc.170306.modelinfo test2-arc
-
-Next, we want to repeat those same steps for the SSU_rRNA_bacteria hits.
-First, are there any sequences? 
-
-$ grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_archaea | awk '{ print $1 }' | wc -l
-5
-
-Yes, there are 5. Now, extract them:
-$ grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_bacteria | awk '{ print $1 }' | esl-sfetch -f testfiles/seed-15.fa - > bac.fa
-
-This time, we do not need to run the esl-sfetch --index command
-again. That only needs to be done once per sequence file.
-
-Next, we run ribotyper.pl again, with the bacterial SSU model only:
-$ perl ribotyper.pl -f --scfail --covfail bac.fa models/ssu.bac.170306.cm models/ssu.bac.170306.modelinfo test2-bac
-
-Finally, we repeat the above steps for the final model
-SSU_rRNA_cyanobacteria:
-
-<[(ribotyper-v1)]> grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_cyanobacteria | awk '{ print $1 }' | wc -l
-0
-
-This means there are 0 cyanobacterial SSU sequences, so we do not need
-to go any further. If this number was greater than 0, we would proceed
-with the same steps we did above for archaea and bacteria.
-
---------
-
-Here are all of the steps above written again, in a slightly different
-order, with comment lines (prefixed with '#') explaining what each
-step does:
-
-# run first round pass of ribotyper in fast mode:
-perl ribotyper.pl -f --inaccept models/ssu.arc.bac.accept --scfail testfiles/seed-15.fa models/ssu.7.enone.lsu.3.170306.cm models/ssu.7.enone.lsu.3.170306.modelinfo test2
-
-# check if we have any PASSing sequences to the 3 models of interest:
-# SSU_rRNA_archaea, SSU_rRNA_bacteria and SSU_rRNA_cyanobacteria
-grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_archaea       | awk '{ print $1 }' | wc -l
-grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_bacteria      | awk '{ print $1 }' | wc -l
-grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_cyanobacteria | awk '{ print $1 }' | wc -l
-
-# for any of the 3 previous commands that returned a number above 0, fetch the sequences
-# first index the sequence file so we can fetch from it
-esl-sfetch --index testfiles/seed-15.fa 
-
-# and fetch the sequences into new files arc.fa and bac.fa 
-grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_archaea  | awk '{ print $1 }' | esl-sfetch -f testfiles/seed-15.fa - > arc.fa
-grep PASS test2/test2.ribotyper.long.out | awk '{ printf("%s %s\n", $2, $8); }' | grep SSU\_rRNA\_bacteria | awk '{ print $1 }' | esl-sfetch -f testfiles/seed-15.fa - > bac.fa
-
-# run a second round of ribotyper on archaeal sequences and bacterial sequences separately
-perl ribotyper.pl -f --scfail --covfail arc.fa models/ssu.arc.170306.cm models/ssu.arc.170306.modelinfo test2-arc
-perl ribotyper.pl -f --scfail --covfail bac.fa models/ssu.bac.170306.cm models/ssu.bac.170306.modelinfo test2-bac
-
-# there's no need to fetch sequences or rerun ribotyper for cyanobacteria because there
-# were not any hits to that model in this example
-
+12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);MinusStrand;
+16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+#
 ##############################################################################
 ALL COMMAND LINE OPTIONS
 
 You can see all the available command line options to ribotyper.pl by
 calling it at the command line with the -h option:
 
-<[(ribotyper-v1)]> ./ribotyper.pl -h
+$ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# dnaorg 0.01 (Dec 2016)
+# ribotyper 0.03 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Apr 18 11:51:48 2017
+# date:    Thu May 25 14:54:44 2017
 #
-Usage: ribotyper.pl [-options] <fasta file to annotate> <model file> <fam/domain info file> <output directory>
+Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
 
 basic options:
-  -f : force; if <output directory> exists, overwrite it
-  -v : be verbose; output commands to stdout as they're run
+  -f     : force; if <output directory> exists, overwrite it
+  -v     : be verbose; output commands to stdout as they're run
+  -n <n> : use <n> CPUs [0]
+  -i <s> : use model info file <s> instead of default
 
-options for controlling the search algorithm:
-  --nhmmer      : using nhmmer for annotation
-  --cmscan      : using cmscan for annotation
-  --ssualign    : using SSU-ALIGN for annotation
-  --hmm         : run in slower HMM mode
-  --slow        : run in slow CM mode, maximize boundary accuracy
-  --mid         : with --slow use cmsearch --mid option instead of --rfam
-  --max         : with --slow use cmsearch --max option instead of --rfam
-  --smxsize <x> : with --max also use cmsearch --smxsize <x>
+options for controlling the first round search algorithm:
+  --1hmm  : run first round in slower HMM mode
+  --1slow : run first round in slow CM mode
+
+options for controlling the second round search algorithm:
+  --2slow : run second round in slow CM mode
 
 options related to bit score REPORTING thresholds:
-  --minsc <x> : set minimum bit score cutoff for hits to include to <x> bits [20.]
-  --nominsc   : turn off minimum bit score cutoff for hits
+  --minpsc <x> : set minimum bit score cutoff for primary hits to include to <x> bits [20.]
+  --minssc <x> : set minimum bit score cutoff for secondary hits to include to <x> bits [10.]
 
 options for controlling which sequences PASS/FAIL (turning on optional failure criteria):
-  --minusfail : hits on negative (minus) strand defined as FAILures
-  --scfail    : seqs that fall below low score difference FAIL
-  --difffail  : seqs that fall below low score difference FAIL
-  --covfail   : seqs that fall below low coverage threshold FAIL
-  --multfail  : seqs that have more than one hit to best model FAIL
+  --minusfail     : hits on negative (minus) strand defined as FAILures
+  --scfail        : seqs that fall below low score threshold FAIL
+  --difffail      : seqs that fall below low score difference threshold FAIL
+  --covfail       : seqs that fall below low coverage threshold FAIL
+  --multfail      : seqs that have more than one hit to best model FAIL
+  --questfail     : seqs that score best to questionable models FAIL
+  --shortfail <n> : seqs that are shorter than <n> nucleotides FAIL [0]
+  --longfail <n>  : seqs that are longer than <n> nucleotides FAIL [0]
 
-options for controlling the bit score WARNING threshold:
-  --lowppossc <x> : set minimum bit per position threshold for reporting suspiciously low scores to <x> bits [0.5]
-
-options for controlling the coverage threshold:
-  --tcov <x> : set low total coverage threshold to <x> fraction of target sequence [0.88]
-
-	options for controlling the score difference threshold to report/fail sequences:
-  --lowpdiff <x>  : set 'low'      per-posn score difference threshold to <x> bits [0.10]
-  --vlowpdiff <x> : set 'very low' per-posn score difference threshold to <x> bits [0.04]
-  --absdiff       : use total score difference thresholds instead of per-posn
-  --lowadiff <x>  : set 'low'      total score difference threshold to <x> bits [100.]
-  --vlowadiff <x> : set 'very low' total score difference threshold to <x> bits [40.]
+options for controlling thresholds for failure/warning criteria:
+  --lowppossc <x>  : set minimum bit per position threshold for reporting suspiciously low scores to <x> bits [0.5]
+  --tcov <x>       : set low total coverage threshold to <x> fraction of target sequence [0.88]
+  --lowpdiff <x>   : set 'low'      per-posn score difference threshold to <x> bits [0.10]
+  --vlowpdiff <x>  : set 'very low' per-posn score difference threshold to <x> bits [0.04]
+  --absdiff        : use total score difference thresholds instead of per-posn
+  --lowadiff <x>   : set 'low'      total score difference threshold to <x> bits [100.]
+  --vlowadiff <x>  : set 'very low' total score difference threshold to <x> bits [40.]
+  --maxoverlap <n> : set maximum allowed number of model positions to overlap before failure to <n> [10]
 
 optional input files:
-  --inaccept <s> : read acceptable domains/models from file <s>
+  --inaccept <s> : read acceptable/questionable domains/models from file <s>
+
+options that modify the behavior of --1slow or --2slow:
+  --mid         : with --1slow/--2slow use cmsearch --mid option instead of --rfam
+  --max         : with --1slow/--2slow use cmsearch --max option instead of --rfam
+  --smxsize <x> : with --max also use cmsearch --smxsize <x>
 
 advanced options:
   --evalues    : rank hits by E-values, not bit scores
   --skipsearch : skip search stage, use results from earlier run
-  --noali      : no alignments in output with --slow, --hmm, or --nhmmer
+  --noali      : no alignments in output with --1hmm, --1slow, or --2slow
   --samedomain : top two hits can be to models in the same domain
+  --keep       : keep all intermediate files that are removed by default
 
-Last updated: EPN, Tue Apr 18 11:52:47 2017
+Last updated: EPN, Thu May 25 14:54:55 2017
 
 --------------------------------------

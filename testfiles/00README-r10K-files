@@ -1,0 +1,27 @@
+EPN, Thu May 11 11:27:18 2017
+
+The following file was created by randomly sampling sequences from GenBank
+as follows:
+
+r.10K.ssu.16S.fa: random sample of 20,000 sequences was taken from the
+                  set of 8,161,145 sequences that are returned with an
+                  Entrez query of "16S and 200:1799[Sequence
+                  Length]"^(see note below) fetched on May 10, 2017. I
+                  then ran these through ribosensor-wrapper.pl and
+                  saved those that 'passed'. From these 15,233 I
+                  randomly selected 10,000 and saved them to
+                  r.10K.ssu.16S.fa.
+
+
+Statistics on these files:
+$ esl-seqstat r.10K.ssu.16S.fa
+Format:              FASTA
+Alphabet type:       DNA
+Number of sequences: 10000
+Total # residues:    7169305
+Smallest:            200
+Largest:             1746
+Average length:      716.9
+
+Full notes on how this files was created can be found here:
+/panfs/pan1/infernal/notebook/17_0510_ribo_speed_test_set/00LOG.txt
