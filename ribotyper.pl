@@ -161,12 +161,12 @@ my $options_okay =
                 'keep'         => \$GetOptions_H{"--keep"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"});
 
-my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
-my $executable    = $0;
-my $date          = scalar localtime();
-my $version       = "0.02";
-my $version_str   = "0p02";
-my $releasedate   = "May 2017";
+my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $executable        = $0;
+my $date              = scalar localtime();
+my $version           = "0.03";
+my $model_version_str = "0p02"; # models are unchanged since version 0.02
+my $releasedate       = "May 2017";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -291,7 +291,7 @@ my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
 my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
 
-my $df_modelinfo_file = $df_model_dir . "ribo." . $version_str . ".modelinfo";
+my $df_modelinfo_file = $df_model_dir . "ribo." . $model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
   $modelinfo_file = $df_modelinfo_file;

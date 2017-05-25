@@ -112,24 +112,24 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.02 (May 2017)
+# ribotyper 0.03 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed May 10 13:06:06 2017
+# date:    Thu May 25 14:50:11 2017
 #
 # target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/seed-15.fa                     
 # output directory name:         test                                                                                                     
 # model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [0.5 seconds]
-# Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.4 seconds]
-# Sorting classification results                   ... done. [0.1 seconds]
-# Processing classification results                ... done. [0.1 seconds]
+# Validating input files                           ... done. [1.2 seconds]
+# Determining target sequence lengths              ... done. [0.1 seconds]
+# Classifying sequences                            ... done. [2.0 seconds]
+# Sorting classification results                   ... done. [0.0 seconds]
+# Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
 # Searching sequences against best-matching models ... done. [1.6 seconds]
-# Concatenating tabular round 2 search results     ... done. [0.1 seconds]
-# Sorting search results                           ... done. [0.1 seconds]
-# Processing tabular round 2 search results        ... done. [0.1 seconds]
+# Concatenating tabular round 2 search results     ... done. [0.0 seconds]
+# Sorting search results                           ... done. [0.0 seconds]
+# Processing tabular round 2 search results        ... done. [0.0 seconds]
 # Creating final output files                      ... done. [0.0 seconds]
 #
 # Summary statistics:
@@ -148,22 +148,22 @@ Example output of the script from the above command
 #
 # Unexpected feature statistics:
 #
-#                                  causes     number  fraction
-# unexpected feature               failure?  of seqs   of seqs
-# -------------------------------  --------  -------  --------
-  CLEAN(zero_unexpected_features)  no             11     0.688
-  *no_hits                         yes             1     0.062
-  opposite_strand                  no              3     0.188
-  low_total_coverage               no              1     0.062
+#                     causes     number  fraction
+# unexpected feature  failure?  of seqs   of seqs
+# ------------------  --------  -------  --------
+  CLEAN               no             11   0.68750
+  *NoHits             yes             1   0.06250
+  MinusStrand         no              3   0.18750
+  LowCoverage         no              1   0.06250
 #
 #
 # Timing statistics:
 #
-# stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total_time
-# --------------  --------  -------  ----------  ----------  ----------
-  classification        16     11.6     15391.0     15391.0  00:00:01.38  (hh:mm:ss)
-  search                15      9.5     12825.9     12825.9  00:00:01.58  (hh:mm:ss)
-  total                 16      3.9      5168.5      5168.5  00:00:04.11  (hh:mm:ss)
+# stage           num seqs  seq/sec      nt/sec  nt/sec/cpu               total time
+# --------------  --------  -------  ----------  ----------  -----------------------
+  classification        16      8.1     10759.0     10759.0  00:00:01.98  (hh:mm:ss)
+  search                15      9.4     12681.6     12681.6  00:00:01.60  (hh:mm:ss)
+  total                 16      3.0      3926.9      3926.9  00:00:05.41  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -191,20 +191,21 @@ $ cat test/test.ribotyper.short.out
 1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  -
 2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  -
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  -
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  low_total_coverage:(0.835<0.880)
-5     random                                         -                          -  FAIL  *no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  opposite_strand
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  LowCoverage:(0.835<0.880);
+5     random                                         -                      -      FAIL  *NoHits;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  opposite_strand
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  MinusStrand;
 11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS  -
 12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   PASS  -
 13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   PASS  -
 14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   PASS  -
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  MinusStrand;
 16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
 #
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Explanation of columns:
 #
 # Column 1 [idx]:                 index of sequence in input sequence file
@@ -212,9 +213,41 @@ $ cat test/test.ribotyper.short.out
 # Column 3 [classification]:      classification of sequence
 # Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit
 # Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)
-# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see 00README.txt)
+# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#
+# Explanation of possible values in unexpected_features column:
+#
+# This column will include a '-' if none of the features listed below are detected.
+# Or it will contain one or more of the following types of messages. There are no
+# whitespaces in this field, to make parsing easier.
+#
+# Values that begin with "*" automatically cause a sequence to FAIL.
+# Values that do not begin with "*" do not cause a sequence to FAIL.
+#
+#  1.  *NoHits                 No primary hits to any models above the minimum primary score
+#                              threshold of 20 bits (--minpsc) were found.
+#  2.  *MultipleFamilies       One or more primary hits to two or more "families" (e.g. SSU
+#                              or LSU) exists for the same sequence.
+#  3.  *BothStrands            One or more primary hits above the minimum primary score threshold
+#                              of 20 bits (--minpsc) were found on each strand.
+#  4.  *DuplicateRegion        At least two hits (primary or secondary) on the same strand overlap
+#                              in model coordinates by 10 (--maxoverlap) positions or more
+#  5.  *InconsistentHits       Not all hits (primary or secondary) are in the same order in the
+#                              sequence and in the model.
+#  6.  MinusStrand             Best hit is on the minus strand.
+#  7.  LowScore                The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+#  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
+#                              model (summed length of all hits divided by total length of sequence)
+#                              is below threshold of 0.88 (--tcov).
+#  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 11.  MultipleHits            There is more than one hit to the best scoring model on the same strand.
+#
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The Long file is not shown because it is so wide. 
 An example is in testfiles/test.ribotyper.long.out 
 
@@ -465,22 +498,22 @@ and the string "*UnacceptableModel" will be present in the
 $ cat test/test.ribotyper.short.out 
 #idx  target                                         classification         strnd   p/f  unexpected_features
 #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
-1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);
-2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);
-3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  questionable_model:(SSU_rRNA_archaea);low_total_coverage:(0.835<0.880);
-5     random                                         -                      -      FAIL  *no_hits
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  questionable_model:(SSU_rRNA_archaea);opposite_strand;
+1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
+2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
+3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);LowCoverage:(0.835<0.880);
+5     random                                         -                      -      FAIL  *NoHits;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  QuestionableModel:(SSU_rRNA_archaea);MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  opposite_strand;
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  PASS  MinusStrand;
 11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS  -
-12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
-13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
-14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  *unacceptable_model:(SSU_rRNA_eukarya);opposite_strand;
-16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL  *unacceptable_model:(SSU_rRNA_eukarya);
+12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);MinusStrand;
+16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL  *UnacceptableModel:(SSU_rRNA_eukarya);
 #
 ##############################################################################
 ALL COMMAND LINE OPTIONS
@@ -490,9 +523,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.02 (May 2017)
+# ribotyper 0.03 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu May 18 15:53:29 2017
+# date:    Thu May 25 14:54:44 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -549,6 +582,6 @@ advanced options:
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
 
-Last updated: EPN, Thu May 18 15:53:20 2017
+Last updated: EPN, Thu May 25 14:54:55 2017
 
 --------------------------------------
