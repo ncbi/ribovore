@@ -1,4 +1,4 @@
-Ribotyper v0.03 README
+Ribotyper v0.04 README
 
 Organization of this file:
 
