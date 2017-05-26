@@ -29,6 +29,7 @@ use warnings;
 #
 # Arguments: 
 #    $FH:                file handle to print to
+#    $package_name:      name of package to output (e.g. 'ribotyper' or 'ribosensor')
 #    $version:           version of dnaorg
 #    $releasedate:       month/year of version (e.g. "Feb 2016")
 #    $synopsis:          string reporting the date
@@ -39,13 +40,13 @@ use warnings;
 # Dies: never
 ####################################################################
 sub ribo_OutputBanner {
-  my $nargs_expected = 5;
+  my $nargs_expected = 6;
   my $sub_name = "ribo_OutputBanner()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($FH, $version, $releasedate, $synopsis, $date) = @_;
+  my ($FH, $package_name, $version, $releasedate, $synopsis, $date) = @_;
 
   print $FH ("\# $synopsis\n");
-  print $FH ("\# ribotyper $version ($releasedate)\n");
+  print $FH ("\# $package_name $version ($releasedate)\n");
 #  print $FH ("\# Copyright (C) 2014 HHMI Janelia Research Campus\n");
 #  print $FH ("\# Freely distributed under the GNU General Public License (GPLv3)\n");
   print $FH ("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
