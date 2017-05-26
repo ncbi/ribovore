@@ -167,6 +167,7 @@ my $date              = scalar localtime();
 my $version           = "0.03";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
 my $releasedate       = "May 2017";
+my $package_name      = "ribosensor";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -174,7 +175,7 @@ $| = 1;
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
-  ribo_OutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
+  ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
   opt_OutputHelp(*STDOUT, $usage, \%opt_HH, \@opt_order_A, \%opt_group_desc_H);
   if(! $options_okay) { die "ERROR, unrecognized option;"; }
   else                { exit 0; } # -h, exit with 0 status
@@ -325,7 +326,7 @@ push(@arg_A, $dir_out);
 push(@arg_desc_A, "model information input file");
 push(@arg_A, $modelinfo_file);
 
-ribo_OutputBanner(*STDOUT, $version, $releasedate, $synopsis, $date);
+ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 ##############################################
@@ -2728,42 +2729,6 @@ sub determine_unexpected_feature_explanation {
   return;
 }
 
-#####################################################################
-# Subroutine: output_banner()
-# Incept:     EPN, Thu Oct 30 09:43:56 2014 (rnavore)
-# 
-# Purpose:    Output the banner with info on the script, input arguments
-#             and options used.
-#
-# Arguments: 
-#    $FH:                file handle to print to
-#    $version:           version of dnaorg
-#    $releasedate:       month/year of version (e.g. "Feb 2016")
-#    $synopsis:          string reporting the date
-#    $date:              date information to print
-#
-# Returns:    Nothing, if it returns, everything is valid.
-# 
-# Dies: never
-####################################################################
-sub output_banner {
-  my $nargs_expected = 5;
-  my $sub_name = "outputBanner()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($FH, $version, $releasedate, $synopsis, $date) = @_;
-
-  print $FH ("\# $synopsis\n");
-  print $FH ("\# ribotyper $version ($releasedate)\n");
-#  print $FH ("\# Copyright (C) 2014 HHMI Janelia Research Campus\n");
-#  print $FH ("\# Freely distributed under the GNU General Public License (GPLv3)\n");
-  print $FH ("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
-  if(defined $date)    { print $FH ("# date:    $date\n"); }
-  printf $FH ("#\n");
-
-  return;
-}
-
-
 #################################################################
 # Subroutine : debug_print()
 # Incept:      EPN, Thu Jan  5 14:11:21 2017
@@ -4098,7 +4063,7 @@ sub output_timing_statistics {
   printf $out_FH ("#\n");
 
   # line 1
-  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
+  printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %-*s\n",
                   $width_H{"class"},    "stage",
                   $width_H{"nseq"},     "num seqs",
                   $width_H{"seqsec"},   "seq/sec",
