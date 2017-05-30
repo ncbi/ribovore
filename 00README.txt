@@ -1,4 +1,4 @@
-Ribotyper v0.04 README
+Ribotyper v0.05 README
 
 Organization of this file:
 
@@ -86,7 +86,41 @@ begins with:
 
 If any of these commands do not return what they are supposed to,
 please email Eric Nawrocki (nawrocke@ncbi.nlm.nih.gov). If you do see
-the expected output, the following sample run should work.
+the expected output, and you have the prequisite programs installed as
+explained below, the sample run below should work.
+
+##############################################################################
+PREREQUISITE PROGRAMS
+
+The Infernal v1.1.2 software package must be installed prior to
+running ribotyper.pl, and its executables must be in your $PATH.
+Further, the easel 'miniapps' that are installed with Infernal must be
+in your $PATH. You can download Infernal from
+http://eddylab.org/infernal/.
+
+*****************************************
+Internal NCBI-specific instructions:
+The v1.1.2 Infernal executables and the easel miniapps are already
+installed system wide at NCBI. You'll need to login into a node that
+runs CentOS 7. Add 'infernal' to the facilities line of your
+.ncbi_hints file. And add the following line to your .ncbi_hints file:
+option infernal_version 1.1.2
+*****************************************
+
+To check if you have Infernal and the executables installed and in
+your path. Execute the following two commands:
+
+$ cmsearch -h 
+$ esl-sfetch -h
+
+The first command should return the usage for cmsearch with a line
+that says: INFERNAL 1.1.2 (July 2016).
+And the second command should return the usage for esl-sfetch with a
+line that says: Easel 0.43 (July 2016).
+
+If this is true, and you were able to set your environment variables
+as explained above, then the sample run 
+explained below, the sample run below should work.
 
 ##############################################################################
 SAMPLE RUN
@@ -123,11 +157,11 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.04 (May 2017)
+# ribotyper 0.05 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu May 25 14:50:11 2017
+# date:    Tue May 30 14:19:22 2017
 #
-# target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/seed-15.fa                     
+# target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/example-16.fa                     
 # output directory name:         test                                                                                                     
 # model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -536,7 +570,7 @@ $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # ribotyper 0.04 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu May 25 14:54:44 2017
+# date:    Tue May 30 14:30:37 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -593,6 +627,5 @@ advanced options:
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
 
-Last updated: EPN, Thu May 25 14:54:55 2017
 
 --------------------------------------
