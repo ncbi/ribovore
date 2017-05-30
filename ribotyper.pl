@@ -17,9 +17,9 @@ if(! (-d $ribodir)) {
     printf STDERR ("\nERROR, the ribotyper directory specified by your environment variable RIBODIR does not exist.\n"); 
     exit(1); 
 }    
-my $inf_exec_dir      = $ribodir . "/infernal-1.1.2/src/";
-my $esl_exec_dir      = $ribodir . "/infernal-1.1.2/easel/miniapps/";
-my $df_model_dir      = $ribodir . "/models/";
+#my $inf_exec_dir = $ribodir . "/infernal-1.1.2/src/";
+#my $esl_exec_dir = $ribodir . "/infernal-1.1.2/easel/miniapps/";
+my $df_model_dir = $ribodir . "/models/";
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -418,12 +418,13 @@ initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
 ###################################################
 # make sure the required executables are executable
 ###################################################
-my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
-$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
-$execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
+# EPN: we rely on easel miniapps and infernal executables being in user's path
+#my %execs_H = (); # hash with paths to all required executables
+#$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
+#$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
+#$execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
 #$execs_H{"esl_ssplit"}    = $esl_ssplit;
-ribo_ValidateExecutableHash(\%execs_H);
+#ribo_ValidateExecutableHash(\%execs_H);
 
 ###########################################################################
 # Step 1: Parse/validate input files
@@ -481,7 +482,7 @@ else { # --inaccept not used, all models are acceptable
 # if it doesn't exist, create it
 my $ssi_file = $seq_file . ".ssi";
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
   if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
     die "ERROR, tried to create $ssi_file, but failed"; 
   }
@@ -509,7 +510,7 @@ my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
-$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$tot_nnt = ribo_ProcessSequenceFile("esl-seqstat", $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
@@ -541,7 +542,7 @@ $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
 $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
 $r1_sort_cmd           = "grep -v ^\# $r1_tblout_file | sort -k1 > " . $r1_sorted_tblout_file;
-$r1_search_cmd         = $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
+$r1_search_cmd         = "cmsearch -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, undef, *STDOUT);
@@ -644,7 +645,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
-        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        ribo_RunCommand("esl-sfetch -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
         }
@@ -679,7 +680,7 @@ if(defined $alg2) {
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
       push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
-      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
+      push(@r2_search_cmd_A,         "cmsearch -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
         ribo_RunCommand($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
