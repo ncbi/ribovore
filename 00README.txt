@@ -1,4 +1,4 @@
-EPN, Wed Feb 22 15:59:00 2017
+Ribotyper v0.05 README
 
 Organization of this file:
 
@@ -16,8 +16,9 @@ ALL COMMAND LINE OPTIONS
 ##############################################################################
 INTRO
 
-Preliminary documentation for ribotyper, a tool for detecting and
-classifying SSU rRNA and LSU rRNA sequences.
+This is preliminary documentation for ribotyper, a tool for detecting
+and classifying SSU rRNA and LSU rRNA sequences.  
+
 Author: Eric Nawrocki
 
 Current location of code and other relevant files:
@@ -27,23 +28,25 @@ Current location of code and other relevant files:
 SETTING UP ENVIRONMENT VARIABLES
 
 Before you can run ribotyper.pl you will need to update some of your
-command line variables. To do this, add the following three lines to
+environment variables. To do this, add the following four lines to
 your .bashrc file (if you use bash shell) or .cshrc file (if you use C
 shell or tcsh). The .bashrc or .cshrc file will be in your home
 directory. To determine what shell you use type 'echo $SHELL', if it
 returns '/bin/bash', then update your .bashrc file, if it returns
 '/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
-The 3 lines to add to your .bashrc file:
+The 4 lines to add to your .bashrc file:
 -----------
 export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 export PERL5LIB="$RIBODIR:$PERL5LIB"
 export PATH="$RIBODIR:$PATH"
 -----------
 
-The 3 lines to add to your .cshrc file:
+The 4 lines to add to your .cshrc file:
 -----------
 setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 setenv PERL5LIB "$RIBODIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
 -----------
@@ -61,21 +64,63 @@ setenv PERL5LIB "$RIBODIR"
 for .cshrc. And then do 'source ~/.bashrc' or 'source ~/.cshrc' again.
 
 To check that your environment variables are properly set up do the
-following three commands:
+following four commands:
 echo $RIBODIR
+echo $EPNOPTDIR
 echo $PERL5LIB
 echo $PATH
 
 The first command should return only:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
 
-And the other two echo commands should return potentially longer
-strings that begin with the same path:
+The second command should return only:
+/panfs/pan1/dnaorg/ssudetection/code/epn-options
+
+The third command should return a potentially longer string that
+begins with:
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1:/panfs/pan1/dnaorg/ssudetection/code/epn-options
+
+The fourth command should return a potentially longer string that
+begins with:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
 
-If that is not the case, please email Eric Nawrocki
-(nawrocke@ncbi.nlm.nih.gov). If you do see the expected output, the
-following sample run should work.
+If any of these commands do not return what they are supposed to,
+please email Eric Nawrocki (nawrocke@ncbi.nlm.nih.gov). If you do see
+the expected output, and you have the prequisite programs installed as
+explained below, the sample run below should work.
+
+##############################################################################
+PREREQUISITE PROGRAMS
+
+The Infernal v1.1.2 software package must be installed prior to
+running ribotyper.pl, and its executables must be in your $PATH.
+Further, the easel 'miniapps' that are installed with Infernal must be
+in your $PATH. You can download Infernal from
+http://eddylab.org/infernal/.
+
+*****************************************
+Internal NCBI-specific instructions:
+The v1.1.2 Infernal executables and the easel miniapps are already
+installed system wide at NCBI. You'll need to login into a node that
+runs CentOS 7. Add 'infernal' to the facilities line of your
+.ncbi_hints file. And add the following line to your .ncbi_hints file:
+option infernal_version 1.1.2
+*****************************************
+
+To check if you have Infernal and the executables installed and in
+your path. Execute the following two commands:
+
+$ cmsearch -h 
+$ esl-sfetch -h
+
+The first command should return the usage for cmsearch with a line
+that says: INFERNAL 1.1.2 (July 2016).
+And the second command should return the usage for esl-sfetch with a
+line that says: Easel 0.43 (July 2016).
+
+If this is true, and you were able to set your environment variables
+as explained above, then the sample run 
+explained below, the sample run below should work.
 
 ##############################################################################
 SAMPLE RUN
@@ -97,8 +142,8 @@ the directory before rerunning, or (b) use the -f option with
 ribotyper.pl, in which case the directory will be overwritten.
 
 The $RIBODIR environment variable is used here. That is
-a hard-coded path that was set in the 'Setting up environment
-variables for Ribotyper:' section above. 
+a hard-coded path that was set in the 'SETTING UP ENVIRONMENT
+VARIABLES:' section above. 
 
 In an older version of ribotyper additional command line arguments
 were required to specify the locations the model files to use and the
@@ -112,11 +157,11 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.03 (May 2017)
+# ribotyper 0.05 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu May 25 14:50:11 2017
+# date:    Tue May 30 14:19:22 2017
 #
-# target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/seed-15.fa                     
+# target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/example-16.fa                     
 # output directory name:         test                                                                                                     
 # model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -179,9 +224,9 @@ with one line per sequence with fields separated by whitespace (spaces,
 not tabs). They will both be in the new directory 'test' that was
 created by the example run above.
 
-A 'short' file of 6 columns, and a 'long' file with 20 columns with
-more information. Each file includes a description of the columns at
-the end of the file. 
+The two file types are a 'short' file of 6 columns, and a 'long' file
+with 20 columns with more information. Each file includes a
+description of the columns at the end of the file.
 
 Short file:
 $ cat test/test.ribotyper.short.out
@@ -523,9 +568,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.03 (May 2017)
+# ribotyper 0.04 (May 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu May 25 14:54:44 2017
+# date:    Tue May 30 14:30:37 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -582,6 +627,5 @@ advanced options:
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
 
-Last updated: EPN, Thu May 25 14:54:55 2017
 
 --------------------------------------
