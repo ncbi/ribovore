@@ -84,7 +84,9 @@ opt_Add("--longfail",   "integer",   0,                        5,  undef,   unde
 $opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
 opt_Add("--lowppossc",     "real",   "0.5",                    6,  undef,   undef,      "set minimum bit per position threshold to <x>",           "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",          "real",   "0.88",                   6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",          "real",   "0.86",                   6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--tshortcov",     "real",   undef,                    6,"--tshortlen",undef,   "set low total coverage for short seqs threshold to <x>",  "set low total coverage threshold for short seqs to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--tshortlen",   "integer",  undef,                    6,"--tshortcov",undef,   "set maximum length for short seqs coverage calc to <n>",  "set maximum length for short seq coverage threshold <n> nucleotides", \%opt_HH, \@opt_order_A);
 opt_Add("--lowpdiff",      "real",   "0.10",                   6,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--vlowpdiff",     "real",   "0.04",                   6,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--absdiff",    "boolean",   0,                        6,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
@@ -142,6 +144,8 @@ my $options_okay =
 # options controlling thresholds for warnings and failures
                 'lowppossc'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"}, 
+                'tshortcov=s'  => \$GetOptions_H{"--tshortcov"}, 
+                'tshortlen=s'  => \$GetOptions_H{"--tshortlen"}, 
                 'lowpdiff=s'   => \$GetOptions_H{"--lowpdiff"},
                 'vlowpdiff=s'  => \$GetOptions_H{"--vlowpdiff"},
                 'absdiff'      => \$GetOptions_H{"--absdiff"},
@@ -2043,12 +2047,21 @@ sub output_one_target {
     $unusual_features .= sprintf("LowScore:(%.2f<%.2f);", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
   }
   # determine if coverage is low
-  if($tot_coverage < opt_Get("--tcov", $opt_HHR)) { 
+  my $cov_thresh = undef;
+  if(opt_IsUsed("--tshortlen", $opt_HHR)) { 
+    # threshold depends on length
+    $cov_thresh = ($seqlen <= opt_Get("--tshortlen", $opt_HHR)) ? opt_Get("--tshortcov", $opt_HHR) : opt_Get("--tcov", $opt_HHR);
+  }
+  else { 
+    # threshold does not depend on length
+    $cov_thresh = opt_Get("--tcov", $opt_HHR);
+  }
+  if($tot_coverage < $cov_thresh) { 
     if(opt_Get("--covfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("LowCoverage:(%.3f<%.3f);", $tot_coverage, opt_Get("--tcov", $opt_HHR));
+    $unusual_features .= sprintf("LowCoverage:(%.3f<%.3f);", $tot_coverage, $cov_thresh);
   }
   # determine if the sequence has a low score difference between the top
   # two domains
@@ -2690,7 +2703,15 @@ sub determine_unexpected_feature_explanation {
   elsif($ufeature =~ m/LowCoverage/) { 
     push(@{$exp_AR}, "The total coverage of all hits (primary and secondary) to the best");
     push(@{$exp_AR}, "model (summed length of all hits divided by total length of sequence)");
-    push(@{$exp_AR}, "is below threshold of " . opt_Get("--tcov", $opt_HHR) . " (--tcov).");
+    if(opt_IsUsed("--tshortlen", $opt_HHR)) { 
+      push(@{$exp_AR}, "is either (a) below threshold of " . opt_Get("--tcov", $opt_HHR) . " (--tcov) and sequence is");
+      push(@{$exp_AR}, "more than " . opt_Get("--tshortlen", $opt_HHR) . " nucleotides (--tshortlen)");
+      push(@{$exp_AR}, "OR (b) below threshold of " . opt_Get("--tshortcov", $opt_HHR) . " (--tshortcov) and sequence is");
+      push(@{$exp_AR}, "less than or equal to " . opt_Get("--tshortlen", $opt_HHR) . " nucleotides (--tshortlen).");
+    }
+    else { 
+      push(@{$exp_AR}, "is below threshold of " . opt_Get("--tcov", $opt_HHR) . " (--tcov).");
+    }
   }
   elsif($ufeature =~ m/VeryLowScoreDifference/) { # important to put this before LowScoreDifference in elsif
     if(opt_Get("--absdiff")) { 
