@@ -3,7 +3,7 @@
 1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  -
 2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  -
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  -
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  LowCoverage:(0.835<0.880);
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  LowCoverage:(0.835<0.860);
 5     random                                         -                      -      FAIL  *NoHits;
 6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
@@ -52,7 +52,7 @@
 #                              of sequence) is below threshold of 0.5 (--lowppossc).
 #  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
 #                              model (summed length of all hits divided by total length of sequence)
-#                              is below threshold of 0.88 (--tcov).
+#                              is below threshold of 0.86 (--tcov).
 #  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
 #                              of sequence) is below threshold of 0.5 (--lowppossc).
 # 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
