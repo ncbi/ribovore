@@ -1,4 +1,4 @@
-Ribotyper v0.06 README
+Ribotyper v0.07 README
 
 Organization of this file:
 
@@ -125,10 +125,19 @@ explained below, the sample run below should work.
 ##############################################################################
 SAMPLE RUN
 
-This example runs the script on a sample file of 15 sequences. Go into
-a new directory and execute:
+This example runs the script on a sample file of 16 sequences. 
 
-ribotyper.pl $RIBODIR/testfiles/seed-15.fa test
+You can only run ribotyper on sequence files that are in directories
+to which you have write permission. So the first step is to copy the
+example sequence file into a new directory you have write permission
+to. Move into that directory and copy the example file with this
+command: 
+
+> cp $RIBODIR/testfiles/example-16.fa ./
+
+Then execute the following command:
+
+> ribotyper.pl example-16.fa test
 
 The script takes 2 command line arguments:
 
@@ -157,21 +166,21 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.05 (May 2017)
+# ribotyper 0.07 (June 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue May 30 14:19:22 2017
+# date:    Fri Jun 30 10:47:55 2017
 #
-# target sequence input file:    /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/testfiles/example-16.fa                     
-# output directory name:         test                                                                                                     
+# target sequence input file:    example-16.fa                                                               
+# output directory name:         test                                                                        
 # model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [1.2 seconds]
-# Determining target sequence lengths              ... done. [0.1 seconds]
-# Classifying sequences                            ... done. [2.0 seconds]
+# Validating input files                           ... done. [0.1 seconds]
+# Determining target sequence lengths              ... done. [0.0 seconds]
+# Classifying sequences                            ... done. [1.9 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
 # Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.6 seconds]
+# Searching sequences against best-matching models ... done. [1.4 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -204,19 +213,19 @@ Example output of the script from the above command
 #
 # Timing statistics:
 #
-# stage           num seqs  seq/sec      nt/sec  nt/sec/cpu               total time
+# stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16      8.1     10759.0     10759.0  00:00:01.98  (hh:mm:ss)
-  search                15      9.4     12681.6     12681.6  00:00:01.60  (hh:mm:ss)
-  total                 16      3.0      3926.9      3926.9  00:00:05.41  (hh:mm:ss)
+  classification        16      8.3     11039.7     11039.7  00:00:01.93  (hh:mm:ss)
+  search                15     10.4     14108.6     14108.6  00:00:01.44  (hh:mm:ss)
+  total                 16      4.3      5731.8      5731.8  00:00:03.71  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
 # Long (25 column) output saved to file test/test.ribotyper.long.out
 #
 #[RIBO-SUCCESS]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
------------------
 Output files:
 
 Currently, there are two output files. Both are tabular output files
@@ -236,7 +245,7 @@ $ cat test/test.ribotyper.short.out
 1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  -
 2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  -
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  -
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  LowCoverage:(0.835<0.880);
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  LowCoverage:(0.835<0.860);
 5     random                                         -                      -      FAIL  *NoHits;
 6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
@@ -285,7 +294,7 @@ $ cat test/test.ribotyper.short.out
 #                              of sequence) is below threshold of 0.5 (--lowppossc).
 #  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
 #                              model (summed length of all hits divided by total length of sequence)
-#                              is below threshold of 0.88 (--tcov).
+#                              is below threshold of 0.86 (--tcov).
 #  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
 #                              of sequence) is below threshold of 0.5 (--lowppossc).
 # 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
@@ -367,9 +376,13 @@ IS ENABLED.
 
 10. "LowCoverage": the total coverage of all hits to the best
 model (summed length of all hits divided by total sequence length) is
-below threshold. By default the threshold is 0.88, but can be changed
-to <x> with the --tcov <x> option. ONLY CAUSES FAILURE IF THE
---covfail OPTION IS ENABLED.
+below threshold. By default the threshold is 0.86, but can be changed
+to <x> with the --tcov <x> option. Additionally, you can set a
+different threshold for 'short' sequences using the --tshortcov <x1>
+option, which must be used in combination with the --tshortlen <n>
+option which specifies that sequences less than or equal to <n>
+nucleotides will use the coverage threshold <x1> from --tshortcov
+<x1>. ONLY CAUSES FAILURE IF THE --covfail OPTION IS ENABLED.
 
 11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
@@ -533,7 +546,7 @@ SSU_rRNA_cyanobacteria acceptable
 To use this on the example run from above, you will use the --inaccept
 option, like this:
 
-$ perl ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept testfiles/seed-15.fa test
+$ ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept example-16.fa test
 
 Now the short output file will set any family that was classified as a
 model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs,
@@ -546,7 +559,7 @@ $ cat test/test.ribotyper.short.out
 1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
 2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
 3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);LowCoverage:(0.835<0.880);
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   PASS  QuestionableModel:(SSU_rRNA_archaea);LowCoverage:(0.835<0.860);
 5     random                                         -                      -      FAIL  *NoHits;
 6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  PASS  QuestionableModel:(SSU_rRNA_archaea);MinusStrand;
 7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS  -
@@ -568,9 +581,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.04 (May 2017)
+# ribotyper 0.07 (June 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue May 30 14:30:37 2017
+# date:    Fri Jun 30 10:50:13 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -604,7 +617,9 @@ options for controlling which sequences PASS/FAIL (turning on optional failure c
 
 options for controlling thresholds for failure/warning criteria:
   --lowppossc <x>  : set minimum bit per position threshold for reporting suspiciously low scores to <x> bits [0.5]
-  --tcov <x>       : set low total coverage threshold to <x> fraction of target sequence [0.88]
+  --tcov <x>       : set low total coverage threshold to <x> fraction of target sequence [0.86]
+  --tshortcov <x>  : set low total coverage threshold for short seqs to <x> fraction of target sequence
+  --tshortlen <n>  : set maximum length for short seq coverage threshold to <n> nucleotides
   --lowpdiff <x>   : set 'low'      per-posn score difference threshold to <x> bits [0.10]
   --vlowpdiff <x>  : set 'very low' per-posn score difference threshold to <x> bits [0.04]
   --absdiff        : use total score difference thresholds instead of per-posn
@@ -626,6 +641,5 @@ advanced options:
   --noali      : no alignments in output with --1hmm, --1slow, or --2slow
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
-
 
 --------------------------------------
