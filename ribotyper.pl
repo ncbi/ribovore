@@ -58,8 +58,8 @@ opt_Add("-i",           "string",  undef,                    1,    undef, undef,
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
-opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   "--slow",  "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
-opt_Add("--1slow",         "boolean", 0,                       2,  undef,   "--hmm",   "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
+opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   undef,     "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                       2,  undef,   undef,     "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                        help-output    
@@ -100,8 +100,8 @@ opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef
 
 $opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
 #       option               type   default                group  requires incompat    preamble-output                   help-output    
-opt_Add("--mid",          "boolean", 0,                       8,"--slow",  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--max",          "boolean", 0,                       8,"--slow",  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--mid",          "boolean", 0,                       8,  undef,  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--max",          "boolean", 0,                       8,  undef,  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef,      "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"9"} = "advanced options";
@@ -203,16 +203,30 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 # do some final option checks that are currently too sophisticated for epn-options
 if(opt_Get("--evalues", \%opt_HH)) { 
   if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--hmm", \%opt_HH)) && 
-     (! opt_Get("--slow", \%opt_HH))) { 
-    die "ERROR, --evalues requires one of --nhmmer, --hmm or --slow";
+     (! opt_Get("--1hmm", \%opt_HH)) && 
+     (! opt_Get("--1slow", \%opt_HH)) &&
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --evalues requires one of --nhmmer, --1hmm, --1slow or --2slow";
+  }
+}
+if(opt_Get("--mid", \%opt_HH)) { 
+  if((! opt_Get("--1slow", \%opt_HH)) &&
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --mid requires one of --1slow or --2slow";
+  }
+}
+if(opt_Get("--max", \%opt_HH)) { 
+  if((! opt_Get("--1slow", \%opt_HH)) &&
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --max requires one of --1slow or --2slow";
   }
 }
 if(opt_Get("--noali", \%opt_HH)) { 
   if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--hmm", \%opt_HH)) && 
-     (! opt_Get("--slow", \%opt_HH))) { 
-    die "ERROR, --noali requires one of --nhmmer, --hmm or --slow";
+     (! opt_Get("--1hmm", \%opt_HH)) && 
+     (! opt_Get("--1slow", \%opt_HH)) && 
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --noali requires one of --nhmmer, --1hmm, --1slow or --2slow";
   }
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
@@ -2495,7 +2509,7 @@ sub output_long_tail {
   my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
   my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
 
-  my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
+  my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --1hmm or --1slow to get accurate coverage)\n");
 
   my $column_ct = 1;
 
@@ -2836,7 +2850,7 @@ sub center_string {
 # Purpose:    Based on the command line options and what round we are in,
 #             determine if the coverage values are accurate. With the
 #             fast mode, coverage values are not accurate, but with
-#             some options like --hmm and --slow, they are.
+#             some options like --1hmm and --1slow, they are.
 #
 # Arguments:
 #   $round:    what round of searching we're in, '1', '2', or 'final'
@@ -3242,7 +3256,7 @@ sub determine_cmsearch_opts {
         $alg_opts .= " --smxsize " . opt_Get("--smxsize", $opt_HHR) . " ";
       }
     }
-    else { # default for --slow, --mid nor --max used (use cmsearch --rfam)
+    else { # default for slow, --mid nor --max used (use cmsearch --rfam)
       $alg_opts .= " --rfam "; 
     }
     if(opt_Get("--noali", $opt_HHR)) { 
