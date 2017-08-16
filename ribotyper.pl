@@ -675,7 +675,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
 ###########################################################################
 # Step 7: Do round 2 of searches, one model at a time.
 ###########################################################################
-my $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH);
+my $alg2_opts;                    # algorithm 2 cmsearch options
 my @r2_model_A = ();              # models we performed round 2 for
 my @r2_tblout_file_A = ();        # tblout files for each model we performed round 2 for
 my @r2_searchout_file_A = ();     # search output file for each model we performed round 2 for
@@ -686,6 +686,7 @@ my $r2_all_sort_cmd;              # sort command for $r2_all_tblout_file to crea
 my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
 if(defined $alg2) { 
+  $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH);
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
     $start_secs = ribo_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
   }
@@ -3209,11 +3210,7 @@ sub get_dir_path {
   if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
   my $orig_file = $_[0];
   
-  printf("in $sub_name, input: $orig_file");
-  
   $orig_file =~ s/[^\/]+$//; # remove final string of non '/' characters
-  
-  printf(" returning $orig_file\n");
   
   if($orig_file eq "") { return "./";       }
   else                 { return $orig_file; }
