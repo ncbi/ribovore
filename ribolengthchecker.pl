@@ -7,14 +7,18 @@ use Time::HiRes qw(gettimeofday);
 require "epn-options.pm";
 require "ribo.pm";
 
-my $usage = "perl ribolengthchecker.pl <fasta file> <output file name root>";
-if(scalar(@ARGV) != 2) { 
-  die $usage;
-}
+# make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
+my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
+my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
+my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
-my ($fasta_file, $out_root) = (@ARGV);
-
-my $nbound = 10;
+# make sure the required executables are executable
+my %execs_H = (); # key is name of program, value is path to the executable
+$execs_H{"ribotyper"}  = $env_ribotyper_dir     . "/ribotyper.pl";
+$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
+$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
+ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -46,29 +50,30 @@ my %opt_group_desc_H = ();
 $opt_group_desc_H{"1"} = "basic options";
 #     option            type       default               group   requires incompat    preamble-output                                   help-output    
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
-opt_Add("-b",           "boolean", 10,                       1,    undef, undef,      "number of positions to look for indels",         "number of positions to look for indels at the 5' and 3' boundaries",  \%opt_HH, \@opt_order_A);
+opt_Add("-b",           "integer", 10,                       1,    undef, undef,      "number of positions <n> to look for indels",     "number of positions <n> to look for indels at the 5' and 3' boundaries",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 0,                        1,    undef, undef,      "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
-#opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
+opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 #opt_Add("-k",           "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                    "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribocheck_length.pl [-options] <fasta file to annotate> <output file name root>\n";
+my $usage    = "Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>\n";
 $usage      .= "\n";
 my $synopsis = "ribocheck_length.pl :: classify lengths of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
-                'f'            => \$GetOptions_H{"-f"},
-                'v'            => \$GetOptions_H{"-v"});
-#                'i=s'          => \$GetOptions_H{"-i"},
+                'b=s'          => \$GetOptions_H{"-b"},
+                'n=s'          => \$GetOptions_H{"-n"},
+                'v'            => \$GetOptions_H{"-v"},
+                'i=s'          => \$GetOptions_H{"-i"});
 #                'k'            => \$GetOptions_H{"-k"},
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.01";
-my $model_version_str = "0p01"; # models are unchanged since version 0.02
+my $version           = "0.08";
+my $model_version_str = "0p08"; 
 my $releasedate       = "Oct 2017";
 my $package_name      = "ribotyper";
 
@@ -99,79 +104,105 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-###################################################################
-# Preliminary checks:
-# 1. RIBODIR, INFERNALDIR, and ESLDIR environment variables must be defined
-# 2. RIBODIR/ribotyper.pl must exist and be executable
-# 3. INFERNALDIR/cmalign must exist and be executable
-# 4. ESLDIR/esl-sfetch must exist and be executable
-# 5. RIBOCHECKDIR/ribocheck.$model_version_str.modelinfo must exist
-#    and in the proper format
-# 6. RIBODIR/ must contain CM files listed in ribocheck_length.$model_version_str.modelinfo
+my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my @to_remove_A = ();    # array of files to remove at end
+my $r1_secs     = undef; # number of seconds required for round 1 search
+my $r2_secs     = undef; # number of seconds required for round 2 search
+my $ncpu        = opt_Get("-n", \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
+my $nbound      = opt_Get("-b", \%opt_HH); # number of positions to check for indels at 5' and 3' boundaries
+if($ncpu == 1) { $ncpu = 0; } # prefer --cpu 0 to --cpu 1
 
-# 1. RIBODIR, INFERNALDIR and ESLDIR environment variables must be defined
-my $env_ribotyper_dir = verify_env_variable_is_valid_dir("RIBODIR");
-my $env_infernal_dir  = verify_env_variable_is_valid_dir("INFERNALDIR");
-my $env_easel_dir     = verify_env_variable_is_valid_dir("ESLDIR");
-
-# 2. RIBODIR/ribotyper.pl must exist and be executable
-# 3. INFERNALDIR/cmalign must exist and be executable
-# 4. ESLDIR/esl-sfetch must exist and be executable
-my %execs_H = (); # key is name of program, value is path to the executable
-$execs_H{"ribotyper"}  = $env_ribotyper_dir . "/ribotyper.pl";
-$execs_H{"cmalign"}    = $env_infernal_dir . "/cmalign";
-$execs_H{"esl-sfetch"} = $env_easel_dir    . "/esl-sfetch";
-ribo_ValidateExecutableash(\%execs_H);
-
-# 5. RIBODIR/ribocheck_length.$model_version_str.modelinfo must exist
-my $model_version_str = "0p01";
-my $ribocheck_modelinfo_file = $env_ribocheck_dir . "/ribochecklength." . $model_version_str . ".modelinfo";
-if(! (-e $ribocheck_modelinfo_file)) { 
-  die "\nERROR, the ribochecklength modelinfo file $ribocheck_modelinfo_file does not exist.\n";
+my $df_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
+my $modelinfo_file = undef;
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  $modelinfo_file = $df_modelinfo_file;
 }
+else { 
+  $modelinfo_file = opt_Get("-i", \%opt_HH);
+}
+# make sure the sequence and modelinfo files exists
+ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+}
+else { # -i used on the command line
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+}
+# we check for the existence of model files after we parse the model info file, below
+
+#############################################
+# output program banner and open output files
+#############################################
+# output preamble
+my @arg_desc_A = ();
+my @arg_A      = ();
+
+push(@arg_desc_A, "target sequence input file");
+push(@arg_A, $seq_file);
+
+push(@arg_desc_A, "output file name root");
+push(@arg_A, $out_root);
+
+push(@arg_desc_A, "model information input file");
+push(@arg_A, $modelinfo_file);
+
+ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
+opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
+
+###########################################################################
+# Step 1: Parse/validate input files
+###########################################################################
+my $progress_w = 48; # the width of the left hand column in our progress output, hard-coded
+my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w, undef, *STDOUT);
+
 # parse the modelinfo file, this tells us where the CM files are
 my @family_order_A     = (); # family names, in order
 my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
 my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
 my %family_rtkey_HA    = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is array of ribotyper keys 
                              # to align for this family (e.g. ("SSU_rRNA_bacteria", "SSU_rRNA_cyanobacteria"))
-parse_modelinfo_file($ribocheck_modelinfo_file, $env_ribocheck_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H, \%family_rtkey_HA);
+parse_modelinfo_file($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H, \%family_rtkey_HA);
 
-# 6. RIBOCHECKDIR/ must contain CM files listed in ribocheck.$model_version_str.modelinfo
+# verify the CM files listed in $modelinfo_file exist
 my $family;
 foreach $family (@family_order_A) { 
   if(! -s $family_modelname_H{$family}) { 
-    die "Model file $family_modelname_H{$family} specified in $ribocheck_modelinfo_file does not exist or is empty";
+    die "Model file $family_modelname_H{$family} specified in $modelinfo_file does not exist or is empty";
   }
 }
 
 # index the fasta file, we'll need the index to fetch with esl-sfetch later
-my $ssi_file = $fasta_file . ".ssi";
+my $ssi_file = $seq_file . ".ssi";
 # remove it if it already exists
 if(-e $ssi_file) { 
   unlink $ssi_file; 
 }
-run_command($execs_H{"esl-sfetch"} . " --index $fasta_file > /dev/null", 0);
+ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
 if(! -s $ssi_file) { 
   die "ERROR, tried to create $ssi_file, but failed"; 
 } 
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ####################################################
-# Stage 1: Run ribotyper
+# Step 2: Run ribotyper on the sequence file
 ####################################################
+$start_secs = ribo_OutputProgressPrior("Running ribotyper", $progress_w, undef, *STDOUT);
+
 my $ribotyper_outdir     = $out_root . "-rt";
 my $ribotyper_outfile    = $out_root . "ribotyper.out";
 my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.short.out";
 
 # run ribotyper
-#run_command($execs_H{"ribotyper"} . " -f --keep $fasta_file $ribotyper_outdir > $ribotyper_outfile", 1);
+ribo_RunCommand($execs_H{"ribotyper"} . " -f --keep $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ####################################################
-# Stage 2: Run cmalign
+# Step 3: Run cmalign on full sequence file
 ####################################################
+$start_secs = ribo_OutputProgressPrior("Running cmalign and classifying sequence lengths", $progress_w, undef, *STDOUT);
 # for each family to align, run cmalign:
 my $nfiles = 0;               # number of fasta files that exist for this sequence directory
-my $rtkey_fasta_file = undef; # a ribotyper key fasta file
+my $rtkey_seq_file = undef; # a ribotyper key fasta file
 my $rtkey;                    # a single ribotyper key
 my $cat_cmd;                  # a cat command used to pipe the fasta files into cmalign
 my $cmalign_stk_file;         # cmalign output alignment
@@ -185,27 +216,32 @@ foreach $family (@family_order_A) {
   $nfiles = 0;
   %{$family_length_class_HHA{$family}} = ();
   foreach $rtkey (@{$family_rtkey_HA{$family}}) { 
-    $rtkey_fasta_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper." . $rtkey . ".fa";
-    if(-s $rtkey_fasta_file) { 
+    $rtkey_seq_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper." . $rtkey . ".fa";
+    if(-s $rtkey_seq_file) { 
       $nfiles++;
       if($nfiles == 1) { 
         $cat_cmd = "cat ";
       }
-      $cat_cmd .= $rtkey_fasta_file . " ";
+      $cat_cmd .= $rtkey_seq_file . " ";
     }
   }
   if($nfiles > 0) { 
     $cmalign_stk_file = $out_root . ".ribocheck." . $family . ".cmalign.stk";
     $cmalign_out_file = $out_root . ".ribocheck." . $family . ".cmalign.out";
-#    run_command("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu 0 -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", 1);
+    ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu 0 -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     # parse cmalign file
     parse_cmalign_file($cmalign_out_file, \%out_tbl_HH);
     # parse alignment file
     parse_stk_file($cmalign_stk_file, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}});
   }
 }
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
-# realign each length set with cmalign
+####################################################
+# Step 5: Realigning all seqs in per-class files
+####################################################
+$start_secs = ribo_OutputProgressPrior("Running cmalign again for each length class", $progress_w, undef, *STDOUT);
+my @outfile_str_A = (); # list of output alignment files we create in the loop below
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
   foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig") { 
@@ -213,14 +249,16 @@ foreach $family (@family_order_A) {
       $length_class_list_file = $out_root . "." . $family . "." . $length_class . ".list";
       $cmalign_stk_file       = $out_root . "." . $family . "." . $length_class . ".stk";
       open(OUT, ">", $length_class_list_file) || die "ERROR, unable to open $length_class_list_file for writing";
+      push(@outfile_str_A, sprintf("# Alignment of %3d %12s %s sequences saved as $cmalign_stk_file\n", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }
       close(OUT);
-      run_command("esl-sfetch -f $fasta_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu 0 -o $cmalign_stk_file $family_modelname_H{$family} - > /dev/null", 1);
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu 0 -o $cmalign_stk_file $family_modelname_H{$family} - > /dev/null", opt_Get("-v", \%opt_HH));
     }
   }
 }
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ##############################
 # Create output file and exit.
@@ -228,37 +266,17 @@ foreach $family (@family_order_A) {
 my $output_file = $out_root . ".ribocheck_length.out";
 output_tabular_file($output_file, $ribotyper_short_file, $nbound, \%out_tbl_HH);
 
+print("#\n# ribotyper output saved as $ribotyper_outfile\n");
+print("# ribotyper output directory saved as $ribotyper_outdir\n#\n");
+foreach my $str (@outfile_str_A) { 
+  print $str; 
+} 
+print("#\n# Tabular output saved to file $output_file\n");
+print("#\n#[RIBO-SUCCESS]\n");
+
 #################################################################
 # SUBROUTINES
 #################################################################
-
-#################################################################
-# Subroutine : verify_env_variable_is_valid_dir()
-# Incept:      EPN, Wed Oct 25 10:09:28 2017
-#
-# Purpose:     Verify that the environment variable $envvar exists 
-#              and that it is a valid directory. Return directory path.
-#              
-# Arguments: 
-#   $envvar:  environment variable
-#
-# Returns:    directory path $ENV{'$envvar'}
-#
-################################################################# 
-sub verify_env_variable_is_valid_dir
-{
-  my ($envvar) = @_;
-    
-  if(! exists($ENV{"$envvar"})) { 
-    die "ERROR, the environment variable $envvar is not set";
-  }
-  my $envdir = $ENV{"$envvar"};
-  if(! (-d $envdir)) { 
-    die "ERROR, the directory specified by your environment variable $envvar does not exist.\n"; 
-  }    
-
-  return $envdir
-}
 
 #################################################################
 # Subroutine : parse_modelinfo_file()
@@ -315,75 +333,6 @@ sub parse_modelinfo_file {
   close(IN);
   return;
 }
-
-#################################################################
-# Subroutine:  run_command()
-# Incept:      EPN, Mon Dec 19 10:43:45 2016 [ribotyper-v1/ribo.pm]
-#
-# Purpose:     Runs a command using system() and exits in error 
-#              if the command fails. If $be_verbose, outputs
-#              the command to stdout. If $FH_HR->{"cmd"} is
-#              defined, outputs command to that file handle.
-#
-# Arguments:
-#   $cmd:         command to run, with a "system" command;
-#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
-#
-# Returns:    amount of time the command took, in seconds
-#
-# Dies:       if $cmd fails
-#################################################################
-sub run_command {
-  my $sub_name = "run_command()";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($cmd, $be_verbose) = @_;
-  
-  if($be_verbose) { 
-    print ("# Running cmd: $cmd\n"); 
-  }
-
-  my ($seconds, $microseconds) = gettimeofday();
-  my $start_time = ($seconds + ($microseconds / 1000000.));
-
-  system($cmd);
-
-  ($seconds, $microseconds) = gettimeofday();
-  my $stop_time = ($seconds + ($microseconds / 1000000.));
-
-  if($? != 0) { 
-    die "ERROR in $sub_name, the following command failed:\n$cmd\n";
-  }
-
-  return ($stop_time - $start_time);
-}
-
-#################################################################
-# Subroutine : remove_dir_path()
-# Incept:      EPN, Mon Nov  9 14:30:59 2009 [ssu-align] 
-#
-# Purpose:     Given a full path of a file remove the directory path.
-#              For example: "foodir/foodir2/foo.stk" becomes "foo.stk".
-#
-# Arguments: 
-#   $fullpath: name of original file
-# 
-# Returns:     The string $fullpath with dir path removed.
-#
-################################################################# 
-sub remove_dir_path {
-  my $sub_name = "remove_dir_path()";
-  my $nargs_expected = 1;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my $fullpath = $_[0];
-
-  $fullpath =~ s/^.+\///;
-
-  return $fullpath;
-}
-
 
 #################################################################
 # Subroutine : output_tabular_file()

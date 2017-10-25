@@ -7,19 +7,18 @@ use Time::HiRes qw(gettimeofday);
 require "epn-options.pm";
 require "ribo.pm";
 
-# make sure the DNAORGDIR environment variable is set
-my $ribodir = $ENV{'RIBODIR'};
-if(! exists($ENV{'RIBODIR'})) { 
-    printf STDERR ("\nERROR, the environment variable RIBODIR is not set, please set it to the directory where you installed the ribotyper scripts and their dependencies.\n"); 
-    exit(1); 
-}
-if(! (-d $ribodir)) { 
-    printf STDERR ("\nERROR, the ribotyper directory specified by your environment variable RIBODIR does not exist.\n"); 
-    exit(1); 
-}    
-#my $inf_exec_dir = $ribodir . "/infernal-1.1.2/src/";
-#my $esl_exec_dir = $ribodir . "/infernal-1.1.2/easel/miniapps/";
-my $df_model_dir = $ribodir . "/models/";
+# make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
+my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
+my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
+my $df_model_dir          = $env_ribotyper_dir . "/models/";
+
+# make sure the required executables are executable
+my %execs_H = (); # hash with paths to all required executables
+$execs_H{"cmsearch"}    = $env_infernal_exec_dir . "/cmsearch";
+$execs_H{"esl-seqstat"} = $env_easel_exec_dir    . "/esl-seqstat";
+$execs_H{"esl-sfetch"}  = $env_easel_exec_dir    . "/esl-sfetch";
+ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -168,7 +167,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.07";
+my $version           = "0.08";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
 my $releasedate       = "June 2017";
 my $package_name      = "ribotyper";
@@ -268,8 +267,8 @@ if($min_secondary_sc > $min_primary_sc) {
   }
 }
 
-my $cmd         = undef;                    # a command to be run by ribo_RunCommand()
-my @to_remove_A = (); # array of files to remove at end
+my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my @to_remove_A = ();    # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
 my $r2_secs     = undef; # number of seconds required for round 2 search
 my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
@@ -433,17 +432,6 @@ my @ufeature_A    = (); # array of unexpected feature strings
 my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elements of @{$ufeature_A})
 initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
 
-###################################################
-# make sure the required executables are executable
-###################################################
-# EPN: we rely on easel miniapps and infernal executables being in user's path
-#my %execs_H = (); # hash with paths to all required executables
-#$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
-#$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
-#$execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
-#$execs_H{"esl_ssplit"}    = $esl_ssplit;
-#ribo_ValidateExecutableHash(\%execs_H);
-
 ###########################################################################
 # Step 1: Parse/validate input files
 ###########################################################################
@@ -500,7 +488,7 @@ else { # --inaccept not used, all models are acceptable
 # if it doesn't exist, create it
 my $ssi_file = $seq_file . ".ssi";
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-  ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
   if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
     die "ERROR, tried to create $ssi_file, but failed"; 
   }
@@ -528,7 +516,7 @@ my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
-$tot_nnt = ribo_ProcessSequenceFile("esl-seqstat", $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
@@ -663,7 +651,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
-        ribo_RunCommand("esl-sfetch -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
         }
@@ -850,7 +838,6 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # parse_modelinfo_file:     parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
-# ribo_ParseSeqstatFile:       parse esl-seqstat -a output file
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
 # Helper functions for parse_sorted_tbl_file():
@@ -865,7 +852,6 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 # Miscellaneous functions:
 # debug_print:              print out info of a hit for debugging
-# ribo_GetMonoCharacterString: return string of a specified length of a specified character
 # center_string:            center a string inside a string of whitespace of specified length
 # determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
 # get_overlap():            determine the extent of overlap of two regions
@@ -3165,30 +3151,6 @@ sub decompose_region_str {
   return($d1, $d2, $strand);
 }
 
-#################################################################
-# Subroutine : remove_dir_path()
-# Incept:      EPN, Mon Nov  9 14:30:59 2009 [ssu-align]
-#
-# Purpose:     Given a full path of a file remove the directory path.
-#              For example: "foodir/foodir2/foo.stk" becomes "foo.stk".
-#
-# Arguments: 
-#   $fullpath: name of original file
-# 
-# Returns:     The string $fullpath with dir path removed.
-#
-################################################################# 
-sub remove_dir_path {
-  my $sub_name = "remove_dir_path()";
-  my $nargs_expected = 1;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my $fullpath = $_[0];
-  
-  $fullpath =~ s/^.+\///;
-
-  return $fullpath;
-}
 
 #################################################################
 # Subroutine : get_dir_path()
