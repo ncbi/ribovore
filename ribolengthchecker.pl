@@ -275,7 +275,7 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ##############################
 # Create output file and exit.
 ##############################
-my $output_file = $out_root . ".ribolengthchecker.out";
+my $output_file = $out_root . ".ribolengthchecker.tbl.out";
 output_tabular_file($output_file, $ribotyper_short_file, $nbound, \%out_tbl_HH);
 
 print("#\n");
@@ -295,7 +295,6 @@ print("#\n#[RIBO-SUCCESS]\n");
 #################################################################
 # SUBROUTINES
 #################################################################
-
 #################################################################
 # Subroutine : parse_modelinfo_file()
 # Incept:      EPN, Fri Oct 20 14:17:53 2017
