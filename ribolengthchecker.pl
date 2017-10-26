@@ -60,7 +60,7 @@ opt_Add("-i",           "string",  undef,                    1,    undef, undef,
 my %GetOptions_H = ();
 my $usage    = "Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>\n";
 $usage      .= "\n";
-my $synopsis = "ribocheck_length.pl :: classify lengths of ribosomal RNA sequences";
+my $synopsis = "ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'b=s'          => \$GetOptions_H{"-b"},
@@ -189,11 +189,11 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 $start_secs = ribo_OutputProgressPrior("Running ribotyper", $progress_w, undef, *STDOUT);
 
 my $ribotyper_outdir     = $out_root . "-rt";
-my $ribotyper_outfile    = $out_root . "ribotyper.out";
+my $ribotyper_outfile    = $out_root . ".ribotyper.out";
 my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.short.out";
 
 # run ribotyper
-ribo_RunCommand($execs_H{"ribotyper"} . " -f --keep $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
+ribo_RunCommand($execs_H{"ribotyper"} . " -f --keep -n " . opt_Get("-n", \%opt_HH) . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ####################################################
@@ -211,6 +211,9 @@ my %family_length_class_HHA;  # key 1D is family, key 2D is length class (e.g. '
                               # for this family that belong to this length class
 my %out_tbl_HH = ();          # hash of hashes with information for output file
                               # key 1 is sequence name, key 2 is a column name, e.g. pred_cmfrom
+my @stkfile_str_A     = (); # list of output alignment files we create
+my @cmalignfile_str_A = (); # list of output cmalign files we create
+my @listfile_str_A    = (); # list of output list files we create
 
 foreach $family (@family_order_A) { 
   $nfiles = 0;
@@ -226,9 +229,11 @@ foreach $family (@family_order_A) {
     }
   }
   if($nfiles > 0) { 
-    $cmalign_stk_file = $out_root . ".ribocheck." . $family . ".cmalign.stk";
-    $cmalign_out_file = $out_root . ".ribocheck." . $family . ".cmalign.out";
-    ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu 0 -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    $cmalign_stk_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
+    $cmalign_out_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
+    ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
+    push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
     # parse cmalign file
     parse_cmalign_file($cmalign_out_file, \%out_tbl_HH);
     # parse alignment file
@@ -241,20 +246,22 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 # Step 5: Realigning all seqs in per-class files
 ####################################################
 $start_secs = ribo_OutputProgressPrior("Running cmalign again for each length class", $progress_w, undef, *STDOUT);
-my @outfile_str_A = (); # list of output alignment files we create in the loop below
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
   foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig") { 
     if(scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0) { 
-      $length_class_list_file = $out_root . "." . $family . "." . $length_class . ".list";
-      $cmalign_stk_file       = $out_root . "." . $family . "." . $length_class . ".stk";
+      $length_class_list_file = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".list";
+      $cmalign_stk_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".stk";
+      $cmalign_out_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".cmalign";
       open(OUT, ">", $length_class_list_file) || die "ERROR, unable to open $length_class_list_file for writing";
-      push(@outfile_str_A, sprintf("# Alignment of %3d %12s %s sequences saved as $cmalign_stk_file\n", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      push(@listfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $length_class_list_file\n", "List of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      push(@stkfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_stk_file\n", "Alignment of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      push(@cmalignfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_out_file\n", "cmalign output for", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }
       close(OUT);
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu 0 -o $cmalign_stk_file $family_modelname_H{$family} - > /dev/null", opt_Get("-v", \%opt_HH));
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }
@@ -263,14 +270,20 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ##############################
 # Create output file and exit.
 ##############################
-my $output_file = $out_root . ".ribocheck_length.out";
+my $output_file = $out_root . ".ribolengthchecker.out";
 output_tabular_file($output_file, $ribotyper_short_file, $nbound, \%out_tbl_HH);
 
+print("#\n");
+my $str;
+foreach $str (@listfile_str_A)    { print $str; }
+print("#\n");
+foreach $str (@stkfile_str_A)     { print $str; }
+print("#\n");
+foreach $str (@cmalignfile_str_A) { print $str; }
+
 print("#\n# ribotyper output saved as $ribotyper_outfile\n");
-print("# ribotyper output directory saved as $ribotyper_outdir\n#\n");
-foreach my $str (@outfile_str_A) { 
-  print $str; 
-} 
+print("# ribotyper output directory saved as $ribotyper_outdir\n");
+
 print("#\n# Tabular output saved to file $output_file\n");
 print("#\n#[RIBO-SUCCESS]\n");
 
@@ -288,7 +301,7 @@ print("#\n#[RIBO-SUCCESS]\n");
 #              
 # Arguments: 
 #   $modelinfo_file:       file to parse
-#   $env_ribocheck_dir:    directory in which CM files should be found
+#   $env_ribo_dir:    directory in which CM files should be found
 #   $family_order_AR:      reference to array of family names, in order read from file, FILLED HERE
 #   $family_modelname_HR:  reference to hash, key is family name, value is path to model, FILLED HERE 
 #   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
@@ -303,7 +316,7 @@ sub parse_modelinfo_file {
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $env_ribocheck_dir, $family_order_AR, $family_modelname_HR, $family_modellen_HR, $family_rtkey_HAR) = @_;
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelname_HR, $family_modellen_HR, $family_rtkey_HAR) = @_;
 
   open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
@@ -325,7 +338,7 @@ sub parse_modelinfo_file {
       }
       my ($family, $modelname, $modellen, @rtkey_A) = @el_A;
       push(@{$family_order_AR}, $family);
-      $family_modelname_HR->{$family} = $env_ribocheck_dir . "/" . $modelname;
+      $family_modelname_HR->{$family} = $env_ribo_dir . "/" . $modelname;
       $family_modellen_HR->{$family}  = $modellen;
       @{$family_rtkey_HAR->{$family}} = @rtkey_A;
     }
