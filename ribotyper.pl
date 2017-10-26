@@ -9,16 +9,19 @@ require "ribo.pm";
 
 # make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
-my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
+#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
+#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
+# Currently, we require infernal and easel executables are in user's path, 
+# but don't check. The program will die if the commands using them fail. 
+# Below block is left in in case we want to use it eventually.
 # make sure the required executables are executable
-my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmsearch"}    = $env_infernal_exec_dir . "/cmsearch";
-$execs_H{"esl-seqstat"} = $env_easel_exec_dir    . "/esl-seqstat";
-$execs_H{"esl-sfetch"}  = $env_easel_exec_dir    . "/esl-sfetch";
-ribo_ValidateExecutableHash(\%execs_H);
+#my %execs_H = (); # hash with paths to all required executables
+#$execs_H{"cmsearch"}    = $env_infernal_exec_dir . "/cmsearch";
+#$execs_H{"esl-seqstat"} = $env_easel_exec_dir    . "/esl-seqstat";
+#$execs_H{"esl-sfetch"}  = $env_easel_exec_dir    . "/esl-sfetch";
+#ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -488,7 +491,8 @@ else { # --inaccept not used, all models are acceptable
 # if it doesn't exist, create it
 my $ssi_file = $seq_file . ".ssi";
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  #ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+  ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
   if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
     die "ERROR, tried to create $ssi_file, but failed"; 
   }
@@ -516,7 +520,8 @@ my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
-$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+#$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$tot_nnt = ribo_ProcessSequenceFile("esl-seqstat", $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
@@ -651,7 +656,8 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
-        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        ribo_RunCommand("esl-sfetch -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
         }

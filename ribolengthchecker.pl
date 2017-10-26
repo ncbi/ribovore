@@ -9,15 +9,18 @@ require "ribo.pm";
 
 # make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
-my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
+#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
+#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
 # make sure the required executables are executable
 my %execs_H = (); # key is name of program, value is path to the executable
 $execs_H{"ribotyper"}  = $env_ribotyper_dir     . "/ribotyper.pl";
-$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
-$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
+# Currently, we require infernal and easel executables are in user's path, 
+# but don't check. The program will die if the commands using them fail. 
+# Below block is left in in case we want to use it eventually.
+#$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
+#$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
@@ -177,7 +180,7 @@ my $ssi_file = $seq_file . ".ssi";
 if(-e $ssi_file) { 
   unlink $ssi_file; 
 }
-ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
 if(! -s $ssi_file) { 
   die "ERROR, tried to create $ssi_file, but failed"; 
 } 
@@ -231,7 +234,8 @@ foreach $family (@family_order_A) {
   if($nfiles > 0) { 
     $cmalign_stk_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
     $cmalign_out_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
-    ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    ribo_RunCommand("$cat_cmd | cmalign --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
     # parse cmalign file
@@ -261,7 +265,8 @@ foreach $family (@family_order_A) {
         print OUT $seqname . "\n";
       }
       close(OUT);
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }
