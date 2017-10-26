@@ -12,6 +12,7 @@ RIBOTYPER'S TWO ROUND SEARCH STRATEGY
 EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
 DEFINING ACCEPTABLE MODELS
 ALL COMMAND LINE OPTIONS
+ADDITIONAL SCRIPT: ribolengthchecker.pl
 
 ##############################################################################
 INTRO
@@ -642,4 +643,95 @@ advanced options:
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
 
---------------------------------------
+##############################################################################
+ADDITIONAL SCRIPT: ribolengthchecker.pl
+
+The script 'ribolengthchecker.pl' is also included in the ribotyper
+distribution. It is a 'wrapper' script for ribotyper.pl. It runs
+ribotyper.pl, and does some additional post-processing. Specifically,
+it aligns all the sequences that ribotyper.pl has defined as belonging
+to certain families (by default SSU.archaea and SSU.bacteria) and
+classifies the length of those sequences.
+
+As for setup, if you can run ribotyper.pl you should be able to also
+run ribolengthchecker.pl.
+
+Here is an example run using the file example-rlc-11.fa in the
+testfiles/ directory:
+with output:
+
+> ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
+--------------
+# ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
+# ribotyper 0.08 (Oct 2017)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:    Thu Oct 26 10:21:41 2017
+#
+# target sequence input file:    testfiles/example-rlc-11.fa
+# output file name root:         test-rlc
+# model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Validating input files                           ... done. [0.0 seconds]
+# Running ribotyper                                ... done. [4.7 seconds]
+# Running cmalign and classifying sequence lengths ... done. [13.7 seconds]
+# Running cmalign again for each length class      ... done. [7.7 seconds]
+#
+# List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
+# List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
+# List of                 1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.list
+# List of                 1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.list
+#
+# Alignment of          all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
+# Alignment of          all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
+# Alignment of            8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.stk
+# Alignment of            1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.stk
+# Alignment of            1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.stk
+# Alignment of            1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.stk
+#
+# cmalign output for    all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
+# cmalign output for    all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
+# cmalign output for      8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.cmalign
+# cmalign output for      1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
+# cmalign output for      1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
+# cmalign output for      1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.cmalign
+#
+# ribotyper output saved as test-rlc.ribotyper.out
+# ribotyper output directory saved as test-rlc-rt
+#
+# Tabular output saved to file test-rlc.ribolengthchecker.tbl.out
+#
+#[RIBO-SUCCESS]
+--------------
+
+The output of the program (above) lists all of the files that were
+created, including a ribotyper output directory and ribotyper output
+file. The tabular output file created by ribolengthchecker.pl
+(rlc-test.ribolengthchecker.tbl.out) is the same as the 'short' output
+format of ribotyper.pl with three additional columns pertaining to the
+length of each sequence including a classification of that length. The
+end of the tabular output file has comments explaining those columns
+as well as the definitions of each length classification. 
+
+Here are the relevant lines from the file rlc-test.ribolengthchecker.tbl.out
+created by the above command:
+
+> cat rlc-test.ribolengthchecker.tbl.out 
+-----------------------
+# Column 6 [mstart]:              model start position
+# Column 7 [mstop]:               model stop position
+# Column 8 [length_class]:        classification of length, one of:
+#                                 'full-exact': spans full model and no 5' or 3' inserts
+#                                               and no indels in first or final 10 model positions
+#                                 'full-extra': spans full model but has 5' and/or 3' inserts
+#                                 'full-ambig': spans full model and no 5' or 3' inserts
+#                                               but has indel(s) in first and/or final 10 model positions
+#                                 'partial:'    does not span full model
+-----------------------
+
+There is one important command line option to ribolengthchecker.pl,
+the -b option. This controls how many model positions are examined at
+the 5' and 3' end when classifying the lengths of sequences,
+especially 'full-ambig' sequences. The default value is 10, but this
+can be changed to <n> with '-b <n>'.
+
+-----------------------------
