@@ -1,4 +1,4 @@
-Ribotyper v0.07 README
+Ribotyper v0.08 README
 
 Organization of this file:
 
@@ -12,6 +12,7 @@ RIBOTYPER'S TWO ROUND SEARCH STRATEGY
 EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
 DEFINING ACCEPTABLE MODELS
 ALL COMMAND LINE OPTIONS
+ADDITIONAL SCRIPT: ribolengthchecker.pl
 
 ##############################################################################
 INTRO
@@ -166,24 +167,24 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.07 (June 2017)
+# ribotyper 0.08 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Fri Jun 30 10:47:55 2017
+# date:    Thu Oct 26 10:34:31 2017
 #
-# target sequence input file:    example-16.fa                                                               
-# output directory name:         test                                                                        
-# model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
+# target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-16.fa
+# output directory name:         test
+# model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [0.1 seconds]
+# Validating input files                           ... done. [1.1 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.9 seconds]
+# Classifying sequences                            ... done. [1.7 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
-# Processing classification results                ... done. [0.0 seconds]
+# Processing classification results                ... done. [0.1 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.4 seconds]
+# Searching sequences against best-matching models ... done. [1.6 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
-# Processing tabular round 2 search results        ... done. [0.0 seconds]
+# Processing tabular round 2 search results        ... done. [0.1 seconds]
 # Creating final output files                      ... done. [0.0 seconds]
 #
 # Summary statistics:
@@ -215,9 +216,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16      8.3     11039.7     11039.7  00:00:01.93  (hh:mm:ss)
-  search                15     10.4     14108.6     14108.6  00:00:01.44  (hh:mm:ss)
-  total                 16      4.3      5731.8      5731.8  00:00:03.71  (hh:mm:ss)
+  classification        16      9.7     12866.1     12866.1  00:00:01.65  (hh:mm:ss)
+  search                15      9.4     12699.5     12699.5  00:00:01.60  (hh:mm:ss)
+  total                 16      3.4      4453.7      4453.7  00:00:04.77  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -642,4 +643,105 @@ advanced options:
   --samedomain : top two hits can be to models in the same domain
   --keep       : keep all intermediate files that are removed by default
 
---------------------------------------
+##############################################################################
+ADDITIONAL SCRIPT: ribolengthchecker.pl
+
+The script 'ribolengthchecker.pl' is also included in the ribotyper
+distribution. It is a 'wrapper' script for ribotyper.pl. It runs
+ribotyper.pl and does some additional post-processing. Specifically,
+it aligns all the sequences that ribotyper.pl has defined as belonging
+to certain families (by default SSU.archaea and SSU.bacteria) and
+classifies the length of those sequences.
+
+As for setup, if you followed the instructions above and can
+successfully run ribotyper.pl you should be able to also run
+ribolengthchecker.pl.
+
+Here is an example run using the file example-rlc-11.fa in the
+testfiles/ directory, with output:
+
+> ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
+--------------
+# ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
+# ribotyper 0.08 (Oct 2017)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:    Thu Oct 26 10:21:41 2017
+#
+# target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-rlc-11.fa
+# output file name root:         test-rlc
+# model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Validating input files                           ... done. [0.0 seconds]
+# Running ribotyper                                ... done. [4.7 seconds]
+# Running cmalign and classifying sequence lengths ... done. [13.7 seconds]
+# Running cmalign again for each length class      ... done. [7.7 seconds]
+#
+# List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
+# List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
+# List of                 1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.list
+# List of                 1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.list
+#
+# Alignment of          all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
+# Alignment of          all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
+# Alignment of            8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.stk
+# Alignment of            1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.stk
+# Alignment of            1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.stk
+# Alignment of            1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.stk
+#
+# cmalign output for    all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
+# cmalign output for    all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
+# cmalign output for      8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.cmalign
+# cmalign output for      1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
+# cmalign output for      1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
+# cmalign output for      1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.cmalign
+#
+# ribotyper output saved as test-rlc.ribotyper.out
+# ribotyper output directory saved as test-rlc-rt
+#
+# Tabular output saved to file test-rlc.ribolengthchecker.tbl.out
+#
+#[RIBO-SUCCESS]
+--------------
+
+The output of the program (above) lists all of the files that were
+created, including a ribotyper output directory (test-rlc-rt) and
+ribotyper standard output file (test-rlc.ribotyper.out). The tabular
+output file created by ribolengthchecker.pl
+(rlc-test.ribolengthchecker.tbl.out) is the same as the 'short' output
+format of ribotyper.pl with three additional columns pertaining to the
+length of each sequence including a classification of that length. The
+end of the tabular output file has comments explaining those columns
+as well as the definitions of each length classification.
+
+The alignment files
+(e.g. test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.stk)
+are in 'Stockholm' format created by Infernal's cmalign program. There
+is a wiki page describing the Stockholm format:
+https://en.wikipedia.org/wiki/Stockholm_format, but a more helpful
+resource is the Infernal v1.1.2 user's guide, pages 29 and 30, which
+is available here:
+http://eddylab.org/infernal/Userguide.pdf.
+
+Here are the relevant lines from the file rlc-test.ribolengthchecker.tbl.out
+created by the above command:
+
+> cat rlc-test.ribolengthchecker.tbl.out 
+-----------------------
+# Column 6 [mstart]:              model start position
+# Column 7 [mstop]:               model stop position
+# Column 8 [length_class]:        classification of length, one of:
+#                                 'full-exact': spans full model and no 5' or 3' inserts
+#                                               and no indels in first or final 10 model positions
+#                                 'full-extra': spans full model but has 5' and/or 3' inserts
+#                                 'full-ambig': spans full model and no 5' or 3' inserts
+#                                               but has indel(s) in first and/or final 10 model positions
+#                                 'partial:'    does not span full model
+-----------------------
+
+There is one important command line option to ribolengthchecker.pl,
+the -b option. This controls how many model positions are examined at
+the 5' and 3' end when classifying the lengths of sequences,
+especially 'full-ambig' sequences. The default value is 10, but this
+can be changed to <n> with '-b <n>'.
+
+-----------------------------

@@ -556,6 +556,59 @@ sub ribo_NumberOfDigits {
     return $ndig;
 }
 
+#################################################################
+# Subroutine : ribo_VerifyEnvVariableIsValidDir()
+# Incept:      EPN, Wed Oct 25 10:09:28 2017
+#
+# Purpose:     Verify that the environment variable $envvar exists 
+#              and that it is a valid directory. Return directory path.
+#              
+# Arguments: 
+#   $envvar:  environment variable
+#
+# Returns:    directory path $ENV{'$envvar'}
+#
+################################################################# 
+sub ribo_VerifyEnvVariableIsValidDir
+{
+  my ($envvar) = @_;
+    
+  if(! exists($ENV{"$envvar"})) { 
+    die "ERROR, the environment variable $envvar is not set";
+  }
+  my $envdir = $ENV{"$envvar"};
+  if(! (-d $envdir)) { 
+    die "ERROR, the diretory specified by your environment variable $envvar does not exist.\n"; 
+  }    
+
+  return $envdir
+}
+
+#################################################################
+# Subroutine : ribo_RemoveDirPath()
+# Incept:      EPN, Mon Nov  9 14:30:59 2009 [ssu-align]
+#
+# Purpose:     Given a full path of a file remove the directory path.
+#              For example: "foodir/foodir2/foo.stk" becomes "foo.stk".
+#
+# Arguments: 
+#   $fullpath: name of original file
+# 
+# Returns:     The string $fullpath with dir path removed.
+#
+################################################################# 
+sub ribo_RemoveDirPath {
+  my $sub_name = "ribo_RemoveDirPath()";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my $fullpath = $_[0];
+  
+  $fullpath =~ s/^.+\///;
+
+  return $fullpath;
+}
+
 ###########################################################################
 # the next line is critical, a perl module must return a true value
 return 1;

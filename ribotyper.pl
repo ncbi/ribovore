@@ -7,19 +7,21 @@ use Time::HiRes qw(gettimeofday);
 require "epn-options.pm";
 require "ribo.pm";
 
-# make sure the DNAORGDIR environment variable is set
-my $ribodir = $ENV{'RIBODIR'};
-if(! exists($ENV{'RIBODIR'})) { 
-    printf STDERR ("\nERROR, the environment variable RIBODIR is not set, please set it to the directory where you installed the ribotyper scripts and their dependencies.\n"); 
-    exit(1); 
-}
-if(! (-d $ribodir)) { 
-    printf STDERR ("\nERROR, the ribotyper directory specified by your environment variable RIBODIR does not exist.\n"); 
-    exit(1); 
-}    
-#my $inf_exec_dir = $ribodir . "/infernal-1.1.2/src/";
-#my $esl_exec_dir = $ribodir . "/infernal-1.1.2/easel/miniapps/";
-my $df_model_dir = $ribodir . "/models/";
+# make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
+my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
+#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
+my $df_model_dir          = $env_ribotyper_dir . "/models/";
+
+# Currently, we require infernal and easel executables are in user's path, 
+# but don't check. The program will die if the commands using them fail. 
+# Below block is left in in case we want to use it eventually.
+# make sure the required executables are executable
+#my %execs_H = (); # hash with paths to all required executables
+#$execs_H{"cmsearch"}    = $env_infernal_exec_dir . "/cmsearch";
+#$execs_H{"esl-seqstat"} = $env_easel_exec_dir    . "/esl-seqstat";
+#$execs_H{"esl-sfetch"}  = $env_easel_exec_dir    . "/esl-sfetch";
+#ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -58,8 +60,8 @@ opt_Add("-i",           "string",  undef,                    1,    undef, undef,
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
-opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   "--slow",  "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
-opt_Add("--1slow",         "boolean", 0,                       2,  undef,   "--hmm",   "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
+opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   undef,     "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                       2,  undef,   undef,     "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                        help-output    
@@ -100,8 +102,8 @@ opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef
 
 $opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
 #       option               type   default                group  requires incompat    preamble-output                   help-output    
-opt_Add("--mid",          "boolean", 0,                       8,"--slow",  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--max",          "boolean", 0,                       8,"--slow",  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--mid",          "boolean", 0,                       8,  undef,  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--max",          "boolean", 0,                       8,  undef,  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef,      "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"9"} = "advanced options";
@@ -168,9 +170,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.07";
+my $version           = "0.08";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
-my $releasedate       = "June 2017";
+my $releasedate       = "Oct 2017";
 my $package_name      = "ribotyper";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -203,16 +205,30 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 # do some final option checks that are currently too sophisticated for epn-options
 if(opt_Get("--evalues", \%opt_HH)) { 
   if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--hmm", \%opt_HH)) && 
-     (! opt_Get("--slow", \%opt_HH))) { 
-    die "ERROR, --evalues requires one of --nhmmer, --hmm or --slow";
+     (! opt_Get("--1hmm", \%opt_HH)) && 
+     (! opt_Get("--1slow", \%opt_HH)) &&
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --evalues requires one of --nhmmer, --1hmm, --1slow or --2slow";
+  }
+}
+if(opt_Get("--mid", \%opt_HH)) { 
+  if((! opt_Get("--1slow", \%opt_HH)) &&
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --mid requires one of --1slow or --2slow";
+  }
+}
+if(opt_Get("--max", \%opt_HH)) { 
+  if((! opt_Get("--1slow", \%opt_HH)) &&
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --max requires one of --1slow or --2slow";
   }
 }
 if(opt_Get("--noali", \%opt_HH)) { 
   if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--hmm", \%opt_HH)) && 
-     (! opt_Get("--slow", \%opt_HH))) { 
-    die "ERROR, --noali requires one of --nhmmer, --hmm or --slow";
+     (! opt_Get("--1hmm", \%opt_HH)) && 
+     (! opt_Get("--1slow", \%opt_HH)) && 
+     (! opt_Get("--2slow", \%opt_HH))) { 
+    die "ERROR, --noali requires one of --nhmmer, --1hmm, --1slow or --2slow";
   }
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
@@ -254,8 +270,8 @@ if($min_secondary_sc > $min_primary_sc) {
   }
 }
 
-my $cmd         = undef;                    # a command to be run by ribo_RunCommand()
-my @to_remove_A = (); # array of files to remove at end
+my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my @to_remove_A = ();    # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
 my $r2_secs     = undef; # number of seconds required for round 2 search
 my $ncpu        = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
@@ -419,17 +435,6 @@ my @ufeature_A    = (); # array of unexpected feature strings
 my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elements of @{$ufeature_A})
 initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
 
-###################################################
-# make sure the required executables are executable
-###################################################
-# EPN: we rely on easel miniapps and infernal executables being in user's path
-#my %execs_H = (); # hash with paths to all required executables
-#$execs_H{"cmsearch"}        = $inf_exec_dir   . "cmsearch";
-#$execs_H{"esl-seqstat"}     = $esl_exec_dir   . "esl-seqstat";
-#$execs_H{"esl-sfetch"}      = $esl_exec_dir   . "esl-sfetch";
-#$execs_H{"esl_ssplit"}    = $esl_ssplit;
-#ribo_ValidateExecutableHash(\%execs_H);
-
 ###########################################################################
 # Step 1: Parse/validate input files
 ###########################################################################
@@ -486,6 +491,7 @@ else { # --inaccept not used, all models are acceptable
 # if it doesn't exist, create it
 my $ssi_file = $seq_file . ".ssi";
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
+  #ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
   ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
   if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
     die "ERROR, tried to create $ssi_file, but failed"; 
@@ -514,6 +520,7 @@ my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
+#$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 $tot_nnt = ribo_ProcessSequenceFile("esl-seqstat", $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
@@ -649,6 +656,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
+        #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         ribo_RunCommand("esl-sfetch -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
@@ -661,7 +669,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
 ###########################################################################
 # Step 7: Do round 2 of searches, one model at a time.
 ###########################################################################
-my $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH);
+my $alg2_opts;                    # algorithm 2 cmsearch options
 my @r2_model_A = ();              # models we performed round 2 for
 my @r2_tblout_file_A = ();        # tblout files for each model we performed round 2 for
 my @r2_searchout_file_A = ();     # search output file for each model we performed round 2 for
@@ -672,6 +680,7 @@ my $r2_all_sort_cmd;              # sort command for $r2_all_tblout_file to crea
 my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
 if(defined $alg2) { 
+  $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH);
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
     $start_secs = ribo_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
   }
@@ -835,7 +844,6 @@ printf("#\n#[RIBO-SUCCESS]\n");
 # parse_modelinfo_file:     parse the model info input file
 # parse_inaccept_file:      parse the inaccept input file (--inaccept)
 # parse_model_file:         parse the model file 
-# ribo_ParseSeqstatFile:       parse esl-seqstat -a output file
 # parse_sorted_tbl_file:    parse sorted tabular search results
 #
 # Helper functions for parse_sorted_tbl_file():
@@ -850,7 +858,6 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 # Miscellaneous functions:
 # debug_print:              print out info of a hit for debugging
-# ribo_GetMonoCharacterString: return string of a specified length of a specified character
 # center_string:            center a string inside a string of whitespace of specified length
 # determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
 # get_overlap():            determine the extent of overlap of two regions
@@ -2495,7 +2502,7 @@ sub output_long_tail {
   my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
   my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
 
-  my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --hmm or --slow to get accurate coverage)\n");
+  my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --1hmm or --1slow to get accurate coverage)\n");
 
   my $column_ct = 1;
 
@@ -2836,7 +2843,7 @@ sub center_string {
 # Purpose:    Based on the command line options and what round we are in,
 #             determine if the coverage values are accurate. With the
 #             fast mode, coverage values are not accurate, but with
-#             some options like --hmm and --slow, they are.
+#             some options like --1hmm and --1slow, they are.
 #
 # Arguments:
 #   $round:    what round of searching we're in, '1', '2', or 'final'
@@ -3150,30 +3157,6 @@ sub decompose_region_str {
   return($d1, $d2, $strand);
 }
 
-#################################################################
-# Subroutine : remove_dir_path()
-# Incept:      EPN, Mon Nov  9 14:30:59 2009 [ssu-align]
-#
-# Purpose:     Given a full path of a file remove the directory path.
-#              For example: "foodir/foodir2/foo.stk" becomes "foo.stk".
-#
-# Arguments: 
-#   $fullpath: name of original file
-# 
-# Returns:     The string $fullpath with dir path removed.
-#
-################################################################# 
-sub remove_dir_path {
-  my $sub_name = "remove_dir_path()";
-  my $nargs_expected = 1;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my $fullpath = $_[0];
-  
-  $fullpath =~ s/^.+\///;
-
-  return $fullpath;
-}
 
 #################################################################
 # Subroutine : get_dir_path()
@@ -3195,11 +3178,7 @@ sub get_dir_path {
   if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
   my $orig_file = $_[0];
   
-  printf("in $sub_name, input: $orig_file");
-  
   $orig_file =~ s/[^\/]+$//; # remove final string of non '/' characters
-  
-  printf(" returning $orig_file\n");
   
   if($orig_file eq "") { return "./";       }
   else                 { return $orig_file; }
@@ -3242,7 +3221,7 @@ sub determine_cmsearch_opts {
         $alg_opts .= " --smxsize " . opt_Get("--smxsize", $opt_HHR) . " ";
       }
     }
-    else { # default for --slow, --mid nor --max used (use cmsearch --rfam)
+    else { # default for slow, --mid nor --max used (use cmsearch --rfam)
       $alg_opts .= " --rfam "; 
     }
     if(opt_Get("--noali", $opt_HHR)) { 
