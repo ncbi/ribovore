@@ -172,7 +172,7 @@ my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.08";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
-my $releasedate       = "June 2017";
+my $releasedate       = "Oct 2017";
 my $package_name      = "ribotyper";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
