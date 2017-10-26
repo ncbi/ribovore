@@ -235,7 +235,7 @@ foreach $family (@family_order_A) {
     $cmalign_stk_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
     $cmalign_out_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
     #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-    ribo_RunCommand("$cat_cmd | cmalign --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    ribo_RunCommand("$cat_cmd | cmalign --mxsize 4096. --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
     # parse cmalign file
@@ -266,7 +266,7 @@ foreach $family (@family_order_A) {
       }
       close(OUT);
       #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign --mxsize 4096. --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }
