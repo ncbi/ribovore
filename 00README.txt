@@ -36,6 +36,9 @@ https://github.com/nawrockie/ribotyper-v1.git
 ##############################################################################
 SETTING UP ENVIRONMENT VARIABLES
 
+Some aspects of the following instructions apply only on NCBI computers.
+NCBI-specific steps will need to be revised later.
+
 Before you can run ribotyper.pl, you will need to update some of your
 environment variables. To do this, add the following four lines to
 your .bashrc file (if you use bash shell) or .cshrc file (if you use C
@@ -47,7 +50,7 @@ If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
 The 4 lines to add to your .bashrc file:
 -----------
-export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+export RIBODIR="<full path to directory where you have the ribotyper code>"
 export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 export PERL5LIB="$RIBODIR:$PERL5LIB"
 export PATH="$RIBODIR:$PATH"
@@ -55,13 +58,27 @@ export PATH="$RIBODIR:$PATH"
 
 The 4 lines to add to your .cshrc file:
 -----------
-setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+setenv RIBODIR "<full path to directory in which you have the ribotyper code"
 setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 setenv PERL5LIB "$RIBODIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
 -----------
 
-After adding those 4 lines, execute this command:
+The full path starts with a / and does not include the angle brackets <>.
+If you did not copy or clone the ribotyper code to your own directory, you
+can replace the first line with:
+
+export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+or
+setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
+respectively.
+
+However, in some places below that specify a path including $RIBODIR,
+you must instead use a path to which you have write permission,
+
+
+
+After adding the 4 lines specified above, execute the command:
 > source ~/.bashrc
 or
 > source ~/.cshrc
@@ -84,8 +101,11 @@ following four commands:
 > echo $PERL5LIB
 > echo $PATH
 
-The first command should return only:
+The first command should return only one directory,
+namely the directory where you installed ribotyper,
+or
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
+if you did not install your own copy of ribotyper.
 
 The second command should return only:
 /panfs/pan1/dnaorg/ssudetection/code/epn-options
@@ -129,9 +149,11 @@ your path, execute the following two commands:
 > esl-sfetch -h
 
 The first command should return the usage for cmsearch with a line
-that says: INFERNAL 1.1.2 (July 2016).
+such as: INFERNAL 1.1.2 (July 2016).
 And the second command should return the usage for esl-sfetch with a
-line that says: Easel 0.43 (July 2016).
+line such as: Easel 0.43 (July 2016).
+It is possible that the version numbers and dates will be incremented
+after the values current in October 2017 were copied into this documentation.
 
 If you see the versions listed above or any later versions,
 and you were able to set your environment variables
@@ -333,14 +355,22 @@ UNEXPECTED FEATURES AND REASONS FOR FAILURE
 There are several 'unexpected features' of sequences that are detected
 and reported in the rightmost column of both the short and long output
 files. These unexpected features can cause a sequence to FAIL, as
-explained below. 
+explained below.  In this context, 'unexpected feature' is a euphemism for
+'symptom of a likely problem'. A single problem can cause several features
+to be reported. It is important to remember that the unexpected features
+are symptoms, not root causes of problems.
 
 There are 15 possible unexpected features that get reported, some of
-which are related to each other. Eight of these will always cause a
-sequence to fail. The other seven *can* cause a sequence to fail but only
-if specific command line options are used. Four of these unexpected
-features will only be reported if specific command line options are
-used, as noted below.
+which are related to each other. 11 of the 15 can arise when
+ribotyper.pl is used with default arguments, and therefore appear in
+the example above; the other four can arise only when specific
+additional non-default arguments are used, as explained
+below. Therefore, the list of 15 feaures below, with long
+descriptions, subsumes the list of 11 features given above with
+shorter descriptions.  Eight of the unexpectd features will always
+cause a sequence to fail. The other seven unexpected features *can*
+cause a sequence to fail, but only if specific command line options
+are used.
 
 You can tell which unexpected features cause sequences to FAIL for a
 particular ribotyper run by looking unexpected feature column (final
@@ -539,7 +569,8 @@ models are 'acceptable' or 'questionable'. Within NCBI, this usage is
 relevant when the submitter has made claims about which types of SSU
 or LSU sequences are being submitted. In that situation, the models
 consistent with the submitter's claims should be acceptable and all
-other models should be questionable. All sequences for which the top
+other models should be questionable. All sequences for which the
+highest ranked (by bit score unless the argument --evalues is used)
 hit is NOT one of the acceptable or questionable models, will FAIL for
 Reason 6 above. All sequences for which the top hit is one of the
 questionable models will be reported with 'questionable_model' in
@@ -623,7 +654,7 @@ Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 basic options:
   -f     : force; if <output directory> exists, overwrite it
   -v     : be verbose; output commands to stdout as they're run
-  -n <n> : use <n> CPUs [0]
+  -n <n> : use <n> CPUs [1]
   -i <s> : use model info file <s> instead of default
 
 options for controlling the first round search algorithm:
@@ -695,10 +726,11 @@ Following, is an example run using the file example-rlc-11.fa in the
 testfiles/ directory, with output. In the example, the command given is: 
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 
-For the user to reproduce the behavior, the user has to run instead
+If you did not fully copy or clone the ribotyper files and set $RIBODIR to
+a directory in which you have write permission, then you should run instead
 > ribolengthchecker.pl <user directory>/testfiles/example-rlc-11.fa test-rlc
 
-where <user directory> is the diretoy in which ribolengthchecker.pl is installed.
+where <user directory> is the directory in which ribolengthchecker.pl is installed.
 
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
@@ -809,5 +841,12 @@ Another important option is --ribotyper <s> which allows you to
 pass options to ribotyper. To use this option, create a file called
 <s>, with a single line with all the options you want passed to
 ribotyper, and use --ribotyper <s> when you call ribolengthchecker.pl.
+Not all ribotyper options can appear in this file <s>. The -f and
+--keep options are not allowed (the program will die with an error
+message if you include them) because they are used automatically when
+ribolengthchecker.pl calls ribotyper.pl. Additionally, -n <d> is not
+allowed to control the number of CPUs that ribotyper uses. If you want
+to control the number of CPUs, pass -n <d> to ribolengthchecker.pl
+instead. 
 
 -----------------------------

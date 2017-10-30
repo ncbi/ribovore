@@ -273,7 +273,8 @@ $start_secs = ribo_OutputProgressPrior("Running cmalign again for each length cl
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
   foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig") { 
-    if(scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0) { 
+    if((exists $family_length_class_HHA{$family}{$length_class}) && 
+       (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
       $length_class_list_file = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".list";
       $cmalign_stk_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".stk";
       $cmalign_out_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".cmalign";
