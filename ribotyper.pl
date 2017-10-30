@@ -61,11 +61,11 @@ opt_Add("-i",           "string",  undef,                    1,    undef, undef,
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
 opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   undef,     "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
-opt_Add("--1slow",         "boolean", 0,                       2,  undef,   undef,     "run first round in slow CM mode",        "run first round in slow CM mode",    \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                       2,  undef,   undef,     "run first round in slow CM mode",        "run first round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                        help-output    
-opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode",    \%opt_HH, \@opt_order_A);
+opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"4"} = "options related to bit score REPORTING thresholds";
 #     option                 type   default                group   requires incompat   preamble-output                                            help-output    
@@ -153,7 +153,7 @@ my $options_okay =
                 'absdiff'      => \$GetOptions_H{"--absdiff"},
                 'lowadiff=s'   => \$GetOptions_H{"--lowadiff"},
                 'vlowadiff=s'  => \$GetOptions_H{"--vlowadiff"},
-                'maxoverlap'   => \$GetOptions_H{"--maxoverlap"},
+                'maxoverlap=s' => \$GetOptions_H{"--maxoverlap"},
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # options that affect --1slow and --2slow
@@ -170,7 +170,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.08";
+my $version           = "0.09";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
 my $releasedate       = "Oct 2017";
 my $package_name      = "ribotyper";

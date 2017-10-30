@@ -1,40 +1,49 @@
-Ribotyper v0.08 README
+EPN, Mon Oct 30 11:18:24 2017
+
+Ribotyper v0.09 README
 
 Organization of this file:
 
 INTRO
 SETTING UP ENVIRONMENT VARIABLES
+PREREQUISITE PROGRAMS
 SAMPLE RUN
 OUTPUT
 UNEXPECTED FEATURES AND REASONS FOR FAILURE
-RECOMMENDED MODEL FILES
+THE DEFAULT MODEL FILE
 RIBOTYPER'S TWO ROUND SEARCH STRATEGY
 EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
-DEFINING ACCEPTABLE MODELS
+DEFINING ACCEPTABLE/QUESTIONABLE MODELS
 ALL COMMAND LINE OPTIONS
 ADDITIONAL SCRIPT: ribolengthchecker.pl
 
 ##############################################################################
 INTRO
 
-This is preliminary documentation for ribotyper, a tool for detecting
-and classifying SSU rRNA and LSU rRNA sequences.  
+This is documentation for ribotyper, a tool for detecting
+and classifying small subunit (SSU) rRNA and large subunit (LSU) rRNA sequences.  
+The possible classifications are explained in the section entitled
+THE DEFAULT MODEL FILE
 
 Author: Eric Nawrocki
 
-Current location of code and other relevant files:
+Current location of code and other relevant files at NCBI:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/
+
+Git repository for ribotyper:
+https://github.com/nawrockie/ribotyper-v1.git
 
 ##############################################################################
 SETTING UP ENVIRONMENT VARIABLES
 
-Before you can run ribotyper.pl you will need to update some of your
+Before you can run ribotyper.pl, you will need to update some of your
 environment variables. To do this, add the following four lines to
 your .bashrc file (if you use bash shell) or .cshrc file (if you use C
-shell or tcsh). The .bashrc or .cshrc file will be in your home
-directory. To determine what shell you use type 'echo $SHELL', if it
-returns '/bin/bash', then update your .bashrc file, if it returns
-'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
+shell or tcsh). The .bashrc or .cshrc file is in your home
+directory. To determine what shell you use, type
+> echo $SHELL
+If this command returns '/bin/bash', then update your .bashrc file.
+If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
 The 4 lines to add to your .bashrc file:
 -----------
@@ -52,24 +61,28 @@ setenv PERL5LIB "$RIBODIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
 -----------
 
-Then, after adding those 3 lines, execute this command:
-source ~/.bashrc
-OR
-source ~/.cshrc
+After adding those 4 lines, execute this command:
+> source ~/.bashrc
+or
+> source ~/.cshrc
 
 If you get an error about PERL5LIB being undefined, change the second
 line to add to:
 export PERL5LIB="$RIBODIR"
 for .bashrc, OR
 setenv PERL5LIB "$RIBODIR"
-for .cshrc. And then do 'source ~/.bashrc' or 'source ~/.cshrc' again.
+for .cshrc. And then do
+> source ~/.bashrc
+or
+> source ~/.cshrc
+again.
 
-To check that your environment variables are properly set up do the
+To check that your environment variables are properly set up, do the
 following four commands:
-echo $RIBODIR
-echo $EPNOPTDIR
-echo $PERL5LIB
-echo $PATH
+> echo $RIBODIR
+> echo $EPNOPTDIR
+> echo $PERL5LIB
+> echo $PATH
 
 The first command should return only:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
@@ -87,8 +100,8 @@ begins with:
 
 If any of these commands do not return what they are supposed to,
 please email Eric Nawrocki (nawrocke@ncbi.nlm.nih.gov). If you do see
-the expected output, and you have the prequisite programs installed as
-explained below, the sample run below should work.
+the expected output, and you have the prequisite programs installed, as
+explained below, then the sample run below should work.
 
 ##############################################################################
 PREREQUISITE PROGRAMS
@@ -101,65 +114,70 @@ http://eddylab.org/infernal/.
 
 *****************************************
 Internal NCBI-specific instructions:
-The v1.1.2 Infernal executables and the easel miniapps are already
-installed system wide at NCBI. You'll need to login into a node that
+The Infernal v1.1.2 executables and the easel miniapps are already
+installed system-wide at NCBI. You need to login into a node that
 runs CentOS 7. Add 'infernal' to the facilities line of your
-.ncbi_hints file. And add the following line to your .ncbi_hints file:
+.ncbi_hints file. And add the following line near the botom of  your .ncbi_hints file:
 option infernal_version 1.1.2
+Then logout and log in again, so that the updates to .ncbi_hints take effect.
 *****************************************
 
 To check if you have Infernal and the executables installed and in
-your path. Execute the following two commands:
+your path, execute the following two commands:
 
-$ cmsearch -h 
-$ esl-sfetch -h
+> cmsearch -h 
+> esl-sfetch -h
 
 The first command should return the usage for cmsearch with a line
 that says: INFERNAL 1.1.2 (July 2016).
 And the second command should return the usage for esl-sfetch with a
 line that says: Easel 0.43 (July 2016).
 
-If this is true, and you were able to set your environment variables
+If you see the versions listed above or any later versions,
+and you were able to set your environment variables
 as explained above, then the sample run 
-explained below, the sample run below should work.
+explained below should work.
 
 ##############################################################################
 SAMPLE RUN
 
-This example runs the script on a sample file of 16 sequences. 
+This example runs the script ribotyoer.pl on a sample file of 16 sequences. 
 
-You can only run ribotyper on sequence files that are in directories
-to which you have write permission. So the first step is to copy the
-example sequence file into a new directory you have write permission
-to. Move into that directory and copy the example file with this
-command: 
+You can run ribotyper only on sequence files that are in directories
+to which you have write permission. Therefore, the first step is to copy the
+example sequence file into a new directory. Move into that directory
+and copy the example file with this command: 
 
 > cp $RIBODIR/testfiles/example-16.fa ./
 
-Then execute the following command:
+Then, execute the following command:
 
 > ribotyper.pl example-16.fa test
 
-The script takes 2 command line arguments:
+The script takes 2 required command line arguments. Optional arguments are
+explained later in this file.
 
-The first argument is the sequence file you want to annotate.
+The first required argument is the sequence file you want to annotate.
 
-The second argument is the name of the output directory that you would
+The second required argument is the name of the output subdirectory that you would
 like ribotyper to create. Output files will be placed in this output
 directory. If this directory already exists, the program will exit
 with an error message indicating that you need to either (a) remove
 the directory before rerunning, or (b) use the -f option with
 ribotyper.pl, in which case the directory will be overwritten.
+The command adding -f is
+> ribotyper.pl -f example-16.fa test
 
-The $RIBODIR environment variable is used here. That is
-a hard-coded path that was set in the 'SETTING UP ENVIRONMENT
-VARIABLES:' section above. 
+The $RIBODIR environment variable is used implicitly in this
+command. That is a hard-coded path that was set in the 'SETTING UP
+ENVIRONMENT VARIABLES:' section above.
 
-In an older version of ribotyper additional command line arguments
+In an older version of ribotyper, additional command line arguments
 were required to specify the locations the model files to use and the
 model info file. These are no longer needed unless you want to use a
-non-default model, which you can do with the -i option. Email 
-nawrocke@ncbi.nlm.nih.gov if you want to do this. 
+non-default model, which you can do with the -i option, as listed
+below in the ALL COMMAND LINE OPTIONS section. Email
+nawrocke@ncbi.nlm.nih.gov if you need help doing this.
 
 ##############################################################################
 OUTPUT
@@ -167,24 +185,25 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.08 (Oct 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu Oct 26 10:34:31 2017
+# date:    Mon Oct 30 11:18:47 2017
 #
-# target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-16.fa
+# target sequence input file:    example-16.fa
 # output directory name:         test
 # model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribo.0p02.modelinfo
+# forcing directory overwrite:   yes [-f]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [1.1 seconds]
+# Validating input files                           ... done. [0.2 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.7 seconds]
+# Classifying sequences                            ... done. [1.4 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
-# Processing classification results                ... done. [0.1 seconds]
+# Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.6 seconds]
+# Searching sequences against best-matching models ... done. [1.4 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
-# Processing tabular round 2 search results        ... done. [0.1 seconds]
+# Processing tabular round 2 search results        ... done. [0.0 seconds]
 # Creating final output files                      ... done. [0.0 seconds]
 #
 # Summary statistics:
@@ -216,9 +235,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16      9.7     12866.1     12866.1  00:00:01.65  (hh:mm:ss)
-  search                15      9.4     12699.5     12699.5  00:00:01.60  (hh:mm:ss)
-  total                 16      3.4      4453.7      4453.7  00:00:04.77  (hh:mm:ss)
+  classification        16     11.2     14926.9     14926.9  00:00:01.42  (hh:mm:ss)
+  search                15     10.4     14045.2     14045.2  00:00:01.44  (hh:mm:ss)
+  total                 16      4.7      6285.6      6285.6  00:00:03.38  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -273,12 +292,14 @@ $ cat test/test.ribotyper.short.out
 #
 # Explanation of possible values in unexpected_features column:
 #
-# This column will include a '-' if none of the features listed below are detected.
-# Or it will contain one or more of the following types of messages. There are no
-# whitespaces in this field, to make parsing easier.
+# The unexpected_features column will include either a '-', if none of the features listed below are detected,
+# or it will contain one or more of the following types of messages. There is no
+# whitespace in the unexpected_features field, to make parsing easier.
 #
 # Values that begin with "*" automatically cause a sequence to FAIL.
 # Values that do not begin with "*" do not cause a sequence to FAIL.
+# FAIL means that if the sequence that fails is part of a submission to GenBank, then
+# this sequence should not be accepted in its present form.
 #
 #  1.  *NoHits                 No primary hits to any models above the minimum primary score
 #                              threshold of 20 bits (--minpsc) were found.
@@ -310,14 +331,16 @@ An example is in testfiles/test.ribotyper.long.out
 UNEXPECTED FEATURES AND REASONS FOR FAILURE
 
 There are several 'unexpected features' of sequences that are detected
-and reported in the final column of both the short and long output
+and reported in the rightmost column of both the short and long output
 files. These unexpected features can cause a sequence to FAIL, as
 explained below. 
 
 There are 15 possible unexpected features that get reported, some of
 which are related to each other. Eight of these will always cause a
 sequence to fail. The other seven *can* cause a sequence to fail but only
-if specific command line options are used. 
+if specific command line options are used. Four of these unexpected
+features will only be reported if specific command line options are
+used, as noted below.
 
 You can tell which unexpected features cause sequences to FAIL for a
 particular ribotyper run by looking unexpected feature column (final
@@ -342,9 +365,9 @@ fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
 3. "BothStrands": At least 1 hit above minimum score
 threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
 
-4. "DuplicateRegion": At least two hits overlap in model
-coordinates by X positions or more. X is 10 by default but can be
-changed to <x> with the --maxoverlap <x> option. ALWAYS CAUSES
+4. "DuplicateRegion": At least two hits overlap in model coordinates
+by P positions or more. The threshold P is 10 by default but can be
+changed to <n> with the --maxoverlap <n> option. ALWAYS CAUSES
 FAILURE.
 
 5. "InconsistentHits": The hits to the best model are
@@ -355,15 +378,18 @@ FAILURE.
 6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
---inaccept <s> option. An example of using this file is given below 
-in the DEFINING ACCEPTABLE MODELS section. ALWAYS CAUSES FAILURE.
+--inaccept <s> option. If --inaccept is not used, this unexpected
+feature will never be reported. An example of using --inaccept is
+given below in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS
+section. ALWAYS CAUSES FAILURE.
 
 7. "QuestionableModel": Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
 can specify certain top-scoring models are 'questionable' using the
---inaccept <s> option. An example of using this file is given below 
-in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS section. ONLY CAUSES
-FAILURE IF THE --questfail OPTION IS ENABLED.
+--inaccept <s> option. If --inaccept is not used, this unexpected
+feature will never be reported. An example of using --inaccept is
+given below in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS
+section. ONLY CAUSES FAILURE IF THE --questfail OPTION IS ENABLED.
 
 8. "MinusStrand": The best hit is on the minus strand. ONLY CAUSES
 FAILURE IF THE --minusfail OPTION IS ENABLED.
@@ -375,15 +401,16 @@ just length of hit)) is below threshold. By default the threshold is
 "--lowppossc <x>" option. ONLY CAUSES FAILURE IF THE --scfail OPTION
 IS ENABLED.
 
-10. "LowCoverage": the total coverage of all hits to the best
-model (summed length of all hits divided by total sequence length) is
-below threshold. By default the threshold is 0.86, but can be changed
-to <x> with the --tcov <x> option. Additionally, you can set a
-different threshold for 'short' sequences using the --tshortcov <x1>
-option, which must be used in combination with the --tshortlen <n>
-option which specifies that sequences less than or equal to <n>
-nucleotides will use the coverage threshold <x1> from --tshortcov
-<x1>. ONLY CAUSES FAILURE IF THE --covfail OPTION IS ENABLED.
+10. "LowCoverage": the total coverage of all hits to the best model
+(summed length of all hits divided by total sequence length) is below
+threshold. By default the threshold is 0.86, but it can be changed to
+<x> with the --tcov <x> option; <x> should be between 0 and 1.
+Additionally, one can set a different coverage threshold for 'short'
+sequences using the --tshortcov <x1> option, which must be used in
+combination with the --tshortlen <n> option which specifies that
+sequences less than or equal to <n> nucleotides in length will be
+subject to the coverage threshold <x1> from --tshortcov <x1>. ONLY
+CAUSES FAILURE IF THE --covfail OPTION IS ENABLED.
 
 11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
@@ -409,13 +436,13 @@ FAILURE IF THE --difffail OPTION IS ENABLED.
 best scoring model. ONLY CAUSES FAILURE IF THE --multfail OPTION IS
 ENABLED.
 
-14. "TooShort": the sequence is too short, less than <n1>. ALWAYS
-CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --shortfail <n1>
-OPTION IS ENABLED.
+14. "TooShort": the sequence is too short, less than <n1> nucleotides
+in length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF
+THE --shortfail <n1> OPTION IS ENABLED.
 
-15. "TooLong": the sequence is too long, more than <n2>. ALWAYS
-CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE --longfail <n2>
-OPTION IS ENABLED.
+15. "TooLong": the sequence is too long, more than <n2> nucleotides in
+length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE
+--longfail <n2> OPTION IS ENABLED.
 
 ##############################################################################
 THE DEFAULT MODEL FILE
@@ -423,7 +450,7 @@ THE DEFAULT MODEL FILE
 The default model file used by ribotyper is here:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.cm
 
-This model includes 7 SSU rRNA profiles and 3 LSU rRNA profiles.
+This model file includes 7 SSU rRNA profiles and 3 LSU rRNA profiles.
 
 The 'modelinfo' file for this model file lists the models and some
 additional information. That file is:
@@ -459,23 +486,23 @@ RIBOTYPER'S TWO ROUND SEARCH STRATEGY
 Ribotyper proceeds in two rounds. The first round is called the
 classification stage. In this round, all models are compared against
 all sequences using a fast profile HMM algorithm that does not do a
-good job at defining boundaries of SSU sequences, but is good at
-determining if a sequence is a SSU sequence or not. For each
+good job at defining boundaries of SSU/LSU sequences, but is good at
+determining if a sequence is a SSU/LSU sequence or not. For each
 comparison, a bit score is reported. For each sequence, the model that
 gives that sequence the highest bit score is defined as the
-'best-matching' model for that sequence. 
+'best-matching' model for that sequence.
  
 In the second round, each model that is the best-matching model to at
 least one sequence is searched again against only the set of sequences
 that have it as their best-matching model. This time, a slower but
 more powerful profile HMM algorithm is used that is better at defining
 sequence boundaries. This round takes about as much time as the first
-round even though the algorithm is slower because only 1 model is
+round even though the algorithm is slower because at most one model is
 compared against each sequence. The results of this comparison are
 reported to the short and long output files. Ribotyper also attempts
 to detect certain 'unexpected features' for each sequence, as listed
 in the 'UNEXPECTED FEATURES AND REASONS FOR FAILURE' section. Some of
-these unexpected features, if they are detected for a sequence will
+these unexpected features, when they are detected for a sequence will
 cause that sequence to be designated as a FAIL. If a sequence has 0
 unexpected features, or only unexpected features that do not cause a
 FAIL, it will be designated as a PASS (see the UNEXPECTED FEATURES AND
@@ -489,28 +516,32 @@ explaining what Ribotyper does:
 
 ~~~~~~~~~~~~~~~~~~~~
 We compared each of your sequences against a set of profile HMMs built
-from representative alignments of SSU rRNA sequences.  Each profile
-HMM is a statistical model of the family it models (e.g. bacterial SSU
-rRNA) built from a multiple alignment of 50-100 representative
-sequences from the family. The source of several of the alignments,
-including the bacterial model, is the Rfam database (rfam.xfam.org). 
-Each profile HMM has position specific scores at each position of the
-model, which means that positions of the family that are highly
-conserved have a higher impact on the final score than do positions
-that are not as well conserved (unlike BLAST for which each position
-is treated identically). Each sequence is aligned to each profile and
-a score is computed based on well the sequence matches the
-profile. Each sequence is classified by the model that gave it the
-highest score. 
+from representative alignments of SSU and LSU rRNA sequences.  Each
+profile HMM is a statistical model of the family it models
+(e.g. bacterial SSU rRNA) built from a multiple alignment of 50-100
+representative sequences from the family. The source of several of the
+alignments, including the bacterial model, is the Rfam database
+(rfam.xfam.org).  Each profile HMM has position specific scores at
+each position of the model, which means that positions of the family
+that are highly conserved have a higher impact on the final score than
+do positions that are not as well conserved (unlike BLAST for which
+each position is treated identically). Each sequence is aligned to
+each profile and a score is computed based on well the sequence
+matches the profile. Each sequence is classified by the model that
+gave it the highest score.
 ~~~~~~~~~~~~~~~~~~~~
 
 ##############################################################################
 DEFINING ACCEPTABLE/QUESTIONABLE MODELS
 
 The user can provide an additional input file that specifies which
-models are 'acceptable' or 'questionable'. All sequences for which the
-top hit is NOT one of the acceptable or questionable models, will FAIL
-for Reason 6 above. All sequences for which the top hit is one of the
+models are 'acceptable' or 'questionable'. Within NCBI, this usage is
+relevant when the submitter has made claims about which types of SSU
+or LSU sequences are being submitted. In that situation, the models
+consistent with the submitter's claims should be acceptable and all
+other models should be questionable. All sequences for which the top
+hit is NOT one of the acceptable or questionable models, will FAIL for
+Reason 6 above. All sequences for which the top hit is one of the
 questionable models will be reported with 'questionable_model' in
 their unusual feature string (and will FAIL if the --questfail option
 is enabled) (Reason 7 above).
@@ -544,12 +575,12 @@ SSU_rRNA_bacteria acceptable
 SSU_rRNA_cyanobacteria acceptable
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To use this on the example run from above, you will use the --inaccept
+To use this on the example run from above, try the --inaccept
 option, like this:
 
 $ ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept example-16.fa test
 
-Now the short output file will set any family that was classified as a
+Now, the short output file will set any family that was classified as a
 model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs,
 and the string "*UnacceptableModel" will be present in the
 'unexpected_features' column.
@@ -582,9 +613,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.07 (June 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Fri Jun 30 10:50:13 2017
+# date:    Mon Oct 30 11:19:52 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -597,10 +628,10 @@ basic options:
 
 options for controlling the first round search algorithm:
   --1hmm  : run first round in slower HMM mode
-  --1slow : run first round in slow CM mode
+  --1slow : run first round in slow CM mode that scores structure+sequence
 
 options for controlling the second round search algorithm:
-  --2slow : run second round in slow CM mode
+  --2slow : run second round in slow CM mode that scores structure+sequence
 
 options related to bit score REPORTING thresholds:
   --minpsc <x> : set minimum bit score cutoff for primary hits to include to <x> bits [20.]
@@ -650,31 +681,40 @@ The script 'ribolengthchecker.pl' is also included in the ribotyper
 distribution. It is a 'wrapper' script for ribotyper.pl. It runs
 ribotyper.pl and does some additional post-processing. Specifically,
 it aligns all the sequences that ribotyper.pl has defined as belonging
-to certain families (by default SSU.archaea and SSU.bacteria) and
-classifies the length of those sequences.
+to certain categories (by default SSU.archaea and SSU.bacteria) and
+classifies the length of those sequences. (The default set of
+categories can be changed using the -i option.) This script can be
+useful if you are trying to determine which sequences are full length
+or partial in your dataset.
 
-As for setup, if you followed the instructions above and can
+Setup: if you followed the instructions above and can
 successfully run ribotyper.pl you should be able to also run
 ribolengthchecker.pl.
 
-Here is an example run using the file example-rlc-11.fa in the
-testfiles/ directory, with output:
+Following, is an example run using the file example-rlc-11.fa in the
+testfiles/ directory, with output. In the example, the command given is: 
+> ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
+
+For the user to reproduce the behavior, the user has to run instead
+> ribolengthchecker.pl <user directory>/testfiles/example-rlc-11.fa test-rlc
+
+where <user directory> is the diretoy in which ribolengthchecker.pl is installed.
 
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.08 (Oct 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu Oct 26 10:21:41 2017
+# date:    Mon Oct 30 11:20:21 2017
 #
 # target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-rlc-11.fa
 # output file name root:         test-rlc
 # model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [4.7 seconds]
-# Running cmalign and classifying sequence lengths ... done. [13.7 seconds]
-# Running cmalign again for each length class      ... done. [7.7 seconds]
+# Running ribotyper                                ... done. [3.0 seconds]
+# Running cmalign and classifying sequence lengths ... done. [4.9 seconds]
+# Running cmalign again for each length class      ... done. [5.6 seconds]
 #
 # List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
 # List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
@@ -722,7 +762,7 @@ resource is the Infernal v1.1.2 user's guide, pages 29 and 30, which
 is available here:
 http://eddylab.org/infernal/Userguide.pdf.
 
-Here are the relevant lines from the file rlc-test.ribolengthchecker.tbl.out
+Here, are the relevant lines from the file rlc-test.ribolengthchecker.tbl.out
 created by the above command:
 
 > cat rlc-test.ribolengthchecker.tbl.out 
@@ -737,11 +777,37 @@ created by the above command:
 #                                               but has indel(s) in first and/or final 10 model positions
 #                                 'partial:'    does not span full model
 -----------------------
+Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
+output file from ribotyper.pl. 
 
-There is one important command line option to ribolengthchecker.pl,
+You can see the command-line options for ribolengthchecker.pl using
+the -h option, just as with ribotyper.pl:
+
+> ribolengthchecker.pl -h
+# ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
+# ribotyper 0.09 (Oct 2017)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:    Mon Oct 30 11:20:52 2017
+#
+Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
+
+
+basic options:
+  -b <n>          : number of positions <n> to look for indels at the 5' and 3' boundaries [10]
+  -v              : be verbose; output commands to stdout as they're run
+  -n <n>          : use <n> CPUs [1]
+  -i <s>          : use model info file <s> instead of default
+  --ribotyper <s> : read command line options to supply to ribotyper from file <s>
+
+One important command line option to ribolengthchecker.pl is 
 the -b option. This controls how many model positions are examined at
-the 5' and 3' end when classifying the lengths of sequences,
+the 5' and 3' ends when classifying the lengths of sequences,
 especially 'full-ambig' sequences. The default value is 10, but this
 can be changed to <n> with '-b <n>'.
+
+Another important option is --ribotyper <s> which allows you to
+pass options to ribotyper. To use this option, create a file called
+<s>, with a single line with all the options you want passed to
+ribotyper, and use --ribotyper <s> when you call ribolengthchecker.pl.
 
 -----------------------------
