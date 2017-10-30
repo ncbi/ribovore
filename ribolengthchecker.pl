@@ -51,12 +51,13 @@ my %opt_group_desc_H = ();
 # Add all options to %opt_HH and @opt_order_A.
 # This section needs to be kept in sync (manually) with the &GetOptions call below
 $opt_group_desc_H{"1"} = "basic options";
-#     option            type       default               group   requires incompat    preamble-output                                   help-output    
-opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
-opt_Add("-b",           "integer", 10,                       1,    undef, undef,      "number of positions <n> to look for indels",     "number of positions <n> to look for indels at the 5' and 3' boundaries",  \%opt_HH, \@opt_order_A);
-opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
-opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+#     option            type       default               group   requires incompat    preamble-output                                     help-output    
+opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                              "display this help",                                  \%opt_HH, \@opt_order_A);
+opt_Add("-b",           "integer", 10,                       1,    undef, undef,      "number of positions <n> to look for indels",       "number of positions <n> to look for indels at the 5' and 3' boundaries",  \%opt_HH, \@opt_order_A);
+opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
+opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--ribotyper",  "string",  undef,                    1,    undef, undef,      "read command line options for ribotyper from <s>", "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
 #opt_Add("-k",           "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                    "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
@@ -69,7 +70,8 @@ my $options_okay =
                 'b=s'          => \$GetOptions_H{"-b"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
-                'i=s'          => \$GetOptions_H{"-i"});
+                'i=s'          => \$GetOptions_H{"-i"},
+                'ribotyper=s'  => \$GetOptions_H{"--ribotyper"});
 #                'k'            => \$GetOptions_H{"-k"},
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
@@ -132,6 +134,24 @@ else { # -i used on the command line
   ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model files after we parse the model info file, below
+
+# read command line options for ribotyper from file if --ribotyper used
+my $extra_ribotyper_options = "";
+if(opt_IsUsed("--ribotyper", \%opt_HH)) { 
+  my $ribotyper_file = opt_Get("--ribotyper", \%opt_HH);
+  open(RIBO, $ribotyper_file) || die "ERROR, unable to open file $ribotyper_file for reading ribotyper options";
+  $extra_ribotyper_options = <RIBO>;
+  chomp $extra_ribotyper_options;
+  while(<RIBO>) { 
+    if($_ =~ m/\w/) { 
+      die "ERROR, expected exactly 1 line in $ribotyper_file, with command line options for ribotyper, read more than one line";
+    }
+  }
+  if($extra_ribotyper_options =~ m/\s*\-f/)     { die "ERROR with --ribotyper, command-line options for ribotyper can't include -f, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\--keep/) { die "ERROR with --ribotyper, command-line options for ribotyper can't include --keep, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\-n/)     { die "ERROR with --ribotyper, command-line options for ribotyper can't include -n, use -n option with ribolengthchecker.pl instead"; }
+  close(RIBO);
+}
 
 #############################################
 # output program banner and open output files
@@ -196,7 +216,7 @@ my $ribotyper_outfile    = $out_root . ".ribotyper.out";
 my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.short.out";
 
 # run ribotyper
-ribo_RunCommand($execs_H{"ribotyper"} . " -f --keep -n " . opt_Get("-n", \%opt_HH) . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
+ribo_RunCommand($execs_H{"ribotyper"} . " -f --keep -n " . opt_Get("-n", \%opt_HH) . " $extra_ribotyper_options $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ####################################################
