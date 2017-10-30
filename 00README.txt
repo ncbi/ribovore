@@ -1,6 +1,6 @@
-EPN, Mon Oct 30 09:52:32 2017
+EPN, Mon Oct 30 11:18:24 2017
 
-Ribotyper v0.08 README
+Ribotyper v0.09 README
 
 Organization of this file:
 
@@ -185,24 +185,25 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.08 (Oct 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu Oct 26 10:34:31 2017
+# date:    Mon Oct 30 11:18:47 2017
 #
-# target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-16.fa
+# target sequence input file:    example-16.fa
 # output directory name:         test
 # model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribo.0p02.modelinfo
+# forcing directory overwrite:   yes [-f]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [1.1 seconds]
+# Validating input files                           ... done. [0.2 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.7 seconds]
+# Classifying sequences                            ... done. [1.4 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
-# Processing classification results                ... done. [0.1 seconds]
+# Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.6 seconds]
+# Searching sequences against best-matching models ... done. [1.4 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
-# Processing tabular round 2 search results        ... done. [0.1 seconds]
+# Processing tabular round 2 search results        ... done. [0.0 seconds]
 # Creating final output files                      ... done. [0.0 seconds]
 #
 # Summary statistics:
@@ -234,9 +235,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16      9.7     12866.1     12866.1  00:00:01.65  (hh:mm:ss)
-  search                15      9.4     12699.5     12699.5  00:00:01.60  (hh:mm:ss)
-  total                 16      3.4      4453.7      4453.7  00:00:04.77  (hh:mm:ss)
+  classification        16     11.2     14926.9     14926.9  00:00:01.42  (hh:mm:ss)
+  search                15     10.4     14045.2     14045.2  00:00:01.44  (hh:mm:ss)
+  total                 16      4.7      6285.6      6285.6  00:00:03.38  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -612,9 +613,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.07 (June 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Fri Jun 30 10:50:13 2017
+# date:    Mon Oct 30 11:19:52 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -627,11 +628,11 @@ basic options:
 
 options for controlling the first round search algorithm:
   --1hmm  : run first round in slower HMM mode
-  --1slow : run first round in slow CM mode
+  --1slow : run first round in slow CM mode that scores structure+sequence
 
 options for controlling the second round search algorithm:
-  --2slow : run second round in slow CM mode
-  --1slow : run first round in slow CM mode   
+  --2slow : run second round in slow CM mode that scores structure+sequence
+
 options related to bit score REPORTING thresholds:
   --minpsc <x> : set minimum bit score cutoff for primary hits to include to <x> bits [20.]
   --minssc <x> : set minimum bit score cutoff for secondary hits to include to <x> bits [10.]
@@ -702,18 +703,18 @@ where <user directory> is the diretoy in which ribolengthchecker.pl is installed
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.08 (Oct 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu Oct 26 10:21:41 2017
+# date:    Mon Oct 30 11:20:21 2017
 #
 # target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-rlc-11.fa
 # output file name root:         test-rlc
 # model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [4.7 seconds]
-# Running cmalign and classifying sequence lengths ... done. [13.7 seconds]
-# Running cmalign again for each length class      ... done. [7.7 seconds]
+# Running ribotyper                                ... done. [3.0 seconds]
+# Running cmalign and classifying sequence lengths ... done. [4.9 seconds]
+# Running cmalign again for each length class      ... done. [5.6 seconds]
 #
 # List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
 # List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
@@ -782,10 +783,11 @@ output file from ribotyper.pl.
 You can see the command-line options for ribolengthchecker.pl using
 the -h option, just as with ribotyper.pl:
 
+> ribolengthchecker.pl -h
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.08 (Oct 2017)
+# ribotyper 0.09 (Oct 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Oct 30 11:00:40 2017
+# date:    Mon Oct 30 11:20:52 2017
 #
 Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
 

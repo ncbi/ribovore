@@ -48,7 +48,7 @@ my $options_okay =
 
 my $executable    = $0;
 my $date          = scalar localtime();
-my $version       = "0.08";
+my $version       = "0.09";
 my $releasedate   = "Oct 2017";
 
 # print help and exit if necessary
