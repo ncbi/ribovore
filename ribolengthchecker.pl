@@ -77,7 +77,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.09";
+my $version           = "0.10";
 my $model_version_str = "0p08"; 
 my $releasedate       = "Oct 2017";
 my $package_name      = "ribotyper";
@@ -273,7 +273,8 @@ $start_secs = ribo_OutputProgressPrior("Running cmalign again for each length cl
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
   foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig") { 
-    if(scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0) { 
+    if((exists $family_length_class_HHA{$family}{$length_class}) && 
+       (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
       $length_class_list_file = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".list";
       $cmalign_stk_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".stk";
       $cmalign_out_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".cmalign";
