@@ -48,8 +48,8 @@ my $options_okay =
 
 my $executable    = $0;
 my $date          = scalar localtime();
-my $version       = "0.10";
-my $releasedate   = "Oct 2017";
+my $version       = "0.11";
+my $releasedate   = "Nov 2017";
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
