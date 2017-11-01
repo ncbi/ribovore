@@ -7,7 +7,7 @@ use Time::HiRes qw(gettimeofday);
 require "epn-options.pm";
 require "ribo.pm";
 
-# make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
+# make sure the RIBODIR variable is set
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 #my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
@@ -16,9 +16,9 @@ my $df_model_dir          = $env_ribotyper_dir . "/models/";
 # make sure the required executables are executable
 my %execs_H = (); # key is name of program, value is path to the executable
 $execs_H{"ribotyper"}  = $env_ribotyper_dir     . "/ribotyper.pl";
-# Currently, we require infernal and easel executables are in user's path, 
-# but don't check. The program will die if the commands using them fail. 
-# Below block is left in in case we want to use it eventually.
+# Currently, we require infernal and easel executables are in the user's path, 
+# but do not check. The program will die if the commands using them fail. 
+# The block below is retained in in case we want to use it eventually.
 #$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
 #$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
 ribo_ValidateExecutableHash(\%execs_H);
@@ -38,7 +38,7 @@ ribo_ValidateExecutableHash(\%execs_H);
 #                 "incompatible": string of 0 or more other options this option is incompatible with, each separated by a ','
 #                 "preamble":     string describing option for preamble section (beginning of output from script)
 #                 "help":         string describing option for help section (printed if -h used)
-#                 "setby":        '1' if option set by user, else 'undef'
+#                 "setby":        '1' if option set by the user, else 'undef'
 #                 "value":        value for option, can be undef if default is undef
 #
 # opt_order_A: array of options in the order they should be processed
@@ -57,8 +57,11 @@ opt_Add("-b",           "integer", 10,                       1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--ribotyper",  "string",  undef,                    1,    undef, undef,      "read command line options for ribotyper from <s>", "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
-#opt_Add("-k",           "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                    "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+# options related to the ribotyper call
+$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
+opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -71,8 +74,9 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
                 'i=s'          => \$GetOptions_H{"-i"},
-                'ribotyper=s'  => \$GetOptions_H{"--ribotyper"});
-#                'k'            => \$GetOptions_H{"-k"},
+                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
+                'noscfail'     => \$GetOptions_H{"--noscfail"},
+                'nocovfail'    => \$GetOptions_H{"--nocovfail"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -98,7 +102,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, do ribotyper.pl -h\n\n";
+  print "\nTo see more help on available options, enter ribolengthchcker.pl -h\n\n";
   exit(1);
 }
 my ($seq_file, $out_root) = (@ARGV);
@@ -135,21 +139,30 @@ else { # -i used on the command line
 }
 # we check for the existence of model files after we parse the model info file, below
 
-# read command line options for ribotyper from file if --ribotyper used
+# read command line options for ribotyper from file if --riboopts used
 my $extra_ribotyper_options = "";
-if(opt_IsUsed("--ribotyper", \%opt_HH)) { 
-  my $ribotyper_file = opt_Get("--ribotyper", \%opt_HH);
+if(opt_IsUsed("--riboopts", \%opt_HH)) { 
+  my $ribotyper_file = opt_Get("--riboopts", \%opt_HH);
+  if(! -e $ribotyper_file) { 
+    die "ERROR, $ribotyper_file supplied with the --riboopts option does not exist"; 
+  }
+  if(! -s $ribotyper_file) { 
+    die "ERROR, $ribotyper_file supplied with the --riboopts option exists but is empty";
+  }
   open(RIBO, $ribotyper_file) || die "ERROR, unable to open file $ribotyper_file for reading ribotyper options";
   $extra_ribotyper_options = <RIBO>;
   chomp $extra_ribotyper_options;
   while(<RIBO>) { 
     if($_ =~ m/\w/) { 
-      die "ERROR, expected exactly 1 line in $ribotyper_file, with command line options for ribotyper, read more than one line";
+      die "ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line";
     }
   }
-  if($extra_ribotyper_options =~ m/\s*\-f/)     { die "ERROR with --ribotyper, command-line options for ribotyper can't include -f, it will be used anyway"; }
-  if($extra_ribotyper_options =~ m/\s*\--keep/) { die "ERROR with --ribotyper, command-line options for ribotyper can't include --keep, it will be used anyway"; }
-  if($extra_ribotyper_options =~ m/\s*\-n/)     { die "ERROR with --ribotyper, command-line options for ribotyper can't include -n, use -n option with ribolengthchecker.pl instead"; }
+  if($extra_ribotyper_options =~ m/\s*\-f/)          { die "ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\--keep/)      { die "ERROR with --riboopts, command-line options for ribotyper cannot include --keep, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\-n/)          { die "ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with ribolengthchecker.pl instead"; }
+  if($extra_ribotyper_options =~ m/\s*\--scfail/)    { die "ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\--covfail/)   { die "ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\--minusfail/) { die "ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway"; }
   close(RIBO);
 }
 
@@ -194,7 +207,7 @@ foreach $family (@family_order_A) {
   }
 }
 
-# index the fasta file, we'll need the index to fetch with esl-sfetch later
+# index the fasta file, the index will be used later to fetch with esl-sfetch
 my $ssi_file = $seq_file . ".ssi";
 # remove it if it already exists
 if(-e $ssi_file) { 
@@ -216,8 +229,14 @@ my $ribotyper_outfile    = $out_root . ".ribotyper.out";
 my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.short.out";
 
 # run ribotyper
-ribo_RunCommand($execs_H{"ribotyper"} . " -f --keep -n " . opt_Get("-n", \%opt_HH) . " $extra_ribotyper_options $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
+my $ribotyper_options = " -f --keep --minusfail -n " . opt_Get("-n", \%opt_HH);
+if(! opt_IsUsed("--noscfail", \%opt_HH))  { $ribotyper_options .= " --scfail"; }
+if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
+$ribotyper_options .= " " . $extra_ribotyper_options . " ";
+ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+
+exit 0;
 
 ####################################################
 # Step 3: Run cmalign on full sequence file
@@ -237,6 +256,7 @@ my %out_tbl_HH = ();          # hash of hashes with information for output file
 my @stkfile_str_A     = (); # list of output alignment files we create
 my @cmalignfile_str_A = (); # list of output cmalign files we create
 my @listfile_str_A    = (); # list of output list files we create
+my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign options that are consistently used in all cmalign calls
 
 foreach $family (@family_order_A) { 
   $nfiles = 0;
@@ -255,7 +275,8 @@ foreach $family (@family_order_A) {
     $cmalign_stk_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
     $cmalign_out_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
     #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-    ribo_RunCommand("$cat_cmd | cmalign --mxsize 4096. --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+#AAS: Two issues here and at other cmalign calls: 1) the 4096 should not be hardcoded; 2) it is unclear whether correctness depends on the sequence of cmalign calls having identical or similar arguments, in which case the consistentcy of arguments between calls should be enforced more abstractly   
+    ribo_RunCommand("$cat_cmd | cmalign $cmalign_opts -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
     # parse cmalign file
@@ -287,7 +308,7 @@ foreach $family (@family_order_A) {
       }
       close(OUT);
       #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign --mxsize 4096. --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }
