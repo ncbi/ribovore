@@ -3,5 +3,5 @@
 # token 2: CM file name for this family
 # token 3: integer, consensus length for the CM for this family
 # tokens 4 to N: name of ribotyper files with sequences that should be aligned with this model
-SSU.Archaea RF01959.cm 1477 SSU_rRNA_archaea
-SSU.Bacteria RF00177.cm 1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+SSU.Archaea ribolengthchecker.0p08.RF01959.cm 1477 SSU_rRNA_archaea
+SSU.Bacteria ribolengthchecker.0p08.RF00177.cm 1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
