@@ -225,6 +225,10 @@ $start_secs = ribo_OutputProgressPrior("Running ribotyper", $progress_w, undef, 
 my $ribotyper_outdir     = $out_root . "-rt";
 my $ribotyper_outfile    = $out_root . ".ribotyper.out";
 my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.short.out";
+my $ribotyper_long_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.long.out";
+my $found_family_match;  # set to '1' if a sequence matches one of the families we are aligning for
+my @fail_str_A    = (); # array of strings of FAIL sequences to output 
+my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
 
 # run ribotyper
 my $ribotyper_options = " -f --keep --minusfail -n " . opt_Get("-n", \%opt_HH);
@@ -250,10 +254,20 @@ while(my $line = <RIBO>) {
       die "ERROR, unable to parse ribotyper short output file, expected 6 tokens on line:\n$line\n"; 
     }
     my ($seqname, $class, $passfail) = ($el_A[1], $el_A[2], $el_A[4]);
+    $found_family_match = 0;
     foreach $family (@family_order_A) { 
-      if(($class eq $family) && ($passfail eq "PASS")) { 
-        print { $family_sfetch_FH_H{$family} } ($seqname . "\n");
+      if($class eq $family) { 
+        $found_family_match = 1;
+        if($passfail eq "PASS") { 
+          print { $family_sfetch_FH_H{$family} } ($seqname . "\n");
+        }
+        else { 
+          push(@fail_str_A, ($seqname . "\n"));
+        }
       }
+    }
+    if(! $found_family_match) { 
+      push(@nomatch_str_A, ($seqname . "\n")); 
     }
   }
 }
@@ -339,6 +353,39 @@ print("#\n");
 foreach $str (@stkfile_str_A)     { print $str; }
 print("#\n");
 foreach $str (@cmalignfile_str_A) { print $str; }
+
+if((scalar(@fail_str_A) == 0) && (scalar(@nomatch_str_A) == 0)) { 
+  printf("#\n# All input sequences passed ribotyper and were aligned.\n#\n");
+}
+else { 
+  if(scalar(@fail_str_A) > 0) { 
+    printf("#\n# WARNING: %d sequence(s) classified as one of:", scalar(@fail_str_A)); 
+    foreach $family (@family_order_A) { 
+      print " $family";
+    }
+    print(", but FAILed ribotyper:\n");
+    foreach my $str (@fail_str_A) { 
+      print "#  " . $str;
+    }
+  }
+  else { 
+    printf("#\n# No sequences failed ribotyper.\n");
+  }
+  if(scalar(@nomatch_str_A) > 0) {
+    printf("#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A)); 
+    foreach $family (@family_order_A) { 
+      print " $family";
+    }
+    print("\n");
+    foreach my $str (@nomatch_str_A) { 
+      print "#  " . $str;
+    }
+  }
+  else { 
+    printf("#\n# All sequences that passed ribotyper were aligned.\n");
+  }
+  print("#\n# See details in:\n#  $ribotyper_short_file\n#  and\n#  $ribotyper_long_file\n#\n");
+}
 
 print("#\n# ribotyper output saved as $ribotyper_outfile\n");
 print("# ribotyper output directory saved as $ribotyper_outdir\n");
