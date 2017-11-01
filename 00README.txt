@@ -1,6 +1,6 @@
-EPN, Mon Oct 30 15:52:39 2017
+EPN, Wed Nov  1 14:02:38 2017
 
-Ribotyper v0.10 README
+Ribotyper v0.11 README
 
 Organization of this file:
 
@@ -207,22 +207,21 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.10 (Oct 2017)
+# ribotyper 0.11 (Nov 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Oct 30 15:53:02 2017
+# date:    Wed Nov  1 14:06:31 2017
 #
 # target sequence input file:    example-16.fa
 # output directory name:         test
 # model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribo.0p02.modelinfo
-# forcing directory overwrite:   yes [-f]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [0.1 seconds]
+# Validating input files                           ... done. [0.9 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
 # Classifying sequences                            ... done. [1.4 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
 # Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [2.1 seconds]
+# Searching sequences against best-matching models ... done. [1.5 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -257,9 +256,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16     11.4     15163.2     15163.2  00:00:01.40  (hh:mm:ss)
-  search                15      7.1      9567.8      9567.8  00:00:02.12  (hh:mm:ss)
-  total                 16      4.1      5472.1      5472.1  00:00:03.88  (hh:mm:ss)
+  classification        16     11.1     14698.7     14698.7  00:00:01.45  (hh:mm:ss)
+  search                15     10.3     13930.0     13930.0  00:00:01.45  (hh:mm:ss)
+  total                 16      3.9      5224.3      5224.3  00:00:04.07  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -644,9 +643,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.09 (Oct 2017)
+# ribotyper 0.11 (Nov 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Oct 30 11:19:52 2017
+# date:    Wed Nov  1 14:07:23 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -654,7 +653,7 @@ Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 basic options:
   -f     : force; if <output directory> exists, overwrite it
   -v     : be verbose; output commands to stdout as they're run
-  -n <n> : use <n> CPUs [1]
+  -n <n> : use <n> CPUs [0]
   -i <s> : use model info file <s> instead of default
 
 options for controlling the first round search algorithm:
@@ -735,18 +734,18 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.09 (Oct 2017)
+# ribotyper 0.11 (Nov 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Oct 30 11:20:21 2017
+# date:    Wed Nov  1 14:07:42 2017
 #
 # target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-rlc-11.fa
 # output file name root:         test-rlc
 # model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [3.0 seconds]
-# Running cmalign and classifying sequence lengths ... done. [4.9 seconds]
-# Running cmalign again for each length class      ... done. [5.6 seconds]
+# Running ribotyper                                ... done. [4.3 seconds]
+# Running cmalign and classifying sequence lengths ... done. [5.2 seconds]
+# Running cmalign again for each length class      ... done. [5.4 seconds]
 #
 # List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
 # List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
@@ -766,6 +765,17 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 # cmalign output for      1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
 # cmalign output for      1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
 # cmalign output for      1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.cmalign
+#
+# No sequences failed ribotyper.
+#
+# WARNING: 1 sequence(s) were not aligned because they were not classified by ribotyper into one of: SSU.Archaea SSU.Bacteria
+#  01223::Audouinella_hermannii.::AF026040
+#
+# See details in:
+#  test-rlc-rt/test-rlc-rt.ribotyper.short.out
+#  and
+#  test-rlc-rt/test-rlc-rt.ribotyper.long.out
+#
 #
 # ribotyper output saved as test-rlc.ribotyper.out
 # ribotyper output directory saved as test-rlc-rt
@@ -817,19 +827,23 @@ the -h option, just as with ribotyper.pl:
 
 > ribolengthchecker.pl -h
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.10 (Oct 2017)
+# ribotyper 0.11 (Nov 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Oct 30 15:55:34 2017
+# date:    Wed Nov  1 14:08:17 2017
 #
 Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
 
 
 basic options:
-  -b <n>          : number of positions <n> to look for indels at the 5' and 3' boundaries [10]
-  -v              : be verbose; output commands to stdout as they're run
-  -n <n>          : use <n> CPUs [1]
-  -i <s>          : use model info file <s> instead of default
-  --ribotyper <s> : read command line options to supply to ribotyper from file <s>
+  -b <n> : number of positions <n> to look for indels at the 5' and 3' boundaries [10]
+  -v     : be verbose; output commands to stdout as they're run
+  -n <n> : use <n> CPUs [1]
+  -i <s> : use model info file <s> instead of default
+
+options related to the internal call to ribotyper.pl:
+  --riboopts <s> : read command line options to supply to ribotyper from file <s>
+  --noscfail     : do not fail sequences in ribotyper with low scores
+  --nocovfail    : do not fail sequences in ribotyper with low coverage
 
 One important command line option to ribolengthchecker.pl is 
 the -b option. This controls how many model positions are examined at
@@ -837,10 +851,10 @@ the 5' and 3' ends when classifying the lengths of sequences,
 especially 'full-ambig' sequences. The default value is 10, but this
 can be changed to <n> with '-b <n>'.
 
-Another important option is --ribotyper <s> which allows you to
+Another important option is --riboopts <s> which allows you to
 pass options to ribotyper. To use this option, create a file called
 <s>, with a single line with all the options you want passed to
-ribotyper, and use --ribotyper <s> when you call ribolengthchecker.pl.
+ribotyper, and use --riboopts <s> when you call ribolengthchecker.pl.
 Not all ribotyper options can appear in this file <s>. The -f and
 --keep options are not allowed (the program will die with an error
 message if you include them) because they are used automatically when
