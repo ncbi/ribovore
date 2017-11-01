@@ -195,9 +195,7 @@ my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w,
 my @family_order_A     = (); # family names, in order
 my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
 my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
-my %family_rtkey_HA    = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is array of ribotyper keys 
-                             # to align for this family (e.g. ("SSU_rRNA_bacteria", "SSU_rRNA_cyanobacteria"))
-parse_modelinfo_file($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H, \%family_rtkey_HA);
+parse_modelinfo_file($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H);
 
 # verify the CM files listed in $modelinfo_file exist
 my $family;
@@ -236,7 +234,34 @@ $ribotyper_options .= " " . $extra_ribotyper_options . " ";
 ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
-exit 0;
+# parse ribotyper output and create sfetch input files for sequences to fetch
+my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name
+my %family_sfetch_FH_H = ();        # key: family name, value: output file handle for sfetch input file
+foreach $family (@family_order_A) { 
+  $family_sfetch_filename_H{$family} = $out_root . ".ribolengthchecker." . $family . ".sfetch";
+  open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
+}
+
+open(RIBO, $ribotyper_short_file) || die "ERROR unable to open ribotyper short file $ribotyper_short_file for reading";
+while(my $line = <RIBO>) { 
+  if($line !~ m/^\#/) { 
+    my @el_A = split(/\s+/, $line);
+    if(scalar(@el_A) != 6) { 
+      die "ERROR, unable to parse ribotyper short output file, expected 6 tokens on line:\n$line\n"; 
+    }
+    my ($seqname, $class, $passfail) = ($el_A[1], $el_A[2], $el_A[4]);
+    foreach $family (@family_order_A) { 
+      if(($class eq $family) && ($passfail eq "PASS")) { 
+        print { $family_sfetch_FH_H{$family} } ($seqname . "\n");
+      }
+    }
+  }
+}
+close(RIBO);
+
+foreach $family (@family_order_A) { 
+  close($family_sfetch_FH_H{$family});
+}
 
 ####################################################
 # Step 3: Run cmalign on full sequence file
@@ -245,7 +270,6 @@ $start_secs = ribo_OutputProgressPrior("Running cmalign and classifying sequence
 # for each family to align, run cmalign:
 my $nfiles = 0;               # number of fasta files that exist for this sequence directory
 my $rtkey_seq_file = undef; # a ribotyper key fasta file
-my $rtkey;                    # a single ribotyper key
 my $cat_cmd;                  # a cat command used to pipe the fasta files into cmalign
 my $cmalign_stk_file;         # cmalign output alignment
 my $cmalign_out_file;         # cmalign output 
@@ -259,24 +283,12 @@ my @listfile_str_A    = (); # list of output list files we create
 my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign options that are consistently used in all cmalign calls
 
 foreach $family (@family_order_A) { 
-  $nfiles = 0;
-  %{$family_length_class_HHA{$family}} = ();
-  foreach $rtkey (@{$family_rtkey_HA{$family}}) { 
-    $rtkey_seq_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper." . $rtkey . ".fa";
-    if(-s $rtkey_seq_file) { 
-      $nfiles++;
-      if($nfiles == 1) { 
-        $cat_cmd = "cat ";
-      }
-      $cat_cmd .= $rtkey_seq_file . " ";
-    }
-  }
-  if($nfiles > 0) { 
+  if(-s $family_sfetch_filename_H{$family}) { 
     $cmalign_stk_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
     $cmalign_out_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
     #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
 #AAS: Two issues here and at other cmalign calls: 1) the 4096 should not be hardcoded; 2) it is unclear whether correctness depends on the sequence of cmalign calls having identical or similar arguments, in which case the consistentcy of arguments between calls should be enforced more abstractly   
-    ribo_RunCommand("$cat_cmd | cmalign $cmalign_opts -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
     # parse cmalign file
@@ -342,7 +354,7 @@ print("#\n#[RIBO-SUCCESS]\n");
 # Incept:      EPN, Fri Oct 20 14:17:53 2017
 #
 # Purpose:     Parse the modelinfo file, and fill information in
-#              @{$family_order_AR}, %{$family_modelname_HR}, %{$family_rtkey_HAR}.
+#              @{$family_order_AR}, %{$family_modelname_HR}.
 # 
 #              
 # Arguments: 
@@ -351,18 +363,16 @@ print("#\n#[RIBO-SUCCESS]\n");
 #   $family_order_AR:      reference to array of family names, in order read from file, FILLED HERE
 #   $family_modelname_HR:  reference to hash, key is family name, value is path to model, FILLED HERE 
 #   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
-#   $family_rtkey_HAR:     reference to hash of arrays, key is family name, value is array of 
-#                          ribotyper keys that belong to this family
 #
 # Returns:     void; 
 #
 ################################################################# 
 sub parse_modelinfo_file { 
-  my $nargs_expected = 6;
+  my $nargs_expected = 5;
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelname_HR, $family_modellen_HR, $family_rtkey_HAR) = @_;
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelname_HR, $family_modellen_HR) = @_;
 
   open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
@@ -379,14 +389,13 @@ sub parse_modelinfo_file {
       $line =~ s/^\s+//; # remove leading whitespace
       $line =~ s/\s+$//; # remove trailing whitespace
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) < 4) { 
-        die "ERROR in $sub_name, less than 4 tokens found on line $line of $modelinfo_file";  
+      if(scalar(@el_A) != 3) { 
+        die "ERROR in $sub_name, not exactly 3 tokens found on line $line of $modelinfo_file";  
       }
-      my ($family, $modelname, $modellen, @rtkey_A) = @el_A;
+      my ($family, $modelname, $modellen) = @el_A;
       push(@{$family_order_AR}, $family);
       $family_modelname_HR->{$family} = $env_ribo_dir . "/" . $modelname;
       $family_modellen_HR->{$family}  = $modellen;
-      @{$family_rtkey_HAR->{$family}} = @rtkey_A;
     }
   }
   close(IN);
