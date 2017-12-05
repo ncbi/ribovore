@@ -1464,13 +1464,21 @@ sub parse_sorted_tbl_file {
         $cur_becomes_first = 1; # no current, 'one' this will be it
       }
       else { 
-        # determine the domain (default) or model (--samedomain) of top hit and current hit we're looking at
-        # if --samedomain, we require that top two hits be different models, not necessarily different domains
+        # determine the domain (default) or model (--samedomain) of
+        # top hit and current hit we're looking at if --samedomain, we
+        # require that top two hits be different models, not
+        # necessarily different domains
+        #
+        # A note on how ties are broken if top two scores are equal,
+        # or ($sort_by_evalues) and top two evalues are equal: the hit
+        # that comes first in the tblout will be ranked as the top
+        # hit, and the hit that comes second will be ranked as the
+        # second hit.
         $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model : $first_domain;
         if($sort_by_evalues) { 
           if(($evalue < $first_evalue) || # this E-value is better than (less than) our current 'first' E-value
              ($evalue eq $first_evalue && $score > $first_score)) { # this E-value equals current 'first' E-value, 
-            # but this score is better than current 'one' score
+                                                                    # but this score is better than current 'one' score
             $cur_becomes_first = 1;
           }
         }
@@ -1983,7 +1991,7 @@ sub output_one_target {
       die sprintf("ERROR in $sub_name, second best hit has higher score than best hit (%.2f > %2.f) and sort_by_evalues is FALSE", 
                   $second_model_HHR->{$wfamily}{"score"}, $first_model_HHR->{$wfamily}{"score"});
     }
-    $score_ppos_diff  = $score_total_diff / abs($first_model_HHR->{$wfamily}{"stop"} - $first_model_HHR->{$wfamily}{"start"});
+    $score_ppos_diff  = $score_total_diff / (abs($first_model_HHR->{$wfamily}{"stop"} - $first_model_HHR->{$wfamily}{"start"}) + 1);
     if($do_ppos_score_diff) { 
       # default: per position score difference, dependent on length of hit
       $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
