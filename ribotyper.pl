@@ -85,7 +85,7 @@ opt_Add("--multfail",   "boolean",   0,                        5,  undef,   unde
 opt_Add("--questfail",  "boolean",   0,                        5,"--inaccept",undef,    "seqs that score best to questionable models FAIL",     "seqs that score best to questionable models FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--shortfail",  "integer",   0,                        5,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--longfail",   "integer",   0,                        5,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--esdfail",    "integer",   0,                        5,"--evalues",undef,     "E-value/score discrepancies FAIL",                     "seqs in which second best hit by E-value has better bit score above threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--esdfail",    "boolean",   0,                        5,"--evalues",undef,     "E-value/score discrepancies FAIL",                     "seqs in which second best hit by E-value has better bit score above threshold FAIL", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
@@ -113,7 +113,7 @@ opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef
 
 $opt_group_desc_H{"9"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                       9,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       9,  undef,   undef,               "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch",   "boolean", 0,                       9,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 opt_Add("--noali",        "boolean", 0,                       9,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                       9,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
@@ -138,7 +138,6 @@ my $options_okay =
 # options controlling minimum bit score cutoff 
                 'minpsc=s'    => \$GetOptions_H{"--minpsc"},
                 'minssc=s'    => \$GetOptions_H{"--minssc"},
-                'lowppossc'   => \$GetOptions_H{"--lowppossc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
                 'scfail'       => \$GetOptions_H{"--scfail"},
@@ -177,9 +176,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.11";
+my $version           = "0.12";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
-my $releasedate       = "Nov 2017";
+my $releasedate       = "Dec 2017";
 my $package_name      = "ribotyper";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -211,11 +210,10 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
 # do some final option checks that are currently too sophisticated for epn-options
 if(opt_Get("--evalues", \%opt_HH)) { 
-  if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--1hmm", \%opt_HH)) && 
+  if((! opt_Get("--1hmm", \%opt_HH)) && 
      (! opt_Get("--1slow", \%opt_HH)) &&
      (! opt_Get("--2slow", \%opt_HH))) { 
-    die "ERROR, --evalues requires one of --nhmmer, --1hmm, --1slow or --2slow";
+    die "ERROR, --evalues requires one of --1hmm, --1slow or --2slow";
   }
 }
 if(opt_Get("--mid", \%opt_HH)) { 
@@ -414,9 +412,9 @@ my $final_short_out_FH    = undef; # output file handle for final short output f
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_unsrt_long_out_file);
   push(@to_remove_A, $r1_unsrt_short_out_file);
-  push(@to_remove_A, $r1_srt_long_out_file);
-  push(@to_remove_A, $r1_srt_short_out_file);
   if(defined $alg2) { 
+    push(@to_remove_A, $r1_srt_long_out_file);
+    push(@to_remove_A, $r1_srt_short_out_file);
     push(@to_remove_A, $r2_unsrt_long_out_file);
     push(@to_remove_A, $r2_unsrt_short_out_file);
     push(@to_remove_A, $r2_srt_long_out_file);
@@ -818,6 +816,11 @@ if(defined $alg2) {
   output_long_tail($final_long_out_FH, "final", \@ufeature_A, \%opt_HH);
   close($final_short_out_FH);
   ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+}
+else { 
+  # no $alg2, so we only did one round of searching, fill the %class_stats_HH and %ufeature_ct_H stats hashes
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
+  get_stats_from_long_file_for_sole_round($r1_srt_long_out_FH, \%class_stats_HH, \%ufeature_ct_H, \%opt_HH);
 }
 
 # remove files we don't want anymore, then exit
@@ -2801,8 +2804,9 @@ sub determine_unexpected_feature_explanation {
     push(@{$exp_AR}, "There is more than one hit to the best scoring model on the same strand.");
   }
   elsif($ufeature =~ m/EvalueScoreDiscrepancyAboveThreshold/) { 
-    push(@{$exp_AR}, "Hits were sorted by E-values (--evalues), and the second best hit by E-value had a bit score more than\n");
-    push(@{$exp_AR}, "%.3f bits greater than the bit score of the best hit by E-value\n", opt_Get("--esdmaxsc", $opt_HHR));
+    push(@{$exp_AR}, "Hits were sorted by E-values (--evalues), and the second best hit by E-value");
+    push(@{$exp_AR}, sprintf("had a bit score more than %.3f bits greater than the bit score of", opt_Get("--esdmaxsc", $opt_HHR)));
+    push(@{$exp_AR}, "the best hit by E-value");
   }
   elsif($ufeature =~ m/TooShort/) { 
     if(opt_Get("--shortfail", $opt_HHR)) { 
@@ -3648,6 +3652,108 @@ sub output_combined_short_or_long_file {
 }
 
 #################################################################
+# Subroutine : get_stats_from_long_file_for_sole_round()
+# Incept:      EPN, Tue Dec  5 09:41:28 2017
+#
+# Purpose:     Obtain stats from a long output file. Only 
+#              necessary when script is run in 1-round-only mode,
+#              otherwise this is done in output_combined_short_or_long_file()
+#              when called for the long file.
+#              
+# Arguments: 
+#   $in_FH:          file handle of open round 1 (of 1) long file
+#   $stats_HHR:      ref to 2D hash of stats:
+#                    1D key: model name, "*all*" or "*none*"
+#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
+#                    filled here
+#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
+#                    filled here
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#
+# Returns:  Nothing.
+# 
+# Dies:     If there are not the same sequences in 
+#           the same order in the round 1 and round 2 files.
+#
+################################################################# 
+sub get_stats_from_long_file_for_sole_round { 
+  my $nargs_expected = 4;
+  my $sub_name = "get_stats_from_long_file_for_sole_round";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_FH, $stats_HHR, $ufeature_ct_HR, $opt_HHR) = @_;
+
+  my $keep_going = 0;     # '1' to keep reading lines from the file
+  my $line;               # line from long file
+  my $lidx;               # line index
+  my @el_A = ();          # array of space-delimited tokens in a line
+  my $expected_ncols = 0; # number of columns we expect in the file
+  my $ncols          = 0; # actual number of columns in line
+  # variables for a single target related to updating %{$stats_HHR}
+  my $class  = undef; # classification
+  my $pf     = undef; # 'PASS' or 'FAIL'
+  my $nnt    = undef; # size of current target in number of nucleotides
+  my $fam    = undef; # family of current target
+  my $domain = undef; # domain of current target
+  my $model  = undef; # model of current target
+  my $tcov   = undef; # total coverage of current target
+
+  initialize_class_stats(\%{$stats_HHR->{"*input*"}});
+  initialize_class_stats(\%{$stats_HHR->{"*none*"}});
+  initialize_class_stats(\%{$stats_HHR->{"*all*"}});
+
+  $expected_ncols = determine_number_of_columns_in_long_output_file("1", $opt_HHR);
+
+  # we know that the first few lines of the file are comment lines, that begin with "#", chew them up
+  $line = <$in_FH>;
+  $lidx++;
+  while((defined $line) && ($line =~ m/^\#/)) { 
+    $line = <$in_FH>; 
+    $lidx++;
+  }
+  $keep_going = 1;
+  
+  while($keep_going) { 
+    chomp $line;
+    # example lines
+    # (round 2 with e-values)
+    #                                                                                                                                                best-scoring model                                                                    
+    #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
+    #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
+    #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
+    #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
+    #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
+
+    @el_A = split(/\s+/, $line);
+    $ncols = scalar(@el_A);
+    if($ncols != $expected_ncols) { 
+      die "ERROR in $sub_name, read unexpected number of columns on line $lidx of file (" . $ncols . " != " . $expected_ncols . ")";
+    }
+
+    # update %{$stats_HHR}
+    ($pf, $nnt, $fam, $domain, $model, $tcov) = ($el_A[2], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[14]);
+    $class = $fam . "." . $domain;
+    if($class eq "-.-") { $class = "*none*"; }
+    if(! defined $stats_HHR->{$class}) { 
+      initialize_class_stats(\%{$stats_HHR->{$class}})
+    }
+    update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+    update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
+    update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+
+    # update the ufeature counts hash if we have one
+    if(defined $ufeature_ct_HR) { 
+      update_one_ufeature_sequence($ufeature_ct_HR, $el_A[($ncols-1)]);
+    }
+
+    $line = <$in_FH>; 
+    $keep_going = ((defined $line) && ($line !~ m/^\#/)) ? 1 : 0;
+  }
+      
+  return;
+}
+
+#################################################################
 # Subroutine: update_class_stats
 # Incept:     EPN, Tue May  9 09:35:07 2017
 #
@@ -4159,14 +4265,15 @@ sub output_timing_statistics {
                   $width_H{"total"},    ribo_GetTimeString($r1_secs));
 
   $class = "search";
-  printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
-                  $width_H{"class"},    $class,
-                  $width_H{"nseq"},     $r2_nseq,
-                  $width_H{"seqsec"},   $r2_nseq / $r2_secs,
-                  $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
-                  $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
-                  $width_H{"total"},    ribo_GetTimeString($r2_secs));
-  
+  if(defined $alg2) { 
+    printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
+                    $width_H{"class"},    $class,
+                    $width_H{"nseq"},     $r2_nseq,
+                    $width_H{"seqsec"},   $r2_nseq / $r2_secs,
+                    $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
+                    $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
+                    $width_H{"total"},    ribo_GetTimeString($r2_secs));
+  }
   
   $class = "total";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 

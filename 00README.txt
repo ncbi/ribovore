@@ -1,6 +1,6 @@
-EPN, Wed Nov  1 14:02:38 2017
+EPN, Tue Dec  5 09:20:47 2017
 
-Ribotyper v0.11 README
+Ribotyper v0.12 README
 
 Organization of this file:
 
@@ -75,8 +75,6 @@ respectively.
 
 However, in some places below that specify a path including $RIBODIR,
 you must instead use a path to which you have write permission,
-
-
 
 After adding the 4 lines specified above, execute the command:
 > source ~/.bashrc
@@ -207,21 +205,21 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.11 (Nov 2017)
+# ribotyper 0.12 (Dec 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Nov  1 14:06:31 2017
+# date:    Tue Dec  5 10:12:40 2017
 #
 # target sequence input file:    example-16.fa
 # output directory name:         test
-# model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribo.0p02.modelinfo
+# model information input file:  /panfs/pan1/infernal/notebook/17_1027_ribo_sensor_alejandro_review/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [0.9 seconds]
+# Validating input files                           ... done. [0.2 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.4 seconds]
+# Classifying sequences                            ... done. [1.5 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
 # Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.5 seconds]
+# Searching sequences against best-matching models ... done. [1.4 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -256,9 +254,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16     11.1     14698.7     14698.7  00:00:01.45  (hh:mm:ss)
-  search                15     10.3     13930.0     13930.0  00:00:01.45  (hh:mm:ss)
-  total                 16      3.9      5224.3      5224.3  00:00:04.07  (hh:mm:ss)
+  classification        16     11.0     14630.9     14630.9  00:00:01.45  (hh:mm:ss)
+  search                15     10.9     14738.2     14738.2  00:00:01.37  (hh:mm:ss)
+  total                 16      4.7      6266.9      6266.9  00:00:03.39  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -307,20 +305,18 @@ $ cat test/test.ribotyper.short.out
 # Column 2 [target]:              name of target sequence
 # Column 3 [classification]:      classification of sequence
 # Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit
-# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)
+# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)
 # Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #
 # Explanation of possible values in unexpected_features column:
 #
-# The unexpected_features column will include either a '-', if none of the features listed below are detected,
-# or it will contain one or more of the following types of messages. There is no
-# whitespace in the unexpected_features field, to make parsing easier.
+# This column will include a '-' if none of the features listed below are detected.
+# Or it will contain one or more of the following types of messages. There are no
+# whitespaces in this field, to make parsing easier.
 #
 # Values that begin with "*" automatically cause a sequence to FAIL.
 # Values that do not begin with "*" do not cause a sequence to FAIL.
-# FAIL means that if the sequence that fails is part of a submission to GenBank, then
-# this sequence should not be accepted in its present form.
 #
 #  1.  *NoHits                 No primary hits to any models above the minimum primary score
 #                              threshold of 20 bits (--minpsc) were found.
@@ -643,9 +639,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.11 (Nov 2017)
+# ribotyper 0.12 (Dec 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Nov  1 14:07:23 2017
+# date:    Tue Dec  5 10:21:03 2017
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -676,6 +672,7 @@ options for controlling which sequences PASS/FAIL (turning on optional failure c
   --questfail     : seqs that score best to questionable models FAIL
   --shortfail <n> : seqs that are shorter than <n> nucleotides FAIL [0]
   --longfail <n>  : seqs that are longer than <n> nucleotides FAIL [0]
+  --esdfail       : seqs in which second best hit by E-value has better bit score above threshold FAIL
 
 options for controlling thresholds for failure/warning criteria:
   --lowppossc <x>  : set minimum bit per position threshold for reporting suspiciously low scores to <x> bits [0.5]
@@ -687,7 +684,8 @@ options for controlling thresholds for failure/warning criteria:
   --absdiff        : use total score difference thresholds instead of per-posn
   --lowadiff <x>   : set 'low'      total score difference threshold to <x> bits [100.]
   --vlowadiff <x>  : set 'very low' total score difference threshold to <x> bits [40.]
-  --maxoverlap <n> : set maximum allowed number of model positions to overlap before failure to <n> [10]
+  --maxoverlap <n> : set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n> [10]
+  --esdmaxsc <x>   : set maximum allowed bit score difference for E-value/score discrepancies to <x> [0.001]
 
 optional input files:
   --inaccept <s> : read acceptable/questionable domains/models from file <s>
@@ -734,18 +732,18 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.11 (Nov 2017)
+# ribotyper 0.12 (Dec 2017)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Nov  1 14:07:42 2017
+# date:    Tue Dec  5 10:22:20 2017
 #
-# target sequence input file:    /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/testfiles/example-rlc-11.fa
+# target sequence input file:    /panfs/pan1/infernal/notebook/17_1027_ribo_sensor_alejandro_review/ribotyper-v1/testfiles/example-rlc-11.fa
 # output file name root:         test-rlc
-# model information input file:  /panfs/pan1/infernal/notebook/17_1018_16S_ribo_align_check_script/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
+# model information input file:  /panfs/pan1/infernal/notebook/17_1027_ribo_sensor_alejandro_review/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [4.3 seconds]
-# Running cmalign and classifying sequence lengths ... done. [5.2 seconds]
-# Running cmalign again for each length class      ... done. [5.4 seconds]
+# Running ribotyper                                ... done. [3.3 seconds]
+# Running cmalign and classifying sequence lengths ... done. [5.8 seconds]
+# Running cmalign again for each length class      ... done. [5.6 seconds]
 #
 # List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
 # List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
