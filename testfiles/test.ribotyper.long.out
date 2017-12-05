@@ -23,7 +23,7 @@
 #
 # Column  1 [idx]:                 index of sequence in input sequence file
 # Column  2 [target]:              name of target sequence
-# Column  3 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)
+# Column  3 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)
 # Column  4 [length]:              length of target sequence (nt)
 # Column  5 [#fm]:                 number of different families detected in sequence
 # Column  6 [fam]:                 name of family the best-scoring model to this sequence belongs to

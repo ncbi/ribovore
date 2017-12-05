@@ -24,7 +24,7 @@
 # Column 2 [target]:              name of target sequence
 # Column 3 [classification]:      classification of sequence
 # Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit
-# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)
+# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)
 # Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #

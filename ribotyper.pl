@@ -4,19 +4,22 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
+# ribotyper.pl :: detect and classify ribosomal RNA sequences
+# Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
+
 require "epn-options.pm";
 require "ribo.pm";
 
-# make sure the RIBODIR, INFERNALDIR and EASELDIR environment variables are set
+# make sure the RIBODIR environment variable is set set
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
-#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
 # Currently, we require infernal and easel executables are in user's path, 
 # but don't check. The program will die if the commands using them fail. 
 # Below block is left in in case we want to use it eventually.
 # make sure the required executables are executable
+#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
+#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 #my %execs_H = (); # hash with paths to all required executables
 #$execs_H{"cmsearch"}    = $env_infernal_exec_dir . "/cmsearch";
 #$execs_H{"esl-seqstat"} = $env_easel_exec_dir    . "/esl-seqstat";
@@ -82,6 +85,7 @@ opt_Add("--multfail",   "boolean",   0,                        5,  undef,   unde
 opt_Add("--questfail",  "boolean",   0,                        5,"--inaccept",undef,    "seqs that score best to questionable models FAIL",     "seqs that score best to questionable models FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--shortfail",  "integer",   0,                        5,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
 opt_Add("--longfail",   "integer",   0,                        5,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--esdfail",    "boolean",   0,                        5,"--evalues",undef,     "E-value/score discrepancies FAIL",                     "seqs in which second best hit by E-value has better bit score above threshold FAIL", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
@@ -94,7 +98,8 @@ opt_Add("--vlowpdiff",     "real",   "0.04",                   6,  undef,   "--a
 opt_Add("--absdiff",    "boolean",   0,                        6,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
 opt_Add("--lowadiff",      "real",   "100.",                   6,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap before failure to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--esdmaxsc",   "real",      "0.001",                  6,"--evalues",undef,     "set max allowed bit sc diff for Evalue/score discrepancies to <x>", "set maximum allowed bit score difference for E-value/score discrepancies to <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                                  help-output    
@@ -108,7 +113,7 @@ opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef
 
 $opt_group_desc_H{"9"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                       9,  undef,   "--ssualign",        "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                       9,  undef,   undef,               "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch",   "boolean", 0,                       9,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 opt_Add("--noali",        "boolean", 0,                       9,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                       9,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
@@ -133,7 +138,6 @@ my $options_okay =
 # options controlling minimum bit score cutoff 
                 'minpsc=s'    => \$GetOptions_H{"--minpsc"},
                 'minssc=s'    => \$GetOptions_H{"--minssc"},
-                'lowppossc'   => \$GetOptions_H{"--lowppossc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
                 'scfail'       => \$GetOptions_H{"--scfail"},
@@ -143,6 +147,7 @@ my $options_okay =
                 'questfail'    => \$GetOptions_H{"--questfail"},
                 'shortfail=s'  => \$GetOptions_H{"--shortfail"},
                 'longfail=s'   => \$GetOptions_H{"--longfail"},
+                'esdfail'      => \$GetOptions_H{"--esdfail"},
 # options controlling thresholds for warnings and failures
                 'lowppossc'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"}, 
@@ -154,6 +159,7 @@ my $options_okay =
                 'lowadiff=s'   => \$GetOptions_H{"--lowadiff"},
                 'vlowadiff=s'  => \$GetOptions_H{"--vlowadiff"},
                 'maxoverlap=s' => \$GetOptions_H{"--maxoverlap"},
+                'esdmaxsc=s'   => \$GetOptions_H{"--esdmaxsc"},
 # optional input files
                 'inaccept=s'   => \$GetOptions_H{"--inaccept"},
 # options that affect --1slow and --2slow
@@ -170,9 +176,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.11";
+my $version           = "0.12";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
-my $releasedate       = "Nov 2017";
+my $releasedate       = "Dec 2017";
 my $package_name      = "ribotyper";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -204,11 +210,10 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
 # do some final option checks that are currently too sophisticated for epn-options
 if(opt_Get("--evalues", \%opt_HH)) { 
-  if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--1hmm", \%opt_HH)) && 
+  if((! opt_Get("--1hmm", \%opt_HH)) && 
      (! opt_Get("--1slow", \%opt_HH)) &&
      (! opt_Get("--2slow", \%opt_HH))) { 
-    die "ERROR, --evalues requires one of --nhmmer, --1hmm, --1slow or --2slow";
+    die "ERROR, --evalues requires one of --1hmm, --1slow or --2slow";
   }
 }
 if(opt_Get("--mid", \%opt_HH)) { 
@@ -265,7 +270,7 @@ if($min_secondary_sc > $min_primary_sc) {
                 opt_Get("--minssc",\%opt_HH), opt_Get("--minpsc",\%opt_HH)); 
   }
   else { 
-    die "ERROR default values for --minpsc and --minssc are messed up." 
+    die "ERROR default values for --minpsc and --minssc seem to have been altered so that the minpsc default is less than the minssc default, which is illogical." 
     # this will only happen if the default values in this file are changed so that --minpsc default is less than --minssc default
   }
 }
@@ -295,12 +300,12 @@ else {  # --skipsearch not used, normal case
   if(-d $dir_out) { 
     $cmd = "rm -rf $dir_out";
     if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
-    else                        { die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+    else                        { die "ERROR intended output directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
     if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
-    else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+    else                        { die "ERROR a file matching the name of the intended output directory $dir_out already exists. Remove the file, or use -f to overwrite it."; }
   }
   # if $dir_out does not exist, create it
   if(! -d $dir_out) { 
@@ -320,13 +325,13 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { 
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
-# make sure the sequence and modelinfo files exists
-ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
+# make sure the sequence and modelinfo files exist
+ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
 }
 else { # -i used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model file after we parse the model info file
 
@@ -393,23 +398,23 @@ else {
   $r1_srt_short_out_file   = $out_root . ".short.out"; # same name as $final_short_out_file, which is ok, the r1 file is the final file
 }
 
-my $r1_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file
-my $r1_unsrt_short_out_FH = undef; # output file handle for unsorted short output file
-my $r1_srt_long_out_FH    = undef; # output file handle for sorted long output file
-my $r1_srt_short_out_FH   = undef; # output file handle for sorted short output file
-my $r2_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file
-my $r2_unsrt_short_out_FH = undef; # output file handle for unsorted short output file
-my $r2_srt_long_out_FH    = undef; # output file handle for unsorted long output file
-my $r2_srt_short_out_FH   = undef; # output file handle for unsorted short output file
+my $r1_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file for round 1
+my $r1_unsrt_short_out_FH = undef; # output file handle for unsorted short output file for round 1
+my $r1_srt_long_out_FH    = undef; # output file handle for sorted long output file for round 1
+my $r1_srt_short_out_FH   = undef; # output file handle for sorted short output file for round 1
+my $r2_unsrt_long_out_FH  = undef; # output file handle for unsorted long output file for round 2
+my $r2_unsrt_short_out_FH = undef; # output file handle for unsorted short output file for round 2
+my $r2_srt_long_out_FH    = undef; # output file handle for unsorted long output file for round 2
+my $r2_srt_short_out_FH   = undef; # output file handle for unsorted short output file for round 2
 my $final_long_out_FH     = undef; # output file handle for final long output file
 my $final_short_out_FH    = undef; # output file handle for final short output file
 
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_unsrt_long_out_file);
   push(@to_remove_A, $r1_unsrt_short_out_file);
-  push(@to_remove_A, $r1_srt_long_out_file);
-  push(@to_remove_A, $r1_srt_short_out_file);
   if(defined $alg2) { 
+    push(@to_remove_A, $r1_srt_long_out_file);
+    push(@to_remove_A, $r1_srt_short_out_file);
     push(@to_remove_A, $r2_unsrt_long_out_file);
     push(@to_remove_A, $r2_unsrt_short_out_file);
     push(@to_remove_A, $r2_srt_long_out_file);
@@ -470,7 +475,7 @@ foreach $model (keys %domain_H) {
   if($class_len  > $width_H{"classification"}) { $width_H{"classification"} = $class_len;  }
 }
 
-# parse input accept file, if nec
+# parse input file of acceptable models, if the option --inaccept is used
 my %accept_H   = ();
 my %question_H = ();
 if(opt_IsUsed("--inaccept", \%opt_HH)) { 
@@ -487,15 +492,16 @@ else { # --inaccept not used, all models are acceptable
   }   
 } 
 
-# check for SSI index file for the sequence file,
-# if it doesn't exist, create it
+# create SSI index file for the sequence file
+# if it already exists, delete it and create a new one, just to make sure it's valid
 my $ssi_file = $seq_file . ".ssi";
+if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0)) { 
+  unlink $ssi_file;
+}
+#ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-  #ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
-  ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
-  if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-    die "ERROR, tried to create $ssi_file, but failed"; 
-  }
+  die "ERROR, tried to create $ssi_file, but failed"; 
 }
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
@@ -811,6 +817,11 @@ if(defined $alg2) {
   close($final_short_out_FH);
   ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
+else { 
+  # no $alg2, so we only did one round of searching, fill the %class_stats_HH and %ufeature_ct_H stats hashes
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
+  get_stats_from_long_file_for_sole_round($r1_srt_long_out_FH, \%class_stats_HH, \%ufeature_ct_H, \%opt_HH);
+}
 
 # remove files we don't want anymore, then exit
 foreach my $file (@to_remove_A) { 
@@ -879,7 +890,13 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 # Returns:     Path to master CM file. Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
 # 
-# Dies:        Never.
+# Dies:        - If $modelinfo_file cannot be opened.
+#              - If $modelinfo_file is not in the correct format.
+#              - If model file location listed in $modelinfo_file cannot be disambiguated 
+#                (it exists in default model directory and -i directory if -i is used)
+#              - If model file listed in $modelinfo_file does not exist              
+#              - If a model file is listed twice in $modelinfo_file
+#              - If a master model file is not listed in $modelinfo_file
 #
 ################################################################# 
 sub parse_modelinfo_file { 
@@ -888,8 +905,6 @@ sub parse_modelinfo_file {
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR) = @_;
-
-  open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
   my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
   my $found_master      = 0;     # set to '1' when we find master file line
@@ -963,7 +978,7 @@ sub parse_modelinfo_file {
           die "ERROR read model $model twice in $modelinfo_file";
         }
         $found_master = 1;
-        $master_cmfile = $cmfile
+        $master_cmfile = $cmfile;
       }
       else { 
         if(exists $family_HR->{$model}) { 
@@ -1004,7 +1019,7 @@ sub parse_modelinfo_file {
 #
 # Returns:     Nothing. Updates %{$accept_HR} and %{$question_HR}.
 # 
-# Dies:        If the file is in the wrong format.
+# Dies:        If the file cannot be opened or is in the wrong format.
 #
 ################################################################# 
 sub parse_inaccept_file { 
@@ -1034,7 +1049,7 @@ sub parse_inaccept_file {
     if(($line !~ m/^\#/) && ($line =~ m/\w/))  { # skip comment and blank lines
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 2) { 
-        die "ERROR, in $sub_name, didn't read 2 token in inaccept input file $inaccept_file, line $line\nEach line should have exactly 1 white-space delimited token, a valid model name"; 
+        die "ERROR, in $sub_name, there are not exactly two tokens in inaccept input file $inaccept_file, line $line\nEach line should have a valid model name then white space and then the word 'acceptable' or the word 'questionable' "; 
       }
       ($model, $accept_or_question) = (@el_A);
       
@@ -1090,10 +1105,10 @@ sub parse_inaccept_file {
 #
 # Returns:     Maximum length of any model read from the model file.
 # 
-# Dies:        If master model file does not have exactly the 
-#              same set of models that are keys in $family_HR
-#              and match the checksum values in the individual
-#              CM files.
+# Dies:        If the master model file does not have exactly the 
+#              same set of models that are keys in $family_HR or does
+#              not match the checksum values in the individual CM
+#              files.
 #
 ################################################################# 
 sub parse_and_validate_model_files { 
@@ -1112,13 +1127,13 @@ sub parse_and_validate_model_files {
   foreach $model (keys %{$family_HR}) { 
     push(@tmp_family_model_A, $model);
     $tmp_family_model_H{$model} = 0; 
-    # we will set to '1' when we see it in the model file and validate it's checksum
+    # we will set to '1' when we see it in the model file and validate its checksum
   }
 
   my $model_width = length("model");
-  my $name_output = `grep NAME $master_model_file | awk '{ print \$2 }'`;
+  my $name_output = `grep -w ^NAME $master_model_file | awk '{ print \$2 }'`;
   my @name_A = split("\n", $name_output);
-  my $cksum_output = `grep CKSUM $master_model_file | awk '{ print \$2 }'`;
+  my $cksum_output = `grep -w ^CKSUM $master_model_file | awk '{ print \$2 }'`;
   my @cksum_A = split("\n", $cksum_output);
 
   my $indi_cksum_output = undef;
@@ -1141,10 +1156,10 @@ sub parse_and_validate_model_files {
       die "ERROR read model \"$model\" from model file $master_model_file that is not listed in the model info file.";
     }
     if($tmp_family_model_H{$model} == 0) { # only check if we haven't seen this name before
-      $indi_cksum_output = `grep CKSUM $indi_cmfile | awk '{ print \$2 }'`;
+      $indi_cksum_output = `grep -w ^CKSUM $indi_cmfile | awk '{ print \$2 }'`;
       @indi_cksum_A = split("\n", $indi_cksum_output);
       if(scalar(@indi_cksum_A) != 2) { 
-        die "ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model in it"; 
+        die "ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model and exactly 2 lines containing the token CKSUM in the entire file"; 
       }
       if($indi_cksum_A[0] != $indi_cksum_A[1]) { 
         die "ERROR in $sub_name, the two CKSUM lines from $indi_cmfile differ unexpectedly"; 
@@ -1194,7 +1209,12 @@ sub parse_and_validate_model_files {
 #
 # Returns:     Nothing. Fills %{$family_H}, %{$domain_HR}
 # 
-# Dies:        Never.
+# Dies:        If 1) one of the arguments that can take on only a finite set of values has none of the permitted values;
+#              2) the file could not be opened
+#              3) the user asked to sort by E-values, but the file lacks E-values
+#              4) the file has a comment line starting with #
+#              5) some row in the file does not have the expected number of columns
+#              6) some value in the file, such as the model, is unrecognized    
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
@@ -1447,13 +1467,21 @@ sub parse_sorted_tbl_file {
         $cur_becomes_first = 1; # no current, 'one' this will be it
       }
       else { 
-        # determine the domain (default) or model (--samedomain) of top hit and current hit we're looking at
-        # if --samedomain, we require that top two hits be different models, not necessarily different domains
+        # determine the domain (default) or model (--samedomain) of
+        # top hit and current hit we're looking at if --samedomain, we
+        # require that top two hits be different models, not
+        # necessarily different domains
+        #
+        # A note on how ties are broken if top two scores are equal,
+        # or ($sort_by_evalues) and top two evalues are equal: the hit
+        # that comes first in the tblout will be ranked as the top
+        # hit, and the hit that comes second will be ranked as the
+        # second hit.
         $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model : $first_domain;
         if($sort_by_evalues) { 
           if(($evalue < $first_evalue) || # this E-value is better than (less than) our current 'first' E-value
              ($evalue eq $first_evalue && $score > $first_score)) { # this E-value equals current 'first' E-value, 
-            # but this score is better than current 'one' score
+                                                                    # but this score is better than current 'one' score
             $cur_becomes_first = 1;
           }
         }
@@ -1549,7 +1577,7 @@ sub parse_sorted_tbl_file {
 # Subroutine : set_model_vars()
 # Incept:      EPN, Tue Dec 13 14:53:37 2016
 #
-# Purpose:     Set values of a hash.
+# Purpose:     Set values of a hash containing information about matches.
 #              
 # Arguments: 
 #   $HR:        REF to hash to set values of
@@ -1563,7 +1591,7 @@ sub parse_sorted_tbl_file {
 #   $mdlstart:  value to set $HR->{"mdlstart"} to
 #   $mdlstop:   value to set $HR->{"mdlstop"} to 
 #
-# Returns:     Nothing.
+# Returns:     Nothing. Updates %{$HR}.
 # 
 # Dies:        Never.
 #
@@ -1660,8 +1688,8 @@ sub output_all_hitless_targets {
 #   $target:            target name
 #   $seqidx:            index of target sequence
 #   $seqlen:            length of target sequence
-#   $have_evalues:      '1' to print space for E-values
-#   $have_model_coords: '1' to print space for E-values
+#   $have_evalues:      '1' to print dash (indicating a blank) for E-values
+#   $have_model_coords: '1' to print dash for E-values
 #
 # Returns:     Nothing.
 # 
@@ -1730,29 +1758,31 @@ sub output_one_hitless_target {
 #
 # Purpose:     Output information for current sequence in short 
 #              and/or long mode (depending on whether $short_FH 
-#              and $long_FH are defined or not).
+#              and $long_FH are defined or not). At least one
+#              of $short_FH and $long_FH must be defined or we die.
 #              
 # Arguments: 
-#   $short_FH:               file handle to output short output to (can be undef to not output short output)
-#   $long_FH:                file handle to output long output to (can be undef to not output long output)
+#   $short_FH:               file handle to output short output to (can be undef, in which case short output is not done)
+#   $long_FH:                file handle to output long output to (can be undef, in which case long output is not done)
 #   $opt_HHR:                reference to 2D hash of cmdline options
-#   $round:                  '1' or '2', what round of searching we're in
+#   $round:                  '1' or '2', what round of searching we are in
 #   $have_accurate_coverage: '1' if we have accurate coverage, '0' if not
-#   $have_model_coords:      '1' if we have model coords, '0' if not
+#   $have_model_coords:      '1' if we have model coordinates, '0' if not
 #   $have_evalues:           '1' if we have E-values, '0' if not
 #   $sort_by_evalues:        '1' if we are sorting by E-values, '0' if not
 #   $width_HR:               hash, key is "model" or "target", value 
 #                            is width (maximum length) of any target/model
 #   $domain_HR:              reference to domain hash
 #   $accept_HR:              reference to the 'accept' hash, key is "model"
-#                            value is '1' if hits to model should have unexpected_model
-#                            ufeature, 0 if not
+#                            value is '1' if model is acceptable and 0 if
+#                            hits to model should have unacceptable_model
+#                            unexpected_feature and therefore, FAIL
 #   $question_HR:            reference to the 'question' hash, key is "model"
 #                            value is '1' if hits to model should have questionable_model
-#                            ufeature, 0 if not
+#                            unexpected_feature, 0 if not
 #   $target:                 target name
 #   $seqidx:                 index of target sequence
-#   $seqlen:                 length of target sequence
+#   $seqlen:                 length of target sequence in nucleotides
 #   $nhits_HHR:              reference to hash of num hits (no threshold) per model (key 1), strand (key 2)
 #   $nhits_at_HHR:           reference to hash of num hits above threshold per model (key 1), strand (key 2)
 #   $nnts_HHR:               reference to hash of num nucleotides (no threshold) in all hits per model (key 1), strand (key 2)
@@ -1761,11 +1791,12 @@ sub output_one_hitless_target {
 #   $mdl_bd_HHAR:            reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
 #   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   $first_model_HHR:        hit stats for first model (best model)
-#   $second_model_HHR:        hit stats for second model (second-best model)
+#   $second_model_HHR:       hit stats for second model (second-best model)
 #
 # Returns:     Nothing.
 # 
-# Dies:        Never.
+# Dies:        - If neither $short_FH or $long_FH is defined.
+#              - It is round 2 and there is more than one model matching the target.
 #
 ################################################################# 
 sub output_one_target { 
@@ -1777,6 +1808,10 @@ sub output_one_target {
       $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nhits_at_HHR, $nnts_HHR, $nnts_at_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
       $first_model_HHR, $second_model_HHR) = @_;
+
+  if((! defined $short_FH) && (! defined $long_FH)) { 
+    die "ERROR in $sub_name, neither short nor long file handles are defined"; 
+  }
 
   # determine the winning family
   my $wfamily = undef;
@@ -1835,7 +1870,7 @@ sub output_one_target {
     }
   }
 
-  # determine if we have hits that overlap on the model by more than maximum allowed amount
+  # determine if we have distinct hits that overlap on the model by more than maximum allowed amount
   my $duplicate_model_region_str = "";
   if($have_model_coords) { # we can only do this if search output included model coords
     $nhits = scalar(@{$mdl_bd_HHAR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}}});
@@ -1886,6 +1921,7 @@ sub output_one_target {
            ($mdl_bd_HHAR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}}[($x-1)] ne
             $mdl_bd_HHAR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}}[($y-1)])) { # hit is not identical to hit in correct order
           $out_of_order_flag = 1;
+          $i = $nhits; # breaks 'for i' loop, slight optimization
         }
       }
       if($out_of_order_flag) { 
@@ -1942,7 +1978,7 @@ sub output_one_target {
     $do_ppos_score_diff = 0;
   }
   my $score_total_diff = undef; # score total difference 
-  my $score_ppos_diff  = undef; # score per position difference 
+  my $score_ppos_diff  = undef; # score per position difference (absolute value)
   my $diff_low_thresh  = undef; # bit score difference for 'low difference' warning/failure
   my $diff_vlow_thresh = undef; # bit score difference for 'very low difference 'warning/failure
   my $diff_low_str     = undef; # string that explains low bit score difference warning/failure
@@ -1950,8 +1986,15 @@ sub output_one_target {
 
   if(defined $second_model_HHR->{$wfamily}{"score"}) { 
     # determine score difference threshold
-    $score_total_diff = ($first_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"});
-    $score_ppos_diff  = $score_total_diff / abs($first_model_HHR->{$wfamily}{"stop"} - $first_model_HHR->{$wfamily}{"start"});
+    $score_total_diff = abs($first_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"});
+    # $first_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"} can be negative if
+    # $sort_by_evalues and second hit by E-value bit score exceeds top hit by E-value
+    # sanity check
+    if(($second_model_HHR->{$wfamily}{"score"} > $first_model_HHR->{$wfamily}{"score"}) && (! $sort_by_evalues)) { 
+      die sprintf("ERROR in $sub_name, second best hit has higher score than best hit (%.2f > %2.f) and sort_by_evalues is FALSE", 
+                  $second_model_HHR->{$wfamily}{"score"}, $first_model_HHR->{$wfamily}{"score"});
+    }
+    $score_ppos_diff  = $score_total_diff / (abs($first_model_HHR->{$wfamily}{"stop"} - $first_model_HHR->{$wfamily}{"start"}) + 1);
     if($do_ppos_score_diff) { 
       # default: per position score difference, dependent on length of hit
       $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
@@ -1972,8 +2015,8 @@ sub output_one_target {
   # and if the sequence PASSes or FAILs.
   # 
   # Possible unusual feature criteria are listed below. 
-  # A FAILure occurs if either the criteria is a strict failure criteria
-  # or if it is a optional criteria and the relevant command line option is used.
+  # A FAILure occurs if either the criteria is a strict failure criterion
+  # or if it is a optional criterion and the relevant command line option is used.
   # 
   # Four strict failure criteria:
   # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
@@ -1995,6 +2038,10 @@ sub output_one_target {
   # reported
   # - sequence is less than <n1> nucleotides (requires --shortfail <n1>)
   # - sequence is more than <n2> nucleotides (requires --longfail <n2>)
+  #
+  # We start optimistically and suppose the sequence will PASS and then look for 
+  # reasons that it may FAIL.
+  #
   my $pass_fail = "PASS";
   my $unusual_features = "";
 
@@ -2022,7 +2069,7 @@ sub output_one_target {
 
   # check/enforce optional failure criteria
 
-  # determine if the sequence hits to an questionable or unacceptable model
+  # determine if the sequence's best hit is to an questionable or unacceptable model
   if($question_HR->{$first_model_HHR->{$wfamily}{"model"}} == 1) { 
     if(opt_Get("--questfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
@@ -2071,7 +2118,7 @@ sub output_one_target {
     $unusual_features .= sprintf("LowCoverage:(%.3f<%.3f);", $tot_coverage, $cov_thresh);
   }
   # determine if the sequence has a low score difference between the top
-  # two domains
+  # two matches to a model wihin the same family
   if(defined $second_model_HHR->{$wfamily}{"model"}) { 
     # determine score difference threshold
     $score_total_diff = $one_tbits - $two_tbits; 
@@ -2115,7 +2162,7 @@ sub output_one_target {
       }
     }
   }
-  # determine if there are more than one hit to the best model
+  # determine if there is more than one hit to the best model
   $nhits = $nhits_HHR->{$first_model_HHR->{$wfamily}{"model"}}{$first_model_HHR->{$wfamily}{"strand"}};
   if($nhits > 1) {
     if(opt_Get("--multfail", $opt_HHR)) { 
@@ -2123,6 +2170,15 @@ sub output_one_target {
       $unusual_features .= "*";
     }
     $unusual_features .= "MultipleHits:($nhits);";
+  }
+  # if $sort_by_evalues: 
+  # determine if the second best hit has a higher bit score than the first sequence
+  if($sort_by_evalues && ((-1 * $score_total_diff) > opt_Get("--esdmaxsc", $opt_HHR))) { 
+    if(opt_Get("--esdfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= sprintf("EvalueScoreDiscrepancyAboveThreshold:(second_hit_by_evalue_bit_score_exceeds_top_hit_by_evalue_bit_score_by_%.3f>%.3_bits", (-1 * $score_total_diff), opt_Get("--esdmaxsc", $opt_HHR));
   }
   # optional unusual features (if any)
   if((opt_IsUsed("--shortfail", $opt_HHR)) && ($seqlen < opt_Get("--shortfail", $opt_HHR))) { 
@@ -2133,6 +2189,8 @@ sub output_one_target {
     $pass_fail = "FAIL";
     $unusual_features .= "*TooLong:($seqlen>" . opt_Get("--longfail", $opt_HHR) . ");";
   }
+
+
   # if there are no unusual features, set the unusual feature string as '-'
   if($unusual_features eq "") { $unusual_features = "-"; }
 
@@ -2462,7 +2520,7 @@ sub output_short_tail {
   printf $FH ("# Column 3 [classification]:      classification of sequence\n");
   printf $FH ("# Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit\n");
 #  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (see below for more on FAIL)\n");
-  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)\n");
+  printf $FH ("# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)\n");
   printf $FH ("# Column 6 [unexpected_features]: unexpected/unusual features of sequence (see below)\n");
   
   output_unexpected_features_explanation($FH, $ufeature_AR, $opt_HHR);
@@ -2513,7 +2571,7 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [target]:              name of target sequence\n", $column_ct); 
   $column_ct++;
-  printf $FH ("# Column %2d [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in final column)\n", $column_ct);
+  printf $FH ("# Column %2d [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)\n", $column_ct);
   $column_ct++;
   printf $FH ("# Column %2d [length]:              length of target sequence (nt)\n", $column_ct);
   $column_ct++;
@@ -2745,6 +2803,11 @@ sub determine_unexpected_feature_explanation {
   elsif($ufeature =~ m/MultipleHits/) { 
     push(@{$exp_AR}, "There is more than one hit to the best scoring model on the same strand.");
   }
+  elsif($ufeature =~ m/EvalueScoreDiscrepancyAboveThreshold/) { 
+    push(@{$exp_AR}, "Hits were sorted by E-values (--evalues), and the second best hit by E-value");
+    push(@{$exp_AR}, sprintf("had a bit score more than %.3f bits greater than the bit score of", opt_Get("--esdmaxsc", $opt_HHR)));
+    push(@{$exp_AR}, "the best hit by E-value");
+  }
   elsif($ufeature =~ m/TooShort/) { 
     if(opt_Get("--shortfail", $opt_HHR)) { 
       push(@{$exp_AR}, "Sequence is below minimum length threshold of " . opt_Get("--shortfail", $opt_HHR) . " (--shortfail).");
@@ -2851,7 +2914,7 @@ sub center_string {
 #
 # Returns:  '1' if coverage is accurate, else '0'
 # 
-# Dies:     Never
+# Dies:     if round is not "1", "2", or "final"
 #
 #################################################################
 sub determine_if_coverage_is_accurate { 
@@ -3100,6 +3163,7 @@ sub sort_hit_array {
   for($i = 0; $i < $nel; $i++) { 
     $hash{($i+1)} = $tosort_AR->[$i];
   }
+  # the <=> comparison function means sort numerically ascending
   @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
 
   # now that we have the sorted order, we can easily check for dups
@@ -3169,7 +3233,8 @@ sub decompose_region_str {
 # Arguments: 
 #   $orig_file: name of original file
 # 
-# Returns:     The string $orig_file with actual file name removed
+# Returns:     The string $orig_file with actual file name removed 
+#              or "./" if $orig_file is "".
 #
 ################################################################# 
 sub get_dir_path {
@@ -3386,7 +3451,7 @@ sub output_combined_short_or_long_file {
   # variables for a single target related to updating %{$stats_HHR}
   my $class  = undef; # classification
   my $pf     = undef; # 'PASS' or 'FAIL'
-  my $nnt    = undef; # size of current target
+  my $nnt    = undef; # size of current target in number of nucleotides
   my $fam    = undef; # family of current target
   my $domain = undef; # domain of current target
   my $model  = undef; # model of current target
@@ -3499,7 +3564,8 @@ sub output_combined_short_or_long_file {
       # 1) low_score_difference_between_top_two...
       # 2) very_low_score_difference_between_top_two... 
       # 3) hits_to_more_than_one_family...
-      # either one can have a "*" at the beginning of it, which we want to capture
+      # either one can have a "*" at the beginning of it (which we want to capture
+      # because it will cause the sequence to FAIL) 
       # we append these to the end of our current unexpected_features
       if($r1_el_A[($ncols_r1-1)] ne $r2_el_A[($ncols_r2-1)]) { 
         $did_edit_r2_line = 0;
@@ -3580,6 +3646,108 @@ sub output_combined_short_or_long_file {
     else { # don't have either line
       $keep_going = 0;
     }
+  }
+      
+  return;
+}
+
+#################################################################
+# Subroutine : get_stats_from_long_file_for_sole_round()
+# Incept:      EPN, Tue Dec  5 09:41:28 2017
+#
+# Purpose:     Obtain stats from a long output file. Only 
+#              necessary when script is run in 1-round-only mode,
+#              otherwise this is done in output_combined_short_or_long_file()
+#              when called for the long file.
+#              
+# Arguments: 
+#   $in_FH:          file handle of open round 1 (of 1) long file
+#   $stats_HHR:      ref to 2D hash of stats:
+#                    1D key: model name, "*all*" or "*none*"
+#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
+#                    filled here
+#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
+#                    filled here
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#
+# Returns:  Nothing.
+# 
+# Dies:     If there are not the same sequences in 
+#           the same order in the round 1 and round 2 files.
+#
+################################################################# 
+sub get_stats_from_long_file_for_sole_round { 
+  my $nargs_expected = 4;
+  my $sub_name = "get_stats_from_long_file_for_sole_round";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_FH, $stats_HHR, $ufeature_ct_HR, $opt_HHR) = @_;
+
+  my $keep_going = 0;     # '1' to keep reading lines from the file
+  my $line;               # line from long file
+  my $lidx;               # line index
+  my @el_A = ();          # array of space-delimited tokens in a line
+  my $expected_ncols = 0; # number of columns we expect in the file
+  my $ncols          = 0; # actual number of columns in line
+  # variables for a single target related to updating %{$stats_HHR}
+  my $class  = undef; # classification
+  my $pf     = undef; # 'PASS' or 'FAIL'
+  my $nnt    = undef; # size of current target in number of nucleotides
+  my $fam    = undef; # family of current target
+  my $domain = undef; # domain of current target
+  my $model  = undef; # model of current target
+  my $tcov   = undef; # total coverage of current target
+
+  initialize_class_stats(\%{$stats_HHR->{"*input*"}});
+  initialize_class_stats(\%{$stats_HHR->{"*none*"}});
+  initialize_class_stats(\%{$stats_HHR->{"*all*"}});
+
+  $expected_ncols = determine_number_of_columns_in_long_output_file("1", $opt_HHR);
+
+  # we know that the first few lines of the file are comment lines, that begin with "#", chew them up
+  $line = <$in_FH>;
+  $lidx++;
+  while((defined $line) && ($line =~ m/^\#/)) { 
+    $line = <$in_FH>; 
+    $lidx++;
+  }
+  $keep_going = 1;
+  
+  while($keep_going) { 
+    chomp $line;
+    # example lines
+    # (round 2 with e-values)
+    #                                                                                                                                                best-scoring model                                                                    
+    #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
+    #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
+    #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
+    #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
+    #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
+
+    @el_A = split(/\s+/, $line);
+    $ncols = scalar(@el_A);
+    if($ncols != $expected_ncols) { 
+      die "ERROR in $sub_name, read unexpected number of columns on line $lidx of file (" . $ncols . " != " . $expected_ncols . ")";
+    }
+
+    # update %{$stats_HHR}
+    ($pf, $nnt, $fam, $domain, $model, $tcov) = ($el_A[2], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[14]);
+    $class = $fam . "." . $domain;
+    if($class eq "-.-") { $class = "*none*"; }
+    if(! defined $stats_HHR->{$class}) { 
+      initialize_class_stats(\%{$stats_HHR->{$class}})
+    }
+    update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+    update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
+    update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+
+    # update the ufeature counts hash if we have one
+    if(defined $ufeature_ct_HR) { 
+      update_one_ufeature_sequence($ufeature_ct_HR, $el_A[($ncols-1)]);
+    }
+
+    $line = <$in_FH>; 
+    $keep_going = ((defined $line) && ($line !~ m/^\#/)) ? 1 : 0;
   }
       
   return;
@@ -3734,6 +3902,7 @@ sub initialize_ufeature_stats {
   if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*LowScoreDifference"); }
   if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*VeryLowScoreDifference"); }
   if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*MultipleHits"); }
+  if(opt_Get("--esdfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*EvalueScoreDiscrepancyAboveThreshold"); }
 
   # those that are only reported if a specific option is enabled
   if(opt_IsUsed("--shortfail", $opt_HHR)) { push(@{$ufeature_AR}, "*TooShort"); }
@@ -3747,6 +3916,11 @@ sub initialize_ufeature_stats {
   if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "LowScoreDifference"); }
   if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "VeryLowScoreDifference"); }
   if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "MultipleHits"); }
+
+  # those that can only be reported if special other options are enabled
+  if(opt_Get("--evalues", $opt_HHR)) { 
+    if(! opt_Get("--esdfail",  $opt_HHR)) { push(@{$ufeature_AR}, "EvalueScoreDiscrepancyAboveThreshold"); }
+  }
 
   foreach my $ufeature (@{$ufeature_AR}) { 
     $ufeature_ct_HR->{$ufeature} = 0;
@@ -4091,14 +4265,15 @@ sub output_timing_statistics {
                   $width_H{"total"},    ribo_GetTimeString($r1_secs));
 
   $class = "search";
-  printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
-                  $width_H{"class"},    $class,
-                  $width_H{"nseq"},     $r2_nseq,
-                  $width_H{"seqsec"},   $r2_nseq / $r2_secs,
-                  $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
-                  $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
-                  $width_H{"total"},    ribo_GetTimeString($r2_secs));
-  
+  if(defined $alg2) { 
+    printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
+                    $width_H{"class"},    $class,
+                    $width_H{"nseq"},     $r2_nseq,
+                    $width_H{"seqsec"},   $r2_nseq / $r2_secs,
+                    $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
+                    $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
+                    $width_H{"total"},    ribo_GetTimeString($r2_secs));
+  }
   
   $class = "total";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 

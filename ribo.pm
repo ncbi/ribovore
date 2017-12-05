@@ -4,9 +4,9 @@
 # Eric Nawrocki
 # EPN, Fri May 12 09:48:21 2017
 # 
-# Perl module used by ribotyper.pl and ribosensor-wrapper.pl.
-# which contains subroutines called by both of those scripts.
-#
+# Perl module used by ribotyper.pl, ribosensor-wrapper.pl and
+# ribolengthchecker.pl which contains subroutines called by 
+# those scripts.
 #
 # Functions for output: 
 # ribo_OutputBanner:             output the banner with info on the script and options used
@@ -246,13 +246,14 @@ sub ribo_ValidateExecutableHash {
 # Subroutine : ribo_ProcessSequenceFile()
 # Incept:      EPN, Fri May 12 10:08:47 2017
 #
-# Purpose:     Use esl-seqstat to get the lengths of all sequences
-#              in a sequence file and fill %{$seqidx_HR} and %{$seqlen_HR}
-#              where key is sequence name, and value is index in file
-#              or sequence length. Also update %{$width_HR} with maximum
-#              length of sequence name (key: "target"), index (key: "index")
-#              and length (key: "length").
-#
+# Purpose:     Use esl-seqstat to get the lengths of all sequences in a
+#              FASTA or Stockholm formatted sequence file and fill
+#              %{$seqidx_HR} and %{$seqlen_HR} where key is sequence
+#              name, and value is index in file or sequence
+#              length. Also update %{$width_HR} with maximum length of
+#              sequence name (key: "target"), index (key: "index") and
+#              length (key: "length").
+#              
 # Arguments: 
 #   $seqstat_exec: path to esl-seqstat executable
 #   $seq_file:     sequence file to process
@@ -334,6 +335,9 @@ sub ribo_ParseSeqstatFile {
   my %seqdups_H = ();       # key is a sequence name that exists more than once in seq file, value is number of occurences
   my $at_least_one_dup = 0; # set to 1 if we find any duplicate sequence names
 
+  # parse the seqstat -a output 
+  # sequences must have non-empty names (else esl-seqstat call would have failed)
+  # lengths must be >= 0 (lengths of 0 are okay)
   while(my $line = <IN>) { 
     # = lcl|dna_BP331_0.3k:467     1232 
     # = lcl|dna_BP331_0.3k:10     1397 
