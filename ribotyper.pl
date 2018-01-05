@@ -1247,26 +1247,6 @@ sub parse_sorted_tbl_file {
                             # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
                             # values are 2nd dim attribute for best scoring hit in this family to current sequence
 
-  # for convenience, copies of current first and second values, to simplify writing them out
-  my $first_model    = undef;
-  my $first_domain   = undef;
-  my $first_evalue   = undef;
-  my $first_score    = undef;
-  my $first_start    = undef;
-  my $first_stop     = undef;
-  my $first_strand   = undef;
-  my $first_mdlstart = undef;
-  my $first_mdlstop  = undef;
-  
-  my $second_model    = undef;
-  my $second_domain   = undef;
-  my $second_evalue   = undef;
-  my $second_score    = undef;
-  my $second_start    = undef;
-  my $second_stop     = undef;
-  my $second_strand   = undef;
-  my $second_mdlstart = undef;
-  my $second_mdlstop  = undef;
 
   # statistics we keep track of per model and strand, used to detect various output statistics and
   # to report 'unexpected features'
@@ -1301,19 +1281,14 @@ sub parse_sorted_tbl_file {
 
   my ($target, $model, $domain, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
       (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
-  my $cur_becomes_first; # set to true for each hit if it is better than our current 'first' hit
-  my $cur_becomes_second; # set to true for each hit if it is better than our current 'second' hit
-  my $cur_domain_or_model; # domain (default) or model (--samedomain) of current hit
-  my $one_domain_or_model; # domain (default) or model (--samedomain) of current 'one' hit
-  my $two_domain_or_model; # domain (default) or model (--samedomain) of current 'two' hit
+
+  my $cur_domain_or_model;    # domain (default) or model (--samedomain) of current hit
+  my $first_domain_or_model;  # domain (default) or model (--samedomain) of current 'first' hit
   my $nhits_above_thresh = 0; # number of hits above threshold for current sequence
   my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
   my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
   my $have_evalues           = determine_if_we_have_evalues($round, $opt_HHR);
   my $sort_by_evalues        = opt_Get("--evalues", $opt_HHR);
-
-  # for convenience, copies of current first and second values, to simplify writing them out
-
   if($sort_by_evalues && (! $have_evalues)) { 
     die "ERROR, trying to sort by E-values but we don't have them. Coding error."; 
   }
@@ -1322,6 +1297,12 @@ sub parse_sorted_tbl_file {
     ######################################################
     # Parse the data on this line, this differs depending
     # on our annotation method
+    #
+    # A note on how ties are broken if top two scores are equal,
+    # or ($sort_by_evalues) and top two evalues are equal: the hit
+    # that comes first in the tblout will be ranked as the top
+    # hit, and the hit that comes second will be ranked as the
+    # second hit.
     chomp $line;
     $line =~ s/^\s+//; # remove leading whitespace
     
@@ -1351,6 +1332,8 @@ sub parse_sorted_tbl_file {
     if(! defined $family) { 
       die "ERROR unrecognized model $model, no family information";
     }
+    $domain = $domain_HR->{$model}; # the domain for this model
+    $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
 
     # two sanity checks:
     # make sure we have sequence length information for this sequence
@@ -1380,8 +1363,10 @@ sub parse_sorted_tbl_file {
                           \%first_model_HH, \%second_model_HH);
         $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
       }
+      # re-initialize
       %first_model_HH        = ();
       %second_model_HH       = ();
+      $first_domain_or_model = undef;
       $nhits_above_thresh    = 0;
       %nhits_per_model_HH    = ();
       %nhits_at_per_model_HH = ();
@@ -1392,15 +1377,6 @@ sub parse_sorted_tbl_file {
       %seq_bd_per_model_HHA  = ();
     }
     ##############################################################
-    
-    ###############################################################
-    # Determine if this hit is either a new 'first' or 'second' hit
-    $cur_becomes_first  = 0;     # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
-    $cur_becomes_second = 0;    # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
-    $domain = $domain_HR->{$model}; # the domain for this model
-    $one_domain_or_model = undef;   # top hit's domain (default) or model (if --samedomain)
-    $two_domain_or_model = undef;   # second best hit's domain (default) or model (if --samedomain)
-    $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
 
     # we count all nucleotides in all hits (don't enforce minimum threshold) to each model
     $nnts_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
@@ -1413,131 +1389,26 @@ sub parse_sorted_tbl_file {
     push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "." . $mdlto)); 
     push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "." . $seqto)); 
 
-    if(exists $first_model_HH{$family}) { 
-      $first_model    = $first_model_HH{$family}{"model"};
-      $first_domain   = $first_model_HH{$family}{"domain"};
-      $first_evalue   = $first_model_HH{$family}{"evalue"};
-      $first_score    = $first_model_HH{$family}{"score"};
-      $first_start    = $first_model_HH{$family}{"start"};
-      $first_stop     = $first_model_HH{$family}{"stop"};
-      $first_strand   = $first_model_HH{$family}{"strand"};
-      $first_mdlstart = $first_model_HH{$family}{"mdlstart"};
-      $first_mdlstop  = $first_model_HH{$family}{"mdlstop"};
-    }
-    else { 
-      $first_model    = undef;
-      $first_domain   = undef;
-      $first_evalue   = undef;
-      $first_score    = undef;
-      $first_start    = undef;
-      $first_stop     = undef;
-      $first_strand   = undef;
-      $first_mdlstart = undef;
-      $first_mdlstop  = undef;
-    }
-    if(exists $second_model_HH{$family}) { 
-      $second_model    = $second_model_HH{$family}{"model"};
-      $second_domain   = $second_model_HH{$family}{"domain"};
-      $second_evalue   = $second_model_HH{$family}{"evalue"};
-      $second_score    = $second_model_HH{$family}{"score"};
-      $second_start    = $second_model_HH{$family}{"start"};
-      $second_stop     = $second_model_HH{$family}{"stop"};
-      $second_strand   = $second_model_HH{$family}{"strand"};
-      $second_mdlstart = $second_model_HH{$family}{"mdlstart"};
-      $second_mdlstop  = $second_model_HH{$family}{"mdlstop"};
-    }
-    else { 
-      $second_model    = undef;
-      $second_domain   = undef;
-      $second_evalue   = undef;
-      $second_score    = undef;
-      $second_start    = undef;
-      $second_stop     = undef;
-      $second_strand   = undef;
-      $second_mdlstart = undef;
-      $second_mdlstop  = undef;
-    }
-
     # first, enforce our global bit score minimum
     if($score >= $min_primary_sc) { 
       # yes, we either have no minimum, or our score exceeds our minimum
       $nhits_above_thresh++;
       $nhits_at_per_model_HH{$model}{$strand}++;
       $nnts_at_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
-      if(! defined $first_model) {  
-        $cur_becomes_first = 1; # no current, 'one' this will be it
+
+      # update first_model or second_model data structures if necessary
+      if(! exists $first_model_HH{$family}) { 
+        # we don't yet have a 'first' hit, set new 'first_model' values
+        set_model_vars(\%{$first_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
+        $first_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model_HH{$family}{"model"} : $first_model_HH{$family}{"domain"};
       }
-      else { 
-        # determine the domain (default) or model (--samedomain) of
-        # top hit and current hit we're looking at if --samedomain, we
-        # require that top two hits be different models, not
-        # necessarily different domains
-        #
-        # A note on how ties are broken if top two scores are equal,
-        # or ($sort_by_evalues) and top two evalues are equal: the hit
-        # that comes first in the tblout will be ranked as the top
-        # hit, and the hit that comes second will be ranked as the
-        # second hit.
-        $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model : $first_domain;
-        if($sort_by_evalues) { 
-          if(($evalue < $first_evalue) || # this E-value is better than (less than) our current 'first' E-value
-             ($evalue eq $first_evalue && $score > $first_score)) { # this E-value equals current 'first' E-value, 
-                                                                    # but this score is better than current 'one' score
-            die "IMPOSSIBLE 1";
-          }
-        }
-        else { # we don't have E-values
-          if($score > $first_score) { # score is better than current 'one' score
-            die "IMPOSSIBLE 2";
-          }
-        }
-      }
-      # only possibly set $cur_becomes_second to TRUE if $cur_becomes_first is FALSE, and it's not the same model/domain as 'one'
-      if((! $cur_becomes_first) && ($cur_domain_or_model ne $one_domain_or_model)) { 
-        if(! defined $second_score) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-          $cur_becomes_second = 1;
-        }
-        else { 
-          $two_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $second_model : $second_domain;
-          if($sort_by_evalues) { 
-            if(($evalue < $second_evalue) || # this E-value is better than (less than) our current 'two' E-value
-               ($evalue eq $second_evalue && $score > $second_score)) { # this E-value equals current 'two' E-value, 
-              # but this score is better than current 'two' score
-              die "IMPOSSIBLE 3";
-            }
-          }
-          else { # we don't have E-values
-            if($score > $second_score) { # score is better than current 'one' score
-              die "IMPOSSIBLE 4";
-            }
-          }
-        }
+      elsif((! exists $second_model_HH{$family}) && ($cur_domain_or_model ne $first_domain_or_model)) { 
+        # we don't yet have a 'second' hit, and the domain_or_model is different from the 'first' hit
+        set_model_vars(\%{$second_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
       }
     } # end of 'if($score >= $min_primary_sc))'
     # finished determining if this hit is a new 'one' or 'two' hit
     ##########################################################
-    
-    ##########################################################
-    # if we have a new hit, update 'one' and/or 'two' data structures
-    if($cur_becomes_first) { 
-      # new 'one' hit, update 'one' variables, 
-      # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
-      if((defined $one_domain_or_model) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-        die "IMPOSSIBLE 5";
-      }
-      # now set new 'one' hit values
-      set_model_vars(\%{$first_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
-    }
-    elsif(($cur_becomes_second) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-      # new 'two' hit, set it
-      # (we don't need to check that 'one_domain_or_model ne cur_domain_or_model' because we did that
-      #  above before we set cur_becomes_second to true)
-      set_model_vars(\%{$second_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
-    }
-
-    # finished updating 'one' or 'two' data structures
-    ##########################################################
-
     $prv_target = $target;
 
     # sanity check
@@ -4468,389 +4339,3 @@ sub debug_print_model_stats {
   return;
 }
 
-#################################################################
-# Subroutine : orig_parse_sorted_tblout_file()
-# Incept:      EPN, Thu Dec 29 09:52:16 2016
-#
-# Purpose:     Parse a sorted tabular output file and generate output.
-#              
-# Arguments: 
-#   $sorted_tbl_file: file with sorted tabular search results
-#   $alg:             search method (one of "fast", "hmmonly", or "slow")
-#   $round:           '1' or '2', what round of searching we're in
-#   $opt_HHR:         ref to 2D options hash of cmdline option values
-#   $width_HR:        hash, key is "model" or "target", value 
-#                     is width (maximum length) of any target/model
-#   $seqidx_HR:       ref to hash of sequence indices, key is sequence name, value is index
-#   $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
-#   $family_HR:       ref to hash of family names, key is model name, value is family name
-#   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
-#   $accept_HR:       ref to hash of acceptable models, key is model name, value is '1' if acceptable
-#   $question_HR:     ref to hash of questionable models, key is model name, value is '1' if questionable
-#   $long_out_FH:     file handle for long output file, already open
-#   $short_out_FH:    file handle for short output file, already open
-#
-# Returns:     Nothing. Fills %{$family_H}, %{$domain_HR}
-# 
-# Dies:        If 1) one of the arguments that can take on only a finite set of values has none of the permitted values;
-#              2) the file could not be opened
-#              3) the user asked to sort by E-values, but the file lacks E-values
-#              4) the file has a comment line starting with #
-#              5) some row in the file does not have the expected number of columns
-#              6) some value in the file, such as the model, is unrecognized    
-#
-################################################################# 
-sub orig_parse_sorted_tbl_file { 
-  my $nargs_expected = 13;
-  my $sub_name = "parse_sorted_tbl_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $long_out_FH, $short_out_FH) = @_;
-
-  # validate search method (sanity check) 
-  if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
-    die "ERROR in $sub_name, invalid search method $alg";
-  }
-
-  # determine minimum bit score cutoff
-  my $min_primary_sc = opt_Get("--minpsc", $opt_HHR);
-  
-  # Main data structures: 
-  # 'first': current top scoring model for current sequence
-  # 'second': current second best scoring model for current sequence 
-  #          that overlaps with hit in 'one' data structures
-  # 
-  # keys for all below are families (e.g. 'SSU' or 'LSU')
-  # values are for the best scoring hit in this family to current sequence
-  my %first_model_HH = ();  # 1st dim key are families (e.g. 'SSU', 'LSU')
-                            # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
-                            # values are 2nd dim attribute for best scoring hit in this family to current sequence
-  my %second_model_HH = (); # 1st dim key are families (e.g. 'SSU', 'LSU')
-                            # 2nd dim keys: "model", "domain", "score", "evalue", "sstart", "sstop", "mstart", "mstop", "strand"
-                            # values are 2nd dim attribute for best scoring hit in this family to current sequence
-
-  # for convenience, copies of current first and second values, to simplify writing them out
-  my $first_model    = undef;
-  my $first_domain   = undef;
-  my $first_evalue   = undef;
-  my $first_score    = undef;
-  my $first_start    = undef;
-  my $first_stop     = undef;
-  my $first_strand   = undef;
-  my $first_mdlstart = undef;
-  my $first_mdlstop  = undef;
-  
-  my $second_model    = undef;
-  my $second_domain   = undef;
-  my $second_evalue   = undef;
-  my $second_score    = undef;
-  my $second_start    = undef;
-  my $second_stop     = undef;
-  my $second_strand   = undef;
-  my $second_mdlstart = undef;
-  my $second_mdlstop  = undef;
-
-  # statistics we keep track of per model and strand, used to detect various output statistics and
-  # to report 'unexpected features'
-  my %nnts_per_model_HH  = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                                 # nucleotides in all hits (no threshold applied) to model for that strand for 
-                                 # current target sequence
-  my %nnts_at_per_model_HH  = ();# hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                                 # nucleotides in all hits above threshold to model for that strand for 
-                                 # current target sequence
-  my %nhits_per_model_HH = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                                 # hits to model (no threshold applied) for that strand for current target sequence
-  my %nhits_at_per_model_HH = ();# hash; key 1: model name, key 2: strand ("+" or "-") value: number of 
-                                 # hits to model above threshold for that strand for current target sequence
-  my %tbits_per_model_HH = ();   # hash; key 1: model name, key 2: strand ("+" or "-") value: total (summed)
-                                 # bit score for all hits to model (no threshold applied) for that current target sequence
-  my %mdl_bd_per_model_HHA = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: an array of model 
-                                 # coordinate boundaries for all hits (no threshold applied, sorted by score), 
-                                 # each element of the array is a string of the format <d1>-<d2>, 
-                                 # where <d1> is the 5' model position boundary of the hit and 
-                                 # <d2> is the 3' model position boundary of the hit
-  my %seq_bd_per_model_HHA = (); # hash; key 1: model name, key 2: strand ("+" or "-") value: an array of sequence
-                                 # coordinate boundaries for all hits (no threshold applied, sorted by score), 
-                                 # each element of the array is a string of the format <d1>-<d2>, 
-                                 # where <d1> is the 5' sequence position boundary of the hit and 
-                                 # <d2> is the 3' sequence position boundary of the hit
-                                 # if strand is '+', <d1> <= <d2> and if strand is '-', <d1> >= <d2>
-
-  my $prv_target = undef; # target name of previous line
-  my $family     = undef; # family of current model
-
-  open(IN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
-
-  my ($target, $model, $domain, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-      (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
-  my $cur_becomes_first; # set to true for each hit if it is better than our current 'first' hit
-  my $cur_becomes_second; # set to true for each hit if it is better than our current 'second' hit
-  my $cur_domain_or_model; # domain (default) or model (--samedomain) of current hit
-  my $one_domain_or_model; # domain (default) or model (--samedomain) of current 'one' hit
-  my $two_domain_or_model; # domain (default) or model (--samedomain) of current 'two' hit
-  my $nhits_above_thresh = 0; # number of hits above threshold for current sequence
-  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
-  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
-  my $have_evalues           = determine_if_we_have_evalues($round, $opt_HHR);
-  my $sort_by_evalues        = opt_Get("--evalues", $opt_HHR);
-
-  # for convenience, copies of current first and second values, to simplify writing them out
-
-  if($sort_by_evalues && (! $have_evalues)) { 
-    die "ERROR, trying to sort by E-values but we don't have them. Coding error."; 
-  }
-
-  while(my $line = <IN>) { 
-    ######################################################
-    # Parse the data on this line, this differs depending
-    # on our annotation method
-    chomp $line;
-    $line =~ s/^\s+//; # remove leading whitespace
-    
-    if($line =~ m/^\#/) { 
-      die "ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.";
-    }
-    my @el_A = split(/\s+/, $line);
-
-    if($alg eq "fast") {
-      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast cmsearch tabular output at line: $line"; }
-      # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
-      ($target, $model, $score, $seqfrom, $seqto, $strand) = 
-          ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
-      $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
-      $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
-    }
-    else { # "hmmonly" or "slow"
-      ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
-      ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
-      #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
-      if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmsearch tabular output at line: $line"; }
-      ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
-          ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
-    }
-
-    $family = $family_HR->{$model};
-    if(! defined $family) { 
-      die "ERROR unrecognized model $model, no family information";
-    }
-
-    # two sanity checks:
-    # make sure we have sequence length information for this sequence
-    if(! exists $seqlen_HR->{$target}) { 
-      die "ERROR found sequence $target we didn't read length information for in $seqstat_file";
-    }
-    # make sure we haven't output information for this sequence already
-    if((($round == 1) && ($seqlen_HR->{$target} < 0)) || 
-       (($round == 2) && ($seqlen_HR->{$target} > 0)))  { 
-      die "ERROR found line with target $target previously output, did you sort by sequence name?";
-    }
-    # finished parsing data for this line
-    ######################################################
-
-    ##############################################################
-    # Are we now finished with the previous sequence? 
-    # Yes, if target sequence we just read is different from it
-    # If yes, output info for it, and re-initialize data structures
-    # for new sequence just read
-    if((defined $prv_target) && ($prv_target ne $target)) { 
-      if($nhits_above_thresh > 0) { 
-        output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                          $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
-                          $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
-                          \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
-                          \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                          \%first_model_HH, \%second_model_HH);
-        $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
-      }
-      %first_model_HH        = ();
-      %second_model_HH       = ();
-      $nhits_above_thresh    = 0;
-      %nhits_per_model_HH    = ();
-      %nhits_at_per_model_HH = ();
-      %tbits_per_model_HH    = ();
-      %nnts_per_model_HH     = ();
-      %nnts_at_per_model_HH  = ();
-      %mdl_bd_per_model_HHA  = ();
-      %seq_bd_per_model_HHA  = ();
-    }
-    ##############################################################
-    
-    ###############################################################
-    # Determine if this hit is either a new 'first' or 'second' hit
-    $cur_becomes_first     = 0;     # set to '1' below if no 'one' hit exists yet, or this E-value/score is better than current 'one'
-    $cur_becomes_second     = 0;    # set to '1' below if no 'two' hit exists yet, or this E-value/score is better than current 'two'
-    $domain = $domain_HR->{$model}; # the domain for this model
-    $one_domain_or_model = undef;   # top hit's domain (default) or model (if --samedomain)
-    $two_domain_or_model = undef;   # second best hit's domain (default) or model (if --samedomain)
-    $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
-
-    # we count all nucleotides in all hits (don't enforce minimum threshold) to each model
-    $nnts_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
-    $nhits_per_model_HH{$model}{$strand}++;
-    $tbits_per_model_HH{$model}{$strand} += $score;
-    if(! exists $mdl_bd_per_model_HHA{$model}{$strand}) { 
-      @{$mdl_bd_per_model_HHA{$model}{$strand}} = ();
-      @{$seq_bd_per_model_HHA{$model}{$strand}} = ();
-    }
-    push(@{$mdl_bd_per_model_HHA{$model}{$strand}}, ($mdlfrom . "." . $mdlto)); 
-    push(@{$seq_bd_per_model_HHA{$model}{$strand}}, ($seqfrom . "." . $seqto)); 
-
-    if(exists $first_model_HH{$family}) { 
-      $first_model    = $first_model_HH{$family}{"model"};
-      $first_domain   = $first_model_HH{$family}{"domain"};
-      $first_evalue   = $first_model_HH{$family}{"evalue"};
-      $first_score    = $first_model_HH{$family}{"score"};
-      $first_start    = $first_model_HH{$family}{"start"};
-      $first_stop     = $first_model_HH{$family}{"stop"};
-      $first_strand   = $first_model_HH{$family}{"strand"};
-      $first_mdlstart = $first_model_HH{$family}{"mdlstart"};
-      $first_mdlstop  = $first_model_HH{$family}{"mdlstop"};
-    }
-    else { 
-      $first_model    = undef;
-      $first_domain   = undef;
-      $first_evalue   = undef;
-      $first_score    = undef;
-      $first_start    = undef;
-      $first_stop     = undef;
-      $first_strand   = undef;
-      $first_mdlstart = undef;
-      $first_mdlstop  = undef;
-    }
-    if(exists $second_model_HH{$family}) { 
-      $second_model    = $second_model_HH{$family}{"model"};
-      $second_domain   = $second_model_HH{$family}{"domain"};
-      $second_evalue   = $second_model_HH{$family}{"evalue"};
-      $second_score    = $second_model_HH{$family}{"score"};
-      $second_start    = $second_model_HH{$family}{"start"};
-      $second_stop     = $second_model_HH{$family}{"stop"};
-      $second_strand   = $second_model_HH{$family}{"strand"};
-      $second_mdlstart = $second_model_HH{$family}{"mdlstart"};
-      $second_mdlstop  = $second_model_HH{$family}{"mdlstop"};
-    }
-    else { 
-      $second_model    = undef;
-      $second_domain   = undef;
-      $second_evalue   = undef;
-      $second_score    = undef;
-      $second_start    = undef;
-      $second_stop     = undef;
-      $second_strand   = undef;
-      $second_mdlstart = undef;
-      $second_mdlstop  = undef;
-    }
-
-    # first, enforce our global bit score minimum
-    if($score >= $min_primary_sc) { 
-      # yes, we either have no minimum, or our score exceeds our minimum
-      $nhits_above_thresh++;
-      $nhits_at_per_model_HH{$model}{$strand}++;
-      $nnts_at_per_model_HH{$model}{$strand} += abs($seqfrom - $seqto) + 1;
-      if(! defined $first_model) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-        $cur_becomes_first = 1; # no current, 'one' this will be it
-      }
-      else { 
-        # determine the domain (default) or model (--samedomain) of
-        # top hit and current hit we're looking at if --samedomain, we
-        # require that top two hits be different models, not
-        # necessarily different domains
-        #
-        # A note on how ties are broken if top two scores are equal,
-        # or ($sort_by_evalues) and top two evalues are equal: the hit
-        # that comes first in the tblout will be ranked as the top
-        # hit, and the hit that comes second will be ranked as the
-        # second hit.
-        $one_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model : $first_domain;
-        if($sort_by_evalues) { 
-          if(($evalue < $first_evalue) || # this E-value is better than (less than) our current 'first' E-value
-             ($evalue eq $first_evalue && $score > $first_score)) { # this E-value equals current 'first' E-value, 
-                                                                    # but this score is better than current 'one' score
-            $cur_becomes_first = 1;
-          }
-        }
-        else { # we don't have E-values
-          if($score > $first_score) { # score is better than current 'one' score
-            $cur_becomes_first = 1;
-          }
-        }
-      }
-      # only possibly set $cur_becomes_second to TRUE if $cur_becomes_first is FALSE, and it's not the same model/domain as 'one'
-      if((! $cur_becomes_first) && ($cur_domain_or_model ne $one_domain_or_model)) { 
-        if(! defined $second_score) {  # use 'score' not 'evalue' because some methods don't define evalue, but all define score
-          $cur_becomes_second = 1;
-        }
-        else { 
-          $two_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $second_model : $second_domain;
-          if($sort_by_evalues) { 
-            if(($evalue < $second_evalue) || # this E-value is better than (less than) our current 'two' E-value
-               ($evalue eq $second_evalue && $score > $second_score)) { # this E-value equals current 'two' E-value, 
-              # but this score is better than current 'two' score
-              $cur_becomes_second = 1;
-            }
-          }
-          else { # we don't have E-values
-            if($score > $second_score) { # score is better than current 'one' score
-              $cur_becomes_second = 1;
-            }
-          }
-        }
-      }
-    } # end of 'if($score >= $min_primary_sc))'
-    # finished determining if this hit is a new 'one' or 'two' hit
-    ##########################################################
-    
-    ##########################################################
-    # if we have a new hit, update 'one' and/or 'two' data structures
-    if($cur_becomes_first) { 
-      # new 'one' hit, update 'one' variables, 
-      # but first copy existing 'one' hit values to 'two', if 'one' hit is defined and it's a different model than current $model
-      if((defined $one_domain_or_model) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-        set_model_vars(\%{$second_model_HH{$family}}, $first_model, $first_domain, $first_score, $first_evalue, $first_start, $first_stop, $first_strand, $first_mdlstart, $first_mdlstop);
-      }
-      # now set new 'one' hit values
-      set_model_vars(\%{$first_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
-    }
-    elsif(($cur_becomes_second) && ($one_domain_or_model ne $cur_domain_or_model)) { 
-      # new 'two' hit, set it
-      # (we don't need to check that 'one_domain_or_model ne cur_domain_or_model' because we did that
-      #  above before we set cur_becomes_second to true)
-      set_model_vars(\%{$second_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
-    }
-
-    # finished updating 'one' or 'two' data structures
-    ##########################################################
-
-    $prv_target = $target;
-
-    # sanity check
-    if(((exists $first_model_HH{$family})  && (defined $first_model_HH{$family}{"model"})) && 
-       ((exists $second_model_HH{$family}) && (defined $second_model_HH{$family}{"model"})) && 
-       ($first_model_HH{$family}{"model"} eq $second_model_HH{$family}{"model"})) { 
-      die "ERROR, coding error, first model and second model are identical for $family $target";
-    }
-  }
-
-  # output data for final sequence
-  if($nhits_above_thresh > 0) { 
-    output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
-                      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
-                      $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
-                      \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
-                      \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                      \%first_model_HH, \%second_model_HH);
-    $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
-  }
-  $nhits_above_thresh   = 0;
-  %first_model_HH       = ();
-  %second_model_HH      = ();
-  %nhits_per_model_HH   = ();
-  %tbits_per_model_HH   = ();
-  %nnts_per_model_HH    = ();
-  %mdl_bd_per_model_HHA = ();
-  %seq_bd_per_model_HHA = ();
-
-  # close file handle
-  close(IN);
-  
-  return;
-}
