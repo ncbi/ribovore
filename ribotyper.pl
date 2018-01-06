@@ -1400,11 +1400,14 @@ sub parse_sorted_tbl_file {
       if(! exists $first_model_HH{$family}) { 
         # we don't yet have a 'first' hit, set new 'first_model' values
         set_model_vars(\%{$first_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
-        $first_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model_HH{$family}{"model"} : $first_model_HH{$family}{"domain"};
       }
-      elsif((! exists $second_model_HH{$family}) && ($cur_domain_or_model ne $first_domain_or_model)) { 
-        # we don't yet have a 'second' hit, and the domain_or_model is different from the 'first' hit
-        set_model_vars(\%{$second_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
+      elsif(! exists $second_model_HH{$family}) { 
+        # we don't yet have a 'second' hit
+        $first_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $first_model_HH{$family}{"model"} : $first_model_HH{$family}{"domain"};
+        if($cur_domain_or_model ne $first_domain_or_model) { 
+          # the domain_or_model for this hit is different from the 'first' hit
+          set_model_vars(\%{$second_model_HH{$family}}, $model, $domain, $score, $evalue, $seqfrom, $seqto, $strand, $mdlfrom, $mdlto);
+        }
       }
     } # end of 'if($score >= $min_primary_sc))'
     # finished determining if this hit is a new 'one' or 'two' hit
