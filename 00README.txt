@@ -1,6 +1,6 @@
-EPN, Tue Dec  5 09:20:47 2017
+EPN, Mon Jan  8 12:36:48 2018
 
-Ribotyper v0.12 README
+Ribotyper v0.13 README
 
 Organization of this file:
 
@@ -205,21 +205,21 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.12 (Dec 2017)
+# ribotyper 0.13 (Jan 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Dec  5 10:12:40 2017
+# date:    Mon Jan  8 12:37:49 2018
 #
 # target sequence input file:    example-16.fa
 # output directory name:         test
-# model information input file:  /panfs/pan1/infernal/notebook/17_1027_ribo_sensor_alejandro_review/ribotyper-v1/models/ribo.0p02.modelinfo
+# model information input file:  /panfs/pan1/infernal/notebook/18_0104_ribo_simplify_overlap_handling/ribotyper-v1/models/ribo.0p02.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [0.2 seconds]
+# Validating input files                           ... done. [1.1 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.5 seconds]
+# Classifying sequences                            ... done. [1.6 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
 # Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.4 seconds]
+# Searching sequences against best-matching models ... done. [1.7 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -254,9 +254,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16     11.0     14630.9     14630.9  00:00:01.45  (hh:mm:ss)
-  search                15     10.9     14738.2     14738.2  00:00:01.37  (hh:mm:ss)
-  total                 16      4.7      6266.9      6266.9  00:00:03.39  (hh:mm:ss)
+  classification        16     10.2     13600.7     13600.7  00:00:01.56  (hh:mm:ss)
+  search                15      8.7     11724.1     11724.1  00:00:01.73  (hh:mm:ss)
+  total                 16      3.5      4598.8      4598.8  00:00:04.62  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -639,9 +639,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.12 (Dec 2017)
+# ribotyper 0.13 (Jan 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Dec  5 10:21:03 2017
+# date:    Mon Jan  8 12:40:52 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -732,18 +732,18 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.12 (Dec 2017)
+# ribotyper 0.13 (Jan 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Dec  5 10:22:20 2017
+# date:    Mon Jan  8 12:41:39 2018
 #
-# target sequence input file:    /panfs/pan1/infernal/notebook/17_1027_ribo_sensor_alejandro_review/ribotyper-v1/testfiles/example-rlc-11.fa
+# target sequence input file:    /panfs/pan1/infernal/notebook/18_0104_ribo_simplify_overlap_handling/ribotyper-v1/testfiles/example-rlc-11.fa
 # output file name root:         test-rlc
-# model information input file:  /panfs/pan1/infernal/notebook/17_1027_ribo_sensor_alejandro_review/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
+# model information input file:  /panfs/pan1/infernal/notebook/18_0104_ribo_simplify_overlap_handling/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [3.3 seconds]
-# Running cmalign and classifying sequence lengths ... done. [5.8 seconds]
-# Running cmalign again for each length class      ... done. [5.6 seconds]
+# Running ribotyper                                ... done. [3.2 seconds]
+# Running cmalign and classifying sequence lengths ... done. [5.1 seconds]
+# Running cmalign again for each length class      ... done. [5.4 seconds]
 #
 # List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
 # List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
@@ -825,9 +825,9 @@ the -h option, just as with ribotyper.pl:
 
 > ribolengthchecker.pl -h
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.11 (Nov 2017)
+# ribotyper 0.13 (Jan 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Nov  1 14:08:17 2017
+# date:    Mon Jan  8 12:42:24 2018
 #
 Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
 
