@@ -149,7 +149,7 @@ my $options_okay =
                 'longfail=s'   => \$GetOptions_H{"--longfail"},
                 'esdfail'      => \$GetOptions_H{"--esdfail"},
 # options controlling thresholds for warnings and failures
-                'lowppossc'    => \$GetOptions_H{"--lowppossc"},
+                'lowppossc=s'  => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"}, 
                 'tshortcov=s'  => \$GetOptions_H{"--tshortcov"}, 
                 'tshortlen=s'  => \$GetOptions_H{"--tshortlen"}, 
@@ -176,7 +176,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.13";
+my $version           = "0.14";
 my $model_version_str = "0p02"; # models are unchanged since version 0.02
 my $releasedate       = "Jan 2018";
 my $package_name      = "ribotyper";
