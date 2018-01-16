@@ -319,7 +319,7 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 $start_secs = ribo_OutputProgressPrior("Running cmalign again for each length class", $progress_w, undef, *STDOUT);
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
-  foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig") { 
+  foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig", "partial-ambig") { 
     if((exists $family_length_class_HHA{$family}{$length_class}) && 
        (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
       $length_class_list_file = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".list";
@@ -513,12 +513,16 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "# Column 6 [mstart]:",       "model start position");
         printf OUT ("%-33s %s\n", "# Column 7 [mstop]:",        "model stop position");
         printf OUT ("%-33s %s\n", "# Column 8 [length_class]:", "classification of length, one of:");
-        printf OUT ("%-33s %s\n", "#",                          "'full-exact': spans full model and no 5' or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "              and no indels in first or final $nbound model positions");
-        printf OUT ("%-33s %s\n", "#",                          "'full-extra': spans full model but has 5' and/or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'full-ambig': spans full model and no 5' or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "              but has indel(s) in first and/or final $nbound model positions");
-        printf OUT ("%-33s %s\n", "#",                          "'partial:'    does not span full model");
+        printf OUT ("%-33s %s\n", "#",                          "'partial:'       does not span full model");
+        printf OUT ("%-33s %s\n", "#",                          "'full-exact':    spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "                 and no indels in first or final $nbound model positions");
+        printf OUT ("%-33s %s\n", "#",                          "'full-extra':    spans full model but has 5' and/or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'full-ambig':    spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "                 but has indel(s) in first and/or final $nbound model positions");
+        printf OUT ("%-33s %s\n", "#",                          "                 and insertions outnumber deletions at 5' and/or 3' end");
+        printf OUT ("%-33s %s\n", "#",                          "'partial-ambig': spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "                 but has indel(s) in first and/or final $nbound model positions");
+        printf OUT ("%-33s %s\n", "#",                          "                 and insertions do not outnumber deletions at neither 5' nor 3' end");
         printf OUT ("%-33s %s\n", "# Column 9 [unexpected_features]:", "unexpected/unusual features of sequence (see below)")
       }
       else { # regurgitate other comment lines
@@ -637,10 +641,11 @@ sub parse_stk_file {
   my ($stk_file, $modellen, $nbound, $out_tbl_HHR, $lenclass_HAR) = @_;
 
   # initialize lenclass_HAR for each length class:
-  @{$lenclass_HAR->{"partial"}}    = ();
-  @{$lenclass_HAR->{"full-exact"}} = ();
-  @{$lenclass_HAR->{"full-extra"}} = ();
-  @{$lenclass_HAR->{"full-ambig"}} = ();
+  @{$lenclass_HAR->{"partial"}}       = ();
+  @{$lenclass_HAR->{"full-exact"}}    = ();
+  @{$lenclass_HAR->{"full-extra"}}    = ();
+  @{$lenclass_HAR->{"full-ambig"}}    = ();
+  @{$lenclass_HAR->{"partial-ambig"}} = ();
 
   # first pass through the file to get the RF line:
   my $line;
@@ -762,8 +767,14 @@ sub parse_stk_file {
             push(@{$lenclass_HAR->{"full-extra"}}, $seqname);
           }
           else { 
-            $out_tbl_HHR->{$seqname}{"length_class"} = "full-ambig";
-            push(@{$lenclass_HAR->{"full-ambig"}}, $seqname);
+            if(($d_late >= $i_late) && ($d_early >= $d_late)) { 
+              $out_tbl_HHR->{$seqname}{"length_class"} = "partial-ambig";
+              push(@{$lenclass_HAR->{"partial-ambig"}}, $seqname);
+            }
+            else { 
+              $out_tbl_HHR->{$seqname}{"length_class"} = "full-ambig";
+              push(@{$lenclass_HAR->{"full-ambig"}}, $seqname);
+            }
           }
         } # end of if(($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) &&
           # ($out_tbl_HHR->{$seqname}{"pred_cmto"}   == $modellen)) { 
