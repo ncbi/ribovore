@@ -1718,11 +1718,29 @@ sub output_one_target {
   my $nhits_at  = $nhits_at_HHR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}};
   my $one_tbits = $tbits_HHR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}};
   my $two_tbits = undef;
+  my $one_tmlen = undef; # total number of model consensus positions covered by all hits to best model 
+  my $two_tmlen = undef; # total number of model consensus positions covered by all hits to second-best model 
 
   if(defined $second_model_HHR->{$wfamily}{"model"}) { 
     $two_tbits = $tbits_HHR->{$second_model_HHR->{$wfamily}{"model"}}{$second_model_HHR->{$wfamily}{"strand"}};
     if($round eq "2") { # sanity check
       die "ERROR in $sub_name, round 2, but we have hits to more than one model"; 
+    }
+  }
+  # determine total model length by summing up model spans of all hits
+  if($have_model_coords) { # we can only do this if search output included model coords
+    if($nhits != scalar(@{$mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}})) { 
+      die "ERROR, coding error, different number of hits in nhits_HHR and mdl_bd_HHAR"; 
+    }
+    for(my $i = 0; $i < $nhits; $i++) { 
+      my ($start, $stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i]);
+      $one_tmlen += ($stop - $start + 1);
+    }      
+    if(defined $second_model_HHR->{$wfamily}{"model"}) { 
+      for(my $i = 0; $i < $nhits; $i++) { 
+        my ($start, $stop) = split(".", $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i]);
+        $two_tmlen += ($stop - $start + 1);
+      }      
     }
   }
 
@@ -1815,7 +1833,7 @@ sub output_one_target {
     }
   }
 
-  my $nnts  = $nnts_HHR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}};
+  my $nnts = $nnts_HHR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}};
   # build up 'other_hits_string' string about other hits in other clans, if any
   my $other_hits_string = "";
   my $nfams = 1;
@@ -1860,8 +1878,6 @@ sub output_one_target {
   my $diff_vlow_str    = undef; # string that explains very low bit score difference warning/failure
 
   if(defined $second_model_HHR->{$wfamily}{"score"}) { 
-    # determine score difference threshold
-    $score_total_diff = abs($best_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"});
     # $best_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"} can be negative if
     # $sort_by_evalues and second hit by E-value bit score exceeds top hit by E-value
     # sanity check
@@ -1869,7 +1885,6 @@ sub output_one_target {
       die sprintf("ERROR in $sub_name, second best hit has higher score than best hit (%.2f > %2.f) and sort_by_evalues is FALSE", 
                   $second_model_HHR->{$wfamily}{"score"}, $best_model_HHR->{$wfamily}{"score"});
     }
-    $score_ppos_diff  = $score_total_diff / (abs($best_model_HHR->{$wfamily}{"stop"} - $best_model_HHR->{$wfamily}{"start"}) + 1);
     if($do_ppos_score_diff) { 
       # default: per position score difference, dependent on length of hit
       $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
@@ -1965,9 +1980,10 @@ sub output_one_target {
     $unusual_features .= "MinusStrand;";
   }
   # determine if the sequence has a 'low_score'
-  # it does if bits per position (of entire sequence not just hit)
+  # it does if bits per model position (of all hits)
   # is below the threshold (--lowppossc) minimum
-  my $bits_per_posn = $one_tbits / $seqlen;
+  my $bits_per_posn = ($have_model_coords) ? ($one_tbits / $one_tmlen) : ($one_tbits / $seqlen);
+
   if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
     if(opt_Get("--scfail", $opt_HHR)) { 
       $pass_fail = "FAIL";
@@ -1997,7 +2013,12 @@ sub output_one_target {
   if(defined $second_model_HHR->{$wfamily}{"model"}) { 
     # determine score difference threshold
     $score_total_diff = $one_tbits - $two_tbits; 
-    $score_ppos_diff  = $score_total_diff / $nnts;
+    if($have_model_coords) { # we can only do this if search output included model coords
+      $score_ppos_diff = $score_total_diff / $one_tmlen; # bits per summed model positions in top hit
+    }
+    else { 
+      $score_ppos_diff = $score_total_diff / $nnts; # bits per nucleotide in summed length of all hits to top model
+    }
     if($do_ppos_score_diff) { 
       # default: per position score difference, dependent on length of hit
       $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
@@ -2300,7 +2321,7 @@ sub output_long_headers {
               "#ht", 
               "tscore", 
               "bscore", 
-              "s/nt",
+              ($have_model_coords) ? "s/pn" : "s/nt",
               ($have_evalues) ? " bevalue  " : "", 
               "tcov",
               "bcov",
@@ -2315,7 +2336,7 @@ sub output_long_headers {
   if($round ne "2") { 
     printf $FH ("%6s  %6s  %-*s  %6s  %s",  
                 "scdiff",
-                "scd/nt",
+                ($have_model_coords) ? "scd/pn" : "scd/nt",
                 $width_HR->{"model"},  "model", 
                 "tscore", 
                 ($have_evalues_r1) ? "  bevalue  " : "");
@@ -2466,7 +2487,12 @@ sub output_long_tail {
   $column_ct++;
   printf $FH ("# Column %2d [bscore]:              bit score of best-scoring hit between best model and this sequence (above threshold)\n", $column_ct);
   $column_ct++;
-  printf $FH ("# Column %2d [s/nt]:                summed bit scores of all hits divided by length of the sequence\n", $column_ct);
+  if($have_model_coords) { 
+    printf $FH ("# Column %2d [s/pn]:                summed bit scores of all hits divided by total number of model positions spanned by all hits\n", $column_ct);
+  }
+  else { 
+    printf $FH ("# Column %2d [s/nt]:                summed bit scores of all hits divided by length of the sequence\n", $column_ct);
+  }
   $column_ct++;
   if($have_evalues) { 
     printf $FH ("# Column %2d [bevalue]:             E-value of best-scoring hit to this sequence\n", $column_ct);
@@ -2496,7 +2522,12 @@ sub output_long_tail {
       printf $FH ("# Column %2d [scdiff]:              difference in score between summed scores of hits to best model and summed scores of hits to second best model\n", $column_ct);
     }
     $column_ct++;
-    printf $FH ("# Column %2d [scd/nt]:              score difference per position: 'scdiff' value divided by total length of all hits to best model\n", $column_ct);
+    if($have_model_coords) { 
+      printf $FH ("# Column %2d [scd/pn]:              score difference per position: 'scdiff' value divided by total number of model positions spanned by all hits to best model\n", $column_ct);
+    }
+    else { 
+      printf $FH ("# Column %2d [scd/nt]:              score difference per position: 'scdiff' value divided by total length of all hits to best model\n", $column_ct);
+    }
     $column_ct++;
     printf $FH ("# Column %2d [model]:               name of second best-scoring model\n", $column_ct);
     $column_ct++;
