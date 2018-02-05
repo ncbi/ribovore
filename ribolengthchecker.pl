@@ -286,24 +286,31 @@ my $nfiles = 0;               # number of fasta files that exist for this sequen
 my $rtkey_seq_file = undef; # a ribotyper key fasta file
 my $cat_cmd;                  # a cat command used to pipe the fasta files into cmalign
 my $cmalign_stk_file;         # cmalign output alignment
+my $cmalign_insert_file;      # cmalign insert file output
+my $cmalign_el_file;          # cmalign EL (local end) file output
 my $cmalign_out_file;         # cmalign output 
 my %family_length_class_HHA;  # key 1D is family, key 2D is length class (e.g. 'partial'), value is an array of sequences that 
                               # for this family that belong to this length class
 my %out_tbl_HH = ();          # hash of hashes with information for output file
                               # key 1 is sequence name, key 2 is a column name, e.g. pred_cmfrom
 my @stkfile_str_A     = (); # list of output alignment files we create
+my @ifile_str_A       = (); # list of output insert files we create
+my @elfile_str_A      = (); # list of output EL (local end) files we create
 my @cmalignfile_str_A = (); # list of output cmalign files we create
 my @listfile_str_A    = (); # list of output list files we create
 my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign options that are consistently used in all cmalign calls
 
 foreach $family (@family_order_A) { 
   if(-s $family_sfetch_filename_H{$family}) { 
-    $cmalign_stk_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
-    $cmalign_out_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
+    $cmalign_stk_file    = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
+    $cmalign_insert_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.ifile";
+    $cmalign_el_file     = $out_root . ".ribolengthchecker." . $family . ".cmalign.elfile";
+    $cmalign_out_file    = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
     #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-#AAS: Two issues here and at other cmalign calls: 1) the 4096 should not be hardcoded; 2) it is unclear whether correctness depends on the sequence of cmalign calls having identical or similar arguments, in which case the consistentcy of arguments between calls should be enforced more abstractly   
-    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
+    push(@ifile_str_A,       sprintf("# %-18s %6s %-12s sequences saved as $cmalign_insert_file\n", "Insert file of", "all", $family));
+    push(@elfile_str_A,      sprintf("# %-18s %6s %-12s sequences saved as $cmalign_el_file\n", "EL file of", "all", $family));
     push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
     # parse cmalign file
     parse_cmalign_file($cmalign_out_file, \%out_tbl_HH);
@@ -324,17 +331,21 @@ foreach $family (@family_order_A) {
        (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
       $length_class_list_file = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".list";
       $cmalign_stk_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".stk";
+      $cmalign_insert_file    = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".ifile";
+      $cmalign_el_file        = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".cmalign";
       open(OUT, ">", $length_class_list_file) || die "ERROR, unable to open $length_class_list_file for writing";
       push(@listfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $length_class_list_file\n", "List of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       push(@stkfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_stk_file\n", "Alignment of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      push(@ifile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_insert_file\n", "Insert file of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      push(@elfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_el_file\n", "EL file of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       push(@cmalignfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_out_file\n", "cmalign output for", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }
       close(OUT);
       #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }
@@ -351,6 +362,10 @@ my $str;
 foreach $str (@listfile_str_A)    { print $str; }
 print("#\n");
 foreach $str (@stkfile_str_A)     { print $str; }
+print("#\n");
+foreach $str (@ifile_str_A)     { print $str; }
+print("#\n");
+foreach $str (@elfile_str_A)     { print $str; }
 print("#\n");
 foreach $str (@cmalignfile_str_A) { print $str; }
 
