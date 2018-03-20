@@ -3,14 +3,14 @@
 # The first line is special, it indicates the name of the master CM file
 # with all the models in it
 #model                     family domain             cmfile
-*all*                         -   -                  ribo.0p02.cm
-SSU_rRNA_archaea              SSU Archaea            ribo.0p02.SSU_rRNA_archaea.cm
-SSU_rRNA_bacteria             SSU Bacteria           ribo.0p02.SSU_rRNA_bacteria.cm
-SSU_rRNA_eukarya              SSU Eukarya            ribo.0p02.SSU_rRNA_eukarya.cm
-SSU_rRNA_microsporidia        SSU Euk-Microsporidia  ribo.0p02.SSU_rRNA_microsporidia.cm
-SSU_rRNA_chloroplast          SSU Chloroplast        ribo.0p02.SSU_rRNA_chloroplast.cm
-SSU_rRNA_mitochondria_metazoa SSU Mito-Metazoa       ribo.0p02.SSU_rRNA_mitochondria_metazoa.cm
-SSU_rRNA_cyanobacteria        SSU Bacteria           ribo.0p02.SSU_rRNA_cyanobacteria.cm
-LSU_rRNA_archaea              LSU Archaea            ribo.0p02.LSU_rRNA_archaea.cm
-LSU_rRNA_bacteria             LSU Bacteria           ribo.0p02.LSU_rRNA_bacteria.cm
-LSU_rRNA_eukarya              LSU Eukarya            ribo.0p02.LSU_rRNA_eukarya.cm
+*all*                         -   -                  ribo.0p15.cm
+SSU_rRNA_archaea              SSU Archaea            ribo.0p15.SSU_rRNA_archaea.cm
+SSU_rRNA_bacteria             SSU Bacteria           ribo.0p15.SSU_rRNA_bacteria.cm
+SSU_rRNA_eukarya              SSU Eukarya            ribo.0p15.SSU_rRNA_eukarya.cm
+SSU_rRNA_microsporidia        SSU Euk-Microsporidia  ribo.0p15.SSU_rRNA_microsporidia.cm
+SSU_rRNA_chloroplast          SSU Chloroplast        ribo.0p15.SSU_rRNA_chloroplast.cm
+SSU_rRNA_mitochondria_metazoa SSU Mito-Metazoa       ribo.0p15.SSU_rRNA_mitochondria_metazoa.cm
+SSU_rRNA_cyanobacteria        SSU Bacteria           ribo.0p15.SSU_rRNA_cyanobacteria.cm
+LSU_rRNA_archaea              LSU Archaea            ribo.0p15.LSU_rRNA_archaea.cm
+LSU_rRNA_bacteria             LSU Bacteria           ribo.0p15.LSU_rRNA_bacteria.cm
+LSU_rRNA_eukarya              LSU Eukarya            ribo.0p15.LSU_rRNA_eukarya.cm
