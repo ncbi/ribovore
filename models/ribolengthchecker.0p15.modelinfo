@@ -2,5 +2,5 @@
 # token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
 # token 2: CM file name for this family
 # token 3: integer, consensus length for the CM for this family
-SSU.Archaea ribolengthchecker.0p08.RF01959.cm 1477
-SSU.Bacteria ribolengthchecker.0p08.RF00177.cm 1533
+SSU.Archaea ribolengthchecker.0p15.RF01959.cm 1477
+SSU.Bacteria ribolengthchecker.0p15.RF00177.cm 1533
