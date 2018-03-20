@@ -1,6 +1,6 @@
-EPN, Sun Jan 14 17:10:27 2018
+EPN, Tue Mar 20 06:07:48 2018
 
-Ribotyper v0.14 README
+Ribotyper v0.15 README
 
 Organization of this file:
 
@@ -161,7 +161,7 @@ explained below should work.
 ##############################################################################
 SAMPLE RUN
 
-This example runs the script ribotyoer.pl on a sample file of 16 sequences. 
+This example runs the script ribotyper.pl on a sample file of 16 sequences. 
 
 You can run ribotyper only on sequence files that are in directories
 to which you have write permission. Therefore, the first step is to copy the
@@ -205,21 +205,21 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.13 (Jan 2018)
+# ribotyper 0.15 (Mar 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Jan  8 12:37:49 2018
+# date:    Tue Mar 20 06:08:24 2018
 #
 # target sequence input file:    example-16.fa
 # output directory name:         test
-# model information input file:  /panfs/pan1/infernal/notebook/18_0104_ribo_simplify_overlap_handling/ribotyper-v1/models/ribo.0p02.modelinfo
+# model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p15.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [1.1 seconds]
+# Validating input files                           ... done. [0.1 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.6 seconds]
+# Classifying sequences                            ... done. [1.5 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
 # Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.7 seconds]
+# Searching sequences against best-matching models ... done. [1.6 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -254,9 +254,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16     10.2     13600.7     13600.7  00:00:01.56  (hh:mm:ss)
-  search                15      8.7     11724.1     11724.1  00:00:01.73  (hh:mm:ss)
-  total                 16      3.5      4598.8      4598.8  00:00:04.62  (hh:mm:ss)
+  classification        16     10.7     14248.4     14248.4  00:00:01.49  (hh:mm:ss)
+  search                15      9.3     12501.7     12501.7  00:00:01.62  (hh:mm:ss)
+  total                 16      4.5      6006.4      6006.4  00:00:03.54  (hh:mm:ss)
 #
 #
 # Short (6 column) output saved to file test/test.ribotyper.short.out
@@ -473,7 +473,7 @@ length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE
 THE DEFAULT MODEL FILE
 
 The default model file used by ribotyper is here:
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.cm
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p15.cm
 
 This model file includes 7 SSU rRNA profiles and 3 LSU rRNA profiles.
 
@@ -482,24 +482,24 @@ additional information. That file is:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 
 Here is the modelinfo file:
-$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo0.0p02.modelinfo
+$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo0.0p15.modelinfo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Each non-# prefixed line should have 4 white-space delimited tokens: 
 #<modelname> <family> <domain> <CM-file-with-only-this-model>
 # The first line is special, it indicates the name of the master CM file
 # with all the models in it
 #model                     family domain             cmfile
-*all*                         -   -                  ribo.0p02.cm
-SSU_rRNA_archaea              SSU Archaea            ribo.0p02.SSU_rRNA_archaea.cm
-SSU_rRNA_bacteria             SSU Bacteria           ribo.0p02.SSU_rRNA_bacteria.cm
-SSU_rRNA_eukarya              SSU Eukarya            ribo.0p02.SSU_rRNA_eukarya.cm
-SSU_rRNA_microsporidia        SSU Euk-Microsporidia  ribo.0p02.SSU_rRNA_microsporidia.cm
-SSU_rRNA_chloroplast          SSU Chloroplast        ribo.0p02.SSU_rRNA_chloroplast.cm
-SSU_rRNA_mitochondria_metazoa SSU Mito-Metazoa       ribo.0p02.SSU_rRNA_mitochondria_metazoa.cm
-SSU_rRNA_cyanobacteria        SSU Bacteria           ribo.0p02.SSU_rRNA_cyanobacteria.cm
-LSU_rRNA_archaea              LSU Archaea            ribo.0p02.LSU_rRNA_archaea.cm
-LSU_rRNA_bacteria             LSU Bacteria           ribo.0p02.LSU_rRNA_bacteria.cm
-LSU_rRNA_eukarya              LSU Eukarya            ribo.0p02.LSU_rRNA_eukarya.cm
+*all*                         -   -                  ribo.0p15.cm
+SSU_rRNA_archaea              SSU Archaea            ribo.0p15.SSU_rRNA_archaea.cm
+SSU_rRNA_bacteria             SSU Bacteria           ribo.0p15.SSU_rRNA_bacteria.cm
+SSU_rRNA_eukarya              SSU Eukarya            ribo.0p15.SSU_rRNA_eukarya.cm
+SSU_rRNA_microsporidia        SSU Euk-Microsporidia  ribo.0p15.SSU_rRNA_microsporidia.cm
+SSU_rRNA_chloroplast          SSU Chloroplast        ribo.0p15.SSU_rRNA_chloroplast.cm
+SSU_rRNA_mitochondria_metazoa SSU Mito-Metazoa       ribo.0p15.SSU_rRNA_mitochondria_metazoa.cm
+SSU_rRNA_cyanobacteria        SSU Bacteria           ribo.0p15.SSU_rRNA_cyanobacteria.cm
+LSU_rRNA_archaea              LSU Archaea            ribo.0p15.LSU_rRNA_archaea.cm
+LSU_rRNA_bacteria             LSU Bacteria           ribo.0p15.LSU_rRNA_bacteria.cm
+LSU_rRNA_eukarya              LSU Eukarya            ribo.0p15.LSU_rRNA_eukarya.cm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Using this file will classify sequences SSU and LSU sequences from any
@@ -604,7 +604,7 @@ SSU_rRNA_cyanobacteria acceptable
 To use this on the example run from above, try the --inaccept
 option, like this:
 
-$ ribotyper.pl -f --inaccept testfiles/ssu.arc.quest.bac.accept example-16.fa test
+$ ribotyper.pl -f --inaccept $RIBODIR/testfiles/ssu.arc.quest.bac.accept example-16.fa test
 
 Now, the short output file will set any family that was classified as a
 model other than SSU_rRNA_bacteria or SSU_rRNA_cyanobacteria as FAILs,
@@ -639,9 +639,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.13 (Jan 2018)
+# ribotyper 0.15 (Mar 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Jan  8 12:40:52 2018
+# date:    Tue Mar 20 06:12:55 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -732,37 +732,51 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.13 (Jan 2018)
+# ribotyper 0.15 (Mar 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Jan  8 12:41:39 2018
+# date:    Tue Mar 20 06:13:45 2018
 #
-# target sequence input file:    /panfs/pan1/infernal/notebook/18_0104_ribo_simplify_overlap_handling/ribotyper-v1/testfiles/example-rlc-11.fa
+# target sequence input file:    /panfs/pan1/infernal/notebook/18_0319_rrna_lsu_enone_models/ribotyper-v1/testfiles/example-rlc-11.fa
 # output file name root:         test-rlc
-# model information input file:  /panfs/pan1/infernal/notebook/18_0104_ribo_simplify_overlap_handling/ribotyper-v1/models/ribolengthchecker.0p08.modelinfo
+# model information input file:  /panfs/pan1/infernal/notebook/18_0319_rrna_lsu_enone_models/ribotyper-v1/models/ribolengthchecker.0p15.modelinfo
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [3.2 seconds]
-# Running cmalign and classifying sequence lengths ... done. [5.1 seconds]
-# Running cmalign again for each length class      ... done. [5.4 seconds]
+# Running ribotyper                                ... done. [3.0 seconds]
+# Running cmalign and classifying sequence lengths ... done. [5.3 seconds]
+# Running cmalign again for each length class      ... done. [5.9 seconds]
 #
 # List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
 # List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
 # List of                 1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.list
-# List of                 1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.list
+# List of                 1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.list
 #
 # Alignment of          all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
 # Alignment of          all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
 # Alignment of            8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.stk
 # Alignment of            1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.stk
 # Alignment of            1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.stk
-# Alignment of            1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.stk
+# Alignment of            1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.stk
+#
+# Insert file of        all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.ifile
+# Insert file of        all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.ifile
+# Insert file of          8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.ifile
+# Insert file of          1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.ifile
+# Insert file of          1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.ifile
+# Insert file of          1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.ifile
+#
+# EL file of            all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.elfile
+# EL file of            all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.elfile
+# EL file of              8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.elfile
+# EL file of              1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.elfile
+# EL file of              1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.elfile
+# EL file of              1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.elfile
 #
 # cmalign output for    all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
 # cmalign output for    all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
 # cmalign output for      8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.cmalign
 # cmalign output for      1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
 # cmalign output for      1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
-# cmalign output for      1 SSU.Bacteria full-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.cmalign
+# cmalign output for      1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.cmalign
 #
 # No sequences failed ribotyper.
 #
@@ -805,17 +819,21 @@ http://eddylab.org/infernal/Userguide.pdf.
 Here, are the relevant lines from the file rlc-test.ribolengthchecker.tbl.out
 created by the above command:
 
-> cat rlc-test.ribolengthchecker.tbl.out 
+> cat test-rlc.ribolengthchecker.tbl.out 
 -----------------------
 # Column 6 [mstart]:              model start position
 # Column 7 [mstop]:               model stop position
 # Column 8 [length_class]:        classification of length, one of:
-#                                 'full-exact': spans full model and no 5' or 3' inserts
-#                                               and no indels in first or final 10 model positions
-#                                 'full-extra': spans full model but has 5' and/or 3' inserts
-#                                 'full-ambig': spans full model and no 5' or 3' inserts
-#                                               but has indel(s) in first and/or final 10 model positions
-#                                 'partial:'    does not span full model
+#                                 'partial:'       does not span full model
+#                                 'full-exact':    spans full model and no 5' or 3' inserts
+#                                                  and no indels in first or final 10 model positions
+#                                 'full-extra':    spans full model but has 5' and/or 3' inserts
+#                                 'full-ambig':    spans full model and no 5' or 3' inserts
+#                                                  but has indel(s) in first and/or final 10 model positions
+#                                                  and insertions outnumber deletions at 5' and/or 3' end
+#                                 'partial-ambig': spans full model and no 5' or 3' inserts
+#                                                  but has indel(s) in first and/or final 10 model positions
+#                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
 -----------------------
 Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
 output file from ribotyper.pl. 
@@ -825,9 +843,9 @@ the -h option, just as with ribotyper.pl:
 
 > ribolengthchecker.pl -h
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.13 (Jan 2018)
+# ribotyper 0.15 (Mar 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Jan  8 12:42:24 2018
+# date:    Tue Mar 20 06:17:05 2018
 #
 Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
 
