@@ -1769,6 +1769,7 @@ sub output_one_target {
   }
     
   # determine if hits are out of order between model and sequence
+  # and types of gaps in between hits
   my $out_of_order_str = "";
   if($have_model_coords) { # we can only do this if search output included model coords
     if($nhits > 1) { 
@@ -1811,6 +1812,39 @@ sub output_one_target {
           if($i < ($nhits-1)) { $out_of_order_str .= ","; }
         }
         $out_of_order_str .= "])";
+      }
+      else { # hits are in order, determine gaps in between hits
+        # TEMP DEBUGGING print statements
+        for($i = 0; $i < $nhits; $i++) { 
+          printf("HEYA\n");
+          printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
+          printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
+          printf("HEYA seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
+          printf("HEYA mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
+        }
+        # determine gaps between all hits
+        for($i = 0; $i < ($nhits-1); $i++) {
+          my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
+          my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
+          my ($seq_cur_start, $seq_cur_stop) = split(/\./, $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_cur_idx]);
+          my ($seq_nxt_start, $seq_nxt_stop) = split(/\./, $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_nxt_idx]);
+
+          my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
+          my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
+          my ($mdl_cur_start, $mdl_cur_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx]);
+          my ($mdl_nxt_start, $mdl_nxt_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_nxt_idx]);
+          
+          # HAVE TO DEAL WITH RARE CASE THAT THERES A DUPLICATE HIT IN MODEL COORDS HERE
+          my $seq_gap = $seq_nxt_start - $seq_cur_stop - 1;
+          my $mdl_gap = $mdl_nxt_start - $mdl_cur_stop - 1;
+
+          printf("HEYA\n");
+#          printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$seq_cur_idx]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_cur_idx] . "\n");
+#          printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$mdl_cur_idx]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx] . "\n");
+
+          printf("HEYA seq_gap $seq_gap\n");
+          printf("HEYA mdl_gap $mdl_gap\n");
+        }
       }
     }
   }
