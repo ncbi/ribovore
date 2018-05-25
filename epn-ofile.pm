@@ -822,6 +822,43 @@ sub ofile_MaxLengthScalarValueInArray {
 }
 
 #################################################################
+# Subroutine : ofile_FileOpenFailure()
+# Incept:      EPN, Fri May 25 11:49:18 2018
+#              EPN, Wed Nov 11 05:39:56 2009 (rnavore)
+#
+# Purpose:     Called if an open() call fails on a file.
+#              Print an informative error message
+#              to $FH_HR->{"cmd"} and $FH_HR->{"log"}
+#              and to STDERR, then exit with <$status>.
+#
+# Arguments: 
+#   $filename:   file that we couldn't open
+#   $pkgstr:     string describing the package for 'FAILURE' messages
+#   $c_sub_name: name of calling subroutine name
+#   $status:     error status
+#   $action:     "reading", "writing", "appending"
+#   $FH_HR:      ref to hash of open file handles to close
+# 
+# Returns:     Nothing, this function will exit the program.
+#
+################################################################# 
+sub ofile_FileOpenFailure { 
+  my $nargs_expected = 6;
+  my $sub_name = "ofile_FileOpenFailure()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($filename, $pkgstr, $c_sub_name, $status, $action, $FH_HR) = @_;
+
+  if(($action eq "reading") && (! (-e $filename))) { 
+    ofile_FAIL(sprintf("ERROR, could not open %s%s for reading. It does not exist.", $filename, (defined $c_sub_name) ? " in subroutine $c_sub_name" : ""), $pkgstr, $status, $FH_HR);
+  }
+  else { 
+    ofile_FAIL(sprintf("ERROR, could not open %s%s for %s", $filename, (defined $c_sub_name) ? " in subroutine $c_sub_name" : "", $action), $pkgstr, $status, $FH_HR);
+  }
+
+  return; # never reached
+}
+
+#################################################################
 # Subroutine:  ofile_FAIL()
 # Incept:      EPN, Wed Nov 11 06:22:59 2009 (rnavore) 
 #
@@ -831,8 +868,8 @@ sub ofile_MaxLengthScalarValueInArray {
 #
 # Arguments: 
 #   $errmsg:  the error message to write
-#   $status:  error status to exit with
 #   $pkgstr:  string describing the package for FAILURE message
+#   $status:  error status to exit with
 #   $FH_HR:   ref to hash of file handles, including "log" and "cmd"
 # 
 # Returns:     Nothing, this function will exit the program.
@@ -850,7 +887,7 @@ sub ofile_FAIL {
     }
     exit(1); 
   }
-  my ($errmsg, $status, $pkgstr, $FH_HR) = @_;
+  my ($errmsg, $pkgstr, $status, $FH_HR) = @_;
   
   if($errmsg !~ m/\n$/) { $errmsg .= "\n\n"; }
   else                  { $errmsg .= "\n"; }

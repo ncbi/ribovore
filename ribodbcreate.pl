@@ -91,7 +91,7 @@ my $version           = "0.15";
 my $model_version_str = "0p15"; 
 my $releasedate       = "Mar 2018";
 my $package_name      = "ribotyper";
-my $package_string    = "RIBO";
+my $pkgstr    = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -123,6 +123,17 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 # do checks that are too sophisticated for epn-options.pm
 if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH)))) { 
   die "ERROR, neither --fetch nor --fasta options were used. Exactly one must be.";
+}
+
+my $in_fetch_file = opt_Get("--fetch", \%opt_HH); # this will be undefined unless --fetch set on the command line
+my $in_fasta_file = opt_Get("--fasta", \%opt_HH); # this will be undefined unless --fasta set on the command line
+
+# verify required files exist
+if(defined $in_fetch_file) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_fetch_file, "--fetch argument", undef, 1); 
+}
+if(defined $in_fasta_file) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
 }
 
 #############################
@@ -176,16 +187,16 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $package_string, "log", $out_root . ".log", 1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $package_string, "cmd", $out_root . ".cmd", 1, "List of executed commands");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $package_string, "list", $out_root . ".list", 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "log", $out_root . ".log", 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cmd", $out_root . ".cmd", 1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "list", $out_root . ".list", 1, "List and description of all output files");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
 # to close these first.
 
 # now we have the log file open, output the banner there too
-ofile_OutputBanner($log_FH, $package_string, $version, $releasedate, $synopsis, $date, \%extra_H);
+ofile_OutputBanner($log_FH, $pkgstr, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble($log_FH, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 # output any commands we already executed to $log_FH
@@ -193,10 +204,91 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
+##############################################################################
+# Step 1. Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
+##############################################################################
+my $progress_w = 50; # the width of the left hand column in our progress output, hard-coded
+my $start_secs;
+my $full_fasta_file = $out_root . ".full.fa";
+if(defined $in_fetch_file) { 
+  $start_secs = ofile_OutputProgressPrior("Executing command to fetch sequences ", $progress_w, $log_FH, *STDOUT);
+  open(FETCH, $in_fetch_file) || ofile_FileOpenFailure($in_fetch_file, $pkgstr, "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+  my $fetch_command = <FETCH>; # read only the first line of the file
+  chomp $fetch_command;
+  if($fetch_command =~ m/\>/) { 
+    ofile_FAIL("ERROR, fetch command read from $in_fetch_file includes an output character \>", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+  }
+  $fetch_command .= " > $full_fasta_file";
+  new_ribo_RunCommand($fetch_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+}
+else { # $in_fasta_file must be defined
+  if(! defined $in_fasta_file) { 
+    ofile_FAIL("ERROR, neither --fetch nor --fasta was used, exactly one must be.", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+  }
+  $start_secs = ofile_OutputProgressPrior("Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
+  my $cp_command .= "cp $in_fasta_file $full_fasta_file";
+  new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+}
+
 ##########
 # Conclude
 ##########
 
 $total_seconds += ribo_SecondsSinceEpoch();
-ofile_OutputConclusionAndCloseFiles($total_seconds, $package_string, $dir, \%ofile_info_HH);
+ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
 exit 0;
+
+#################################################################
+# Subroutine:  new_ribo_RunCommand()
+# Incept:      EPN, Mon Dec 19 10:43:45 2016
+#
+# Purpose:     Runs a command using system() and exits in error 
+#              if the command fails. If $be_verbose, outputs
+#              the command to stdout. If $FH_HR->{"cmd"} is
+#              defined, outputs command to that file handle.
+#
+# Arguments:
+#   $cmd:         command to run, with a "system" command;
+#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
+#   $FH_HR:       REF to hash of file handles, including "cmd"
+#
+# Returns:    amount of time the command took, in seconds
+#
+# Dies:       if $cmd fails
+#################################################################
+sub new_ribo_RunCommand {
+  my $sub_name = "new_ribo_RunCommand()";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($cmd, $pkgstr, $be_verbose, $FH_HR) = @_;
+  
+  my $cmd_FH = undef;
+  if(defined $FH_HR && defined $FH_HR->{"cmd"}) { 
+    $cmd_FH = $FH_HR->{"cmd"};
+  }
+
+  if($be_verbose) { 
+    print ("Running cmd: $cmd\n"); 
+  }
+
+  if(defined $cmd_FH) { 
+    print $cmd_FH ("$cmd\n");
+  }
+
+  my ($seconds, $microseconds) = gettimeofday();
+  my $start_time = ($seconds + ($microseconds / 1000000.));
+
+  system($cmd);
+
+  ($seconds, $microseconds) = gettimeofday();
+  my $stop_time = ($seconds + ($microseconds / 1000000.));
+
+  if($? != 0) { 
+    ofile_FAIL("ERROR in $sub_name, the following command failed:\n$cmd\n", $pkgstr, $?, $FH_HR);
+  }
+
+  return ($stop_time - $start_time);
+}
