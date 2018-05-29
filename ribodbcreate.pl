@@ -60,7 +60,8 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("--fetch",      "string",  undef,                    1,    undef, "--fasta",  "fetch sequences using seqfetch query in <s>",      "fetch sequences using seqfetch query in <s>",                                  \%opt_HH, \@opt_order_A);
-opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",  "sequences provided as fasta input in <s>",         "don't fetch sequences, <s> is fasta file of input sequences",                           \%opt_HH, \@opt_order_A);
+opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",  "sequences provided as fasta input in <s>",         "don't fetch sequences, <s> is fasta file of input sequences",                  \%opt_HH, \@opt_order_A);
+opt_Add("--maxnambig",  "integer", 0,                        1,    undef, undef,      "set maximum number of allowed ambiguous nts to <n>",  "set maximum number of allowed ambiguous nts to <n>",                        \%opt_HH, \@opt_order_A);
 ## options related to the ribotyper call
 #$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
 #opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
@@ -79,7 +80,8 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 'fetch=s'      => \$GetOptions_H{"--fetch"},
-                'fasta=s'      => \$GetOptions_H{"--fasta"});
+                'fasta=s'      => \$GetOptions_H{"--fasta"},
+                'maxnambig=s'  => \$GetOptions_H{"--maxnambig"});
 #                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
 #                'noscfail'     => \$GetOptions_H{"--noscfail"},
 #                'nocovfail'    => \$GetOptions_H{"--nocovfail"});
@@ -207,7 +209,7 @@ foreach $cmd (@early_cmd_A) {
 ##############################################################################
 # Step 1. Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
 ##############################################################################
-my $progress_w = 50; # the width of the left hand column in our progress output, hard-coded
+my $progress_w = 60; # the width of the left hand column in our progress output, hard-coded
 my $start_secs;
 my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
@@ -244,6 +246,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # get lengths of all seqs and create a list of all sequences
 my $seqstat_file = $out_root . ".full.seqstat";
+my $comptbl_file = $out_root . ".full.comptbl";
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence, 
                    # value multiplied by -1 after we output info for this sequence
@@ -253,15 +256,16 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # see it again before the next round, then we know the 
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
+my %seqnambig_H = (); # number of ambiguous nucleotides per sequence
 $start_secs = ofile_OutputProgressPrior("Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
 ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, undef, \%opt_HH);
+ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH);
 my $nseq = scalar(keys %seqidx_H);
 my $full_list_file = $out_root . ".full.list";
 new_ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_list_file", 1, "File with list of all $nseq input sequences");
 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-
 
 ##############################################################################
 # Step 2. Run srcchk and filter for formal names
@@ -270,6 +274,21 @@ $start_secs = ofile_OutputProgressPrior("Running srcchk for all sequences ", $pr
 my $full_srcchk_file = $out_root . ".full.srcchk";
 new_ribo_RunCommand("srcchk -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+$start_secs = ofile_OutputProgressPrior("Filtering for formal names ", $progress_w, $log_FH, *STDOUT);
+my $formal_list_file = $out_root . ".formal.list";
+new_ribo_RunCommand("tail -n +2 $full_srcchk_file | grep -v -P \" sp\.|cf\.|aff\. \" | cut -f 1 > $formal_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "formallist", "$formal_list_file", 1, "list of sequences with formal names");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+##############################################################################
+# Step 3. Remove any sequences with > $max_nambig ambiguous nucleotides
+##############################################################################
+$start_secs = ofile_OutputProgressPrior(sprintf("Filtering sequences with < %d ambiguous nucleotides ", opt_Get("--maxnambig", \%opt_HH) + 1), $progress_w, $log_FH, *STDOUT);
+my $noambig_list_file = $out_root . ".noambig.list";
+filter_list_file($formal_list_file, $noambig_list_file, opt_Get("--maxnambig", \%opt_HH), \%seqnambig_H, $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "noambiglist", "$noambig_list_file", 1, sprintf("list of sequences with < %d ambiguous nucleotides", opt_Get("--maxnambig", \%opt_HH)));
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##########
@@ -361,8 +380,8 @@ sub reformat_sequence_names_in_fasta_file {
 
   my ($in_file, $out_file, $check_format, $FH_HR) = (@_);
 
-  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
-  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $FH_HR);
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbcreate.pl:main()", $!, "writing", $FH_HR);
 
   while(my $line = <IN>) { 
     if($line =~ /^>(\S+)/) { 
@@ -382,4 +401,60 @@ sub reformat_sequence_names_in_fasta_file {
   close(OUT);
       
   return;
+}
+
+#################################################################
+# Subroutine:  filter_list_file()
+# Incept:      EPN, Tue May 29 15:15:42 2018
+#
+# Purpose:     Given a file with a list of sequences names, 
+#              filter that list to make a new list file based on 
+#              the values in the hash %{$value_HR}. Keep only sequences 
+#              for which the value of %{$value_HR} is <= $maxvalue.
+#
+# Arguments:
+#   $in_file:      name of input list file to filter
+#   $out_file:     name of output list file to create
+#   $maxvalue:     maximum value to allow in %{$HR} 
+#   $value_HR:     ref to hash with values to use to determine filtering
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    Two values: 
+#             Number of sequences kept in filtered list
+#             Number of sequences removed from input list
+#
+# Dies:       if a sequence name read in $in_file does not exist in %{$value_HR}
+#################################################################
+sub filter_list_file { 
+  my $sub_name = "filter_list_file()";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $out_file, $maxvalue, $value_HR, $FH_HR) = (@_);
+
+  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $FH_HR);
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbcreate.pl:main()", $!, "writing", $FH_HR);
+
+  my $nkept    = 0;
+  my $nremoved = 0;
+  while(my $line = <IN>) { 
+    chomp $line;
+    if($line =~ /^(\S+)/) { 
+      my $seqname = $1;
+      if(! exists $value_HR->{$seqname}) { 
+        ofile_FAIL("ERROR in $sub_name, the following command failed:\n$cmd\n", "RIBO", $?, $FH_HR); 
+      }
+      if($value_HR->{$seqname} <= $maxvalue) { 
+        print OUT $line .= "\n";
+        $nkept++;
+      }
+      else { 
+        $nremoved++; 
+      }
+    }
+  }
+  close(IN);
+  close(OUT);
+  
+  return ($nkept, $nremoved);
 }

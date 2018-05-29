@@ -296,6 +296,40 @@ sub ribo_ProcessSequenceFile {
   return $tot_length;
 }
 
+
+#################################################################
+# Subroutine : ribo_CountAmbiguousNucleotidesInSequenceFile()
+# Incept:      EPN, Tue May 29 14:51:35 2018
+#
+# Purpose:     Use esl-seqstat to determine the number of ambiguous
+#              nucleotides in each sequence in a sequence file.
+#              
+# Arguments: 
+#   $seqstat_exec: path to esl-seqstat executable
+#   $seq_file:     sequence file to process
+#   $seqstat_file: path to esl-seqstat output to create
+#   $seqnambig_HR: ref to hash of number of ambiguous nucleotides per sequence, filled here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+# 
+# Returns:     number of sequences with 1 or more ambiguous nucleotides
+#              fills %{$seqnambig_HR}.
+#
+# Dies:        If esl-seqstat call fails
+#
+################################################################# 
+sub ribo_CountAmbiguousNucleotidesInSequenceFile { 
+  my $nargs_expected = 5;
+  my $sub_name = "ribo_CountAmbiguousNucleotidesInSequenceFile()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($seqstat_exec, $seq_file, $seqstat_file, $seqnambig_HR, $opt_HHR) = (@_);
+
+  ribo_RunCommand($seqstat_exec . " --dna --comptbl $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR));
+
+  # parse esl-seqstat file to get lengths
+  return ribo_ParseSeqstatCompTblFile($seqstat_file, $seqnambig_HR);
+}
+
+
 #################################################################
 # Subroutine : ribo_ParseSeqstatFile()
 # Incept:      EPN, Wed Dec 14 16:16:22 2016
@@ -393,6 +427,68 @@ sub ribo_ParseSeqstatFile {
   $$nseq_R = $nread;
 
   return $tot_length;
+}
+
+#################################################################
+# Subroutine : ribo_ParseSeqstatCompTblFile()
+# Incept:      EPN, Tue May 29 14:55:18 2018
+#
+# Purpose:     Parse an esl-seqstat --comptbl output file.
+#              
+# Arguments: 
+#   $seqstat_file:  file to parse
+#   $seqnambig_HR:  REF to hash of number of ambiguities in each sequence, to fill here 
+#
+# Returns:     Total number of sequences with >= 1 ambiguous nucleotide.
+# 
+# Dies:        Never
+#
+################################################################# 
+sub ribo_ParseSeqstatCompTblFile { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseSeqstatCompTblFile";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($seqstat_file, $seqnambig_HR) = @_;
+
+  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+
+  my $nread = 0;            # number of sequences read
+  my $nread_w_ambig = 0;    # summed length of all sequences
+  my $seqname = undef;      # a sequence name
+  my $nA;                   # number of As
+  my $nC;                   # number of Cs
+  my $nG;                   # number of Gs
+  my $nT;                   # number of Ts
+  my $L;                    # length of the sequence
+  my $nambig;               # number of ambiguities           
+  my %seqdups_H = ();       # key is a sequence name that exists more than once in seq file, value is number of occurences
+  my $at_least_one_dup = 0; # set to 1 if we find any duplicate sequence names
+
+  # parse the seqstat --comptbl output 
+  while(my $line = <IN>) { 
+    ## Sequence name                Length      A      C      G      T
+    ##----------------------------- ------ ------ ------ ------ ------
+    #gi|675602128|gb|KJ925573.1|       500    148     98    112    142
+    #gi|219812015|gb|FJ552229.1|       796    193    209    244    150
+    #gi|675602352|gb|KJ925797.1|       500    149    103    126    122
+
+    chomp $line;
+    #print $line . "\n";
+    if($line =~ /^(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/) { 
+      $nread++;
+      ($seqname, $L, $nA, $nC, $nG, $nT) = ($1, $2, $3, $4, $5, $6);
+      $nambig = $L - ($nA + $nC + $nG + $nT);
+      if($nambig > 0) { $nread_w_ambig++; }
+      $seqnambig_HR->{$seqname} = $nambig;
+    }
+    elsif($line !~ m/^\#/) { 
+      die "ERROR unable to parse esl-seqstat --comptbl line $line from file $seqstat_file";
+    }
+  }
+  close(IN);
+
+  return $nread_w_ambig;
 }
 
 #################################################################
