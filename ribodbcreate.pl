@@ -169,7 +169,7 @@ my $out_root = $dir . "/" . $dir_tail . ".dnaorg_build";
 # output preamble
 my @arg_desc_A = ("reference accession");
 my @arg_A      = ($dir);
-my %extra_H = ();
+my %extra_H    = ();
 $extra_H{"\$RIBODIR"} = $env_ribotyper_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
@@ -209,6 +209,7 @@ foreach $cmd (@early_cmd_A) {
 ##############################################################################
 my $progress_w = 50; # the width of the left hand column in our progress output, hard-coded
 my $start_secs;
+my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
 if(defined $in_fetch_file) { 
   $start_secs = ofile_OutputProgressPrior("Executing command to fetch sequences ", $progress_w, $log_FH, *STDOUT);
@@ -218,7 +219,7 @@ if(defined $in_fetch_file) {
   if($fetch_command =~ m/\>/) { 
     ofile_FAIL("ERROR, fetch command read from $in_fetch_file includes an output character \>", $pkgstr, $!, $ofile_info_HH{"FH"}); 
   }
-  $fetch_command .= " > $full_fasta_file";
+  $fetch_command .= " > $raw_fasta_file";
   new_ribo_RunCommand($fetch_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
@@ -227,10 +228,49 @@ else { # $in_fasta_file must be defined
     ofile_FAIL("ERROR, neither --fetch nor --fasta was used, exactly one must be.", $pkgstr, $!, $ofile_info_HH{"FH"}); 
   }
   $start_secs = ofile_OutputProgressPrior("Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
-  my $cp_command .= "cp $in_fasta_file $full_fasta_file";
+  my $cp_command .= "cp $in_fasta_file $raw_fasta_file";
   new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
+
+# reformat the names of the sequences:
+# gi|675602128|gb|KJ925573.1| becomes KJ925573.1
+$start_secs = ofile_OutputProgressPrior("Reformatting names of sequences ", $progress_w, $log_FH, *STDOUT);
+my $check_fetched_names_format = (opt_Get("--fetch", \%opt_HH)) ? 1 : 0;
+$check_fetched_names_format = 1; # TEMP 
+reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $check_fetched_names_format, $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullfa", "$full_fasta_file", 1, "Fasta file with all sequences with names possibly reformatted to accession version");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+# get lengths of all seqs and create a list of all sequences
+my $seqstat_file = $out_root . ".full.seqstat";
+my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
+my %seqlen_H = (); # key: sequence name, value: length of sequence, 
+                   # value multiplied by -1 after we output info for this sequence
+                   # in round 1. Multiplied by -1 again after we output info 
+                   # for this sequence in round 2. We do this so that we know
+                   # that 'we output this sequence already', so if we 
+                   # see it again before the next round, then we know the 
+                   # tbl file was not sorted properly. That shouldn't happen,
+                   # but if somehow it does then we want to know about it.
+$start_secs = ofile_OutputProgressPrior("Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
+ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, undef, \%opt_HH);
+my $nseq = scalar(keys %seqidx_H);
+my $full_list_file = $out_root . ".full.list";
+new_ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_list_file", 1, "File with list of all $nseq input sequences");
+
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+
+##############################################################################
+# Step 2. Run srcchk and filter for formal names
+##############################################################################
+$start_secs = ofile_OutputProgressPrior("Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
+my $full_srcchk_file = $out_root . ".full.srcchk";
+new_ribo_RunCommand("srcchk -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##########
 # Conclude
@@ -291,4 +331,55 @@ sub new_ribo_RunCommand {
   }
 
   return ($stop_time - $start_time);
+}
+
+#################################################################
+# Subroutine:  reformat_sequence_names_in_fasta_file()
+# Incept:      EPN, Tue May 29 11:24:06 2018
+#
+# Purpose:     Given a fasta file, create a copy of it with 
+#              sequences renamed in accession.version format
+#              for those sequence names that match an 
+#              expected input format.
+#
+# Arguments:
+#   $in_file:      name of input file to change names of
+#   $out_file:     name of output file to create
+#   $check_format: '1' to check if sequence names match expected format
+#                  and die if they don't
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    void
+#
+# Dies:       if a sequence name in $in_file does not match the expected
+#             format and $check_format is TRUE.
+#################################################################
+sub reformat_sequence_names_in_fasta_file { 
+  my $sub_name = "reformat_sequence_names_in_fasta_file()";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $out_file, $check_format, $FH_HR) = (@_);
+
+  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+
+  while(my $line = <IN>) { 
+    if($line =~ /^>(\S+)/) { 
+      # header line
+      my $orig_name = $1;
+      my $desc = "";
+      if($line =~ /^\>\S+\s+(.+)/) { 
+        $desc = " " . $1;
+      }
+      my $new_name = ribo_ConvertFetchedNameToAccVersion($orig_name, $check_format);
+      printf OUT (">%s%s\n", $new_name, $desc);
+    }
+    else { 
+      print OUT $line; 
+    }
+  }
+  close(OUT);
+      
+  return;
 }

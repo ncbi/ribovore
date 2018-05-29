@@ -260,7 +260,7 @@ sub ribo_ValidateExecutableHash {
 #   $seqstat_file: path to esl-seqstat output to create
 #   $seqidx_HR:    ref to hash of sequence indices to fill here
 #   $seqlen_HR:    ref to hash of sequence lengths to fill here
-#   $width_HR:     ref to hash to fill with max widths (see Purpose)
+#   $width_HR:     ref to hash to fill with max widths (see Purpose), can be undef
 #   $opt_HHR:      reference to 2D hash of cmdline options
 # 
 # Returns:     total number of nucleotides in all sequences read, 
@@ -286,10 +286,12 @@ sub ribo_ProcessSequenceFile {
   my $nseq                  = 0; # number of sequences read
   my $tot_length = ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqidx_HR, $seqlen_HR); 
 
-  $width_HR->{"target"} = $max_targetname_length;
-  $width_HR->{"length"} = $max_length_length;
-  $width_HR->{"index"}  = length($nseq);
-  if($width_HR->{"index"} < length("#idx")) { $width_HR->{"index"} = length("#idx"); }
+  if(defined $width_HR) { 
+    $width_HR->{"target"} = $max_targetname_length;
+    $width_HR->{"length"} = $max_length_length;
+    $width_HR->{"index"}  = length($nseq);
+    if($width_HR->{"index"} < length("#idx")) { $width_HR->{"index"} = length("#idx"); }
+  }
 
   return $tot_length;
 }
@@ -611,6 +613,49 @@ sub ribo_RemoveDirPath {
   $fullpath =~ s/^.+\///;
 
   return $fullpath;
+}
+
+
+#################################################################
+# Subroutine : ribo_ConvertFetchedNameToAccVersion()
+# Incept:      EPN, Tue May 29 11:12:58 2018
+#
+# Purpose:     Given a 'fetched' GenBank sequence name, e.g.
+#              gi|675602128|gb|KJ925573.1|, convert it to 
+#              just accession version.
+#
+# Arguments: 
+#   $fetched_name: name of sequence
+#   $do_die:       '1' to die if the $fetch_name doesn't match the 
+#                  expected format
+#
+# Returns: $accver_name: accession version format of the name
+#          or $fetched_name if $fetched_name doesn't match 
+#          expected format and $do_die is '0'.
+# 
+# Dies: if $do_die and expected name doesn't match the expected format
+#
+################################################################# 
+sub ribo_ConvertFetchedNameToAccVersion {
+  my $sub_name = "ribo_ConvertFetchedNameToAccVersion()";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($fetched_name, $do_die) = (@_);
+  
+  # example: gi|675602128|gb|KJ925573.1|
+  my $accver_name = undef;
+  if($fetched_name =~ /^gi\|\d+\|\S+\|(\S+\.\d+)\|.*/) { 
+    $accver_name = $1;
+  }
+  else { 
+    if($do_die) { 
+      die "ERROR, in $sub_name, $fetched_name did not match the expected format for the $fetched_name"; 
+    }
+    $accver_name = $fetched_name;
+  }
+     
+  return $accver_name;
 }
 
 ###########################################################################
