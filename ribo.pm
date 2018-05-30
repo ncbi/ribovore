@@ -673,14 +673,20 @@ sub ribo_NumberOfDigits {
 ################################################################# 
 sub ribo_VerifyEnvVariableIsValidDir
 {
-  my ($envvar) = @_;
+  my $nargs_expected = 1;
+  my $sub_name = "ribo_VerifyEnvVariableIsValidDir()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($envvar) = $_[0];
+
+  printf("in $sub_name: envvar: $envvar\n");
     
   if(! exists($ENV{"$envvar"})) { 
     die "ERROR, the environment variable $envvar is not set";
   }
   my $envdir = $ENV{"$envvar"};
   if(! (-d $envdir)) { 
-    die "ERROR, the diretory specified by your environment variable $envvar does not exist.\n"; 
+    die "ERROR, the directory specified by your environment variable $envvar does not exist.\n"; 
   }    
 
   return $envdir

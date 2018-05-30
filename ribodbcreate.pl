@@ -10,14 +10,19 @@ require "ribo.pm";
 
 # make sure the RIBODIR variable is set
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_vecplus_dir       = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
 #my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
 # make sure the required executables are executable
 my %execs_H = (); # key is name of program, value is path to the executable
-$execs_H{"ribotyper"}          = $env_ribotyper_dir     . "/ribotyper.pl";
-$execs_H{"ribolengthchecker"}  = $env_ribotyper_dir     . "/ribolengthchecker.pl";
+$execs_H{"ribotyper"}            = $env_ribotyper_dir  . "/ribotyper.pl";
+$execs_H{"ribolengthchecker"}    = $env_ribotyper_dir  . "/ribolengthchecker.pl";
+$execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
+$execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+$execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen";
+$execs_H{"srcchk"}               = $env_vecplus_dir    . "/scripts/srcchk";
 # Currently, we require infernal and easel executables are in the user's path, 
 # but do not check. The program will die if the commands using them fail. 
 # The block below is retained in in case we want to use it eventually.
@@ -163,7 +168,7 @@ push(@early_cmd_A, $cmd);
 
 my $dir_tail = $dir;
 $dir_tail =~ s/^.+\///; # remove all but last dir
-my $out_root = $dir . "/" . $dir_tail . ".dnaorg_build";
+my $out_root = $dir . "/" . $dir_tail . ".ribodbcreate";
 
 #############################################
 # output program banner and open output files
@@ -272,7 +277,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ##############################################################################
 $start_secs = ofile_OutputProgressPrior("Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
 my $full_srcchk_file = $out_root . ".full.srcchk";
-new_ribo_RunCommand("srcchk -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+new_ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -289,6 +294,28 @@ $start_secs = ofile_OutputProgressPrior(sprintf("Filtering sequences with < %d a
 my $noambig_list_file = $out_root . ".noambig.list";
 filter_list_file($formal_list_file, $noambig_list_file, opt_Get("--maxnambig", \%opt_HH), \%seqnambig_H, $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "noambiglist", "$noambig_list_file", 1, sprintf("list of sequences with < %d ambiguous nucleotides", opt_Get("--maxnambig", \%opt_HH)));
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+##############################################################################
+# Step 4. Remove seqs with non-weak VecScreen matches 
+##############################################################################
+$start_secs = ofile_OutputProgressPrior("Identifying vector sequences with VecScreen ", $progress_w, $log_FH, *STDOUT);
+my $vecscreen_output_file = $out_root . ".vecscreen";
+my $vecscreen_cmd  = $execs_H{"vecscreen"} . " -text_output -query $full_fasta_file > $vecscreen_output_file";
+new_ribo_RunCommand($vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecout", "$vecscreen_output_file", 1, "vecscreen output file");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+# parse vecscreen 
+$start_secs = ofile_OutputProgressPrior("Parsing VecScreen output ", $progress_w, $log_FH, *STDOUT);
+my $parse_vecscreen_terminal_file = $out_root . ".terminal.parse_vecscreen";
+my $parse_vecscreen_internal_file = $out_root . ".internal.parse_vecscreen";
+my $parse_vecscreen_combined_file = $out_root . ".combined.parse_vecscreen";
+my $parse_vecscreen_cmd   = $execs_H{"parse_vecscreen.pl"} . " --verbose --input $vecscreen_output_file --outfile_terminal $parse_vecscreen_terminal_file --outfile_internal $parse_vecscreen_internal_file";
+my $combine_summaries_cmd = $execs_H{"combine_summaries.pl"} . " --input_internal $parse_vecscreen_internal_file --input_terminal $parse_vecscreen_terminal_file --outfile $parse_vecscreen_combined_file";
+new_ribo_RunCommand($parse_vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+new_ribo_RunCommand($combine_summaries_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevec", "$parse_vecscreen_combined_file", 1, "combined parse_vecscreen.pl output file");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##########
