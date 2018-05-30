@@ -758,6 +758,59 @@ sub ribo_ConvertFetchedNameToAccVersion {
   return $accver_name;
 }
 
+#################################################################
+# Subroutine : ribo_ParseRLCModelinfoFile()
+# Incept:      EPN, Fri Oct 20 14:17:53 2017
+#
+# Purpose:     Parse a ribolengthchecker.pl modelinfo file, and 
+#              fill information in @{$family_order_AR}, %{$family_modelname_HR}.
+# 
+#              
+# Arguments: 
+#   $modelinfo_file:       file to parse
+#   $env_ribo_dir:         directory in which CM files should be found
+#   $family_order_AR:      reference to array of family names, in order read from file, FILLED HERE
+#   $family_modelname_HR:  reference to hash, key is family name, value is path to model, FILLED HERE 
+#   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
+#
+# Returns:     void; 
+#
+################################################################# 
+sub ribo_ParseRLCModelinfoFile { 
+  my $nargs_expected = 5;
+  my $sub_name = "ribo_ParseModelinfoFile";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelname_HR, $family_modellen_HR) = @_;
+
+  open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
+
+  while(my $line = <IN>) { 
+    ## each line has information on 1 family and has at least 4 tokens: 
+    ## token 1: Name for output files for this family
+    ## token 2: CM file name for this family
+    ## token 3: integer, consensus length for the CM for this family
+    ## tokens 4 to N: name of ribotyper files with sequences that should be aligned with this model
+    #SSU.Archaea RF01959.cm SSU_rRNA_archaea
+    #SSU.Bacteria RF00177.cm SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+    chomp $line; 
+    if($line !~ /^\#/ && $line =~ m/\w/) { 
+      $line =~ s/^\s+//; # remove leading whitespace
+      $line =~ s/\s+$//; # remove trailing whitespace
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 3) { 
+        die "ERROR in $sub_name, not exactly 3 tokens found on line $line of $modelinfo_file";  
+      }
+      my ($family, $modelname, $modellen) = @el_A;
+      push(@{$family_order_AR}, $family);
+      $family_modelname_HR->{$family} = $env_ribo_dir . "/" . $modelname;
+      $family_modellen_HR->{$family}  = $modellen;
+    }
+  }
+  close(IN);
+  return;
+}
+
 ###########################################################################
 # the next line is critical, a perl module must return a true value
 return 1;

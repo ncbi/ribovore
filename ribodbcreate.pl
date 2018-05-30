@@ -74,6 +74,11 @@ opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,
 opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
 opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{"3"} = "options related to model boundaries at model span step:";
+opt_Add("--pos",         "integer",  undef,                  3,    undef, undef,      "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--lpos",        "integer",  undef,                  3,  "--rpos","--pos",    "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--rpos",        "integer",  undef,                  3,  "--lpos","--pos",    "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -91,7 +96,10 @@ my $options_okay =
                 'maxnambig=s'  => \$GetOptions_H{"--maxnambig"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
-                'nocovfail'    => \$GetOptions_H{"--nocovfail"});
+                'nocovfail'    => \$GetOptions_H{"--nocovfail"},
+                'pos=s'        => \$GetOptions_H{"--pos"},
+                'lpos=s'       => \$GetOptions_H{"--lpos"},
+                'rpos=s'       => \$GetOptions_H{"--rpos"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -132,6 +140,16 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 # do checks that are too sophisticated for epn-options.pm
 if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH)))) { 
   die "ERROR, neither --fetch nor --fasta options were used. Exactly one must be.";
+}
+# either --pos or both of --lpos and --rpos are required
+my $in_pos  = undef;
+my $in_lpos = undef;
+my $in_rpos = undef;
+if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
+if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
+if(opt_IsUsed("--rpos", \%opt_HH)) { $in_rpos = opt_Get("--rpos", \%opt_HH); }
+if((! defined $in_pos) && (! defined $in_lpos) && (! defined $in_rpos)) { 
+  die "ERROR, either --pos, or both --lpos and --rpos are required.";
 }
 
 my $in_fetch_file = opt_Get("--fetch", \%opt_HH); # this will be undefined unless --fetch set on the command line
@@ -181,6 +199,22 @@ $in_riboopts_file = opt_Get("--riboopts", \%opt_HH);
 # make sure the riboinfo file exists
 ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts_file, "riboopts file specified with --riboopts", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
 
+my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
+my $rlc_modelinfo_file = undef;
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  $rlc_modelinfo_file = $df_rlc_modelinfo_file;
+}
+else { 
+  $rlc_modelinfo_file = opt_Get("-i", \%opt_HH);
+}
+# make sure the ribolengthchecker modelinfo files exists
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+}
+else { # -i used on the command line
+  ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+}
+
 #############################################
 # output program banner and open output files
 #############################################
@@ -222,11 +256,31 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
+###########################################################################
+# Step 0: Parse/validate input files
+###########################################################################
+my $progress_w = 60; # the width of the left hand column in our progress output, hard-coded
+my $start_secs;
+$start_secs = ofile_OutputProgressPrior("Validating input files", $progress_w, $log_FH, *STDOUT);
+
+# parse the modelinfo file, this tells us where the CM files are
+my @family_order_A     = (); # family names, in order
+my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
+my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
+ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H);
+
+# verify the CM files listed in $rlc_modelinfo_file exist
+my $family;
+foreach $family (@family_order_A) { 
+  if(! -s $family_modelname_H{$family}) { 
+    die "Model file $family_modelname_H{$family} specified in $rlc_modelinfo_file does not exist or is empty";
+  }
+}
+ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+
 ##############################################################################
 # Step 1. Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
 ##############################################################################
-my $progress_w = 60; # the width of the left hand column in our progress output, hard-coded
-my $start_secs;
 my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
 if(defined $in_fetch_file) { 
@@ -272,7 +326,8 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # see it again before the next round, then we know the 
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
-my %seqnambig_H = (); # number of ambiguous nucleotides per sequence
+my %seqnambig_H  = (); # number of ambiguous nucleotides per sequence
+my %seqfailstr_H = (); # hash that keeps track of failure strings for each sequence, will be "" for a passing sequence
 $start_secs = ofile_OutputProgressPrior("Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
 ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, undef, \%opt_HH);
 ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH);
@@ -283,8 +338,20 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_lis
 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
+# initialize %seqfailstr_H
+foreach my $seqname (%seqlen_H) { 
+  $seqfailstr_H{$seqname} = "";
+}
+my $maxnambig = opt_Get("--maxnambig", \%opt_HH);
+my $seqname;
+foreach $seqname (keys %seqnambig_H) { 
+  if($seqnambig_H{$seqname} > $maxnambig) { 
+    $seqfailstr_H{$seqname} .= "ambig[" . $seqnambig_H{$seqname} . "];"; 
+  }
+}
+
 ##############################################################################
-# Step 2. Run srcchk and filter for formal names
+# Step 2. Run srcchk and filter for formal names and uncultured
 ##############################################################################
 $start_secs = ofile_OutputProgressPrior("Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
 my $full_srcchk_file = $out_root . ".full.srcchk";
@@ -293,19 +360,22 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_s
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 $start_secs = ofile_OutputProgressPrior("Filtering for formal names ", $progress_w, $log_FH, *STDOUT);
-my $formal_list_file = $out_root . ".formal.list";
-new_ribo_RunCommand("tail -n +2 $full_srcchk_file | grep -v -P \" sp\.|cf\.|aff\. \" | cut -f 1 > $formal_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "formallist", "$formal_list_file", 1, "list of sequences with formal names");
+# creating a new file 
+#my $formal_list_file = $out_root . ".formal.list";
+#new_ribo_RunCommand("tail -n +2 $full_srcchk_file | grep -v -P \" sp\.|cf\.|aff\. \" | cut -f 1 > $formal_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+#ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "formallist", "$formal_list_file", 1, "list of sequences with formal names");
+
+parse_srcchk_file_for_names($full_srcchk_file, "formalname", "uncultured", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##############################################################################
-# Step 3. Remove any sequences with > $max_nambig ambiguous nucleotides
+## Step 3. Filter seqs with too many ambiguities
 ##############################################################################
-$start_secs = ofile_OutputProgressPrior(sprintf("Filtering sequences with < %d ambiguous nucleotides ", opt_Get("--maxnambig", \%opt_HH) + 1), $progress_w, $log_FH, *STDOUT);
-my $noambig_list_file = $out_root . ".noambig.list";
-filter_list_file($formal_list_file, $noambig_list_file, opt_Get("--maxnambig", \%opt_HH), \%seqnambig_H, $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "noambiglist", "$noambig_list_file", 1, sprintf("list of sequences with < %d ambiguous nucleotides", opt_Get("--maxnambig", \%opt_HH)));
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+#$start_secs = ofile_OutputProgressPrior(sprintf("Filtering sequences with < %d ambiguous nucleotides ", opt_Get("--maxnambig", \%opt_HH) + 1), $progress_w, $log_FH, *STDOUT);
+#my $noambig_list_file = $out_root . ".noambig.list";
+#filter_list_file($formal_list_file, $noambig_list_file, opt_Get("--maxnambig", \%opt_HH), \%seqnambig_H, $ofile_info_HH{"FH"});
+#ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "noambiglist", "$noambig_list_file", 1, sprintf("list of sequences with < %d ambiguous nucleotides", opt_Get("--maxnambig", \%opt_HH)));
+#ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##############################################################################
 # Step 4. Remove seqs with non-weak VecScreen matches 
@@ -339,6 +409,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # Step 5. Run ribolengthchecker.pl 
 ##############################################################################
 # copy the riboopts file to the output directory
+$start_secs = ofile_OutputProgressPrior("Analyzing sequences with ribolengthchecker ", $progress_w, $log_FH, *STDOUT);
 my $riboopts_file = $out_root . ".riboopts";
 new_ribo_RunCommand("cp $in_riboopts_file $riboopts_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
@@ -347,11 +418,31 @@ if(opt_IsUsed("-i",          \%opt_HH)) { $rlc_options .= " -i " . opt_Get("-i",
 if(opt_IsUsed("--noscfail",  \%opt_HH)) { $rlc_options .= " --noscfail "; }
 if(opt_IsUsed("--nocovfail", \%opt_HH)) { $rlc_options .= " --nocovfail "; }
 my $rlc_out_file       = $out_root . ".ribolengthchecker";
+my $rlc_tbl_out_file   = $out_root . ".ribolengthchecker.tbl.out";
 my $local_fasta_file   = ribo_RemoveDirPath($full_fasta_file);
 my $rlc_command = $execs_H{"ribolengthchecker"} . " --riboopts $riboopts_file $rlc_options $full_fasta_file $out_root > $rlc_out_file";
 new_ribo_RunCommand($rlc_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 1, "output of ribolengthchecker");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+# parse ribolengthchecker tbl file
+parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, \%family_modellen_H, "ribotyper", "ribolengthchecker", "alnbounds", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+
+# output tabular output file
+my $out_tbl = $out_root . ".tbl";
+my $pass_fail = undef;
+my $seqfailstr = undef;
+foreach $seqname (sort keys (%seqidx_H)) { 
+  if($seqfailstr_H{$seqname} eq "") { 
+    $pass_fail = "PASS";
+    $seqfailstr = "-";
+  }
+  else { 
+    $pass_fail = "FAIL";
+    $seqfailstr = $seqfailstr_H{$seqname};
+  }
+  printf("%-5d  %-30s  %4s  %s\n", $seqidx_H{$seqname}, $seqname, $pass_fail, $seqfailstr);
+}
 
 ##########
 # Conclude
@@ -519,4 +610,177 @@ sub filter_list_file {
   close(OUT);
   
   return ($nkept, $nremoved);
+}
+
+#################################################################
+# Subroutine:  parse_srcchk_file_for_names()
+# Incept:      EPN, Wed May 30 15:44:03 2018
+#
+# Purpose:     Parse a tab delimited srcchk output file
+#              and keep track of those sequences that 
+#              do not have a formal name or have uncultured
+#              in their name, saving that information to 
+#              %{$failstr_HR}.
+#
+# Arguments:
+#   $in_file:      name of input srcchk file to parse
+#   $fml_failstr:  string to add to $failstr_H{$seqname} for seqs that failed ribotyper
+#   $unc_failstr:  string to add to $failstr_H{$seqname} for seqs that failed ribolengthchecker
+#   $failstr_HR:   ref to hash of failure string to add to here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    void
+#
+# Dies:       if a sequence name read in $in_file does not exist in %{$value_HR}
+#################################################################
+sub parse_srcchk_file_for_names { 
+  my $sub_name = "parse_srcchk_file_for_names()";
+  my $nargs_expected = 6;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $fml_failstr, $unc_failstr, $failstr_HR, $opt_HHR, $FH_HR) = (@_);
+
+  # parse each line of the output file
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  my $nlines = 0;
+
+  # first line is header
+  my $line = <IN>;
+  while($line = <IN>) { 
+    #accession	taxid	organism	
+    #KJ925573.1	100272	uncultured eukaryote	
+    #FJ552229.1	221169	uncultured Gemmatimonas sp.	
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 3) { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    my ($accver, $taxid, $organism) = @el_A;
+    if(! exists $failstr_HR->{$accver}) { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line has unexpected sequence $accver", "RIBO", $?, $FH_HR);
+    }
+    my $extra_str = "";
+    if($organism =~ m/ sp\./)  { $extra_str .= "sp.;" };
+    if($organism =~ m/ cf\./)  { $extra_str .= "cf.;" };
+    if($organism =~ m/ aff\./) { $extra_str .= "aff.;" };
+    if($extra_str ne "") { 
+      $failstr_HR->{$accver} .= $fml_failstr . "[" . $extra_str . "]";
+    }
+
+    $extra_str = "";
+    foreach my $badword ("uncultured", "parasite", "symbiont", "unident", "environment", "undetermined", "marine", "nclassified", "dinoflagellate") { 
+      if($organism =~ m/$badword/)  { $extra_str .= $badword . ";" };
+    }
+    if($extra_str ne "") { 
+      $failstr_HR->{$accver} .= $unc_failstr . "[" . $extra_str . "]";
+    }
+  }
+  close(IN);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  parse_ribolengthchecker_tbl_file()
+# Incept:      EPN, Wed May 30 14:11:47 2018
+#
+# Purpose:     Parse a tbl output file from ribolengthchecker.pl
+#
+# Arguments:
+#   $in_file:      name of input tbl file to parse
+#   $mlen_HR:      ref to hash of model lengths, key is value in classification
+#                  column of $in_file
+#   $rt_failstr:   string to add to $failstr_H{$seqname} for seqs that failed ribotyper
+#   $rlc_failstr:  string to add to $failstr_H{$seqname} for seqs that failed ribolengthchecker
+#                  (classified as 'full-extra' or 'full-ambig')
+#   $bnd_failstr:  string to add to $failstr_H{$seqname} for seqs that failed boundary test
+#                  (do not span required region)
+#   $failstr_HR:   ref to hash of failure string to add to here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    void
+#
+# Dies:       if options are unexpected
+#             if unable to parse a tabular line
+#             in there's no model length for an observed classification
+# 
+#################################################################
+sub parse_ribolengthchecker_tbl_file { 
+  my $sub_name = "parse_ribolengthchecker_tbl_file()";
+  my $nargs_expected = 8;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $mlen_HR, $rt_failstr, $rlc_failstr, $bnd_failstr, $failstr_HR, $opt_HHR, $FH_HR) = (@_);
+
+  my $in_pos  = undef;
+  my $in_lpos = undef;
+  my $in_rpos = undef;
+  if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
+  if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
+  if(opt_IsUsed("--rpos", \%opt_HH)) { $in_rpos = opt_Get("--rpos", \%opt_HH); }
+
+  # determine maximum 5' start position and minimum 3' stop position required to be kept
+  # for each family
+  my %max_lpos_H = ();
+  my %min_rpos_H = ();
+  foreach my $class (keys (%{$mlen_HR})) { 
+    if(defined $in_pos) { 
+      $max_lpos_H{$class} = $in_pos;
+      $min_rpos_H{$class} = $mlen_HR->{$class} - $in_pos + 1;
+    }
+    else { 
+      if((! defined $in_lpos) || (! defined $in_rpos)) { 
+        ofile_FAIL("ERROR in $sub_name, --pos not used, but at least one of --lpos or --rpos not used either", "RIBO", $?, $FH_HR);
+      }
+      $max_lpos_H{$class} = $in_lpos;
+      $min_rpos_H{$class} = $in_rpos;
+    }
+  }
+
+  # parse each line of the output file
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  my $nlines = 0;
+
+  while(my $line = <IN>) { 
+    ##idx  target      classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
+    ##---  ----------  ---------------------  -----  ----  ------  ------  ------------  -------------------
+    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    #3     X74753.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowCoverage:(0.831<0.860);MultipleHits:(2);
+    #4     X51542.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.09<0.50);*LowCoverage:(0.085<0.860);
+    #5     X66111.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.01<0.50);*LowCoverage:(0.019<0.860);
+    #6     X56532.1    SSU.Eukarya            plus   PASS       1    1849       partial  -
+    #7     AY572456.1  SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    #8     AY364851.1  SSU.Eukarya            plus   PASS      35    1816       partial  -
+    if($line !~ m/^\#/) { 
+      chomp $line;
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 9) { 
+        ofile_FAIL("ERROR in $sub_name, rlc tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      }
+      my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
+      $nlines++;
+
+      # add to failstr if necessary
+      if($passfail eq "FAIL") { 
+        $failstr_HR->{$target} .= $rt_failstr . "[" . $ufeatures . "]";
+      }
+      if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
+        $failstr_HR->{$target} .= $rlc_failstr . "[" . $lclass . "]";
+      }
+      if($passfail eq "PASS") { 
+        if((! exists $max_lpos_H{$class}) || (! exists $min_rpos_H{$class})) { 
+          ofile_FAIL("ERROR in $sub_name, unexpected classification $class", "RIBO", $?, $FH_HR);
+        }
+        if(($mstart > $max_lpos_H{$class}) || ($mstop < $min_rpos_H{$class})) { 
+          $failstr_HR->{$target} .= $bnd_failstr . "[" . $mstart . "-" . $mstop . "]";
+        }
+      }
+    }
+  }
+  close(IN);
+
+  return;
 }
