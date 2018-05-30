@@ -318,6 +318,15 @@ new_ribo_RunCommand($combine_summaries_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $o
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevec", "$parse_vecscreen_combined_file", 1, "combined parse_vecscreen.pl output file");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
+# get list of accessions in combined parse_vecscreen output that have non-Weak matches
+my $vecscreen_fails_list_file = $out_root . ".vecscreen-fails.list";
+my $get_vecscreen_fails_list_cmd = "cat $parse_vecscreen_combined_file | awk -F \'\\t\' '{ printf(\"%s %s\\n\", \$1, \$7); }' | grep -i -v weak | awk '{ printf(\"%s\\n\", \$1); }' | sort | uniq > $vecscreen_fails_list_file";
+#new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, 1, $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecfails", "$vecscreen_fails_list_file", 1, "list of sequences that had non-Weak vecscreen matches");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+
 ##########
 # Conclude
 ##########
