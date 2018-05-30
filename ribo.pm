@@ -679,8 +679,6 @@ sub ribo_VerifyEnvVariableIsValidDir
 
   my ($envvar) = $_[0];
 
-  printf("in $sub_name: envvar: $envvar\n");
-    
   if(! exists($ENV{"$envvar"})) { 
     die "ERROR, the environment variable $envvar is not set";
   }

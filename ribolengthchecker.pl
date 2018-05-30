@@ -222,10 +222,13 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ####################################################
 $start_secs = ribo_OutputProgressPrior("Running ribotyper", $progress_w, undef, *STDOUT);
 
-my $ribotyper_outdir     = $out_root . "-rt";
-my $ribotyper_outfile    = $out_root . ".ribotyper.out";
-my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.short.out";
-my $ribotyper_long_file = $ribotyper_outdir . "/" . $ribotyper_outdir . ".ribotyper.long.out";
+my $dir_out_tail = $out_root;
+$dir_out_tail    =~ s/^.+\///; # remove all but last dir
+my $ribotyper_outdir      = $out_root . "-rt";
+my $ribotyper_outdir_tail = $dir_out_tail . "-rt";
+my $ribotyper_outfile     = $out_root . ".ribotyper.out";
+my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
+my $ribotyper_long_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
 my $found_family_match;  # set to '1' if a sequence matches one of the families we are aligning for
 my @fail_str_A    = (); # array of strings of FAIL sequences to output 
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 

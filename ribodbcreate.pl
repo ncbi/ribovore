@@ -63,15 +63,17 @@ opt_Add("-h",           "boolean", 0,                        0,    undef, undef,
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
-opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("--fetch",      "string",  undef,                    1,    undef, "--fasta",  "fetch sequences using seqfetch query in <s>",      "fetch sequences using seqfetch query in <s>",                                  \%opt_HH, \@opt_order_A);
 opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",  "sequences provided as fasta input in <s>",         "don't fetch sequences, <s> is fasta file of input sequences",                  \%opt_HH, \@opt_order_A);
 opt_Add("--maxnambig",  "integer", 0,                        1,    undef, undef,      "set maximum number of allowed ambiguous nts to <n>",  "set maximum number of allowed ambiguous nts to <n>",                        \%opt_HH, \@opt_order_A);
-## options related to the ribotyper call
-#$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
-#opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
-#opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
-#opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
+# THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
+opt_Add("-i",           "string",  undef,                    2,    undef, undef,      "use rlc model info file <s> instead of default",   "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -86,10 +88,10 @@ my $options_okay =
                 'i=s'          => \$GetOptions_H{"-i"},
                 'fetch=s'      => \$GetOptions_H{"--fetch"},
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
-                'maxnambig=s'  => \$GetOptions_H{"--maxnambig"});
-#                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
-#                'noscfail'     => \$GetOptions_H{"--noscfail"},
-#                'nocovfail'    => \$GetOptions_H{"--nocovfail"});
+                'maxnambig=s'  => \$GetOptions_H{"--maxnambig"},
+                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
+                'noscfail'     => \$GetOptions_H{"--noscfail"},
+                'nocovfail'    => \$GetOptions_H{"--nocovfail"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -143,6 +145,7 @@ if(defined $in_fasta_file) {
   ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
 }
 
+
 #############################
 # create the output directory
 #############################
@@ -169,6 +172,14 @@ push(@early_cmd_A, $cmd);
 my $dir_tail = $dir;
 $dir_tail =~ s/^.+\///; # remove all but last dir
 my $out_root = $dir . "/" . $dir_tail . ".ribodbcreate";
+
+my $in_riboopts_file = undef;
+if(! opt_IsUsed("--riboopts", \%opt_HH)) {
+  die "ERROR, --riboopts is a required option";
+}
+$in_riboopts_file = opt_Get("--riboopts", \%opt_HH);
+# make sure the riboinfo file exists
+ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts_file, "riboopts file specified with --riboopts", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
 
 #############################################
 # output program banner and open output files
@@ -316,16 +327,31 @@ my $combine_summaries_cmd = $execs_H{"combine_summaries.pl"} . " --input_interna
 new_ribo_RunCommand($parse_vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 new_ribo_RunCommand($combine_summaries_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevec", "$parse_vecscreen_combined_file", 1, "combined parse_vecscreen.pl output file");
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # get list of accessions in combined parse_vecscreen output that have non-Weak matches
 my $vecscreen_fails_list_file = $out_root . ".vecscreen-fails.list";
 my $get_vecscreen_fails_list_cmd = "cat $parse_vecscreen_combined_file | awk -F \'\\t\' '{ printf(\"%s %s\\n\", \$1, \$7); }' | grep -i -v weak | awk '{ printf(\"%s\\n\", \$1); }' | sort | uniq > $vecscreen_fails_list_file";
-#new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, 1, $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecfails", "$vecscreen_fails_list_file", 1, "list of sequences that had non-Weak vecscreen matches");
+new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecfails", "$vecscreen_fails_list_file", 1, "list of sequences that had non-Weak VecScreen matches");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
+##############################################################################
+# Step 5. Run ribolengthchecker.pl 
+##############################################################################
+# copy the riboopts file to the output directory
+my $riboopts_file = $out_root . ".riboopts";
+new_ribo_RunCommand("cp $in_riboopts_file $riboopts_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+
+my $rlc_options = "";
+if(opt_IsUsed("-i",          \%opt_HH)) { $rlc_options .= " -i " . opt_Get("-i", \%opt_HH);  }
+if(opt_IsUsed("--noscfail",  \%opt_HH)) { $rlc_options .= " --noscfail "; }
+if(opt_IsUsed("--nocovfail", \%opt_HH)) { $rlc_options .= " --nocovfail "; }
+my $rlc_out_file       = $out_root . ".ribolengthchecker";
+my $local_fasta_file   = ribo_RemoveDirPath($full_fasta_file);
+my $rlc_command = $execs_H{"ribolengthchecker"} . " --riboopts $riboopts_file $rlc_options $full_fasta_file $out_root > $rlc_out_file";
+new_ribo_RunCommand($rlc_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 1, "output of ribolengthchecker");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##########
 # Conclude
