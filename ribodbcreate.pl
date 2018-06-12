@@ -11,18 +11,20 @@ require "ribo.pm";
 # make sure the RIBODIR variable is set
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_vecplus_dir       = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
+my $env_ribotax_dir       = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
 #my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
 # make sure the required executables are executable
 my %execs_H = (); # key is name of program, value is path to the executable
-$execs_H{"ribotyper"}            = $env_ribotyper_dir  . "/ribotyper.pl";
-$execs_H{"ribolengthchecker"}    = $env_ribotyper_dir  . "/ribolengthchecker.pl";
-$execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
-$execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
-$execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen";
-$execs_H{"srcchk"}               = $env_vecplus_dir    . "/scripts/srcchk";
+$execs_H{"ribotyper"}                  = $env_ribotyper_dir  . "/ribotyper.pl";
+$execs_H{"ribolengthchecker"}          = $env_ribotyper_dir  . "/ribolengthchecker.pl";
+$execs_H{"parse_vecscreen.pl"}         = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
+$execs_H{"combine_summaries.pl"}       = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+$execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir    . "/scripts/find_taxonomy_ancestors.pl";
+$execs_H{"vecscreen"}                  = $env_vecplus_dir    . "/scripts/vecscreen";
+$execs_H{"srcchk"}                     = $env_vecplus_dir    . "/scripts/srcchk";
 # Currently, we require infernal and easel executables are in the user's path, 
 # but do not check. The program will die if the commands using them fail. 
 # The block below is retained in in case we want to use it eventually.
@@ -215,6 +217,12 @@ else { # -i used on the command line
   ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
 }
 
+my $taxonomy_tree_wlevels_file = $env_ribotax_dir . "/taxonomy_tree_wlevels.txt";
+ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wlevels_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
+
+my $taxonomy_tree_wspecified_species_file = $env_ribotax_dir . "/taxonomy_tree_wspecspecies.txt";
+ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wspecified_species_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
+
 #############################################
 # output program banner and open output files
 #############################################
@@ -223,6 +231,8 @@ my @arg_desc_A = ("reference accession");
 my @arg_A      = ($dir);
 my %extra_H    = ();
 $extra_H{"\$RIBODIR"} = $env_ribotyper_dir;
+$extra_H{"\$RIBOTAXDIR"} = $env_ribotax_dir;
+$extra_H{"\$VECPLUSDIR"} = $env_vecplus_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -350,22 +360,18 @@ foreach $seqname (keys %seqnambig_H) {
   }
 }
 
-##############################################################################
-# Step 2. Run srcchk and filter for formal names and uncultured
-##############################################################################
+#####################################################
+# Step 2. Run srcchk and filter for specified species
+#####################################################
 $start_secs = ofile_OutputProgressPrior("Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
 my $full_srcchk_file = $out_root . ".full.srcchk";
 new_ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
-$start_secs = ofile_OutputProgressPrior("Filtering for formal names ", $progress_w, $log_FH, *STDOUT);
-# creating a new file 
-#my $formal_list_file = $out_root . ".formal.list";
-#new_ribo_RunCommand("tail -n +2 $full_srcchk_file | grep -v -P \" sp\.|cf\.|aff\. \" | cut -f 1 > $formal_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-#ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "formallist", "$formal_list_file", 1, "list of sequences with formal names");
-
-parse_srcchk_file_for_names($full_srcchk_file, "formalname", "uncultured", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+$start_secs = ofile_OutputProgressPrior("Filtering for specified species ", $progress_w, $log_FH, *STDOUT);
+parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_wspecified_species_file, "not-specified-species", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+#OLD WAY: parse_srcchk_file_for_names($full_srcchk_file, "formalname", "uncultured", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##############################################################################
@@ -428,6 +434,58 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # parse ribolengthchecker tbl file
 parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, \%family_modellen_H, "ribotyper", "ribolengthchecker", "alnbounds", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
 
+
+##############################################################################
+# Step 6. Do the ingroup test
+##############################################################################
+
+# first, create an alignment
+# TEMPORARY? of all sequences that passed ribotyper, actually I already have these, they were
+# created by ribolengthchecker
+# merge with esl-alimerge
+my $create_list_cmd = undef;
+$start_secs = ofile_OutputProgressPrior("Determine percent identities in alignments ", $progress_w, $log_FH, *STDOUT);
+my $level = "order";
+foreach my $class (keys %family_modelname_H) { 
+  my $merged_rfonly_stk_file    = $out_root . "." . $class . ".merged.rfonly.stk";
+  my $merged_rfonly_alipid_file = $out_root . "." . $class . ".merged.rfonly.alipid";
+  my $merged_list_file          = $out_root . "." . $class . ".merged.list";
+  my $taxinfo_file              = $out_root . "." . $class . ".taxinfo.txt";
+  my $taxinfo_wlevel_file       = $out_root . "." . $class . ".taxinfo_wlevel.txt";
+  my $alipid_analyze_file       = $out_root . "." . $class . ".alipid.analyze.txt";
+
+  my $alimerge_cmd       = "ls " . $out_root . "*" . $class . "*.stk | grep -v cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - > $merged_rfonly_stk_file";
+  my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
+  my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
+  my $srcchk_cmd         = $execs_H{"srcchk"} . " -i $merged_list_file -f \'TaxId,taxname\' > $taxinfo_file";
+  my $find_tax_cmd       = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $taxinfo_file --input_tax $taxonomy_tree_wlevels_file --input_level $level --outfile $taxinfo_wlevel_file";
+  my $alipid_analyze_cmd = "perl alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $taxinfo_wlevel_file $out_root > $alipid_analyze_file";
+
+  new_ribo_RunCommand($alimerge_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "rfonlystk", "$merged_rfonly_stk_file", 1, "merged RF-column-only alignment of $class sequences");
+
+  new_ribo_RunCommand($alipid_cmd,         $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "alipid", "$merged_rfonly_alipid_file", 1, "esl-alipid output for $merged_rfonly_stk_file");
+
+  new_ribo_RunCommand($alistat_cmd,        $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "list", "$merged_list_file", 1, "list of sequences in $merged_rfonly_stk_file");
+
+  new_ribo_RunCommand($srcchk_cmd,         $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "taxinfo", "$taxinfo_file", 1, "srcchk output for sequences in $merged_list_file");
+
+  new_ribo_RunCommand($find_tax_cmd,       $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "taxinfo-level", "$taxinfo_wlevel_file", 1, "taxinfo file with level for sequences in $merged_list_file");
+
+  new_ribo_RunCommand($alipid_analyze_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "alipid-analyze", "$alipid_analyze_file", 1, "output file from alipid-taxinfo-analyze.pl");
+}
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+
+
+##########
+# Output
+##########
 # output tabular output file
 my $out_tbl = $out_root . ".tbl";
 my $pass_fail = undef;
@@ -678,6 +736,110 @@ sub parse_srcchk_file_for_names {
   }
   close(IN);
 
+  return;
+}
+
+#################################################################
+# Subroutine:  parse_srcchk_and_tax_files_for_specified_species()
+# Incept:      EPN, Tue Jun 12 13:51:51 2018
+#
+# Purpose:     Parse a tab delimited tax file that includes
+#              as its fourth column a '1' if the sequence is
+#              from a 'specified species' and '0' if it is not,
+#              and save information for those that are not from 
+#              specified species in %{$failstr_HR}.
+#
+# Arguments:
+#   $srcchk_file:  name of srcchk output file to parse
+#   $tax_file:     name of tax file to parse
+#   $failstr:      string to add to $failstr_H{$seqname} for seqs that are not from 'specified species'
+#                  according to the 
+#   $failstr_HR:   ref to hash of failure string to add to here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    void
+#
+# Dies:       if a sequence is not in the $tax_file
+#################################################################
+sub parse_srcchk_and_tax_files_for_specified_species { 
+  my $sub_name = "parse_srcchk_and_tax_files_for_specified_species";
+  my $nargs_expected = 6;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($srcchk_file, $tax_file, $failstr, $failstr_HR, $opt_HHR, $FH_HR) = (@_);
+
+  my %specified_species_H = ();
+
+  # PASS 1 of 2 through srrchk_file to initialize specified_species_H{} with keys of taxids we
+  # need to parse in $tax-file (initialize values for all keys to -1)
+  open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  # first line is header
+  my $line = <SRCCHK>;
+  while($line = <SRCCHK>) { 
+    #accession	taxid	organism	
+    #KJ925573.1	100272	uncultured eukaryote	
+    #FJ552229.1	221169	uncultured Gemmatimonas sp.	
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 3) { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    my ($accver, $taxid, $organism) = @el_A;
+    $specified_species_H{$taxid} = -1;
+  }
+  close(SRCCHK);
+
+  # PASS 1 of 1 through tax_file to fill specified_species_H{} for existing taxid keys read from srcchk_file
+  open(TAX, $tax_file) || ofile_FileOpenFailure($tax_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  while($line = <TAX>) { 
+    #1	1	no rank	0
+    #2	131567	superkingdom	0
+    #6	335928	genus	0
+    #7	6	species	1
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 4) { 
+      ofile_FAIL("ERROR in $sub_name, tax file line did not have exactly 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    my ($taxid, $parent_taxid, $rank, $specified_species) = @el_A;
+    if(exists $specified_species_H{$taxid}) { 
+      $specified_species_H{$taxid} = $specified_species; 
+    }
+  }
+  close(SRCCHK);
+    
+  # PASS 2 of 2 through srrchk_file to determine if each sequence passes or fails
+  open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  # first line is header
+  my $diestr = ""; # if we add to this below for >= 1 sequences, we will fail after going through the full file
+  $line = <SRCCHK>;
+  while($line = <SRCCHK>) { 
+    #accession	taxid	organism	
+    #KJ925573.1	100272	uncultured eukaryote	
+    #FJ552229.1	221169	uncultured Gemmatimonas sp.	
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 3) { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    my ($accver, $taxid, $organism) = @el_A;
+    if($specified_species_H{$taxid} == -1) { 
+      $diestr .= "taxid: $taxid, accession: $accver\n";
+    }
+    elsif($specified_species_H{$taxid} == 0) { 
+      $failstr_HR->{$accver} .= $failstr;
+    }
+    elsif($specified_species_H{$taxid} != 1) { 
+      ofile_FAIL("ERROR in $sub_name, tax file had unexpected value (not '0' or '1') for specified species for taxid $taxid ($accver)", "RIBO", $?, $FH_HR);
+    }
+  }
+  close(SRCCHK);
+
+  if($diestr ne "") { 
+    ofile_FAIL("ERROR in $sub_name, >= 1 taxids for sequences in sequence file had no tax information in $tax_file:\n$diestr", "RIBO", $?, $FH_HR);
+  }
+  
   return;
 }
 
