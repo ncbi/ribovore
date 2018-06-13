@@ -60,14 +60,15 @@ my %opt_group_desc_H = ();
 # Add all options to %opt_HH and @opt_order_A.
 # This section needs to be kept in sync (manually) with the &GetOptions call below
 $opt_group_desc_H{"1"} = "basic options";
-#     option            type       default               group   requires incompat    preamble-output                                     help-output    
-opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                              "display this help",                                  \%opt_HH, \@opt_order_A);
-opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
-opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
-opt_Add("--fetch",      "string",  undef,                    1,    undef, "--fasta",  "fetch sequences using seqfetch query in <s>",      "fetch sequences using seqfetch query in <s>",                                  \%opt_HH, \@opt_order_A);
-opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",  "sequences provided as fasta input in <s>",         "don't fetch sequences, <s> is fasta file of input sequences",                  \%opt_HH, \@opt_order_A);
-opt_Add("--maxnambig",  "integer", 0,                        1,    undef, undef,      "set maximum number of allowed ambiguous nts to <n>",  "set maximum number of allowed ambiguous nts to <n>",                        \%opt_HH, \@opt_order_A);
+#     option            type       default               group   requires incompat     preamble-output                                            help-output    
+opt_Add("-h",           "boolean", 0,                        0,    undef, undef,       undef,                                                     "display this help",                                            \%opt_HH, \@opt_order_A);
+opt_Add("-f",           "boolean", 0,                        1,    undef, undef,       "forcing directory overwrite",                             "force; if <output directory> exists, overwrite it",            \%opt_HH, \@opt_order_A);
+opt_Add("-v",           "boolean", 0,                        1,    undef, undef,       "be verbose",                                              "be verbose; output commands to stdout as they're run",         \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 1,                        1,    undef, undef,       "use <n> CPUs",                                            "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
+opt_Add("--fetch",      "string",  undef,                    1,    undef, "--fasta",   "fetch sequences using seqfetch query in <s>",             "fetch sequences using seqfetch query in <s>",                  \%opt_HH, \@opt_order_A);
+opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",   "sequences provided as fasta input in <s>",                "don't fetch sequences, <s> is fasta file of input sequences",  \%opt_HH, \@opt_order_A);
+opt_Add("--maxnambig",  "integer", 0,                        1,    undef,"--maxfambig","set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
+opt_Add("--maxfambig",  "real",    0,                        1,    undef,"--maxnambig","set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
@@ -96,6 +97,7 @@ my $options_okay =
                 'fetch=s'      => \$GetOptions_H{"--fetch"},
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
                 'maxnambig=s'  => \$GetOptions_H{"--maxnambig"},
+                'maxfambig=s'  => \$GetOptions_H{"--maxfambig"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
                 'nocovfail'    => \$GetOptions_H{"--nocovfail"},
@@ -354,7 +356,12 @@ foreach my $seqname (%seqlen_H) {
 }
 my $maxnambig = opt_Get("--maxnambig", \%opt_HH);
 my $seqname;
+my $do_fract_ambig = opt_IsUsed("--maxfambig", \%opt_HH);
+my $maxfambig = opt_Get("--maxfambig", \%opt_HH);
 foreach $seqname (keys %seqnambig_H) { 
+  if($do_fract_ambig) { 
+    $maxnambig = $maxfambig * $seqlen_H{$seqname}; 
+  }
   if($seqnambig_H{$seqname} > $maxnambig) { 
     $seqfailstr_H{$seqname} .= "ambig[" . $seqnambig_H{$seqname} . "];"; 
   }
