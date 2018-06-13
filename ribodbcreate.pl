@@ -12,6 +12,7 @@ require "ribo.pm";
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_vecplus_dir       = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
 my $env_ribotax_dir       = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
+my $env_riboblast_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
 #my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
@@ -25,6 +26,7 @@ $execs_H{"combine_summaries.pl"}       = $env_vecplus_dir    . "/scripts/combine
 $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir    . "/scripts/find_taxonomy_ancestors.pl";
 $execs_H{"vecscreen"}                  = $env_vecplus_dir    . "/scripts/vecscreen";
 $execs_H{"srcchk"}                     = $env_vecplus_dir    . "/scripts/srcchk";
+$execs_H{"blastn"}                     = $env_riboblast_dir  . "/blastn";
 # Currently, we require infernal and easel executables are in the user's path, 
 # but do not check. The program will die if the commands using them fail. 
 # The block below is retained in in case we want to use it eventually.
@@ -350,6 +352,9 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_lis
 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
+# index the sequence file
+new_ribo_RunCommand("esl-sfetch --index $full_fasta_file > /dev/null", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+
 # initialize %seqfailstr_H
 foreach my $seqname (%seqlen_H) { 
   $seqfailstr_H{$seqname} = "";
@@ -416,6 +421,64 @@ my $vecscreen_fails_list_file = $out_root . ".vecscreen-fails.list";
 my $get_vecscreen_fails_list_cmd = "cat $parse_vecscreen_combined_file | awk -F \'\\t\' '{ printf(\"%s %s\\n\", \$1, \$7); }' | grep -i -v weak | awk '{ printf(\"%s\\n\", \$1); }' | sort | uniq > $vecscreen_fails_list_file";
 new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecfails", "$vecscreen_fails_list_file", 1, "list of sequences that had non-Weak VecScreen matches");
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+#########################################################
+# Step 4. Self-blast all sequences to find tandem repeats
+#########################################################
+$start_secs = ofile_OutputProgressPrior("Identifying repeats within sequences using blast ", $progress_w, $log_FH, *STDOUT);
+# split input sequence file into chunks of 50 and process each
+my $nchunk = 50;
+my $seqline = undef;
+my $seq = undef;
+my $cur_seqidx = 0;
+my $tmp_sfetch_file = $out_root . ".tmp.sfetch";
+my $tmp_fasta_file = $out_root . ".tmp.fa";
+my $tmp_blast_file = $out_root . ".tmp.blast";
+my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $tmp_sfetch_file > $tmp_fasta_file";
+my $blast_cmd = $execs_H{"blastn"} . " -num_threads 1 -subject $tmp_fasta_file -query $tmp_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" -max_target_seqs 1 > $tmp_blast_file";
+my $do_blast = 0;
+my $do_open_next = 0;
+my %is_cur_H = ();
+
+open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+open(OUT, ">", $tmp_sfetch_file) || ofile_FileOpenFailure($tmp_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+my $keep_going = 1; 
+while($keep_going) { 
+  if($seqline = <LIST>) { 
+    $seq = $seqline;
+    chomp($seq);
+    $is_cur_H{$seq} = 1;
+    print OUT $seqline;
+    $cur_seqidx++;
+    if($cur_seqidx == $nchunk) { 
+      close(SFETCH);
+      $do_blast = 1;
+      $do_open_next = 1;
+    }
+  }
+  else { # no more sequences
+    close(SFETCH);
+    $do_blast = ($cur_seqidx > 0) ? 1 : 0;
+    $do_open_next = 0;
+    $keep_going = 0;
+  }
+  if($do_blast) { 
+    close(OUT);
+    new_ribo_RunCommand($sfetch_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    new_ribo_RunCommand("rm $tmp_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    new_ribo_RunCommand($blast_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    new_ribo_RunCommand("rm $tmp_fasta_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    # parse the blast output
+    parse_blast_output_for_self_hits($tmp_blast_file, \%is_cur_H, \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+
+    if($do_open_next) { 
+      open(OUT, ">", $tmp_sfetch_file) || ofile_FileOpenFailure($tmp_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      $cur_seqidx = 0;
+      %is_cur_H = ();
+    }
+  }
+}
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ##############################################################################
@@ -950,6 +1013,92 @@ sub parse_ribolengthchecker_tbl_file {
     }
   }
   close(IN);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  parse_blast_output_for_self_hits()
+# Incept:      EPN, Wed Jun 13 15:21:14 2018
+#
+# Purpose:     Parse a blast output file that should have only self hits in it 
+#              because the query and subject were identical files and the 
+#              '-max_target_seqs 1' flag was used.
+#
+# Arguments:
+#   $in_file:      name of input blast output file to parse
+#   $expseq_HR:    ref to hash, keys are expected sequence names, values are '1'
+#   $failstr_HR:   ref to hash of failure string to add to here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    void
+#
+# Dies:       if blast output is not in expected format (number of fields)
+#             if any of the sequences in expseq_HR are not in the blast output
+#             if any of the sequences in expseq_HR do not have a full length self hit in the blast output
+# 
+#################################################################
+sub parse_blast_output_for_self_hits { 
+  my $sub_name = "parse_blast_output_for_self_hits()";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $expseq_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
+
+  my %local_failstr_H = (); # fail string created in this subroutine for each sequence
+
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  while(my $line = <IN>) { 
+    print "read line: $line";
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 10) { 
+      ofile_FAIL("ERROR in $sub_name, did not read 10 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
+    }
+    
+    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
+
+    # two sanity checks: 
+    # 1: hit should be to self (due to -max_target_nseqs 1 flag)
+    # 2: query/subject should be to a sequence we expect
+    if($qaccver ne $sacc) { 
+      ofile_FAIL("ERROR in $sub_name, not a self hit in blast output (with -max_target_seqs 1) line:\n$line", "RIBO", 1, $FH_HR); 
+    }
+    if(! exists $expseq_HR->{$qaccver}) { 
+      ofile_FAIL("ERROR in $sub_name, found unexpected query $qaccver:\n$line", "RIBO", 1, $FH_HR); 
+    }
+    $expseq_HR->{$qaccver} = 0; # flag that we've seen at least one hit to this sequence
+
+    # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
+    if(($qstart != $sstart) || ($qend != $send)) { 
+      # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
+      # use a simple rule to only pick one:
+      if($qstart <= $sstart) { 
+        # store information on it
+        if(exists $local_failstr_H{$qaccver}) { 
+          $local_failstr_H{$qaccver} .= ","; 
+        }
+        else { 
+          $local_failstr_H{$qaccver} = ""; 
+        }
+        # now append the info
+        $local_failstr_H{$qaccver} .= "$qstart..$qend:$sstart..$send($pident|$gaps)";
+      }
+    }
+  }
+  close(IN);
+
+  # final sanity check, each seq should have had at least 1 hit
+  # and also fill $failstr_HR:
+  foreach my $key (keys %{$expseq_HR}) { 
+    if($expseq_HR->{$key} != 0) { 
+      ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
+    }
+    if(exists $local_failstr_H{$key}) { 
+      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
+    }
+  }
 
   return;
 }
