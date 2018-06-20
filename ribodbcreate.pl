@@ -17,23 +17,6 @@ my $env_riboblast_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
-# make sure the required executables are executable
-my %execs_H = (); # key is name of program, value is path to the executable
-$execs_H{"ribotyper"}                  = $env_ribotyper_dir  . "/ribotyper.pl";
-$execs_H{"ribolengthchecker"}          = $env_ribotyper_dir  . "/ribolengthchecker.pl";
-$execs_H{"parse_vecscreen.pl"}         = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
-$execs_H{"combine_summaries.pl"}       = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
-$execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir    . "/scripts/find_taxonomy_ancestors.pl";
-$execs_H{"vecscreen"}                  = $env_vecplus_dir    . "/scripts/vecscreen";
-$execs_H{"srcchk"}                     = $env_vecplus_dir    . "/scripts/srcchk";
-$execs_H{"blastn"}                     = $env_riboblast_dir  . "/blastn";
-# Currently, we require infernal and easel executables are in the user's path, 
-# but do not check. The program will die if the commands using them fail. 
-# The block below is retained in in case we want to use it eventually.
-#$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
-#$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
-ribo_ValidateExecutableHash(\%execs_H);
-
 #########################################################
 # Command line and option processing using epn-options.pm
 #
@@ -69,20 +52,38 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-n",           "integer", 1,                        1,    undef, undef,       "use <n> CPUs",                                            "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
 opt_Add("--fetch",      "string",  undef,                    1,    undef, "--fasta",   "fetch sequences using seqfetch query in <s>",             "fetch sequences using seqfetch query in <s>",                  \%opt_HH, \@opt_order_A);
 opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",   "sequences provided as fasta input in <s>",                "don't fetch sequences, <s> is fasta file of input sequences",  \%opt_HH, \@opt_order_A);
-opt_Add("--maxnambig",  "integer", 0,                        1,    undef,"--maxfambig","set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
-opt_Add("--maxfambig",  "real",    0,                        1,    undef,"--maxnambig","set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
+$opt_group_desc_H{"4"} = "options for skipping stages";
+#               option  type       default               group   requires                incompat   preamble-output                                                 help-output    
+opt_Add("--skipfambig", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on ambiguous nucleotides",       "skip stage that filters based on ambiguous nucleotides",       \%opt_HH, \@opt_order_A);
+opt_Add("--skipftaxid", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters by taxid",                             "skip stage that filters by taxid",                             \%opt_HH, \@opt_order_A);
+opt_Add("--skipfvecsc", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on VecScreen",                   "skip stage that filters based on VecScreen",                   \%opt_HH, \@opt_order_A);
+opt_Add("--skipfblast", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",          "skip stage that filters based on BLAST hits to self",          \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribos", "boolean", 0,                        4,"--skipfmspan,--skipfingrp", undef,  "skip stage that filters based on ribotyper/ribolengthchecker", "skip stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfmspan", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on model span of hits",          "skip stage that filters based on model span of hits",          \%opt_HH, \@opt_order_A);
+opt_Add("--skipfingrp", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on ingroup analysis",            "skip stage that filters based on ingroup analysis",            \%opt_HH, \@opt_order_A);
+opt_Add("--skipclustr", "boolean", 0,                        4,    undef,                   undef,  "skip stage that clusters surviving sequences",                 "skip stage that clusters sequences surviving all filters",     \%opt_HH, \@opt_order_A);
+opt_Add("--skiplistms", "boolean", 0,                        4,    undef,                   undef,  "skip stage that lists missing taxids",                         "skip stage that lists missing taxids",                         \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"5"} = "options for controlling the stage that filters based on ambiguous nucleotides";
+#              option   type       default               group  requires incompat                    preamble-output                                            help-output    
+opt_Add("--maxnambig",  "integer", 0,                        5,    undef,"--skipfambig,--maxfambig", "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
+opt_Add("--maxfambig",  "real",    0,                        5,    undef,"--skipfambig,--maxnambig", "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"2"} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
-opt_Add("-i",           "string",  undef,                    2,    undef, undef,      "use rlc model info file <s> instead of default",   "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
-opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
-opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+#       option          type       default               group  requires  incompat        preamble-output                                         help-output    
+opt_Add("-i",           "string",  undef,                    2,    undef, "--skipfribos", "use rlc model info file <s> instead of default",       "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts",   "string",  undef,                    2,    undef, "--skipfribos", "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--noscfail",   "boolean", 0,                        2,    undef, "--skipfribos", "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, "--skipfribos", "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options related to model boundaries at model span step:";
-opt_Add("--pos",         "integer",  undef,                  3,    undef, undef,      "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--lpos",        "integer",  undef,                  3,  "--rpos","--pos",    "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--rpos",        "integer",  undef,                  3,  "--lpos","--pos",    "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"3"} = "options for controlling the stage that filters based model span of hits:";
+#       option           type        default             group  requires  incompat              preamble-output                                          help-output    
+opt_Add("--pos",         "integer",  undef,                  3,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--lpos",        "integer",  undef,                  3,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--rpos",        "integer",  undef,                  3,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+
 
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
@@ -95,11 +96,20 @@ my $options_okay =
                 'f'            => \$GetOptions_H{"-f"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
-                'i=s'          => \$GetOptions_H{"-i"},
                 'fetch=s'      => \$GetOptions_H{"--fetch"},
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
+                'skipftaxid'   => \$GetOptions_H{"--skipftaxid"},
+                'skipfambig'   => \$GetOptions_H{"--skipfambig"},
+                'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
+                'skipfblast'   => \$GetOptions_H{"--skipfblast"},
+                'skipfribos'   => \$GetOptions_H{"--skipfribos"},
+                'skipfmspan'   => \$GetOptions_H{"--skipfmspan"},
+                'skipfingrp'   => \$GetOptions_H{"--skipfingrp"},
+                'skipclustr'   => \$GetOptions_H{"--skipclustr"},
+                'skiplistms'   => \$GetOptions_H{"--skiplistms"},
                 'maxnambig=s'  => \$GetOptions_H{"--maxnambig"},
                 'maxfambig=s'  => \$GetOptions_H{"--maxfambig"},
+                'i=s'          => \$GetOptions_H{"-i"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
                 'nocovfail'    => \$GetOptions_H{"--nocovfail"},
@@ -169,6 +179,43 @@ if(defined $in_fasta_file) {
   ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
 }
 
+# determine what stages we are going to do:
+my $do_ftaxid = opt_Get("--skipftaxid", \%opt_HH) ? 0 : 1;
+my $do_fambig = opt_Get("--skipfambig", \%opt_HH) ? 0 : 1;
+my $do_fvecsc = opt_Get("--skipfvecsc", \%opt_HH) ? 0 : 1;
+my $do_fblast = opt_Get("--skipfblast", \%opt_HH) ? 0 : 1;
+my $do_fribos = opt_Get("--skipfribos", \%opt_HH) ? 0 : 1;
+my $do_fmspan = opt_Get("--skipfmspan", \%opt_HH) ? 0 : 1;
+my $do_fingrp = opt_Get("--skipfingrp", \%opt_HH) ? 0 : 1;
+my $do_clustr = opt_Get("--skipclustr", \%opt_HH) ? 0 : 1;
+my $do_listms = opt_Get("--skiplistms", \%opt_HH) ? 0 : 1;
+
+# now that we know what steps we are doing, make sure the required executables are executable
+my %execs_H = (); # key is name of program, value is path to the executable
+if($do_ftaxid || $do_fingrp) { 
+  $execs_H{"srcchk"}                     = $env_vecplus_dir    . "/scripts/srcchk";
+}
+if($do_fvecsc) { 
+  $execs_H{"vecscreen"}                  = $env_vecplus_dir    . "/scripts/vecscreen"; 
+  $execs_H{"parse_vecscreen.pl"}         = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
+  $execs_H{"combine_summaries.pl"}       = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+}
+if($do_fblast) { 
+  $execs_H{"blastn"}                     = $env_riboblast_dir  . "/blastn";
+}
+if($do_fribos) { 
+  $execs_H{"ribotyper"}                  = $env_ribotyper_dir  . "/ribotyper.pl";
+  $execs_H{"ribolengthchecker"}          = $env_ribotyper_dir  . "/ribolengthchecker.pl";
+}
+if($do_fingrp) { 
+  $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir    . "/scripts/find_taxonomy_ancestors.pl";
+}
+# Currently, we require infernal and easel executables are in the user's path, 
+# but do not check. The program will die if the commands using them fail. 
+# The block below is retained in in case we want to use it eventually.
+#$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
+#$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
+ribo_ValidateExecutableHash(\%execs_H);
 
 #############################
 # create the output directory
@@ -271,34 +318,39 @@ foreach $cmd (@early_cmd_A) {
 }
 
 ###########################################################################
-# Step 0: Parse/validate input files
+# Preliminary stage: Parse/validate input files
+# We do this first, so we can die quickly if anything goes wrong
+# as opposed to waiting until we get to the relevant stage.
 ###########################################################################
 my $progress_w = 60; # the width of the left hand column in our progress output, hard-coded
 my $start_secs;
-$start_secs = ofile_OutputProgressPrior("Validating input files", $progress_w, $log_FH, *STDOUT);
+$start_secs = ofile_OutputProgressPrior("[Stage: prelim] Validating input files", $progress_w, $log_FH, *STDOUT);
 
 # parse the modelinfo file, this tells us where the CM files are
 my @family_order_A     = (); # family names, in order
 my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
 my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
-ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H);
-
-# verify the CM files listed in $rlc_modelinfo_file exist
 my $family;
-foreach $family (@family_order_A) { 
-  if(! -s $family_modelname_H{$family}) { 
-    die "Model file $family_modelname_H{$family} specified in $rlc_modelinfo_file does not exist or is empty";
-  }
-}
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
-##############################################################################
-# Step 1. Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
-##############################################################################
+if($do_fribos) { 
+  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H);
+
+  # verify the CM files listed in $rlc_modelinfo_file exist
+  foreach $family (@family_order_A) { 
+    if(! -s $family_modelname_H{$family}) { 
+      die "Model file $family_modelname_H{$family} specified in $rlc_modelinfo_file does not exist or is empty";
+    }
+  }
+  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+}
+
+###########################################################################################
+# Preliminary stage: Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
+###########################################################################################
 my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
 if(defined $in_fetch_file) { 
-  $start_secs = ofile_OutputProgressPrior("Executing command to fetch sequences ", $progress_w, $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Executing command to fetch sequences ", $progress_w, $log_FH, *STDOUT);
   open(FETCH, $in_fetch_file) || ofile_FileOpenFailure($in_fetch_file, $pkgstr, "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
   my $fetch_command = <FETCH>; # read only the first line of the file
   chomp $fetch_command;
@@ -313,7 +365,7 @@ else { # $in_fasta_file must be defined
   if(! defined $in_fasta_file) { 
     ofile_FAIL("ERROR, neither --fetch nor --fasta was used, exactly one must be.", $pkgstr, $!, $ofile_info_HH{"FH"}); 
   }
-  $start_secs = ofile_OutputProgressPrior("Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
   my $cp_command .= "cp $in_fasta_file $raw_fasta_file";
   new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
@@ -321,7 +373,7 @@ else { # $in_fasta_file must be defined
 
 # reformat the names of the sequences:
 # gi|675602128|gb|KJ925573.1| becomes KJ925573.1
-$start_secs = ofile_OutputProgressPrior("Reformatting names of sequences ", $progress_w, $log_FH, *STDOUT);
+$start_secs = ofile_OutputProgressPrior("[Stage: prelim] Reformatting names of sequences ", $progress_w, $log_FH, *STDOUT);
 my $check_fetched_names_format = (opt_Get("--fetch", \%opt_HH)) ? 1 : 0;
 $check_fetched_names_format = 1; # TEMP 
 reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $check_fetched_names_format, $ofile_info_HH{"FH"});
@@ -341,59 +393,87 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
 my %seqnambig_H  = (); # number of ambiguous nucleotides per sequence
-my %seqfailstr_H = (); # hash that keeps track of failure strings for each sequence, will be "" for a passing sequence
-$start_secs = ofile_OutputProgressPrior("Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
-ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, undef, \%opt_HH);
-ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH);
-my $nseq = scalar(keys %seqidx_H);
+my @seqorder_A   = (); # array of sequence names in order they appeared in the file
+my $nseq = 0;
 my $full_list_file = $out_root . ".full.list";
+
+$start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
+ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, undef, \%opt_HH);
+$nseq = scalar(keys %seqidx_H);
+ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH);
 new_ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_list_file", 1, "File with list of all $nseq input sequences");
-
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # index the sequence file
 new_ribo_RunCommand("esl-sfetch --index $full_fasta_file > /dev/null", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
-# initialize %seqfailstr_H
-foreach my $seqname (%seqlen_H) { 
-  $seqfailstr_H{$seqname} = "";
+# create the ordered array of sequence anmes
+
+###########################################################################################
+# Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_fingrp)
+###########################################################################################
+my $full_srcchk_file = undef;
+if($do_ftaxid || $do_fingrp) { 
+  $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
+  $full_srcchk_file = $out_root . ".full.srcchk";
+  new_ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
-my $maxnambig = opt_Get("--maxnambig", \%opt_HH);
+
+####################
+# FILTERING STAGES #
+####################
+
+my %seqfailstr_H = (); # hash that keeps track of failure strings for each sequence, will be "" for a passing sequence
+my %curfailstr_H = (); # hash that keeps track of failure string for current stage only, will be "" for a passing sequence
+# initialize %seqfailstr_H and %curfailstr_H
 my $seqname;
+# fill the seqorder array
+foreach $seqname (keys %seqidx_H) { 
+  $seqorder_A[($seqidx_H{$seqname} - 1)] = $seqname;
+}  
+initialize_hash_to_empty_string(\%curfailstr_H, \@seqorder_A);
+initialize_hash_to_empty_string(\%seqfailstr_H, \@seqorder_A);
+my $stage_key = undef;
+
+########################################################
+# 'fambig' stage: filter based on ambiguous nucleotides
+########################################################
+my $maxnambig = opt_Get("--maxnambig", \%opt_HH);
 my $do_fract_ambig = opt_IsUsed("--maxfambig", \%opt_HH);
 my $maxfambig = opt_Get("--maxfambig", \%opt_HH);
-foreach $seqname (keys %seqnambig_H) { 
-  if($do_fract_ambig) { 
-    $maxnambig = $maxfambig * $seqlen_H{$seqname}; 
+if($do_fambig) { 
+  $stage_key = "fambig";
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering based on ambiguous nucleotides ", $progress_w, $log_FH, *STDOUT);
+  foreach $seqname (keys %seqnambig_H) { 
+    if($do_fract_ambig) { 
+      $maxnambig = $maxfambig * $seqlen_H{$seqname}; 
+    }
+    if($seqnambig_H{$seqname} > $maxnambig) { 
+      $curfailstr_H{$seqname} = "ambig[" . $seqnambig_H{$seqname} . "];"; 
+    }
+    else { 
+      $curfailstr_H{$seqname} = "";
+    }
   }
-  if($seqnambig_H{$seqname} > $maxnambig) { 
-    $seqfailstr_H{$seqname} .= "ambig[" . $seqnambig_H{$seqname} . "];"; 
-  }
+  update_and_output_pass_fails(\%curfailstr_H, \%seqfailstr_H, \@seqorder_A, $out_root, $stage_key, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 
-#####################################################
-# Step 2. Run srcchk and filter for specified species
-#####################################################
-$start_secs = ofile_OutputProgressPrior("Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
-my $full_srcchk_file = $out_root . ".full.srcchk";
-new_ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+###############################################################
+# 'ftaxid' stage: run srcchk and filter for specified species
+###############################################################
+if($do_ftaxid) { 
+  $stage_key = "ftaxid";
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering for specified species ", $progress_w, $log_FH, *STDOUT);
+  parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_wspecified_species_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+  #OLD WAY: parse_srcchk_file_for_names($full_srcchk_file, "formalname", "uncultured", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+}
 
-$start_secs = ofile_OutputProgressPrior("Filtering for specified species ", $progress_w, $log_FH, *STDOUT);
-parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_wspecified_species_file, "not-specified-species", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
-#OLD WAY: parse_srcchk_file_for_names($full_srcchk_file, "formalname", "uncultured", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-
-##############################################################################
-## Step 3. Filter seqs with too many ambiguities
-##############################################################################
-#$start_secs = ofile_OutputProgressPrior(sprintf("Filtering sequences with < %d ambiguous nucleotides ", opt_Get("--maxnambig", \%opt_HH) + 1), $progress_w, $log_FH, *STDOUT);
-#my $noambig_list_file = $out_root . ".noambig.list";
-#filter_list_file($formal_list_file, $noambig_list_file, opt_Get("--maxnambig", \%opt_HH), \%seqnambig_H, $ofile_info_HH{"FH"});
-#ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "noambiglist", "$noambig_list_file", 1, sprintf("list of sequences with < %d ambiguous nucleotides", opt_Get("--maxnambig", \%opt_HH)));
-#ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+exit 0;
 
 ##############################################################################
 # Step 4. Remove seqs with non-weak VecScreen matches 
@@ -820,13 +900,13 @@ sub parse_srcchk_file_for_names {
 #              specified species in %{$failstr_HR}.
 #
 # Arguments:
-#   $srcchk_file:  name of srcchk output file to parse
-#   $tax_file:     name of tax file to parse
-#   $failstr:      string to add to $failstr_H{$seqname} for seqs that are not from 'specified species'
-#                  according to the 
-#   $failstr_HR:   ref to hash of failure string to add to here
-#   $opt_HHR:      reference to 2D hash of cmdline options
-#   $FH_HR:        REF to hash of file handles, including "cmd"
+#   $srcchk_file:    name of srcchk output file to parse
+#   $tax_file:       name of tax file to parse
+#   $seqfailstr_HR:  ref to hash of failure string to add to here
+#   $seqorder_AR:    ref to array of sequences in order
+#   $out_root:       for naming output files
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#   $ofile_info_HHR: ref to the ofile info 2D hash
 #
 # Returns:    void
 #
@@ -834,12 +914,17 @@ sub parse_srcchk_file_for_names {
 #################################################################
 sub parse_srcchk_and_tax_files_for_specified_species { 
   my $sub_name = "parse_srcchk_and_tax_files_for_specified_species";
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($srcchk_file, $tax_file, $failstr, $failstr_HR, $opt_HHR, $FH_HR) = (@_);
+  my ($srcchk_file, $tax_file, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %specified_species_H = ();
+  my %cur_failstr_H = ();  # will hold fail string 
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my $seqname;
+
+  initialize_hash_to_empty_string(\%cur_failstr_H, $seqorder_AR);
 
   # PASS 1 of 2 through srrchk_file to initialize specified_species_H{} with keys of taxids we
   # need to parse in $tax-file (initialize values for all keys to -1)
@@ -898,7 +983,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
       $diestr .= "taxid: $taxid, accession: $accver\n";
     }
     elsif($specified_species_H{$taxid} == 0) { 
-      $failstr_HR->{$accver} .= $failstr;
+      $curfailstr_H{$accver} = "not-specified-species";
     }
     elsif($specified_species_H{$taxid} != 1) { 
       ofile_FAIL("ERROR in $sub_name, tax file had unexpected value (not '0' or '1') for specified species for taxid $taxid ($accver)", "RIBO", $?, $FH_HR);
@@ -909,6 +994,9 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   if($diestr ne "") { 
     ofile_FAIL("ERROR in $sub_name, >= 1 taxids for sequences in sequence file had no tax information in $tax_file:\n$diestr", "RIBO", $?, $FH_HR);
   }
+
+  # now output pass and fail files
+  update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, $out_root, "ftaxid", $ofile_info_HHR);
   
   return;
 }
@@ -1098,6 +1186,106 @@ sub parse_blast_output_for_self_hits {
     if(exists $local_failstr_H{$key}) { 
       $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
     }
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine:  update_and_output_pass_fails()
+# Incept:      EPN, Wed Jun 20 12:43:14 2018
+#
+# Purpose:     Given a hash of currently failure strings for all
+#              sequences, in which sequences that pass have a "" value,
+#              Update %{$seqfailstr_H} by adding the current failure
+#              strings in %{$curfailstr_H} and output a file listing all
+#              sequences that passed, and a file listing all sequences
+#              that failed this stage.
+#
+# Arguments:
+#   $curfailstr_HR:  ref to hash of current fail strings
+#   $seqfailstr_HR:  ref to hash of full fail strings, to add to
+#   $seqorder_AR:    ref to array of sequence order
+#   $out_root:       string for naming output files
+#   $stage_key:      string that explains a stage
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies:       if $curfailstr_HR->{$key} does not exist for an expected $key from @{$seqorder_AR}
+#             if $seqfailstr_HR->{$key} does not exist for an expected $key from @{$seqorder_AR}
+# 
+#################################################################
+sub update_and_output_pass_fails { 
+  my $sub_name = "update_and_output_pass_fails()";
+  my $nargs_expected = 6;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($curfailstr_HR, $seqfailstr_HR, $seqorder_AR, $out_root, $stage_key, $ofile_info_HHR) = (@_);
+
+  my %pass_H = (); # temporary hash refilled per stage, key is sequence name, value is '1' if passes filter, '0' if fails
+  my $npass   = 0;  # number of sequences that passed current stage
+  my $nfail   = 0;  # number of sequences that failed current stage
+  my $seqname = undef; 
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+
+  foreach $seqname (@{$seqorder_AR}) { 
+    if(! exists $curfailstr_HR->{$seqname}) { ofile_FAIL("ERROR in $sub_name, sequence $seq not in curfailstr_HR hash", "RIBO", 1, $FH_HR); }
+    if(! exists $seqfailstr_HR->{$seqname}) { ofile_FAIL("ERROR in $sub_name, sequence $seq not in seqfailstr_HR hash", "RIBO", 1, $FH_HR); }
+    if($curfailstr_HR->{$seqname} ne "") { 
+      $seqfailstr_HR->{$seqname} .= $curfailstr_HR->{$seqname};
+      $pass_H{$seqname} = 0;
+      $nfail++;
+    }
+    else { 
+      $pass_H{$seqname} = 1;
+      $npass++;
+    }
+  }
+  
+  my $pass_file = $out_root . "." . $stage_key . ".pass.list";
+  my $fail_file = $out_root . "." . $stage_key . ".fail.list";
+
+  open(PASS, ">", $pass_file) || ofile_FileOpenFailure($pass_file,  "RIBO", $sub_name, $!, "writing", $FH_HR);
+  open(FAIL, ">", $pass_file) || ofile_FileOpenFailure($fail_file,  "RIBO", $sub_name, $!, "writing", $FH_HR);
+  foreach $seqname (@{$seqorder_AR}) { 
+    if($pass_H{$seqname}) { print PASS $seqname . "\n"; }
+    else                  { print FAIL $seqname . "\n"; }
+  }
+  close(PASS);
+  close(FAIL);
+
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".pass.list", "$pass_file", 1, "sequences that PASSed $stage_key stage [$npass]");
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".fail.list", "$fail_file", 1, "sequences that FAILed $stage_key stage [$nfail]");
+
+  return;
+}
+
+#################################################################
+# Subroutine:  initialize_hash_to_empty_string()
+# Incept:      EPN, Wed Jun 20 14:29:28 2018
+#
+# Purpose:     Initialize all values of a hash to the empty string.
+#
+# Arguments:
+#   $HR:  ref to hash to fill with empty string values for all keys in @{$AR}
+#   $AR:  ref to array with all keys to create for $HR
+#
+# Returns:    void
+#
+# Dies: void
+# 
+#################################################################
+sub initialize_hash_to_empty_string {
+  my $sub_name = "initialize_hash_to_empty_string()";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($HR, $AR) = (@_);
+
+  %{$HR} = (); 
+  foreach my $key (@{$AR}) { 
+    $HR->{$key} = "";
   }
 
   return;
