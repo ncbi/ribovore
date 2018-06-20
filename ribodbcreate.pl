@@ -428,8 +428,8 @@ if($do_ftaxid || $do_fingrp) {
 
 my %seqfailstr_H = (); # hash that keeps track of failure strings for each sequence, will be "" for a passing sequence
 my %curfailstr_H = (); # hash that keeps track of failure string for current stage only, will be "" for a passing sequence
-# initialize %seqfailstr_H and %curfailstr_H
 my $seqname;
+my $npass = 0;
 # fill the seqorder array
 foreach $seqname (keys %seqidx_H) { 
   $seqorder_A[($seqidx_H{$seqname} - 1)] = $seqname;
@@ -458,50 +458,51 @@ if($do_fambig) {
       $curfailstr_H{$seqname} = "";
     }
   }
-  update_and_output_pass_fails(\%curfailstr_H, \%seqfailstr_H, \@seqorder_A, $out_root, $stage_key, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  $npass = update_and_output_pass_fails(\%curfailstr_H, \%seqfailstr_H, \@seqorder_A, $out_root, $stage_key, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
 
-###############################################################
-# 'ftaxid' stage: run srcchk and filter for specified species
-###############################################################
+###############################################
+# 'ftaxid' stage: filter for specified species
+###############################################
 if($do_ftaxid) { 
   $stage_key = "ftaxid";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering for specified species ", $progress_w, $log_FH, *STDOUT);
-  parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_wspecified_species_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
-  #OLD WAY: parse_srcchk_file_for_names($full_srcchk_file, "formalname", "uncultured", \%seqfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  $npass = parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_wspecified_species_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
+}
+  
+#########################################################
+# 'fvecscr' stage: filter for non-weak VecScreen matches 
+#########################################################
+my $parse_vecscreen_terminal_file = $out_root . "." . $stage_key . ".terminal.parse_vecscreen";
+my $parse_vecscreen_internal_file = $out_root . "." . $stage_key . ".internal.parse_vecscreen";
+my $parse_vecscreen_combined_file = $out_root . "." . $stage_key . "combined.parse_vecscreen";
+if($do_fvecsc) { 
+  $stage_key = "fvecsc";
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying vector sequences with VecScreen ", $progress_w, $log_FH, *STDOUT);
+  my $vecscreen_output_file = $out_root . ".vecscreen";
+  my $vecscreen_cmd  = $execs_H{"vecscreen"} . " -text_output -query $full_fasta_file > $vecscreen_output_file";
+  new_ribo_RunCommand($vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecout", "$vecscreen_output_file", 1, "vecscreen output file");
+
+  # parse vecscreen 
+  my $parse_vecscreen_cmd   = $execs_H{"parse_vecscreen.pl"} . " --verbose --input $vecscreen_output_file --outfile_terminal $parse_vecscreen_terminal_file --outfile_internal $parse_vecscreen_internal_file";
+  my $combine_summaries_cmd = $execs_H{"combine_summaries.pl"} . " --input_internal $parse_vecscreen_internal_file --input_terminal $parse_vecscreen_terminal_file --outfile $parse_vecscreen_combined_file";
+  new_ribo_RunCommand($parse_vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  new_ribo_RunCommand($combine_summaries_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevec", "$parse_vecscreen_combined_file", 1, "combined parse_vecscreen.pl output file");
+
+  # get list of accessions in combined parse_vecscreen output that have non-Weak matches
+  $npass = parse_parse_vecscreen_combined_file($parse_vecscreen_combined_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+
+  #my $get_vecscreen_fails_list_cmd = "cat $parse_vecscreen_combined_file | awk -F \'\\t\' '{ printf(\"%s %s\\n\", \$1, \$7); }' | grep -i -v weak | awk '{ printf(\"%s\\n\", \$1); }' | sort | uniq > $vecscreen_fails_list_file";
+  #new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  #ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecfails", "$vecscreen_fails_list_file", 1, "list of sequences that had non-Weak VecScreen matches");
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
 
 exit 0;
-
-##############################################################################
-# Step 4. Remove seqs with non-weak VecScreen matches 
-##############################################################################
-$start_secs = ofile_OutputProgressPrior("Identifying vector sequences with VecScreen ", $progress_w, $log_FH, *STDOUT);
-my $vecscreen_output_file = $out_root . ".vecscreen";
-my $vecscreen_cmd  = $execs_H{"vecscreen"} . " -text_output -query $full_fasta_file > $vecscreen_output_file";
-new_ribo_RunCommand($vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecout", "$vecscreen_output_file", 1, "vecscreen output file");
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-
-# parse vecscreen 
-$start_secs = ofile_OutputProgressPrior("Parsing VecScreen output ", $progress_w, $log_FH, *STDOUT);
-my $parse_vecscreen_terminal_file = $out_root . ".terminal.parse_vecscreen";
-my $parse_vecscreen_internal_file = $out_root . ".internal.parse_vecscreen";
-my $parse_vecscreen_combined_file = $out_root . ".combined.parse_vecscreen";
-my $parse_vecscreen_cmd   = $execs_H{"parse_vecscreen.pl"} . " --verbose --input $vecscreen_output_file --outfile_terminal $parse_vecscreen_terminal_file --outfile_internal $parse_vecscreen_internal_file";
-my $combine_summaries_cmd = $execs_H{"combine_summaries.pl"} . " --input_internal $parse_vecscreen_internal_file --input_terminal $parse_vecscreen_terminal_file --outfile $parse_vecscreen_combined_file";
-new_ribo_RunCommand($parse_vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-new_ribo_RunCommand($combine_summaries_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevec", "$parse_vecscreen_combined_file", 1, "combined parse_vecscreen.pl output file");
-
-# get list of accessions in combined parse_vecscreen output that have non-Weak matches
-my $vecscreen_fails_list_file = $out_root . ".vecscreen-fails.list";
-my $get_vecscreen_fails_list_cmd = "cat $parse_vecscreen_combined_file | awk -F \'\\t\' '{ printf(\"%s %s\\n\", \$1, \$7); }' | grep -i -v weak | awk '{ printf(\"%s\\n\", \$1); }' | sort | uniq > $vecscreen_fails_list_file";
-new_ribo_RunCommand($get_vecscreen_fails_list_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecfails", "$vecscreen_fails_list_file", 1, "list of sequences that had non-Weak VecScreen matches");
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 #########################################################
 # Step 4. Self-blast all sequences to find tandem repeats
@@ -821,75 +822,6 @@ sub filter_list_file {
 }
 
 #################################################################
-# Subroutine:  parse_srcchk_file_for_names()
-# Incept:      EPN, Wed May 30 15:44:03 2018
-#
-# Purpose:     Parse a tab delimited srcchk output file
-#              and keep track of those sequences that 
-#              do not have a formal name or have uncultured
-#              in their name, saving that information to 
-#              %{$failstr_HR}.
-#
-# Arguments:
-#   $in_file:      name of input srcchk file to parse
-#   $fml_failstr:  string to add to $failstr_H{$seqname} for seqs that failed ribotyper
-#   $unc_failstr:  string to add to $failstr_H{$seqname} for seqs that failed ribolengthchecker
-#   $failstr_HR:   ref to hash of failure string to add to here
-#   $opt_HHR:      reference to 2D hash of cmdline options
-#   $FH_HR:        REF to hash of file handles, including "cmd"
-#
-# Returns:    void
-#
-# Dies:       if a sequence name read in $in_file does not exist in %{$value_HR}
-#################################################################
-sub parse_srcchk_file_for_names { 
-  my $sub_name = "parse_srcchk_file_for_names()";
-  my $nargs_expected = 6;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($in_file, $fml_failstr, $unc_failstr, $failstr_HR, $opt_HHR, $FH_HR) = (@_);
-
-  # parse each line of the output file
-  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  my $nlines = 0;
-
-  # first line is header
-  my $line = <IN>;
-  while($line = <IN>) { 
-    #accession	taxid	organism	
-    #KJ925573.1	100272	uncultured eukaryote	
-    #FJ552229.1	221169	uncultured Gemmatimonas sp.	
-    chomp $line;
-    my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 3) { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
-    }
-    my ($accver, $taxid, $organism) = @el_A;
-    if(! exists $failstr_HR->{$accver}) { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line has unexpected sequence $accver", "RIBO", $?, $FH_HR);
-    }
-    my $extra_str = "";
-    if($organism =~ m/ sp\./)  { $extra_str .= "sp.;" };
-    if($organism =~ m/ cf\./)  { $extra_str .= "cf.;" };
-    if($organism =~ m/ aff\./) { $extra_str .= "aff.;" };
-    if($extra_str ne "") { 
-      $failstr_HR->{$accver} .= $fml_failstr . "[" . $extra_str . "]";
-    }
-
-    $extra_str = "";
-    foreach my $badword ("uncultured", "parasite", "symbiont", "unident", "environment", "undetermined", "marine", "nclassified", "dinoflagellate") { 
-      if($organism =~ m/$badword/)  { $extra_str .= $badword . ";" };
-    }
-    if($extra_str ne "") { 
-      $failstr_HR->{$accver} .= $unc_failstr . "[" . $extra_str . "]";
-    }
-  }
-  close(IN);
-
-  return;
-}
-
-#################################################################
 # Subroutine:  parse_srcchk_and_tax_files_for_specified_species()
 # Incept:      EPN, Tue Jun 12 13:51:51 2018
 #
@@ -908,7 +840,7 @@ sub parse_srcchk_file_for_names {
 #   $opt_HHR:        reference to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
 #
-# Returns:    void
+# Returns:    Number of sequences that pass.
 #
 # Dies:       if a sequence is not in the $tax_file
 #################################################################
@@ -932,9 +864,9 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   # first line is header
   my $line = <SRCCHK>;
   while($line = <SRCCHK>) { 
-    #accession	taxid	organism	
-    #KJ925573.1	100272	uncultured eukaryote	
-    #FJ552229.1	221169	uncultured Gemmatimonas sp.	
+    #accessiontaxidorganism
+    #KJ925573.1100272uncultured eukaryote
+    #FJ552229.1221169uncultured Gemmatimonas sp.
     chomp $line;
     my @el_A = split(/\t/, $line);
     if(scalar(@el_A) != 3) { 
@@ -948,10 +880,10 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   # PASS 1 of 1 through tax_file to fill specified_species_H{} for existing taxid keys read from srcchk_file
   open(TAX, $tax_file) || ofile_FileOpenFailure($tax_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   while($line = <TAX>) { 
-    #1	1	no rank	0
-    #2	131567	superkingdom	0
-    #6	335928	genus	0
-    #7	6	species	1
+    #11no rank0
+    #2131567superkingdom0
+    #6335928genus0
+    #76species1
     chomp $line;
     my @el_A = split(/\t/, $line);
     if(scalar(@el_A) != 4) { 
@@ -970,9 +902,9 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   my $diestr = ""; # if we add to this below for >= 1 sequences, we will fail after going through the full file
   $line = <SRCCHK>;
   while($line = <SRCCHK>) { 
-    #accession	taxid	organism	
-    #KJ925573.1	100272	uncultured eukaryote	
-    #FJ552229.1	221169	uncultured Gemmatimonas sp.	
+    #accessiontaxidorganism
+    #KJ925573.1100272uncultured eukaryote
+    #FJ552229.1221169uncultured Gemmatimonas sp.
     chomp $line;
     my @el_A = split(/\t/, $line);
     if(scalar(@el_A) != 3) { 
@@ -996,7 +928,59 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   }
 
   # now output pass and fail files
-  update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, $out_root, "ftaxid", $ofile_info_HHR);
+  return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, $out_root, "ftaxid", $ofile_info_HHR);
+  
+}
+
+#################################################################
+# Subroutine:  parse_parse_vecscreen_combined_files()
+# Incept:      EPN, Wed Jun 20 15:05:28 2018
+#
+# Purpose:     Parse output file from parse_vecscreen.pl followed
+#              by combine_summaries.pl.
+#
+# Arguments:
+#   $parse_vecscreen_combined_file: name of parse_vecscreen_combined output file
+#   $seqfailstr_HR:                 ref to hash of failure string to add to here
+#   $seqorder_AR:                   ref to array of sequences in order
+#   $out_root:                      for naming output files
+#   $opt_HHR:                       reference to 2D hash of cmdline options
+#   $ofile_info_HHR:                ref to the ofile info 2D hash
+#
+# Returns:    Number of sequences that pass.
+#
+# Dies:       if a sequence in $parse_vecscreen_combined_file is not in @{$seqorder_AR}
+#################################################################
+sub parse_parse_vecscreen_combined_file { 
+  my $sub_name = "parse_parse_vecscreen_combined_file()";
+  my $nargs_expected = 6;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($parse_vecscreen_combined_file, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my %curfailstr_H = ();  # will hold fail string 
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my $seqname;
+
+  initialize_hash_to_empty_string(\%curfailstr_H, $seqorder_AR);
+
+  open(VEC, $parse_vecscreen_combined_file)  || ofile_FileOpenFailure($parse_vecscreen_combined_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  #AY803752.1	3	18	uv|DQ391279.1:11528-12003	345	360	Weak	Weak	Suspect[1,2];
+  while(my $line = <VEC>) { 
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 9) { 
+      ofile_FAIL("ERROR in $sub_name, parse_vecscreen combined output line in $parse_vecscreen_combined_file does not have the expected 9 tab-delimited fields\n", "RIBO", $?, $FH_HR); 
+    }
+    my ($seqname, $strength) = ($el_A[0], $el_A[6]);
+    if($el_A[6] ne "Weak") { 
+      $curfailstr_H{$seqname} = "vecscreen-match[$strength];";
+    }
+  }
+  close(VEC);
+
+  # now output pass and fail files
+  return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, $out_root, "fvecsc", $ofile_info_HHR);
   
   return;
 }
@@ -1210,7 +1194,7 @@ sub parse_blast_output_for_self_hits {
 #   $stage_key:      string that explains a stage
 #   $ofile_info_HHR: ref to the ofile info 2D hash
 #
-# Returns:    void
+# Returns:    Number of sequences that pass.
 #
 # Dies:       if $curfailstr_HR->{$key} does not exist for an expected $key from @{$seqorder_AR}
 #             if $seqfailstr_HR->{$key} does not exist for an expected $key from @{$seqorder_AR}
@@ -1258,7 +1242,7 @@ sub update_and_output_pass_fails {
   ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".pass.list", "$pass_file", 1, "sequences that PASSed $stage_key stage [$npass]");
   ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".fail.list", "$fail_file", 1, "sequences that FAILed $stage_key stage [$nfail]");
 
-  return;
+  return $npass;
 }
 
 #################################################################
