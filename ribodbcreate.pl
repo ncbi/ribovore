@@ -427,7 +427,7 @@ $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Reformatting names of s
 my $check_fetched_names_format = (opt_Get("--fetch", \%opt_HH)) ? 1 : 0;
 $check_fetched_names_format = 1; # TEMP 
 reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $check_fetched_names_format, $ofile_info_HH{"FH"});
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullfa", "$full_fasta_file", 1, "Fasta file with all sequences with names possibly reformatted to accession version");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullfa", "$full_fasta_file", 1, "Fasta file with names possibly updated to accession.version");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # get lengths of all seqs and create a list of all sequences
@@ -568,102 +568,7 @@ if($do_fvecsc) {
 if($do_fblast) { 
   $stage_key = "fblast";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying repeats by BLASTing against self", $progress_w, $log_FH, *STDOUT);
-  
-  initialize_hash_to_empty_string(\%curfailstr_H, \@seqorder_A);
-
-  # split input sequence file into chunks and process each
-  my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH);
-  my $seqline = undef;
-  my $seq = undef;
-  my $cur_seqidx = 0;
-  my $chunk_sfetch_file = undef;
-  my $chunk_fasta_file  = undef;
-  my $chunk_blast_file  = undef;
-  my $sfetch_cmd        = undef;
-  my $blast_cmd         = undef; 
-  my %cur_nhit_H        = (); # key is sequence name, value is number of of hits this sequence has in current chunk
-                              # keys for sequence names not in the current chunk do not exist in the hash
-  my %nblasted_H        = (); # key is sequence name, value is number of times this sequence was ever in the current set 
-                              # (e.g. times blasted against itself), should be 1 for all at end of function
-  foreach $seq (@seqorder_A) { 
-    $nblasted_H{$seq} = 0;
-  }
-
-  # loop through all seqs
-  # when we reach $chunksize (50) seqs in our current temp file, stop and run blast
-  # this avoids the N^2 runtime of running blast all v all
-  # 50 was good tradeoff between overhead of starting up blast and speed of execution on 18S
-  open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
-  my $keep_going   = 1; 
-  my $cidx         = 0; # chunk counter
-  my $do_blast     = 0; # flag for whether we need to run blast on current set
-  my $do_open_next = 1; # flag for whether we need to open a new chunk sequence file or not
-  while($keep_going) { 
-    if($do_open_next) { # open new sfetch file
-      $cidx++;
-      $chunk_sfetch_file = $out_root . "." . $stage_key . "." . $cidx . ".sfetch"; # name of our temporary sfetch file
-      $chunk_fasta_file  = $out_root . "." . $stage_key . "." . $cidx . ".fa";     # name of our temporary fasta file
-      $chunk_blast_file  = $out_root . "." . $stage_key . "." . $cidx  .".blast";  # name of our temporary blast file
-      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-      $cur_seqidx = 0;
-      %cur_nhit_H   = ();
-      $do_open_next = 0;
-      $do_blast = 0;
-    }
-    if($seqline = <LIST>) { 
-      $seq = $seqline;
-      chomp($seq);
-      $cur_nhit_H{$seq} = 0; # 
-      $nblasted_H{$seq}++;
-      print SFETCH $seqline;
-      $cur_seqidx++;
-      if($cur_seqidx == $chunksize) { # reached chunksize, close file and blast, below
-        close(SFETCH);
-        $do_blast     = 1; # set flag to blast
-        $do_open_next = 1; # set flag to open new output file when we read the next seq
-      }
-    }
-    else { # no more sequences
-      close(SFETCH);
-      $do_blast     = ($cur_seqidx > 0) ? 1 : 0; # set flag to blast if we have any seqs in the set
-      $do_open_next = 0;                         # out of seqs, lower flag to open new output file 
-      $keep_going   = 0;                         # set flag to stop reading sequences
-    }
-    if($do_blast) { 
-      if(! $do_prvcmd) { # NOTE: this will only work if previous run used --fbcall and --keep
-        $sfetch_cmd = "esl-sfetch -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
-        new_ribo_RunCommand($sfetch_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        if(! $do_keep) { 
-          new_ribo_RunCommand("rm $chunk_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        }
-        $blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" -max_target_seqs 1 > $chunk_blast_file";
-        #$blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
-        new_ribo_RunCommand($blast_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        # parse the blast output, keeping track of failures in curfailstr_H
-        parse_blast_output_for_self_hits($chunk_blast_file, \%cur_nhit_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
-        if(! $do_keep) { 
-          new_ribo_RunCommand("rm $chunk_fasta_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-          new_ribo_RunCommand("rm $chunk_blast_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        }
-      }
-    }
-  }
-
-  # clean up final empty sfetch file that may exist
-  if((! $do_keep) && (-e $chunk_sfetch_file)) { 
-    new_ribo_RunCommand("rm $chunk_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-  }
-
-  # make sure all seqs were blasted against each other exactly once
-  foreach $seq (@seqorder_A) { 
-    if($nblasted_H{$seq} != 1) { 
-      ofile_FAIL("ERROR in ribodbcreate.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", $pkgstr, $?, $ofile_info_HH{"FH"});
-    }
-  }
-
-  # create pass and fail lists
-  $npass = update_and_output_pass_fails(\%curfailstr_H, \%seqfailstr_H, \@seqorder_A, $out_root, $stage_key, \%ofile_info_HH);
-
+  $npass = fblast_stage(\%execs_H, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
 
@@ -1348,7 +1253,7 @@ sub parse_blast_output_for_self_hits {
 
   # final sanity check, each seq should have had at least 1 hit
   # and also fill $failstr_HR:
-  foreach my $key (keys %{$expseq_HR}) { 
+  foreach my $key (keys %{$nhit_HR}) { 
     if($nhit_HR->{$key} == 0) { 
       ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
     }
@@ -1359,103 +1264,6 @@ sub parse_blast_output_for_self_hits {
 
   return;
 }
-
-#################################################################
-# Subroutine:  OLD_parse_blast_output_for_self_hits()
-# Incept:      EPN, Wed Jun 13 15:21:14 2018
-#
-# Purpose:     Parse a blast output file that should have only self hits in it 
-#              because the query and subject were identical files and the 
-#              '-max_target_seqs 1' flag was used.
-#
-# Arguments:
-#   $in_file:      name of input blast output file to parse
-#   $nhit_HR:      ref to hash, keys are expected sequence names, values are '1'
-#   $failstr_HR:   ref to hash of failure string to add to here
-#   $opt_HHR:      reference to 2D hash of cmdline options
-#   $FH_HR:        REF to hash of file handles, including "cmd"
-#
-# Returns:    Number of sequences that pass (do not have self hits)
-#
-# Dies:       if blast output is not in expected format (number of fields)
-#             if any of the sequences in expseq_HR are not in the blast output
-#             if any of the sequences in expseq_HR do not have a full length self hit in the blast output
-# 
-#################################################################
-sub OLD_parse_blast_output_for_self_hits { 
-  my $sub_name = "OLD_parse_blast_output_for_self_hits()";
-  my $nargs_expected = 5;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($in_file, $nhit_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
-
-  my %local_failstr_H = (); # fail string created in this subroutine for each sequence
-
-  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  while(my $line = <IN>) { 
-    # print "read line: $line";
-    chomp $line;
-    my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 10) { 
-      ofile_FAIL("ERROR in $sub_name, did not read 10 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
-    }
-    
-    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
-    my $qlen;   # length of hit on query
-    my $slen;   # length of hit on subject
-    my $maxlen; # max of $qlen and $slen
-
-    # two sanity checks: 
-    # 1: query and subject should be sequences we expect ($nhit_HR->{} exists)
-    # 2: hit should be to self (due to -max_target_nseqs 1 flag)
-    #    OR if not, if it's the first hit it should be 100% identical.
-    #    It is possible the top hit will be to another seq IFF
-    #    that sequence is identical to the query or a supersequence of the query, either
-    #    way we should be okay because we'd still be detecting 'self-hits' due to the 100%
-    #    identity
-    if($qaccver ne $sacc) { 
-      if(($nhit_HR->{$qaccver} == 0) && ($pident ne "100.000")) { 
-        ofile_FAIL("ERROR in $sub_name, not a self hit OR top hit and not 100 percent identity in blast output (with -max_target_seqs 1) line:\n$line", "RIBO", 1, $FH_HR); 
-      }
-    }
-    $nhit_HR->{$qaccver}++; 
-
-    # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
-    if(($nhit_HR->{$qaccver} != ($qstart != $sstart) || ($qend != $send)) { 
-      # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
-      # use a simple rule to only pick one:
-      if($qstart <= $sstart) { 
-        $qlen = abs($qstart - $qend) + 1;
-        $slen = abs($sstart - $send) + 1;
-        $maxlen = ($qlen > $slen) ? $qlen : $slen;
-        # store information on it
-        if(exists $local_failstr_H{$qaccver}) { 
-          $local_failstr_H{$qaccver} .= ","; 
-        }
-        else { 
-          $local_failstr_H{$qaccver} = ""; 
-        }
-        # now append the info
-        $local_failstr_H{$qaccver} .= "$maxlen:$qstart..$qend/$sstart..$send($pident|$gaps)";
-      }
-    }
-  }
-  close(IN);
-
-  # final sanity check, each seq should have had at least 1 hit
-  # and also fill $failstr_HR:
-  foreach my $key (keys %{$expseq_HR}) { 
-    if($expseq_HR->{$key} != 0) { 
-      ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
-    }
-    if(exists $local_failstr_H{$key}) { 
-      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
-    }
-  }
-
-  return;
-}
-
 
 #################################################################
 # Subroutine:  update_and_output_pass_fails()
@@ -1555,4 +1363,132 @@ sub initialize_hash_to_empty_string {
   }
 
   return;
+}
+
+#################################################################
+# Subroutine:  fblast_stage
+# Incept:      EPN, Thu Jun 21 09:14:13 2018
+#
+# Purpose:     Initialize all values of a hash to the empty string.
+#
+# Arguments:
+#   $execs_HR:       ref to hash of executables
+#   $seqfailstr_HR:  ref to hash of failure string to add to here
+#   $seqorder_AR:    ref to array of sequences in order
+#   $out_root:       for naming output files
+#   $opt_HHR:        ref to 2D hash of cmdline options
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:    Number of sequences that pass (do not fail) BLAST filter
+#
+# Dies: upon file open failure
+#       if blast output violates assumptions
+# 
+#################################################################
+sub fblast_stage { 
+  my $sub_name = "fblast_stage()";
+  my $nargs_expected = 6;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($execs_HR, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my %curfailstr_H = ();  # will hold fail string 
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my $seqname;
+
+  initialize_hash_to_empty_string(\%curfailstr_H, $seqorder_AR);
+
+  # split input sequence file into chunks and process each
+  my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH);
+  my $seqline = undef;
+  my $seq = undef;
+  my $cur_seqidx = 0;
+  my $chunk_sfetch_file = undef;
+  my $chunk_fasta_file  = undef;
+  my $chunk_blast_file  = undef;
+  my $sfetch_cmd        = undef;
+  my $blast_cmd         = undef; 
+  my %cur_nhit_H        = (); # key is sequence name, value is number of of hits this sequence has in current chunk
+                              # only keys for sequence names in current chunk exist in the hash
+  my %nblasted_H        = (); # key is sequence name, value is number of times this sequence was ever in the current set 
+                              # (e.g. times blasted against itself), should be 1 for all at end of function
+  foreach $seq (@{$seqorder_AR}) { 
+    $nblasted_H{$seq} = 0;
+  }
+
+  # loop through all seqs
+  # when we reach $chunksize (50) seqs in our current temp file, stop and run blast
+  # this avoids the N^2 runtime of running blast all v all
+  # 50 was good tradeoff between overhead of starting up blast and speed of execution on 18S
+  open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+  my $keep_going   = 1; 
+  my $cidx         = 0; # chunk counter
+  my $do_blast     = 0; # flag for whether we need to run blast on current set
+  my $do_open_next = 1; # flag for whether we need to open a new chunk sequence file or not
+  while($keep_going) { 
+    if($do_open_next) { # open new sfetch file
+      $cidx++;
+      $chunk_sfetch_file = $out_root . "." . $stage_key . "." . $cidx . ".sfetch"; # name of our temporary sfetch file
+      $chunk_fasta_file  = $out_root . "." . $stage_key . "." . $cidx . ".fa";     # name of our temporary fasta file
+      $chunk_blast_file  = $out_root . "." . $stage_key . "." . $cidx  .".blast";  # name of our temporary blast file
+      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      $cur_seqidx   = 0;
+      %cur_nhit_H   = ();
+      $do_open_next = 0;
+      $do_blast     = 0;
+    }
+    if($seqline = <LIST>) { 
+      $seq = $seqline;
+      chomp($seq);
+      $cur_nhit_H{$seq} = 0;
+      $nblasted_H{$seq}++;
+      print SFETCH $seqline;
+      $cur_seqidx++;
+      if($cur_seqidx == $chunksize) { # reached chunksize, close file and blast, below
+        close(SFETCH);
+        $do_blast     = 1; # set flag to blast
+        $do_open_next = 1; # set flag to open new output file when we read the next seq
+      }
+    }
+    else { # no more sequences
+      close(SFETCH);
+      $do_blast     = ($cur_seqidx > 0) ? 1 : 0; # set flag to blast if we have any seqs in the set
+      $do_open_next = 0;                         # out of seqs, lower flag to open new output file 
+      $keep_going   = 0;                         # set flag to stop reading sequences
+    }
+    if($do_blast) { 
+      if(! $do_prvcmd) { # NOTE: this will only work if previous run used --fbcall and --keep
+        $sfetch_cmd = "esl-sfetch -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
+        new_ribo_RunCommand($sfetch_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        if(! $do_keep) { 
+          new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        }
+        $blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
+        # previously used max_target_seqs, but doesn't guarantee top hit will be to self if identical seq (or superseq) exists
+        new_ribo_RunCommand($blast_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        # parse the blast output, keeping track of failures in curfailstr_H
+        parse_blast_output_for_self_hits($chunk_blast_file, \%cur_nhit_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+        if(! $do_keep) { 
+          new_ribo_RunCommand("rm $chunk_fasta_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          new_ribo_RunCommand("rm $chunk_blast_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        }
+      }
+    }
+  }
+
+  # clean up final empty sfetch file that may exist
+  if((! $do_keep) && (-e $chunk_sfetch_file)) { 
+    new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  }
+
+  # make sure all seqs were blasted against each other exactly once
+  foreach $seq (@{$seqorder_AR}) { 
+    if($nblasted_H{$seq} != 1) { 
+      ofile_FAIL("ERROR in ribodbcreate.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", "RIBO", $?, $ofile_info_HH{"FH"});
+    }
+  }
+
+  # create pass and fail lists
+  return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, $out_root, "fblast", $ofile_info_HHR);
+
 }
