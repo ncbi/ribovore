@@ -8,11 +8,12 @@ require "epn-options.pm";
 require "epn-ofile.pm";
 require "ribo.pm";
 
-# make sure the RIBODIR variable is set
+# make sure the RIBODIR variable is set, others we will wait to see
+# if they are required first
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_vecplus_dir       = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
-my $env_ribotax_dir       = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
-my $env_riboblast_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
+my $env_vecplus_dir       = undef;
+my $env_ribotax_dir       = undef;
+my $env_riboblast_dir     = undef;
 #my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
@@ -75,7 +76,7 @@ opt_Add("--maxfambig",  "real",    0,                       $g,    undef,"--skip
 $g++;
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on self-BLAST hits";
 #              option   type       default               group  requires incompat                    preamble-output                                            help-output    
-opt_Add("--fbcsize",  "integer",   50,                      $g,    undef,"--skipfblast",             "set num seqs for each BLAST run to <n>",   "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
+opt_Add("--fbcsize",  "integer",   20,                      $g,    undef,"--skipfblast",             "set num seqs for each BLAST run to <n>",   "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
 opt_Add("--fbcall",   "boolean",   0,                       $g,    undef,"--skipfblast,--fbcsize",   "do single BLAST run with all N seqs",      "do single BLAST run with all N seqs (CAUTION: slow for large N)", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
@@ -185,6 +186,80 @@ my $do_keep   = opt_Get("--keep",       \%opt_HH) ? 1 : 0;
 if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH)))) { 
   die "ERROR, neither --fetch nor --fasta options were used. Exactly one must be.";
 }
+
+my $in_fetch_file = opt_Get("--fetch", \%opt_HH); # this will be undefined unless --fetch set on the command line
+my $in_fasta_file = opt_Get("--fasta", \%opt_HH); # this will be undefined unless --fasta set on the command line
+# verify required files exist
+if(defined $in_fetch_file) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_fetch_file, "--fetch argument", undef, 1); 
+}
+if(defined $in_fasta_file) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
+}
+
+# now that we know what steps we are doing, make sure that:
+# - required ENV variables are set and point to valid dirs
+# - required executables exist and are executable
+# - required files exist
+# we do this for each stage individually
+
+my $in_riboopts_file = undef;
+my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
+my $rlc_modelinfo_file = undef;
+my %execs_H = (); # key is name of program, value is path to the executable
+my $taxonomy_tree_wlevels_file            = undef;
+my $taxonomy_tree_wspecified_species_file = undef;
+if($do_ftaxid || $do_fingrp || $do_fvecsc) { 
+  $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
+  if($do_fvecsc) { 
+    $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
+    $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
+    $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+  }
+  if($do_ftaxid || $do_fingrp) { 
+    $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
+
+    $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
+    if($do_fingrp) { 
+      $taxonomy_tree_wlevels_file = $env_ribotax_dir . "/taxonomy_tree_wlevels.txt";
+      ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wlevels_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
+      $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
+    }
+    if($do_ftaxid) { 
+      $taxonomy_tree_wspecified_species_file = $env_ribotax_dir . "/taxonomy_tree_wspecspecies.txt";
+      ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wspecified_species_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
+    }
+  }
+}
+
+if($do_fblast) { 
+  $env_riboblast_dir = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
+  $execs_H{"blastn"} = $env_riboblast_dir  . "/blastn";
+}
+
+if($do_fribos) { 
+  # make sure the ribolengthchecker modelinfo files exists
+  if(! opt_IsUsed("-i", \%opt_HH)) { 
+    $rlc_modelinfo_file = $df_rlc_modelinfo_file;  
+    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+  }
+  else { # -i used
+    $rlc_modelinfo_file = opt_Get("-i", \%opt_HH); }
+  if(! opt_IsUsed("-i", \%opt_HH)) {
+    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+  }
+
+  # make sure the riboinfo file exists
+  if(! opt_IsUsed("--riboopts", \%opt_HH)) {
+    die "ERROR, --riboopts is a required option, unless --skipfribos is used";
+  }
+  $in_riboopts_file = opt_Get("--riboopts", \%opt_HH);
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts_file, "riboopts file specified with --riboopts", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
+
+  $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
+  $execs_H{"ribolengthchecker"} = $env_ribotyper_dir  . "/ribolengthchecker.pl";
+}
+
 # either --pos or both of --lpos and --rpos are required
 my $in_pos  = undef;
 my $in_lpos = undef;
@@ -198,38 +273,6 @@ if($do_fmspan) {
   }
 }
 
-my $in_fetch_file = opt_Get("--fetch", \%opt_HH); # this will be undefined unless --fetch set on the command line
-my $in_fasta_file = opt_Get("--fasta", \%opt_HH); # this will be undefined unless --fasta set on the command line
-
-# verify required files exist
-if(defined $in_fetch_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_fetch_file, "--fetch argument", undef, 1); 
-}
-if(defined $in_fasta_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
-}
-
-
-# now that we know what steps we are doing, make sure the required executables are executable
-my %execs_H = (); # key is name of program, value is path to the executable
-if($do_ftaxid || $do_fingrp) { 
-  $execs_H{"srcchk"}                     = $env_vecplus_dir    . "/scripts/srcchk";
-}
-if($do_fvecsc) { 
-  $execs_H{"vecscreen"}                  = $env_vecplus_dir    . "/scripts/vecscreen"; 
-  $execs_H{"parse_vecscreen.pl"}         = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
-  $execs_H{"combine_summaries.pl"}       = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
-}
-if($do_fblast) { 
-  $execs_H{"blastn"}                     = $env_riboblast_dir  . "/blastn";
-}
-if($do_fribos) { 
-  $execs_H{"ribotyper"}                  = $env_ribotyper_dir  . "/ribotyper.pl";
-  $execs_H{"ribolengthchecker"}          = $env_ribotyper_dir  . "/ribolengthchecker.pl";
-}
-if($do_fingrp) { 
-  $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir    . "/scripts/find_taxonomy_ancestors.pl";
-}
 # Currently, we require infernal and easel executables are in the user's path, 
 # but do not check. The program will die if the commands using them fail. 
 # The block below is retained in in case we want to use it eventually.
@@ -276,38 +319,6 @@ my $dir_tail = $dir;
 $dir_tail =~ s/^.+\///; # remove all but last dir
 my $out_root = $dir . "/" . $dir_tail . ".ribodbcreate";
 
-my $in_riboopts_file = undef;
-if($do_fribos) { 
-  if(! opt_IsUsed("--riboopts", \%opt_HH)) {
-    die "ERROR, --riboopts is a required option";
-  }
-  $in_riboopts_file = opt_Get("--riboopts", \%opt_HH);
-
-  # make sure the riboinfo file exists
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts_file, "riboopts file specified with --riboopts", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
-}
-
-my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
-my $rlc_modelinfo_file = undef;
-if(! opt_IsUsed("-i", \%opt_HH)) {
-  $rlc_modelinfo_file = $df_rlc_modelinfo_file;
-}
-else { 
-  $rlc_modelinfo_file = opt_Get("-i", \%opt_HH);
-}
-# make sure the ribolengthchecker modelinfo files exists
-if(! opt_IsUsed("-i", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
-}
-else { # -i used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
-}
-
-my $taxonomy_tree_wlevels_file = $env_ribotax_dir . "/taxonomy_tree_wlevels.txt";
-ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wlevels_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
-
-my $taxonomy_tree_wspecified_species_file = $env_ribotax_dir . "/taxonomy_tree_wspecspecies.txt";
-ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wspecified_species_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
 
 #############################################
 # output program banner and open output files
@@ -317,8 +328,8 @@ my @arg_desc_A = ("reference accession");
 my @arg_A      = ($dir);
 my %extra_H    = ();
 $extra_H{"\$RIBODIR"} = $env_ribotyper_dir;
-$extra_H{"\$RIBOTAXDIR"} = $env_ribotax_dir;
-$extra_H{"\$VECPLUSDIR"} = $env_vecplus_dir;
+if(defined $env_ribotax_dir) { $extra_H{"\$RIBOTAXDIR"} = $env_ribotax_dir; }
+if(defined $env_vecplus_dir) { $extra_H{"\$VECPLUSDIR"} = $env_vecplus_dir; }
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -560,7 +571,7 @@ if($do_fblast) {
   
   initialize_hash_to_empty_string(\%curfailstr_H, \@seqorder_A);
 
-  # split input sequence file into chunks of 50 and process each
+  # split input sequence file into chunks and process each
   my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH);
   my $seqline = undef;
   my $seq = undef;
@@ -570,9 +581,10 @@ if($do_fblast) {
   my $chunk_blast_file  = undef;
   my $sfetch_cmd        = undef;
   my $blast_cmd         = undef; 
-  my %is_cur_H  = (); # key is sequence name, value is '1' if this sequence is in the current set
-  my %nblasted_H = (); # key is sequence name, value is number of times this sequence was ever in the current set 
-                       # (e.g. times blasted against itself), should be 1 for all at end of function
+  my %cur_nhit_H        = (); # key is sequence name, value is number of of hits this sequence has in current chunk
+                              # keys for sequence names not in the current chunk do not exist in the hash
+  my %nblasted_H        = (); # key is sequence name, value is number of times this sequence was ever in the current set 
+                              # (e.g. times blasted against itself), should be 1 for all at end of function
   foreach $seq (@seqorder_A) { 
     $nblasted_H{$seq} = 0;
   }
@@ -594,14 +606,14 @@ if($do_fblast) {
       $chunk_blast_file  = $out_root . "." . $stage_key . "." . $cidx  .".blast";  # name of our temporary blast file
       open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
       $cur_seqidx = 0;
-      %is_cur_H   = ();
+      %cur_nhit_H   = ();
       $do_open_next = 0;
       $do_blast = 0;
     }
     if($seqline = <LIST>) { 
       $seq = $seqline;
       chomp($seq);
-      $is_cur_H{$seq} = 1;
+      $cur_nhit_H{$seq} = 0; # 
       $nblasted_H{$seq}++;
       print SFETCH $seqline;
       $cur_seqidx++;
@@ -624,11 +636,11 @@ if($do_fblast) {
         if(! $do_keep) { 
           new_ribo_RunCommand("rm $chunk_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         }
-        #$blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" -max_target_seqs 1 > $chunk_blast_file";
-        $blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
+        $blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" -max_target_seqs 1 > $chunk_blast_file";
+        #$blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
         new_ribo_RunCommand($blast_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         # parse the blast output, keeping track of failures in curfailstr_H
-        parse_blast_output_for_self_hits($chunk_blast_file, \%is_cur_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+        parse_blast_output_for_self_hits($chunk_blast_file, \%cur_nhit_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
         if(! $do_keep) { 
           new_ribo_RunCommand("rm $chunk_fasta_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
           new_ribo_RunCommand("rm $chunk_blast_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
@@ -1255,6 +1267,100 @@ sub parse_ribolengthchecker_tbl_file {
 }
 
 #################################################################
+# Subroutine:  parse_blast_output_for_self_hits()
+# Incept:      EPN, Wed Jun 13 15:21:14 2018
+#
+# Purpose:     Parse a blast output file that should have only self hits in it 
+#              because the query and subject were identical files and the 
+#              '-max_target_seqs 1' flag was used.
+#
+# Arguments:
+#   $in_file:      name of input blast output file to parse
+#   $nhit_HR:      ref to hash, keys are expected sequence names, values are '1'
+#   $failstr_HR:   ref to hash of failure string to add to here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    Number of sequences that pass (do not have self hits)
+#
+# Dies:       if blast output is not in expected format (number of fields)
+#             if any of the sequences in nhit_HR are not in the blast output
+#             if any of the sequences in nhit_HR do not have a full length self hit in the blast output
+# 
+#################################################################
+sub parse_blast_output_for_self_hits { 
+  my $sub_name = "parse_blast_output_for_self_hits()";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $nhit_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
+
+  my %local_failstr_H = (); # fail string created in this subroutine for each sequence
+
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  while(my $line = <IN>) { 
+    # print "read line: $line";
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 10) { 
+      ofile_FAIL("ERROR in $sub_name, did not read 10 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
+    }
+    
+    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
+    my $qlen;   # length of hit on query
+    my $slen;   # length of hit on subject
+    my $maxlen; # max of $qlen and $slen
+
+    # is this a self-hit? NOTE: we tried '-max_target_seqs 1' previously to enforce this was true but it doesn't work
+    # if one sequence is a subsequence of another you're not guaranteed to that the target selected will be self (example: KX765300.1 and MG520988.1)
+    if($qaccver eq $sacc) { 
+      # sanity check: query/subject should be to a sequence we expect
+      if(! exists $nhit_HR->{$qaccver}){ 
+        ofile_FAIL("ERROR in $sub_name, found unexpected query $qaccver:\n$line", "RIBO", 1, $FH_HR); 
+      }
+      if(! exists $nhit_HR->{$sacc}){ 
+        ofile_FAIL("ERROR in $sub_name, found unexpected subject $sacc:\n$line", "RIBO", 1, $FH_HR); 
+      }
+      $nhit_HR->{$qaccver}++;
+      
+      # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
+      if(($qstart != $sstart) || ($qend != $send)) { 
+        # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
+        # use a simple rule to only pick one:
+        if($qstart <= $sstart) { 
+          $qlen = abs($qstart - $qend) + 1;
+          $slen = abs($sstart - $send) + 1;
+          $maxlen = ($qlen > $slen) ? $qlen : $slen;
+          # store information on it
+          if(exists $local_failstr_H{$qaccver}) { 
+            $local_failstr_H{$qaccver} .= ","; 
+          }
+          else { 
+            $local_failstr_H{$qaccver} = ""; 
+          }
+          # now append the info
+          $local_failstr_H{$qaccver} .= "$maxlen:$qstart..$qend/$sstart..$send($pident|$gaps)";
+        }
+      }
+    }
+  }
+  close(IN);
+
+  # final sanity check, each seq should have had at least 1 hit
+  # and also fill $failstr_HR:
+  foreach my $key (keys %{$expseq_HR}) { 
+    if($nhit_HR->{$key} == 0) { 
+      ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
+    }
+    if(exists $local_failstr_H{$key}) { 
+      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
+    }
+  }
+
+  return;
+}
+
+#################################################################
 # Subroutine:  OLD_parse_blast_output_for_self_hits()
 # Incept:      EPN, Wed Jun 13 15:21:14 2018
 #
@@ -1264,7 +1370,7 @@ sub parse_ribolengthchecker_tbl_file {
 #
 # Arguments:
 #   $in_file:      name of input blast output file to parse
-#   $expseq_HR:    ref to hash, keys are expected sequence names, values are '1'
+#   $nhit_HR:      ref to hash, keys are expected sequence names, values are '1'
 #   $failstr_HR:   ref to hash of failure string to add to here
 #   $opt_HHR:      reference to 2D hash of cmdline options
 #   $FH_HR:        REF to hash of file handles, including "cmd"
@@ -1277,11 +1383,11 @@ sub parse_ribolengthchecker_tbl_file {
 # 
 #################################################################
 sub OLD_parse_blast_output_for_self_hits { 
-  my $sub_name = "parse_blast_output_for_self_hits()";
+  my $sub_name = "OLD_parse_blast_output_for_self_hits()";
   my $nargs_expected = 5;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $expseq_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
+  my ($in_file, $nhit_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
 
   my %local_failstr_H = (); # fail string created in this subroutine for each sequence
 
@@ -1300,18 +1406,22 @@ sub OLD_parse_blast_output_for_self_hits {
     my $maxlen; # max of $qlen and $slen
 
     # two sanity checks: 
-    # 1: hit should be to self (due to -max_target_nseqs 1 flag)
-    # 2: query/subject should be to a sequence we expect
+    # 1: query and subject should be sequences we expect ($nhit_HR->{} exists)
+    # 2: hit should be to self (due to -max_target_nseqs 1 flag)
+    #    OR if not, if it's the first hit it should be 100% identical.
+    #    It is possible the top hit will be to another seq IFF
+    #    that sequence is identical to the query or a supersequence of the query, either
+    #    way we should be okay because we'd still be detecting 'self-hits' due to the 100%
+    #    identity
     if($qaccver ne $sacc) { 
-      ofile_FAIL("ERROR in $sub_name, not a self hit in blast output (with -max_target_seqs 1) line:\n$line", "RIBO", 1, $FH_HR); 
+      if(($nhit_HR->{$qaccver} == 0) && ($pident ne "100.000")) { 
+        ofile_FAIL("ERROR in $sub_name, not a self hit OR top hit and not 100 percent identity in blast output (with -max_target_seqs 1) line:\n$line", "RIBO", 1, $FH_HR); 
+      }
     }
-    if(! exists $expseq_HR->{$qaccver}) { 
-      ofile_FAIL("ERROR in $sub_name, found unexpected query $qaccver:\n$line", "RIBO", 1, $FH_HR); 
-    }
-    $expseq_HR->{$qaccver} = 0; # flag that we've seen at least one hit to this sequence
+    $nhit_HR->{$qaccver}++; 
 
     # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
-    if(($qstart != $sstart) || ($qend != $send)) { 
+    if(($nhit_HR->{$qaccver} != ($qstart != $sstart) || ($qend != $send)) { 
       # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
       # use a simple rule to only pick one:
       if($qstart <= $sstart) { 
@@ -1346,96 +1456,6 @@ sub OLD_parse_blast_output_for_self_hits {
   return;
 }
 
-#################################################################
-# Subroutine:  parse_blast_output_for_self_hits()
-# Incept:      EPN, Wed Jun 13 15:21:14 2018
-#
-# Purpose:     Parse a blast output file that should have only self hits in it 
-#              because the query and subject were identical files and the 
-#              '-max_target_seqs 1' flag was used.
-#
-# Arguments:
-#   $in_file:      name of input blast output file to parse
-#   $expseq_HR:    ref to hash, keys are expected sequence names, values are '1'
-#   $failstr_HR:   ref to hash of failure string to add to here
-#   $opt_HHR:      reference to 2D hash of cmdline options
-#   $FH_HR:        REF to hash of file handles, including "cmd"
-#
-# Returns:    Number of sequences that pass (do not have self hits)
-#
-# Dies:       if blast output is not in expected format (number of fields)
-#             if any of the sequences in expseq_HR are not in the blast output
-#             if any of the sequences in expseq_HR do not have a full length self hit in the blast output
-# 
-#################################################################
-sub parse_blast_output_for_self_hits { 
-  my $sub_name = "parse_blast_output_for_self_hits()";
-  my $nargs_expected = 5;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($in_file, $expseq_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
-
-  my %local_failstr_H = (); # fail string created in this subroutine for each sequence
-
-  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  while(my $line = <IN>) { 
-    # print "read line: $line";
-    chomp $line;
-    my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 10) { 
-      ofile_FAIL("ERROR in $sub_name, did not read 10 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
-    }
-    
-    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
-    my $qlen;   # length of hit on query
-    my $slen;   # length of hit on subject
-    my $maxlen; # max of $qlen and $slen
-
-    # is this a self-hit? NOTE: we tried '-max_target_seqs 1' previously to enforce this was true but it doesn't work
-    # if one sequence is a subsequence of another you're not guaranteed to that the target selected will be self (example: KX765300.1 and MG520988.1)
-    if($qaccver eq $sacc) { 
-      # sanity check: query/subject should be to a sequence we expect
-      if(! exists $expseq_HR->{$qaccver}) { 
-        ofile_FAIL("ERROR in $sub_name, found unexpected query $qaccver:\n$line", "RIBO", 1, $FH_HR); 
-      }
-      $expseq_HR->{$qaccver} = 0; # flag that we've seen at least one hit to this sequence
-      
-      # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
-      if(($qstart != $sstart) || ($qend != $send)) { 
-        # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
-        # use a simple rule to only pick one:
-        if($qstart <= $sstart) { 
-          $qlen = abs($qstart - $qend) + 1;
-          $slen = abs($sstart - $send) + 1;
-          $maxlen = ($qlen > $slen) ? $qlen : $slen;
-          # store information on it
-          if(exists $local_failstr_H{$qaccver}) { 
-            $local_failstr_H{$qaccver} .= ","; 
-          }
-          else { 
-            $local_failstr_H{$qaccver} = ""; 
-          }
-          # now append the info
-          $local_failstr_H{$qaccver} .= "$maxlen:$qstart..$qend/$sstart..$send($pident|$gaps)";
-        }
-      }
-    }
-  }
-  close(IN);
-
-  # final sanity check, each seq should have had at least 1 hit
-  # and also fill $failstr_HR:
-  foreach my $key (keys %{$expseq_HR}) { 
-    if($expseq_HR->{$key} != 0) { 
-      ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
-    }
-    if(exists $local_failstr_H{$key}) { 
-      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
-    }
-  }
-
-  return;
-}
 
 #################################################################
 # Subroutine:  update_and_output_pass_fails()
