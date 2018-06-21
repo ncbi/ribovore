@@ -599,15 +599,17 @@ if($do_fribos) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 1, "output of ribolengthchecker");
   
   # parse ribolengthchecker tbl file
-  my ($rt_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, \%family_modellen_H, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
+  my ($rt_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, $do_fmspan, \%family_modellen_H, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt_npass, $nseq-$rt_npass), $log_FH, *STDOUT);
 
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs ribolengthchecker identified as too long", $progress_w, $log_FH, *STDOUT);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rlc_npass, $rt_npass-$rlc_npass), $log_FH, *STDOUT);
 
   $stage_key = "fmspan";
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs based on model span", $progress_w, $log_FH, *STDOUT);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ms_npass, $rlc_npass-$ms_npass), $log_FH, *STDOUT);
+  if($do_fmspan) { 
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs based on model span", $progress_w, $log_FH, *STDOUT);
+    ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ms_npass, $rlc_npass-$ms_npass), $log_FH, *STDOUT);
+  }
 }
 else { # skipping ribolengthchecker stage
   @rlcpass_seqorder_A = @seqorder_A; # since ribolengthchecker stage was skipped, all sequences 'survive' it
@@ -1038,6 +1040,7 @@ sub parse_parse_vecscreen_combined_file {
 #
 # Arguments:
 #   $in_file:             name of input tbl file to parse
+#   $do_fmspan:           '1' to filter based on model span too
 #   $mlen_HR:             ref to hash of model lengths, key is value in classification
 #                         column of $in_file
 #   $seqfailstr_HR:       ref to hash of failure string to add to here
@@ -1058,10 +1061,10 @@ sub parse_parse_vecscreen_combined_file {
 #################################################################
 sub parse_ribolengthchecker_tbl_file { 
   my $sub_name = "parse_ribolengthchecker_tbl_file()";
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $mlen_HR, $seqfailstr_HR, $seqorder_AR, $rlcpass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file, $do_fmspan, $mlen_HR, $seqfailstr_HR, $seqorder_AR, $rlcpass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %rt_curfailstr_H  = (); # holds fail strings for ribotyper
   my %rlc_curfailstr_H = (); # holds fail strings for ribolengthchecker
@@ -1077,25 +1080,27 @@ sub parse_ribolengthchecker_tbl_file {
   my $in_pos  = undef;
   my $in_lpos = undef;
   my $in_rpos = undef;
-  if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
-  if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
-  if(opt_IsUsed("--rpos", \%opt_HH)) { $in_rpos = opt_Get("--rpos", \%opt_HH); }
-
-  # determine maximum 5' start position and minimum 3' stop position required to be kept
-  # for each family
   my %max_lpos_H = ();
   my %min_rpos_H = ();
-  foreach my $class (keys (%{$mlen_HR})) { 
-    if(defined $in_pos) { 
-      $max_lpos_H{$class} = $in_pos;
-      $min_rpos_H{$class} = $mlen_HR->{$class} - $in_pos + 1;
-    }
-    else { 
-      if((! defined $in_lpos) || (! defined $in_rpos)) { 
-        ofile_FAIL("ERROR in $sub_name, --pos not used, but at least one of --lpos or --rpos not used either", "RIBO", $?, $FH_HR);
+  if($do_fmspan) { 
+    if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
+    if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
+    if(opt_IsUsed("--rpos", \%opt_HH)) { $in_rpos = opt_Get("--rpos", \%opt_HH); }
+
+    # determine maximum 5' start position and minimum 3' stop position required to be kept
+    # for each family
+    foreach my $class (keys (%{$mlen_HR})) { 
+      if(defined $in_pos) { 
+        $max_lpos_H{$class} = $in_pos;
+        $min_rpos_H{$class} = $mlen_HR->{$class} - $in_pos + 1;
       }
-      $max_lpos_H{$class} = $in_lpos;
-      $min_rpos_H{$class} = $in_rpos;
+      else { 
+        if((! defined $in_lpos) || (! defined $in_rpos)) { 
+          ofile_FAIL("ERROR in $sub_name, --pos not used, but at least one of --lpos or --rpos not used either", "RIBO", $?, $FH_HR);
+        }
+        $max_lpos_H{$class} = $in_lpos;
+        $min_rpos_H{$class} = $in_rpos;
+      }
     }
   }
 
@@ -1136,14 +1141,16 @@ sub parse_ribolengthchecker_tbl_file {
           $rlc_curfailstr_H{$target} = "";
           
           # check for model span fail
-          if((! exists $max_lpos_H{$class}) || (! exists $min_rpos_H{$class})) { 
-            ofile_FAIL("ERROR in $sub_name, unexpected classification $class", "RIBO", $?, $FH_HR);
-          }
-          if(($mstart > $max_lpos_H{$class}) || ($mstop < $min_rpos_H{$class})) { 
-            $ms_curfailstr_H{$target} = "mdlspan[" . $mstart . "-" . $mstop . "]";
-          }
-          else { 
-            $ms_curfailstr_H{$target} = "";
+          if($do_fmspan) { 
+            if((! exists $max_lpos_H{$class}) || (! exists $min_rpos_H{$class})) { 
+              ofile_FAIL("ERROR in $sub_name, unexpected classification $class", "RIBO", $?, $FH_HR);
+            }
+            if(($mstart > $max_lpos_H{$class}) || ($mstop < $min_rpos_H{$class})) { 
+              $ms_curfailstr_H{$target} = "mdlspan[" . $mstart . "-" . $mstop . "]";
+            }
+            else { 
+              $ms_curfailstr_H{$target} = "";
+            }
           }
         }
       }
@@ -1158,15 +1165,21 @@ sub parse_ribolengthchecker_tbl_file {
   foreach $seqname (@{$seqorder_AR}) { 
     if(exists $rlc_curfailstr_H{$seqname}) { 
       push(@rtpass_seqorder_A, $seqname); 
-    }
-    if(exists $ms_curfailstr_H{$seqname}) { 
-      push(@{$rlcpass_seqorder_AR}, $seqname);
+      if((! $do_fmspan) || (exists $ms_curfailstr_H{$seqname})) { 
+        push(@{$rlcpass_seqorder_AR}, $seqname);
+      }
     }
   }
 
   my $rt_npass  = update_and_output_pass_fails(\%rt_curfailstr_H,  $seqfailstr_HR, $seqorder_AR,         $out_root, "fribty", \%ofile_info_HH);
   my $rlc_npass = update_and_output_pass_fails(\%rlc_curfailstr_H, $seqfailstr_HR, \@rtpass_seqorder_A,  $out_root, "friblc", \%ofile_info_HH);
-  my $ms_npass  = update_and_output_pass_fails(\%ms_curfailstr_H,  $seqfailstr_HR, $rlcpass_seqorder_AR, $out_root, "fmspan", \%ofile_info_HH);
+  my $ms_npass  = undef;
+  if($do_fmspan) { 
+    update_and_output_pass_fails(\%ms_curfailstr_H,  $seqfailstr_HR, $rlcpass_seqorder_AR, $out_root, "fmspan", \%ofile_info_HH);
+  }
+  else { 
+    $ms_npass = $rlc_npass;
+  }
 
   return ($rt_npass, $rlc_npass, $ms_npass);
 }
