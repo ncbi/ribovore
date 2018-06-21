@@ -41,52 +41,60 @@ my $df_model_dir          = $env_ribotyper_dir . "/models/";
 my %opt_HH = ();      
 my @opt_order_A = (); 
 my %opt_group_desc_H = ();
-
+my $g = 0;
 # Add all options to %opt_HH and @opt_order_A.
 # This section needs to be kept in sync (manually) with the &GetOptions call below
-$opt_group_desc_H{"1"} = "basic options";
+$opt_group_desc_H{++$g} = "basic options";
 #     option            type       default               group   requires incompat     preamble-output                                            help-output    
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,       undef,                                                     "display this help",                                            \%opt_HH, \@opt_order_A);
-opt_Add("-f",           "boolean", 0,                        1,    undef, undef,       "forcing directory overwrite",                             "force; if <output directory> exists, overwrite it",            \%opt_HH, \@opt_order_A);
-opt_Add("-v",           "boolean", 0,                        1,    undef, undef,       "be verbose",                                              "be verbose; output commands to stdout as they're run",         \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 1,                        1,    undef, undef,       "use <n> CPUs",                                            "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
-opt_Add("--fetch",      "string",  undef,                    1,    undef, "--fasta",   "fetch sequences using seqfetch query in <s>",             "fetch sequences using seqfetch query in <s>",                  \%opt_HH, \@opt_order_A);
-opt_Add("--fasta",      "string",  undef,                    1,    undef, "--fetch",   "sequences provided as fasta input in <s>",                "don't fetch sequences, <s> is fasta file of input sequences",  \%opt_HH, \@opt_order_A);
+opt_Add("-f",           "boolean", 0,                       $g,    undef, undef,       "forcing directory overwrite",                             "force; if <output directory> exists, overwrite it",            \%opt_HH, \@opt_order_A);
+opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,       "be verbose",                                              "be verbose; output commands to stdout as they're run",         \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 1,                       $g,    undef, undef,       "use <n> CPUs",                                            "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
+opt_Add("--fetch",      "string",  undef,                   $g,    undef, "--fasta",   "fetch sequences using seqfetch query in <s>",             "fetch sequences using seqfetch query in <s>",                  \%opt_HH, \@opt_order_A);
+opt_Add("--fasta",      "string",  undef,                   $g,    undef, "--fetch",   "sequences provided as fasta input in <s>",                "don't fetch sequences, <s> is fasta file of input sequences",  \%opt_HH, \@opt_order_A);
+opt_Add("--keep",      "boolean", 0,                        $g,    undef,   undef,     "keep all intermediate files",                             "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "options for skipping stages";
+$g++;
+$opt_group_desc_H{++$g} = "options for skipping stages";
 #               option  type       default               group   requires                incompat   preamble-output                                                 help-output    
-opt_Add("--skipfambig", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on ambiguous nucleotides",       "skip stage that filters based on ambiguous nucleotides",       \%opt_HH, \@opt_order_A);
-opt_Add("--skipftaxid", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters by taxid",                             "skip stage that filters by taxid",                             \%opt_HH, \@opt_order_A);
-opt_Add("--skipfvecsc", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on VecScreen",                   "skip stage that filters based on VecScreen",                   \%opt_HH, \@opt_order_A);
-opt_Add("--skipfblast", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",          "skip stage that filters based on BLAST hits to self",          \%opt_HH, \@opt_order_A);
-opt_Add("--skipfribos", "boolean", 0,                        4,"--skipfmspan,--skipfingrp", undef,  "skip stage that filters based on ribotyper/ribolengthchecker", "skip stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
-opt_Add("--skipfmspan", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on model span of hits",          "skip stage that filters based on model span of hits",          \%opt_HH, \@opt_order_A);
-opt_Add("--skipfingrp", "boolean", 0,                        4,    undef,                   undef,  "skip stage that filters based on ingroup analysis",            "skip stage that filters based on ingroup analysis",            \%opt_HH, \@opt_order_A);
-opt_Add("--skipclustr", "boolean", 0,                        4,    undef,                   undef,  "skip stage that clusters surviving sequences",                 "skip stage that clusters sequences surviving all filters",     \%opt_HH, \@opt_order_A);
-opt_Add("--skiplistms", "boolean", 0,                        4,    undef,                   undef,  "skip stage that lists missing taxids",                         "skip stage that lists missing taxids",                         \%opt_HH, \@opt_order_A);
+opt_Add("--skipfambig", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ambiguous nucleotides",       "skip stage that filters based on ambiguous nucleotides",       \%opt_HH, \@opt_order_A);
+opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters by taxid",                             "skip stage that filters by taxid",                             \%opt_HH, \@opt_order_A);
+opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                   "skip stage that filters based on VecScreen",                   \%opt_HH, \@opt_order_A);
+opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",          "skip stage that filters based on BLAST hits to self",          \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribos", "boolean", 0,                       $g,"--skipfmspan,--skipfingrp", undef,  "skip stage that filters based on ribotyper/ribolengthchecker", "skip stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",          "skip stage that filters based on model span of hits",          \%opt_HH, \@opt_order_A);
+opt_Add("--skipfingrp", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",            "skip stage that filters based on ingroup analysis",            \%opt_HH, \@opt_order_A);
+opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                 "skip stage that clusters sequences surviving all filters",     \%opt_HH, \@opt_order_A);
+opt_Add("--skiplistms", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that lists missing taxids",                         "skip stage that lists missing taxids",                         \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "options for controlling the stage that filters based on ambiguous nucleotides";
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ambiguous nucleotides";
 #              option   type       default               group  requires incompat                    preamble-output                                            help-output    
-opt_Add("--maxnambig",  "integer", 0,                        5,    undef,"--skipfambig,--maxfambig", "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
-opt_Add("--maxfambig",  "real",    0,                        5,    undef,"--skipfambig,--maxnambig", "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
+opt_Add("--maxnambig",  "integer", 0,                       $g,    undef,"--skipfambig,--maxfambig", "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
+opt_Add("--maxfambig",  "real",    0,                       $g,    undef,"--skipfambig,--maxnambig", "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"2"} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
+$g++;
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on self-BLAST hits";
+#              option   type       default               group  requires incompat                    preamble-output                                            help-output    
+opt_Add("--fbcsize",  "integer",   50,                      $g,    undef,"--skipfblast",             "set num seqs for each BLAST run to <n>",   "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
+opt_Add("--fbcall",   "boolean",   0,                       $g,    undef,"--skipfblast,--fbcsize",   "do single BLAST run with all N seqs",      "do single BLAST run with all N seqs (CAUTION: slow for large N)", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
 #       option          type       default               group  requires  incompat        preamble-output                                         help-output    
-opt_Add("-i",           "string",  undef,                    2,    undef, "--skipfribos", "use rlc model info file <s> instead of default",       "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts",   "string",  undef,                    2,    undef, "--skipfribos", "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
-opt_Add("--noscfail",   "boolean", 0,                        2,    undef, "--skipfribos", "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
-opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, "--skipfribos", "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+opt_Add("-i",           "string",  undef,                   $g,    undef, "--skipfribos", "use rlc model info file <s> instead of default",       "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts",   "string",  undef,                   $g,    undef, "--skipfribos", "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options for controlling the stage that filters based model span of hits:";
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
-opt_Add("--pos",         "integer",  undef,                  3,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--lpos",        "integer",  undef,                  3,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--rpos",        "integer",  undef,                  3,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--pos",         "integer",  undef,                 $g,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"6"} = "advanced options for debugging and testing:";
+$opt_group_desc_H{++$g} = "advanced options for debugging and testing:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
-opt_Add("--prvcmd",      "boolean",  0,                      6,    undef, "-f",                 "do not execute commands; use output from previous run", "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
+opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f",                 "do not execute commands; use output from previous run", "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -100,6 +108,7 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'fetch=s'      => \$GetOptions_H{"--fetch"},
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
+                'keep'         => \$GetOptions_H{"--keep"},
                 'skipftaxid'   => \$GetOptions_H{"--skipftaxid"},
                 'skipfambig'   => \$GetOptions_H{"--skipfambig"},
                 'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
@@ -111,6 +120,8 @@ my $options_okay =
                 'skiplistms'   => \$GetOptions_H{"--skiplistms"},
                 'maxnambig=s'  => \$GetOptions_H{"--maxnambig"},
                 'maxfambig=s'  => \$GetOptions_H{"--maxfambig"},
+                'fbcsize=s'    => \$GetOptions_H{"--fbcsize"},
+                'fbcall'       => \$GetOptions_H{"--fbcall"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
@@ -168,6 +179,7 @@ my $do_fingrp = opt_Get("--skipfingrp", \%opt_HH) ? 0 : 1;
 my $do_clustr = opt_Get("--skipclustr", \%opt_HH) ? 0 : 1;
 my $do_listms = opt_Get("--skiplistms", \%opt_HH) ? 0 : 1;
 my $do_prvcmd = opt_Get("--prvcmd",     \%opt_HH) ? 1 : 0;
+my $do_keep   = opt_Get("--keep",       \%opt_HH) ? 1 : 0;
 
 # do checks that are too sophisticated for epn-options.pm
 if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH)))) { 
@@ -549,63 +561,97 @@ if($do_fblast) {
   initialize_hash_to_empty_string(\%curfailstr_H, \@seqorder_A);
 
   # split input sequence file into chunks of 50 and process each
-  my $nchunk = 50;
+  my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH);
   my $seqline = undef;
   my $seq = undef;
   my $cur_seqidx = 0;
-  my $tmp_sfetch_file = $out_root . ".tmp.sfetch"; # name of our temporary sfetch file
-  my $tmp_fasta_file  = $out_root . ".tmp.fa";     # name of our temporary fasta file
-  my $tmp_blast_file  = $out_root . ".tmp.blast";  # name of our temporary blast file
-  my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $tmp_sfetch_file > $tmp_fasta_file";
-  my $blast_cmd = $execs_H{"blastn"} . " -num_threads 1 -subject $tmp_fasta_file -query $tmp_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" -max_target_seqs 1 > $tmp_blast_file";
-  my $do_blast     = 0;  # flag for whether we need to run blast on current set
-  my $do_open_next = 0;  # flag for whether we need to open a new temp sequence file or not
-  my %is_cur_H     = (); # key is sequence name, value is '1' if this sequence is in the current set
+  my $chunk_sfetch_file = undef;
+  my $chunk_fasta_file  = undef;
+  my $chunk_blast_file  = undef;
+  my $sfetch_cmd        = undef;
+  my $blast_cmd         = undef; 
+  my %is_cur_H  = (); # key is sequence name, value is '1' if this sequence is in the current set
+  my %nblasted_H = (); # key is sequence name, value is number of times this sequence was ever in the current set 
+                       # (e.g. times blasted against itself), should be 1 for all at end of function
+  foreach $seq (@seqorder_A) { 
+    $nblasted_H{$seq} = 0;
+  }
 
   # loop through all seqs
-  # when we reach $nchunk (50) seqs in our current temp file, stop and run blast
+  # when we reach $chunksize (50) seqs in our current temp file, stop and run blast
   # this avoids the N^2 runtime of running blast all v all
   # 50 was good tradeoff between overhead of starting up blast and speed of execution on 18S
   open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
-  open(OUT, ">", $tmp_sfetch_file) || ofile_FileOpenFailure($tmp_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-  my $keep_going = 1; 
+  my $keep_going   = 1; 
+  my $cidx         = 0; # chunk counter
+  my $do_blast     = 0; # flag for whether we need to run blast on current set
+  my $do_open_next = 1; # flag for whether we need to open a new chunk sequence file or not
   while($keep_going) { 
+    if($do_open_next) { # open new sfetch file
+      $cidx++;
+      $chunk_sfetch_file = $out_root . "." . $stage_key . "." . $cidx . ".sfetch"; # name of our temporary sfetch file
+      $chunk_fasta_file  = $out_root . "." . $stage_key . "." . $cidx . ".fa";     # name of our temporary fasta file
+      $chunk_blast_file  = $out_root . "." . $stage_key . "." . $cidx  .".blast";  # name of our temporary blast file
+      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      $cur_seqidx = 0;
+      %is_cur_H   = ();
+      $do_open_next = 0;
+      $do_blast = 0;
+    }
     if($seqline = <LIST>) { 
       $seq = $seqline;
       chomp($seq);
       $is_cur_H{$seq} = 1;
-      print OUT $seqline;
+      $nblasted_H{$seq}++;
+      print SFETCH $seqline;
       $cur_seqidx++;
-      if($cur_seqidx == $nchunk) { # reached chunksize, close file and blast
+      if($cur_seqidx == $chunksize) { # reached chunksize, close file and blast, below
         close(SFETCH);
-        $do_blast = 1;     # set flag to blast
+        $do_blast     = 1; # set flag to blast
         $do_open_next = 1; # set flag to open new output file when we read the next seq
       }
     }
     else { # no more sequences
       close(SFETCH);
-      $do_blast = ($cur_seqidx > 0) ? 1 : 0; # set flag to blast if we have any seqs in the set
-      $do_open_next = 0;                     # out of seqs, lower flag to open new output file 
-      $keep_going = 0;                       # set flag to stop reading sequences
+      $do_blast     = ($cur_seqidx > 0) ? 1 : 0; # set flag to blast if we have any seqs in the set
+      $do_open_next = 0;                         # out of seqs, lower flag to open new output file 
+      $keep_going   = 0;                         # set flag to stop reading sequences
     }
     if($do_blast) { 
-      close(OUT);
-      # for this step, we need to run the command, even if $do_prvcmd is set because we don't have blast output saved
-      new_ribo_RunCommand($sfetch_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-      new_ribo_RunCommand("rm $tmp_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-      new_ribo_RunCommand($blast_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-      new_ribo_RunCommand("rm $tmp_fasta_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-      # parse the blast output, keeping track of failures in curfailstr_H
-      parse_blast_output_for_self_hits($tmp_blast_file, \%is_cur_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
-
-      if($do_open_next) { # open new file if nec
-        open(OUT, ">", $tmp_sfetch_file) || ofile_FileOpenFailure($tmp_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-        $cur_seqidx = 0;
-        %is_cur_H = ();
+      if(! $do_prvcmd) { # NOTE: this will only work if previous run used --fbcall and --keep
+        $sfetch_cmd = "esl-sfetch -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
+        new_ribo_RunCommand($sfetch_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        if(! $do_keep) { 
+          new_ribo_RunCommand("rm $chunk_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        }
+        #$blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" -max_target_seqs 1 > $chunk_blast_file";
+        $blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
+        new_ribo_RunCommand($blast_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        # parse the blast output, keeping track of failures in curfailstr_H
+        parse_blast_output_for_self_hits($chunk_blast_file, \%is_cur_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+        if(! $do_keep) { 
+          new_ribo_RunCommand("rm $chunk_fasta_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          new_ribo_RunCommand("rm $chunk_blast_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        }
       }
     }
   }
+
+  # clean up final empty sfetch file that may exist
+  if((! $do_keep) && (-e $chunk_sfetch_file)) { 
+    new_ribo_RunCommand("rm $chunk_sfetch_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  }
+
+  # make sure all seqs were blasted against each other exactly once
+  foreach $seq (@seqorder_A) { 
+    if($nblasted_H{$seq} != 1) { 
+      ofile_FAIL("ERROR in ribodbcreate.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", $pkgstr, $?, $ofile_info_HH{"FH"});
+    }
+  }
+
+  # create pass and fail lists
   $npass = update_and_output_pass_fails(\%curfailstr_H, \%seqfailstr_H, \@seqorder_A, $out_root, $stage_key, \%ofile_info_HH);
+
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
 
@@ -733,7 +779,7 @@ foreach $seqname (@seqorder_A) {
 close(OUT);
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "tbl", $out_tbl, 1, "tabular output summary file");
 
-system("cat $out_tbl");
+#system("cat $out_tbl");
 
 ##########
 # Conclude
@@ -1209,7 +1255,7 @@ sub parse_ribolengthchecker_tbl_file {
 }
 
 #################################################################
-# Subroutine:  parse_blast_output_for_self_hits()
+# Subroutine:  OLD_parse_blast_output_for_self_hits()
 # Incept:      EPN, Wed Jun 13 15:21:14 2018
 #
 # Purpose:     Parse a blast output file that should have only self hits in it 
@@ -1230,7 +1276,7 @@ sub parse_ribolengthchecker_tbl_file {
 #             if any of the sequences in expseq_HR do not have a full length self hit in the blast output
 # 
 #################################################################
-sub parse_blast_output_for_self_hits { 
+sub OLD_parse_blast_output_for_self_hits { 
   my $sub_name = "parse_blast_output_for_self_hits()";
   my $nargs_expected = 5;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
@@ -1281,6 +1327,97 @@ sub parse_blast_output_for_self_hits {
         }
         # now append the info
         $local_failstr_H{$qaccver} .= "$maxlen:$qstart..$qend/$sstart..$send($pident|$gaps)";
+      }
+    }
+  }
+  close(IN);
+
+  # final sanity check, each seq should have had at least 1 hit
+  # and also fill $failstr_HR:
+  foreach my $key (keys %{$expseq_HR}) { 
+    if($expseq_HR->{$key} != 0) { 
+      ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
+    }
+    if(exists $local_failstr_H{$key}) { 
+      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
+    }
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine:  parse_blast_output_for_self_hits()
+# Incept:      EPN, Wed Jun 13 15:21:14 2018
+#
+# Purpose:     Parse a blast output file that should have only self hits in it 
+#              because the query and subject were identical files and the 
+#              '-max_target_seqs 1' flag was used.
+#
+# Arguments:
+#   $in_file:      name of input blast output file to parse
+#   $expseq_HR:    ref to hash, keys are expected sequence names, values are '1'
+#   $failstr_HR:   ref to hash of failure string to add to here
+#   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
+#
+# Returns:    Number of sequences that pass (do not have self hits)
+#
+# Dies:       if blast output is not in expected format (number of fields)
+#             if any of the sequences in expseq_HR are not in the blast output
+#             if any of the sequences in expseq_HR do not have a full length self hit in the blast output
+# 
+#################################################################
+sub parse_blast_output_for_self_hits { 
+  my $sub_name = "parse_blast_output_for_self_hits()";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $expseq_HR, $failstr_HR, $top_HHR, $FH_HR) = (@_);
+
+  my %local_failstr_H = (); # fail string created in this subroutine for each sequence
+
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  while(my $line = <IN>) { 
+    # print "read line: $line";
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 10) { 
+      ofile_FAIL("ERROR in $sub_name, did not read 10 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
+    }
+    
+    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
+    my $qlen;   # length of hit on query
+    my $slen;   # length of hit on subject
+    my $maxlen; # max of $qlen and $slen
+
+    # is this a self-hit? NOTE: we tried '-max_target_seqs 1' previously to enforce this was true but it doesn't work
+    # if one sequence is a subsequence of another you're not guaranteed to that the target selected will be self (example: KX765300.1 and MG520988.1)
+    if($qaccver eq $sacc) { 
+      # sanity check: query/subject should be to a sequence we expect
+      if(! exists $expseq_HR->{$qaccver}) { 
+        ofile_FAIL("ERROR in $sub_name, found unexpected query $qaccver:\n$line", "RIBO", 1, $FH_HR); 
+      }
+      $expseq_HR->{$qaccver} = 0; # flag that we've seen at least one hit to this sequence
+      
+      # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
+      if(($qstart != $sstart) || ($qend != $send)) { 
+        # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
+        # use a simple rule to only pick one:
+        if($qstart <= $sstart) { 
+          $qlen = abs($qstart - $qend) + 1;
+          $slen = abs($sstart - $send) + 1;
+          $maxlen = ($qlen > $slen) ? $qlen : $slen;
+          # store information on it
+          if(exists $local_failstr_H{$qaccver}) { 
+            $local_failstr_H{$qaccver} .= ","; 
+          }
+          else { 
+            $local_failstr_H{$qaccver} = ""; 
+          }
+          # now append the info
+          $local_failstr_H{$qaccver} .= "$maxlen:$qstart..$qend/$sstart..$send($pident|$gaps)";
+        }
       }
     }
   }
