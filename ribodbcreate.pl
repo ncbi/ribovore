@@ -207,8 +207,7 @@ my $in_riboopts_file = undef;
 my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
 my $rlc_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
-my $taxonomy_tree_wlevels_file            = undef;
-my $taxonomy_tree_wspecified_species_file = undef;
+my $taxonomy_tree_six_column_file = undef;
 if($do_ftaxid || $do_fingrp || $do_fvecsc) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
   if($do_fvecsc) { 
@@ -220,14 +219,10 @@ if($do_ftaxid || $do_fingrp || $do_fvecsc) {
     $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
 
     $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
+    $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbcreate.txt";
+    ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1); # 1 says: die if it doesn't exist or is empty
     if($do_fingrp) { 
-      $taxonomy_tree_wlevels_file = $env_ribotax_dir . "/taxonomy_tree_wlevels.txt";
-      ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wlevels_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
       $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
-    }
-    if($do_ftaxid) { 
-      $taxonomy_tree_wspecified_species_file = $env_ribotax_dir . "/taxonomy_tree_wspecspecies.txt";
-      ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_wspecified_species_file, "taxonomy tree file with taxonomic levels", undef, 1); # 1 says: die if it doesn't exist or is empty
     }
   }
 }
@@ -524,7 +519,7 @@ if($do_fambig) {
 if($do_ftaxid) { 
   $stage_key = "ftaxid";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering for specified species ", $progress_w, $log_FH, *STDOUT);
-  $npass = parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_wspecified_species_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+  $npass = parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_six_column_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
   
@@ -639,7 +634,7 @@ if(0) {
     my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
     my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
     my $srcchk_cmd         = $execs_H{"srcchk"} . " -i $merged_list_file -f \'TaxId,taxname\' > $taxinfo_file";
-    my $find_tax_cmd       = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $taxinfo_file --input_tax $taxonomy_tree_wlevels_file --input_level $level --outfile $taxinfo_wlevel_file";
+    my $find_tax_cmd       = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $taxinfo_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile $taxinfo_wlevel_file";
     my $alipid_analyze_cmd = "perl alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $taxinfo_wlevel_file $out_root > $alipid_analyze_file";
     
     if(! $do_prvcmd) { 
@@ -927,21 +922,23 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   # PASS 1 of 1 through tax_file to fill specified_species_H{} for existing taxid keys read from srcchk_file
   open(TAX, $tax_file) || ofile_FileOpenFailure($tax_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   while($line = <TAX>) { 
-    #11no rank0
-    #2131567superkingdom0
-    #6335928genus0
-    #76species1
+    #1	1	no rank	1	0	0
+    #2	131567	superkingdom	3	1	0
+    #6	335928	genus	8	1	0
+    #7	6	species	9	1	1
+    #9	32199	species	9	1	1
+    #10	1706371	genus	8	1	0
     chomp $line;
     my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 4) { 
+    if(scalar(@el_A) != 6) { 
       ofile_FAIL("ERROR in $sub_name, tax file line did not have exactly 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
-    my ($taxid, $parent_taxid, $rank, $specified_species) = @el_A;
+    my ($taxid, $parent_taxid, $rank, undef, undef, $specified_species) = @el_A;
     if(exists $specified_species_H{$taxid}) { 
       $specified_species_H{$taxid} = $specified_species; 
     }
   }
-  close(SRCCHK);
+  close(TAX);
     
   # PASS 2 of 2 through srrchk_file to determine if each sequence passes or fails
   open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
