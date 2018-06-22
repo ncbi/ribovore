@@ -75,9 +75,14 @@ opt_Add("--maxfambig",  "real",    0,                       $g,    undef,"--skip
 
 $g++;
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on self-BLAST hits";
-#              option   type       default               group  requires incompat                    preamble-output                                            help-output    
-opt_Add("--fbcsize",  "integer",   20,                      $g,    undef,"--skipfblast",             "set num seqs for each BLAST run to <n>",   "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
-opt_Add("--fbcall",   "boolean",   0,                       $g,    undef,"--skipfblast,--fbcsize",   "do single BLAST run with all N seqs",      "do single BLAST run with all N seqs (CAUTION: slow for large N)", \%opt_HH, \@opt_order_A);
+#              option    type        default  group requires     incompat                      preamble-output                                                  help-output    
+opt_Add("--fbcsize",    "integer",   20,        $g, undef, "--skipfblast",                       "set num seqs for each BLAST run to <n>",                      "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
+opt_Add("--fbcall",     "boolean",   0,         $g, undef, "--skipfblast,--fbcsize",             "do single BLAST run with all N seqs",                         "do single BLAST run with all N seqs (CAUTION: slow for large N)", \%opt_HH, \@opt_order_A);
+opt_Add("--fbword",     "integer",   20,        $g, undef, "--skipfblast,--fbcsize",             "set word_size for BLAST to <n>",                              "set word_size for BLAST to <n>",                                  \%opt_HH, \@opt_order_A);
+opt_Add("--fbnominus",  "boolean",   0,         $g, undef, "--skipfblast,--fbcsize",             "do not consider BLAST self hits to minus strand",             "do not consider BLAST self hits to minus strand",                 \%opt_HH, \@opt_order_A);
+opt_Add("--fbmdiagok",  "boolean",   0,         $g, undef, "--skipfblast,--fbcsize,--fbnominus", "consider on-diagonal BLAST self hits to minus strand",        "consider on-diagonal BLAST self hits to minus strand",            \%opt_HH, \@opt_order_A);
+opt_Add("--fbminuslen", "integer",   50,        $g, undef, "--skipfblast,--fbnominus",           "minimum length of BLAST self hit to minus strand is <n>",     "minimum length of BLAST self hit to minus strand is <n>",         \%opt_HH, \@opt_order_A);
+opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnominus",           "minimum percent id of BLAST self hit to minus strand is <x>", "minimum percent id of BLAST self hit to minus strand is <x>",     \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
@@ -123,6 +128,11 @@ my $options_okay =
                 'maxfambig=s'  => \$GetOptions_H{"--maxfambig"},
                 'fbcsize=s'    => \$GetOptions_H{"--fbcsize"},
                 'fbcall'       => \$GetOptions_H{"--fbcall"},
+                'fbword=s'     => \$GetOptions_H{"--fbword"},
+                'fbnominus'    => \$GetOptions_H{"--fbnominus"},
+                'fbmdiagok'    => \$GetOptions_H{"--fbmdiagok"},
+                'fbminuslen=s' => \$GetOptions_H{"--fbminuslen"},
+                'fbminuspid=s' => \$GetOptions_H{"--fbminuspid"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
@@ -1211,6 +1221,14 @@ sub parse_blast_output_for_self_hits {
 
   my %local_failstr_H = (); # fail string created in this subroutine for each sequence
 
+  my $do_minus_off_diagonal        = opt_Get("--fbnominus", \%opt_HH) ? 0 : 1; # do we consider off-diagonal self hits on the minus strand? 
+  my $do_minus_off_and_on_diagonal = ($do_minus_off_diagonal && opt_Get("--fbmdiagok", \%opt_HH)) ? 1 : 0; # do we consider on-diagonal  self hits on the minus strand 
+  my $minus_minlen = opt_Get("--fbminuslen", \%opt_HH);
+  my $minus_minpid = opt_Get("--fbminuspid", \%opt_HH);
+  my $ondiag = 0; # set to '1' if current hit is on-diagonal, '0' if not
+                  # a hit is on diagonal if: it is on + strand of subject and $qstart == $sstart && $qend == $send
+                  #                      OR  it is on - strand of subject and $qstart == $send   && $qend == $sstart
+
   open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   while(my $line = <IN>) { 
     # print "read line: $line";
@@ -1221,30 +1239,55 @@ sub parse_blast_output_for_self_hits {
     }
     
     my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
-    my $qlen;   # length of hit on query
-    my $slen;   # length of hit on subject
-    my $maxlen; # max of $qlen and $slen
-
-    # is this a self-hit? NOTE: we tried '-max_target_seqs 1' previously to enforce this was true but it doesn't work
-    # if one sequence is a subsequence of another you're not guaranteed to that the target selected will be self (example: KX765300.1 and MG520988.1)
     if($qaccver eq $sacc) { 
       # sanity check: query/subject should be to a sequence we expect
       if(! exists $nhit_HR->{$qaccver}){ 
-        ofile_FAIL("ERROR in $sub_name, found unexpected query $qaccver:\n$line", "RIBO", 1, $FH_HR); 
+        ofile_FAIL("ERROR in $sub_name, found unexpected query and subject $qaccver:\n$line", "RIBO", 1, $FH_HR); 
       }
-      if(! exists $nhit_HR->{$sacc}){ 
-        ofile_FAIL("ERROR in $sub_name, found unexpected subject $sacc:\n$line", "RIBO", 1, $FH_HR); 
+      my $qlen;   # length of hit on query
+      my $slen;   # length of hit on subject
+      my $maxlen; # max of $qlen and $slen
+      my $qstrand = ($qend >= $qstart) ? "+" : "-";
+      my $sstrand = ($send >= $sstart) ? "+" : "-";
+      if($qstrand ne "+") { # sanity check
+        ofile_FAIL("ERROR in $sub_name, query coordinates suggest minus strand\n$line", "RIBO", 1, $FH_HR); 
       }
+      if($sstrand eq "+") { $ondiag = (($qstart == $sstart) && ($qend == $send))   ? 1 : 0; }
+      else                { $ondiag = (($qstart == $send)   && ($qend == $sstart)) ? 1 : 0; }
       $nhit_HR->{$qaccver}++;
+      $qlen = abs($qstart - $qend) + 1;
+      $slen = abs($sstart - $send) + 1;
+      $maxlen = ($qlen > $slen) ? $qlen : $slen;
       
-      # determine if this is a self hit (qstart == sstart and qend == send) or a repeat (qstart != sstart || qend != send)
-      if(($qstart != $sstart) || ($qend != $send)) { 
-        # repeat, should we keep information on it? don't want to double count (repeat his will occur twice), so we
-        # use a simple rule to only pick one:
+      # determine if we should consider this hit as a self hit to a repetitive region worth failing the sequence for?:
+      # if    $sstrand eq "+" and $ondiag == 0, then YES
+      # elsif $sstrand eq "-" and $ondiag == 0 and --fbpminusok is used, then YES
+      # elsif $sstrand eq "-" and $ondiag == 1 and --fbmdiagoky is used, then YES
+      my $do_consider = 0;
+      if(($sstrand eq "+") && 
+         ($ondiag == 0)) { 
+        $do_consider = 1; 
+      }
+      elsif(($sstrand eq "-") && 
+            ($ondiag == 0)    && 
+            $do_minus_off_diagonal && 
+            ($maxlen >= $minus_minlen) && 
+            ($pident >= $minus_minpid)) { 
+        $do_consider = 1; 
+      }
+      elsif(($sstrand eq "-") && 
+            ($ondiag == 1)    && 
+            $do_minus_off_and_on_diagonal && 
+            ($maxlen >= $minus_minlen) && 
+            ($pident >= $minus_minpid)) { 
+        $do_consider = 1; 
+      }
+
+      if($do_consider) { 
+        # repeat, should we keep information on it? 
+        # don't want to double count (off-diagonal repeat hits usually occur twice on + strand), 
+        # so we use a simple rule to only pick one. Hits on - strand only occur once.
         if($qstart <= $sstart) { 
-          $qlen = abs($qstart - $qend) + 1;
-          $slen = abs($sstart - $send) + 1;
-          $maxlen = ($qlen > $slen) ? $qlen : $slen;
           # store information on it
           if(exists $local_failstr_H{$qaccver}) { 
             $local_failstr_H{$qaccver} .= ","; 
@@ -1253,7 +1296,8 @@ sub parse_blast_output_for_self_hits {
             $local_failstr_H{$qaccver} = ""; 
           }
           # now append the info
-          $local_failstr_H{$qaccver} .= "$maxlen:$qstart..$qend/$sstart..$send($pident|$gaps)";
+          my $pident2print = sprintf("%.1f", $pident);
+          $local_failstr_H{$qaccver} .= "$sstrand|len=$maxlen|$qstart..$qend/$sstart..$send|pid=$pident2print|ngap=$gaps";
         }
       }
     }
@@ -1408,7 +1452,8 @@ sub fblast_stage {
   initialize_hash_to_empty_string(\%curfailstr_H, $seqorder_AR);
 
   # split input sequence file into chunks and process each
-  my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH);
+  my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH); # number of sequences in each file that BLAST will be run on
+  my $wordsize  = opt_Get("--fbword", \%opt_HH);             # argument for -word_size option to blastn
   my $seqline = undef;
   my $seq = undef;
   my $cur_seqidx = 0;
@@ -1472,7 +1517,7 @@ sub fblast_stage {
         if(! $do_keep) { 
           new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         }
-        $blast_cmd  = $execs_H{"blastn"} . " -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
+        $blast_cmd  = $execs_H{"blastn"} . " -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
         # previously used max_target_seqs, but doesn't guarantee top hit will be to self if identical seq (or superseq) exists
         new_ribo_RunCommand($blast_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         # parse the blast output, keeping track of failures in curfailstr_H
