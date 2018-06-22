@@ -420,7 +420,6 @@ else { # $in_fasta_file must be defined
 # gi|675602128|gb|KJ925573.1| becomes KJ925573.1
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Reformatting names of sequences ", $progress_w, $log_FH, *STDOUT);
 my $check_fetched_names_format = (opt_Get("--fetch", \%opt_HH)) ? 1 : 0;
-$check_fetched_names_format = 1; # TEMP 
 reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $check_fetched_names_format, $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullfa", "$full_fasta_file", 1, "Fasta file with names possibly updated to accession.version");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
