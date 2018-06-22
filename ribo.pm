@@ -750,7 +750,7 @@ sub ribo_ConvertFetchedNameToAccVersion {
   }
   else { 
     if($do_die) { 
-      die "ERROR, in $sub_name, $fetched_name did not match the expected format for the $fetched_name"; 
+      die "ERROR, in $sub_name, $fetched_name did not match the expected format for a fetched sequence, expect something like: gi|675602128|gb|KJ925573.1|"; 
     }
     $accver_name = $fetched_name;
   }
