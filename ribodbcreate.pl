@@ -1517,7 +1517,7 @@ sub fblast_stage {
         if(! $do_keep) { 
           new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         }
-        $blast_cmd  = $execs_H{"blastn"} . " -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
+        $blast_cmd  = $execs_H{"blastn"} . " -evalue 1E-3 -dbsize 1000000 -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
         # previously used max_target_seqs, but doesn't guarantee top hit will be to self if identical seq (or superseq) exists
         new_ribo_RunCommand($blast_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         # parse the blast output, keeping track of failures in curfailstr_H
