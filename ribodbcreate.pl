@@ -75,14 +75,16 @@ opt_Add("--maxfambig",  "real",    0,                       $g,    undef,"--skip
 
 $g++;
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on self-BLAST hits";
-#              option    type        default  group requires     incompat                      preamble-output                                                  help-output    
-opt_Add("--fbcsize",    "integer",   20,        $g, undef, "--skipfblast",                       "set num seqs for each BLAST run to <n>",                      "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
-opt_Add("--fbcall",     "boolean",   0,         $g, undef, "--skipfblast,--fbcsize",             "do single BLAST run with all N seqs",                         "do single BLAST run with all N seqs (CAUTION: slow for large N)", \%opt_HH, \@opt_order_A);
-opt_Add("--fbword",     "integer",   20,        $g, undef, "--skipfblast,--fbcsize",             "set word_size for BLAST to <n>",                              "set word_size for BLAST to <n>",                                  \%opt_HH, \@opt_order_A);
-opt_Add("--fbnominus",  "boolean",   0,         $g, undef, "--skipfblast,--fbcsize",             "do not consider BLAST self hits to minus strand",             "do not consider BLAST self hits to minus strand",                 \%opt_HH, \@opt_order_A);
-opt_Add("--fbmdiagok",  "boolean",   0,         $g, undef, "--skipfblast,--fbcsize,--fbnominus", "consider on-diagonal BLAST self hits to minus strand",        "consider on-diagonal BLAST self hits to minus strand",            \%opt_HH, \@opt_order_A);
-opt_Add("--fbminuslen", "integer",   50,        $g, undef, "--skipfblast,--fbnominus",           "minimum length of BLAST self hit to minus strand is <n>",     "minimum length of BLAST self hit to minus strand is <n>",         \%opt_HH, \@opt_order_A);
-opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnominus",           "minimum percent id of BLAST self hit to minus strand is <x>", "minimum percent id of BLAST self hit to minus strand is <x>",     \%opt_HH, \@opt_order_A);
+#              option    type        default  group requires     incompat              preamble-output                                                  help-output    
+opt_Add("--fbcsize",    "integer",   20,        $g, undef, "--skipfblast",             "set num seqs for each BLAST run to <n>",                      "set num seqs for each BLAST run to <n>",                          \%opt_HH, \@opt_order_A);
+opt_Add("--fbcall",     "boolean",   0,         $g, undef, "--skipfblast",             "do single BLAST run with all N seqs",                         "do single BLAST run with all N seqs (CAUTION: slow for large N)", \%opt_HH, \@opt_order_A);
+opt_Add("--fbword",     "integer",   20,        $g, undef, "--skipfblast",             "set word_size for BLAST to <n>",                              "set word_size for BLAST to <n>",                                  \%opt_HH, \@opt_order_A);
+opt_Add("--fbevalue",   "real",      1,         $g, undef, "--skipfblast",             "set BLAST E-value cutoff to <x>",                             "set BLAST E-value cutoff to <x>",                                 \%opt_HH, \@opt_order_A);
+opt_Add("--fbdbsize",   "integer",   200000000, $g, undef, "--skipfblast",             "set BLAST dbsize value to <n>",                               "set BLAST dbsize value to <n>",                                   \%opt_HH, \@opt_order_A);
+opt_Add("--fbnominus",  "boolean",   0,         $g, undef, "--skipfblast",             "do not consider BLAST self hits to minus strand",             "do not consider BLAST self hits to minus strand",                 \%opt_HH, \@opt_order_A);
+opt_Add("--fbmdiagok",  "boolean",   0,         $g, undef, "--skipfblast,--fbnominus", "consider on-diagonal BLAST self hits to minus strand",        "consider on-diagonal BLAST self hits to minus strand",            \%opt_HH, \@opt_order_A);
+opt_Add("--fbminuslen", "integer",   50,        $g, undef, "--skipfblast,--fbnominus", "minimum length of BLAST self hit to minus strand is <n>",     "minimum length of BLAST self hit to minus strand is <n>",         \%opt_HH, \@opt_order_A);
+opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnominus", "minimum percent id of BLAST self hit to minus strand is <x>", "minimum percent id of BLAST self hit to minus strand is <x>",     \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
@@ -129,6 +131,8 @@ my $options_okay =
                 'fbcsize=s'    => \$GetOptions_H{"--fbcsize"},
                 'fbcall'       => \$GetOptions_H{"--fbcall"},
                 'fbword=s'     => \$GetOptions_H{"--fbword"},
+                'fbevalue=s'   => \$GetOptions_H{"--fbevalue"},
+                'fbdbsize=s'   => \$GetOptions_H{"--fbdbsize"},
                 'fbnominus'    => \$GetOptions_H{"--fbnominus"},
                 'fbmdiagok'    => \$GetOptions_H{"--fbmdiagok"},
                 'fbminuslen=s' => \$GetOptions_H{"--fbminuslen"},
@@ -1234,11 +1238,11 @@ sub parse_blast_output_for_self_hits {
     # print "read line: $line";
     chomp $line;
     my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 10) { 
-      ofile_FAIL("ERROR in $sub_name, did not read 10 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
+    if(scalar(@el_A) != 11) { 
+      ofile_FAIL("ERROR in $sub_name, did not read 11 tab-delimited columns on line $line", "RIBO", 1, $FH_HR); 
     }
     
-    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send) = @el_A;
+    my ($qaccver, $qstart, $qend, $nident, $length, $gaps, $pident, $sacc, $sstart, $send, $evalue) = @el_A;
     if($qaccver eq $sacc) { 
       # sanity check: query/subject should be to a sequence we expect
       if(! exists $nhit_HR->{$qaccver}){ 
@@ -1297,7 +1301,7 @@ sub parse_blast_output_for_self_hits {
           }
           # now append the info
           my $pident2print = sprintf("%.1f", $pident);
-          $local_failstr_H{$qaccver} .= "$sstrand|len=$maxlen|$qstart..$qend/$sstart..$send|pid=$pident2print|ngap=$gaps";
+          $local_failstr_H{$qaccver} .= "$sstrand|e=$evalue|len=$maxlen|$qstart..$qend/$sstart..$send|pid=$pident2print|ngap=$gaps";
         }
       }
     }
@@ -1452,8 +1456,10 @@ sub fblast_stage {
   initialize_hash_to_empty_string(\%curfailstr_H, $seqorder_AR);
 
   # split input sequence file into chunks and process each
-  my $chunksize = opt_Get("--fbcall", \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH); # number of sequences in each file that BLAST will be run on
-  my $wordsize  = opt_Get("--fbword", \%opt_HH);             # argument for -word_size option to blastn
+  my $chunksize = opt_Get("--fbcall",   \%opt_HH) ? $nseq : opt_Get("--fbcsize", \%opt_HH); # number of sequences in each file that BLAST will be run on
+  my $wordsize  = opt_Get("--fbword",   \%opt_HH); # argument for -word_size option to blastn
+  my $evalue    = opt_Get("--fbevalue", \%opt_HH); # argument for -evalue option to blastn
+  my $dbsize    = opt_Get("--fbdbsize", \%opt_HH); # argument for -dbsize option to blastn
   my $seqline = undef;
   my $seq = undef;
   my $cur_seqidx = 0;
@@ -1517,7 +1523,7 @@ sub fblast_stage {
         if(! $do_keep) { 
           new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         }
-        $blast_cmd  = $execs_H{"blastn"} . " -evalue 1E-3 -dbsize 1000000 -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send\" > $chunk_blast_file";
+        $blast_cmd  = $execs_H{"blastn"} . " -evalue $evalue -dbsize $dbsize -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send evalue\" > $chunk_blast_file";
         # previously used max_target_seqs, but doesn't guarantee top hit will be to self if identical seq (or superseq) exists
         new_ribo_RunCommand($blast_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         # parse the blast output, keeping track of failures in curfailstr_H
