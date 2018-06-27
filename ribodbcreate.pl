@@ -14,6 +14,7 @@ my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_vecplus_dir       = undef;
 my $env_ribotax_dir       = undef;
 my $env_riboblast_dir     = undef;
+my $env_ribouclust_dir    = undef;
 #my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
 #my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
@@ -53,7 +54,8 @@ opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,
 opt_Add("-n",           "integer", 1,                       $g,    undef, undef,       "use <n> CPUs",                                            "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
 opt_Add("--fetch",      "string",  undef,                   $g,    undef, "--fasta",   "fetch sequences using seqfetch query in <s>",             "fetch sequences using seqfetch query in <s>",                  \%opt_HH, \@opt_order_A);
 opt_Add("--fasta",      "string",  undef,                   $g,    undef, "--fetch",   "sequences provided as fasta input in <s>",                "don't fetch sequences, <s> is fasta file of input sequences",  \%opt_HH, \@opt_order_A);
-opt_Add("--keep",      "boolean", 0,                        $g,    undef,   undef,     "keep all intermediate files",                             "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
+opt_Add("--keep",      "boolean",  0,                       $g,    undef, undef,       "keep all intermediate files",                             "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
+opt_Add("--special",    "string",  undef,                   $g,    undef, undef,       "read list of special species taxids from <s>",            "read list of special species taxids from <s>",                 \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for skipping stages";
 #               option  type       default               group   requires                incompat   preamble-output                                                 help-output    
@@ -103,6 +105,10 @@ $opt_group_desc_H{++$g} = "options for controlling the stage that filters based 
 opt_Add("--ficlass",     "boolean",  0,                     $g,    undef, "--skipfingrp,--fiphylum", "perform ingroup analysis at class  level",              "perform ingroup analysis at class  level [default: order]", \%opt_HH, \@opt_order_A);
 opt_Add("--fiphylum",    "boolean",  0,                     $g,    undef, "--skipfingrp,--ficlass",  "perform ingroup analysis at phylum level",              "perform ingroup analysis at phylum level [default: order]", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for controlling clustering stage:";
+#       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
+opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set UCLUST fractional identity to cluster at to <x>", "set UCLUST fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "advanced options for debugging and testing:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
 opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f",                 "do not execute commands; use output from previous run", "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
@@ -120,6 +126,7 @@ my $options_okay =
                 'fetch=s'      => \$GetOptions_H{"--fetch"},
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
                 'keep'         => \$GetOptions_H{"--keep"},
+                'special=s'    => \$GetOptions_H{"--special"},
                 'skipftaxid'   => \$GetOptions_H{"--skipftaxid"},
                 'skipfambig'   => \$GetOptions_H{"--skipfambig"},
                 'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
@@ -149,6 +156,7 @@ my $options_okay =
                 'rpos=s'       => \$GetOptions_H{"--rpos"},
                 'ficlass'      => \$GetOptions_H{"--ficlass"},
                 'fiphylum'     => \$GetOptions_H{"--fiphylum"},
+                'cfid'         => \$GetOptions_H{"--cfid"},
                 'prvcmd'       => \$GetOptions_H{"--prvcmd"}); 
 
 
@@ -200,20 +208,25 @@ my $do_clustr = opt_Get("--skipclustr", \%opt_HH) ? 0 : 1;
 my $do_listms = opt_Get("--skiplistms", \%opt_HH) ? 0 : 1;
 my $do_prvcmd = opt_Get("--prvcmd",     \%opt_HH) ? 1 : 0;
 my $do_keep   = opt_Get("--keep",       \%opt_HH) ? 1 : 0;
+my $do_special= opt_IsUsed("--special", \%opt_HH) ? 1 : 0;
 
 # do checks that are too sophisticated for epn-options.pm
 if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH)))) { 
   die "ERROR, neither --fetch nor --fasta options were used. Exactly one must be.";
 }
 
-my $in_fetch_file = opt_Get("--fetch", \%opt_HH); # this will be undefined unless --fetch set on the command line
-my $in_fasta_file = opt_Get("--fasta", \%opt_HH); # this will be undefined unless --fasta set on the command line
+my $in_fetch_file   = opt_Get("--fetch", \%opt_HH);   # this will be undefined unless --fetch set on the command line
+my $in_fasta_file   = opt_Get("--fasta", \%opt_HH);   # this will be undefined unless --fasta set on the command line
+my $in_special_file = opt_Get("--special", \%opt_HH); # this will be undefined unless --special used on the command line
 # verify required files exist
 if(defined $in_fetch_file) { 
   ribo_CheckIfFileExistsAndIsNonEmpty($in_fetch_file, "--fetch argument", undef, 1); 
 }
 if(defined $in_fasta_file) { 
   ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
+}
+if(defined $in_special_file) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1); 
 }
 
 # now that we know what steps we are doing, make sure that:
@@ -227,7 +240,7 @@ my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_versio
 my $rlc_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;
-if($do_ftaxid || $do_fingrp || $do_fvecsc) { 
+ if($do_ftaxid || $do_fingrp || $do_fvecsc) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
   if($do_fvecsc) { 
     $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
@@ -272,6 +285,11 @@ if($do_fribos) {
 
   $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
   $execs_H{"ribolengthchecker"} = $env_ribotyper_dir  . "/ribolengthchecker.pl";
+}
+
+if($do_clustr) { 
+  my $env_ribouclust_dir = ribo_VerifyEnvVariableIsValidDir("RIBOUCLUSTDIR");
+  $execs_H{"usearch"} = $env_ribouclust_dir  . "/usearch";
 }
 
 # either --pos or both of --lpos and --rpos are required
@@ -387,20 +405,44 @@ my $start_secs;
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Validating input files", $progress_w, $log_FH, *STDOUT);
 
 # parse the modelinfo file, this tells us where the CM files are
-my @family_order_A     = (); # family names, in order
-my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
-my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
-my $family;
+my @tmp_family_order_A     = (); # family name, in order, temporary because we enforce that there is only 1 before continuing
+my %tmp_family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @tmp_family_order_A, value is CM file for that family
+my %tmp_family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @tmp_family_order_A, value is consensus length for that family
+my $family           = undef;
+my $family_modelname = undef;
+my $family_modellen  = undef;
 
 if($do_fribos) { 
-  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H);
+  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelname_H, \%tmp_family_modellen_H);
 
-  # verify the CM files listed in $rlc_modelinfo_file exist
-  foreach $family (@family_order_A) { 
-    if(! -s $family_modelname_H{$family}) { 
-      die "Model file $family_modelname_H{$family} specified in $rlc_modelinfo_file does not exist or is empty";
+  # verify that we only have 1 CM file listed in the $rlc_modelinfo_file, and that it exists
+  if(scalar(@tmp_family_order_A) != 1) { 
+    ofile_FAIL("ERROR, expected exactly 1 model listed in $rlc_modelinfo_file, but read " . scalar(@tmp_family_order_A), $pkgstr, $!, $ofile_info_HH{"FH"}); 
+  }
+  $family = $tmp_family_order_A[0];
+  $family_modelname = $tmp_family_modelname_H{$family};
+  $family_modellen  = $tmp_family_modellen_H{$family};
+  foreach $family (@tmp_family_order_A) { 
+    if(! -s $family_modelname) { 
+      ofile_FAIL("ERROR, model file $family_modelname specified in $rlc_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
     }
   }
+}
+
+my %taxid_is_special_H = (); # key is taxid (species level), value is '1' if listed in $in_special_file, does not exist otherwise
+my $line;
+if($do_special) { 
+  open(IN, $in_special_file)  || ofile_FileOpenFailure($in_special_file,  "RIBO", "ribodbcreate.pl::main()", $!, "reading", $ofile_info_HH{"FH"});
+  while($line = <IN>) { 
+    chomp $line;
+    $line =~ s/^\s+//;
+    $line =~ s/\s+$//;
+    if($line !~ m/^\d+$/) { 
+      ofile_FAIL("ERROR reading $in_special_file, expected only single integers on each line, got $line", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+    }
+    $taxid_is_special_H{$line} = 1; 
+  }
+  close(IN);
 }
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
@@ -456,7 +498,9 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # tbl file was not sorted properly. That shouldn't happen,
                    # but if somehow it does then we want to know about it.
 my %seqnambig_H  = (); # number of ambiguous nucleotides per sequence
+my %seqtaxid_H   = (); # taxid, from srcchk of each sequence, remains empty if srcchk does not need to be run
 my @seqorder_A   = (); # array of sequence names in order they appeared in the file
+my %is_centroid_H = (); # key is sequence name, value is 1 if sequence is a centroid, key does not exist if sequence is not a centroid
 my $nseq = 0;
 my $full_list_file = $out_root . ".full.list";
 
@@ -478,15 +522,17 @@ if(! $do_prvcmd) {
 # create the ordered array of sequence anmes
 
 ###########################################################################################
-# Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_fingrp)
+# Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_fingrp || $do_special)
 ###########################################################################################
 my $full_srcchk_file = undef;
-if($do_ftaxid || $do_fingrp) { 
+if($do_ftaxid || $do_fingrp || $do_special) { 
   $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
   $full_srcchk_file = $out_root . ".full.srcchk";
   if(! $do_prvcmd) { 
     new_ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
+  # parse srcchk output to fill %seqtaxid_H
+  parse_srcchk_file($full_srcchk_file, \%seqtaxid_H, \@seqorder_A, \%ofile_info_HH);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 1, "srcchk output for all $nseq input sequences");
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
@@ -521,7 +567,7 @@ if($do_fambig) {
       $maxnambig = $maxfambig * $seqlen_H{$seqname}; 
     }
     if($seqnambig_H{$seqname} > $maxnambig) { 
-      $curfailstr_H{$seqname} = "ambig[" . $seqnambig_H{$seqname} . "];"; 
+      $curfailstr_H{$seqname} = "ambig[" . $seqnambig_H{$seqname} . "];;"; 
     }
     else { 
       $curfailstr_H{$seqname} = "";
@@ -537,7 +583,7 @@ if($do_fambig) {
 if($do_ftaxid) { 
   $stage_key = "ftaxid";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering for specified species ", $progress_w, $log_FH, *STDOUT);
-  $npass = parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_six_column_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+  $npass = parse_srcchk_and_tax_files_for_specified_species($full_srcchk_file, $taxonomy_tree_six_column_file, \%seqtaxid_H, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
   
@@ -612,7 +658,7 @@ if($do_fribos) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 1, "output of ribolengthchecker");
   
   # parse ribolengthchecker tbl file
-  my ($rt_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, $do_fmspan, \%family_modellen_H, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
+  my ($rt_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, $do_fmspan, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt_npass, $nseq-$rt_npass), $log_FH, *STDOUT);
 
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs ribolengthchecker identified as too long", $progress_w, $log_FH, *STDOUT);
@@ -657,42 +703,99 @@ else {
     if(opt_Get("--fiphylum", \%opt_HH)) { $level = "phylum"; }
 
     # merge alignments created by ribolengthchecker with esl-alimerge
-    foreach my $class (keys %family_modelname_H) { 
-      my $merged_rfonly_stk_file    = $out_root . "." . $stage_key . "." . $class . ".rfonly.stk";
-      my $merged_rfonly_alipid_file = $out_root . "." . $stage_key . "." . $class . ".rfonly.alipid";
-      my $merged_list_file          = $out_root . "." . $stage_key . "." . $class . ".list";
-      my $taxinfo_wlevel_file       = $out_root . "." . $stage_key . "." . $class . ".taxinfo_wlevel.txt";
-      my $alipid_analyze_out_file   = $out_root . "." . $stage_key . "." . $class . ".alipid_analyze.out";
-      my $alipid_analyze_tab_file   = $out_root . "." . $stage_key . "." . $class . ".alipid.sum.tab.txt";
+    my $merged_rfonly_stk_file    = $out_root . "." . $stage_key . ".rfonly.stk";
+    my $merged_rfonly_alipid_file = $out_root . "." . $stage_key . ".rfonly.alipid";
+    my $merged_list_file          = $out_root . "." . $stage_key . ".list";
+    my $taxinfo_wlevel_file       = $out_root . "." . $stage_key . ".taxinfo_wlevel.txt";
+    my $alipid_analyze_out_file   = $out_root . "." . $stage_key . ".alipid_analyze.out";
+    my $alipid_analyze_tab_file   = $out_root . "." . $stage_key . ".alipid.sum.tab.txt";
+    
+    my $alimerge_cmd       = "ls " . $out_root . "*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - > $merged_rfonly_stk_file";
+    my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
+    my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
+    my $find_tax_cmd       = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile $taxinfo_wlevel_file";
+    my $alipid_analyze_cmd = "perl alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
       
-      my $alimerge_cmd       = "ls " . $out_root . "*" . $class . "*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - > $merged_rfonly_stk_file";
-      my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
-      my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
-      my $find_tax_cmd       = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile $taxinfo_wlevel_file";
-      my $alipid_analyze_cmd = "perl alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key.$class > $alipid_analyze_out_file";
+    if(! $do_prvcmd) { 
+      new_ribo_RunCommand($alimerge_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "rfonlystk", "$merged_rfonly_stk_file", 1, "merged RF-column-only alignment");
       
-      if(! $do_prvcmd) { 
-        new_ribo_RunCommand($alimerge_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "rfonlystk", "$merged_rfonly_stk_file", 1, "merged RF-column-only alignment of $class sequences");
-        
-        new_ribo_RunCommand($alipid_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "alipid", "$merged_rfonly_alipid_file", 1, "esl-alipid output for $merged_rfonly_stk_file");
-        
-        new_ribo_RunCommand($alistat_cmd,        $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "list", "$merged_list_file", 1, "list of sequences in $merged_rfonly_stk_file");
-        
-        new_ribo_RunCommand($find_tax_cmd,       $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "taxinfo-level", "$taxinfo_wlevel_file", 1, "taxinfo file with level for sequences in $merged_list_file");
-
-        new_ribo_RunCommand($alipid_analyze_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . $class . "alipid-analyze", "$alipid_analyze_out_file", 1, "output file from alipid-taxinfo-analyze.pl");
-      }
-
-      $npass = parse_alipid_analyze_tab_file($alipid_analyze_tab_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+      new_ribo_RunCommand($alipid_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$merged_rfonly_alipid_file", 1, "esl-alipid output for $merged_rfonly_stk_file");
+      
+      new_ribo_RunCommand($alistat_cmd,        $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "list", "$merged_list_file", 1, "list of sequences in $merged_rfonly_stk_file");
+      
+      new_ribo_RunCommand($find_tax_cmd,       $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "taxinfo-level", "$taxinfo_wlevel_file", 1, "taxinfo file with level for sequences in $merged_list_file");
+      
+      new_ribo_RunCommand($alipid_analyze_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid-analyze", "$alipid_analyze_out_file", 1, "output file from alipid-taxinfo-analyze.pl");
     }
+
+    $npass = parse_alipid_analyze_tab_file($alipid_analyze_tab_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
     
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   } # end of $do_fingrp
+
+  ######################################################################################
+  # 'clustr' stage: stage that clusters remaining sequences and picks a representative 
+  ######################################################################################
+  if($do_clustr) { 
+    my $stage_key = "clustr";
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Clustering surviving sequences with uclust", $progress_w, $log_FH, *STDOUT);
+    my $cluster_fid = opt_Get("--cfid", \%opt_HH);
+    # create the fasta file to use as input to uclust
+    my $uclust_in_list_file   = $out_root . "." . $stage_key . ".in.list";
+    my $uclust_in_fasta_file  = $out_root . "." . $stage_key . ".in.fa";
+    my $uclust_out_fasta_file = $out_root . "." . $stage_key . ".out.fa";
+    my $uclust_out_list_file  = $out_root . "." . $stage_key . ".out.list";
+    my $uclust_summary_file   = $out_root . "." . $stage_key . ".summary";
+    my $uclust_msa_file       = $out_root . "." . $stage_key . ".msa";
+    my $uclust_out_file       = $out_root . "." . $stage_key . ".out";
+    
+#    if(! $do_prvcmd) { 
+    if(1) { 
+      # create the list file
+      open(LIST, ">", $uclust_in_list_file) || ofile_FileOpenFailure($uclust_in_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      foreach $seqname (@seqorder_A) { 
+        if($seqfailstr_H{$seqname} eq "") { 
+          print LIST $seqname . "\n";
+        }
+      }
+      close(LIST);
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".inlist", "$uclust_in_list_file", 1, "list of sequences that survived to cluster stage");
+      
+      # fetch the sequences
+      my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $uclust_in_list_file > $uclust_in_fasta_file";
+      new_ribo_RunCommand($sfetch_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".fa", "$uclust_in_fasta_file", 1, "fasta file with sequences that survived to cluster stage");
+      
+      # cluster the sequences
+      my $uclust_cmd = $execs_H{"usearch"} . " -cluster_fast $uclust_in_fasta_file -id $cluster_fid -centroids $uclust_out_fasta_file -uc $uclust_summary_file -msaout $uclust_msa_file > $uclust_out_file 2>&1";
+      new_ribo_RunCommand($uclust_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".centroid", "$uclust_out_fasta_file",  1, "uclust centroid output fasta file");
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".summary",  "$uclust_summary_file",    1, "uclust summary output file");
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".msa",      "$uclust_msa_file" . "*",  1, "uclust msa output files");
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".out",      "$uclust_out_file",        1, "uclust output");
+      
+      # determine which sequences are centroids by running esl-seqstat -a on uclust fasta output
+      my $seqstat_cmd = "esl-seqstat -a $uclust_out_fasta_file | grep ^\= | awk '{ print \$2 }' > $uclust_out_list_file";
+      new_ribo_RunCommand($seqstat_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      open(LIST, $uclust_out_list_file) || ofile_FileOpenFailure($uclust_out_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      while($seqname = <LIST>) { 
+        chomp $seqname;
+        if(! exists $seqlen_H{$seqname}) { 
+          ofile_FAIL("ERROR, uclust selected unexpected sequence $seqname as a centroid", $pkgstr, 1, $ofile_info_HH{"FH"});
+        }
+        $is_centroid_H{$seqname} = 1;
+      }
+      close(LIST);
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$uclust_out_list_file", 1, "list of sequences selected as centroids by uclust");
+    }
+  }
+  
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 } # end of else entered if $npass_check1 > 0
 
 ##########
@@ -702,17 +805,34 @@ else {
 my $out_tbl = $out_root . ".tbl";
 my $pass_fail = undef;
 my $seqfailstr = undef;
+my $cluststr   = undef;
+my $specialstr = undef;
 open(OUT, ">", $out_tbl) || ofile_FileOpenFailure($out_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
 foreach $seqname (@seqorder_A) { 
   if($seqfailstr_H{$seqname} eq "") { 
     $pass_fail = "PASS";
     $seqfailstr = "-";
+    if($do_clustr) { 
+      $cluststr = $is_centroid_H{$seqname} ? "C" : "NC";
+    }
+    else { 
+      $cluststr = "-";
+    }
   }
   else { 
     $pass_fail = "FAIL";
     $seqfailstr = $seqfailstr_H{$seqname};
+    $cluststr = "-";
   }
-  printf OUT ("%-5d  %-30s  %4s  %s\n", $seqidx_H{$seqname}, $seqname, $pass_fail, $seqfailstr);
+
+  if($do_special) { 
+    $specialstr = ($taxid_is_special_H{$seqtaxid_H{$seqname}}) ? "*yes*" : "*no*";
+  }
+  else { 
+    $specialstr = "-";
+  }
+    
+  printf OUT ("%-5d  %-30s  %7d  %4s  %7s  %7s  %s\n", $seqidx_H{$seqname}, $seqname, $seqtaxid_H{$seqname}, $pass_fail, $cluststr, $specialstr, $seqfailstr);
 }
 close(OUT);
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "tbl", $out_tbl, 1, "tabular output summary file");
@@ -900,6 +1020,7 @@ sub filter_list_file {
 # Arguments:
 #   $srcchk_file:    name of srcchk output file to parse
 #   $tax_file:       name of tax file to parse
+#   $seqtaxid_HR:    ref to hash of taxids of each sequence
 #   $seqfailstr_HR:  ref to hash of failure string to add to here
 #   $seqorder_AR:    ref to array of sequences in order
 #   $out_root:       for naming output files
@@ -912,10 +1033,10 @@ sub filter_list_file {
 #################################################################
 sub parse_srcchk_and_tax_files_for_specified_species { 
   my $sub_name = "parse_srcchk_and_tax_files_for_specified_species";
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($srcchk_file, $tax_file, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($srcchk_file, $tax_file, $seqtaxid_HR, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %specified_species_H = ();
   my %curfailstr_H = ();  # will hold fail string 
@@ -924,26 +1045,14 @@ sub parse_srcchk_and_tax_files_for_specified_species {
 
   initialize_hash_to_empty_string(\%curfailstr_H, $seqorder_AR);
 
-  # PASS 1 of 2 through srrchk_file to initialize specified_species_H{} with keys of taxids we
-  # need to parse in $tax-file (initialize values for all keys to -1)
-  open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  # first line is header
-  my $line = <SRCCHK>;
-  while($line = <SRCCHK>) { 
-    #accessiontaxidorganism
-    #KJ925573.1100272uncultured eukaryote
-    #FJ552229.1221169uncultured Gemmatimonas sp.
-    chomp $line;
-    my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 3) { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+  foreach $seqname (@{$seqorder_AR}) { 
+    if(! exists $seqtaxid_HR->{$seqname}) { 
+      ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in passed in %seqtaxid_H", "RIBO", $?, $FH_HR);
     }
-    my ($accver, $taxid, $organism) = @el_A;
-    $specified_species_H{$taxid} = -1;
+    $specified_species_H{$seqtaxid_HR->{$seqname}} = -1; 
   }
-  close(SRCCHK);
 
-  # PASS 1 of 1 through tax_file to fill specified_species_H{} for existing taxid keys read from srcchk_file
+  # read tax_file and fill specified_species_H{} for existing taxid keys read from srcchk_file
   open(TAX, $tax_file) || ofile_FileOpenFailure($tax_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   while($line = <TAX>) { 
     #1	1	no rank	1	0	0
@@ -964,7 +1073,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   }
   close(TAX);
     
-  # PASS 2 of 2 through srrchk_file to determine if each sequence passes or fails
+  # go through srrchk_file to determine if each sequence passes or fails
   open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   # first line is header
   my $diestr = ""; # if we add to this below for >= 1 sequences, we will fail after going through the full file
@@ -983,7 +1092,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
       $diestr .= "taxid: $taxid, accession: $accver\n";
     }
     elsif($specified_species_H{$taxid} == 0) { 
-      $curfailstr_H{$accver} = "not-specified-species;";
+      $curfailstr_H{$accver} = "not-specified-species;;";
     }
     elsif($specified_species_H{$taxid} != 1) { 
       ofile_FAIL("ERROR in $sub_name, tax file had unexpected value (not '0' or '1') for specified species for taxid $taxid ($accver)", "RIBO", $?, $FH_HR);
@@ -1042,7 +1151,7 @@ sub parse_parse_vecscreen_combined_file {
     }
     my ($seqname, $strength) = ($el_A[0], $el_A[6]);
     if($el_A[6] ne "Weak") { 
-      $curfailstr_H{$seqname} = "vecscreen-match[$strength];";
+      $curfailstr_H{$seqname} = "vecscreen-match[$strength];;";
     }
   }
   close(VEC);
@@ -1062,8 +1171,7 @@ sub parse_parse_vecscreen_combined_file {
 # Arguments:
 #   $in_file:             name of input tbl file to parse
 #   $do_fmspan:           '1' to filter based on model span too
-#   $mlen_HR:             ref to hash of model lengths, key is value in classification
-#                         column of $in_file
+#   $mlen:                model length 
 #   $seqfailstr_HR:       ref to hash of failure string to add to here
 #   $seqorder_AR:         ref to array of sequences in order
 #   $rlcpass_seqorder_AR: ref to array of sequences in order
@@ -1085,7 +1193,7 @@ sub parse_ribolengthchecker_tbl_file {
   my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $do_fmspan, $mlen_HR, $seqfailstr_HR, $seqorder_AR, $rlcpass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file, $do_fmspan, $mlen, $seqfailstr_HR, $seqorder_AR, $rlcpass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %rt_curfailstr_H  = (); # holds fail strings for ribotyper
   my %rlc_curfailstr_H = (); # holds fail strings for ribolengthchecker
@@ -1101,8 +1209,8 @@ sub parse_ribolengthchecker_tbl_file {
   my $in_pos  = undef;
   my $in_lpos = undef;
   my $in_rpos = undef;
-  my %max_lpos_H = ();
-  my %min_rpos_H = ();
+  my $max_lpos = undef;
+  my $min_rpos = undef;
   if($do_fmspan) { 
     if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
     if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
@@ -1110,18 +1218,16 @@ sub parse_ribolengthchecker_tbl_file {
 
     # determine maximum 5' start position and minimum 3' stop position required to be kept
     # for each family
-    foreach my $class (keys (%{$mlen_HR})) { 
-      if(defined $in_pos) { 
-        $max_lpos_H{$class} = $in_pos;
-        $min_rpos_H{$class} = $mlen_HR->{$class} - $in_pos + 1;
+    if(defined $in_pos) { 
+      $max_lpos = $in_pos;
+      $min_rpos = $mlen - $in_pos + 1;
+    }
+    else { 
+      if((! defined $in_lpos) || (! defined $in_rpos)) { 
+        ofile_FAIL("ERROR in $sub_name, --pos not used, but at least one of --lpos or --rpos not used either", "RIBO", $?, $FH_HR);
       }
-      else { 
-        if((! defined $in_lpos) || (! defined $in_rpos)) { 
-          ofile_FAIL("ERROR in $sub_name, --pos not used, but at least one of --lpos or --rpos not used either", "RIBO", $?, $FH_HR);
-        }
-        $max_lpos_H{$class} = $in_lpos;
-        $min_rpos_H{$class} = $in_rpos;
-      }
+      $max_lpos = $in_lpos;
+      $min_rpos = $in_rpos;
     }
   }
 
@@ -1151,23 +1257,20 @@ sub parse_ribolengthchecker_tbl_file {
 
       # add to failstr if necessary
       if($passfail eq "FAIL") { 
-        $rt_curfailstr_H{$target} = "ribotyper[" . $ufeatures . "];";
+        $rt_curfailstr_H{$target} = "ribotyper[" . $ufeatures . "];;";
       }
       else { # $passfail eq "PASS"
         # check for ribolengthchecker fail
         if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
-          $rlc_curfailstr_H{$target} = "ribolengthchecker[" . $lclass . "];";
+          $rlc_curfailstr_H{$target} = "ribolengthchecker[" . $lclass . "];;";
         }
         else { 
           $rlc_curfailstr_H{$target} = "";
           
           # check for model span fail
           if($do_fmspan) { 
-            if((! exists $max_lpos_H{$class}) || (! exists $min_rpos_H{$class})) { 
-              ofile_FAIL("ERROR in $sub_name, unexpected classification $class", "RIBO", $?, $FH_HR);
-            }
-            if(($mstart > $max_lpos_H{$class}) || ($mstop < $min_rpos_H{$class})) { 
-              $ms_curfailstr_H{$target} = "mdlspan[" . $mstart . "-" . $mstop . "];";
+            if(($mstart > $max_lpos) || ($mstop < $min_rpos)) { 
+              $ms_curfailstr_H{$target} = "mdlspan[" . $mstart . "-" . $mstop . "];;";
             }
             else { 
               $ms_curfailstr_H{$target} = "";
@@ -1326,7 +1429,7 @@ sub parse_blast_output_for_self_hits {
       ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
     }
     if(exists $local_failstr_H{$key}) { 
-      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];";
+      $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];;";
     }
   }
 
@@ -1611,10 +1714,9 @@ sub parse_alipid_analyze_tab_file {
       ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 20 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
     my ($accver, $type) = ($el_A[0], $el_A[4]);
-    printf("HEYA $accver $type\n");
     if(! exists $curfailstr_H{$accver}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $accver", "RIBO", 1, $FH_HR); }
     if($type =~ m/^O/) { 
-      $curfailstr_H{$accver} = "ingroup-analysis[$type];";
+      $curfailstr_H{$accver} = "ingroup-analysis[$type];;";
     }
   }
   close(TAB);
@@ -1622,4 +1724,59 @@ sub parse_alipid_analyze_tab_file {
   # now output pass and fail files
   return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, $out_root, "fingrp", $ofile_info_HHR);
   
+}
+
+#################################################################
+# Subroutine:  parse_srcchk_file()
+# Incept:      EPN, Tue Jun 26 15:36:11 2018
+#
+# Purpose:     Parse the srcchk output file run with option
+#              -f 'taxid,organism' and fill %{$seqtaxid_HR}
+#              with taxid for each sequence in the file.
+#
+# Arguments:
+#   $in_file:        name of srcchk output file to parse
+#   $seqtaxid_HR:    ref to hash of failure string to add to here
+#   $seqorder_AR:    ref to array of sequences in order
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies:       if a sequence in @{$seqorder_AR} does not have a taxid in $in_file
+#################################################################
+sub parse_srcchk_file { 
+  my $sub_name = "parse_srcchk_file";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $seqtaxid_HR, $seqorder_AR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my $seqname;
+
+  %{$seqtaxid_HR} = ();
+
+  open(SRCCHK, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  # first line is header
+  my $line = <SRCCHK>;
+  while($line = <SRCCHK>) { 
+    #accessiontaxidorganism
+    #AY343923.1	175243	uncultured Ascomycota	
+    #DQ181066.1	343769	Dilophotes sp. UPOL 000244	
+    chomp $line;
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 3) { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    my ($seqname, $taxid, $organism) = @el_A;
+    $seqtaxid_HR->{$seqname} = $taxid;
+  }
+  close(SRCCHK);
+
+  # make sure all sequences were read
+  foreach $seqname (@{$seqorder_AR}) { 
+    if(! exists $seqtaxid_HR->{$seqname}) { 
+      ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in $in_file\n", "RIBO", $?, $FH_HR);
+    }
+  }
 }
