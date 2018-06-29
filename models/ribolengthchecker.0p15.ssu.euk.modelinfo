@@ -1,5 +1,7 @@
-# each line has information on 1 family and has 3 tokens:
+# each line has information on 1 family and has 4 tokens:
 # token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
 # token 2: CM file name for this family
 # token 3: integer, consensus length for the CM for this family
-SSU.Eukarya ribolengthchecker.0p15.RF01960.cm 1851
+# token 4: model name in the CM file, must also match 'model' name for
+#          corresponding model in the ribotyper modelinfo file to be used
+SSU.Eukarya ribolengthchecker.0p15.RF01960.cm 1851 SSU_rRNA_eukarya
