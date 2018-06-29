@@ -60,16 +60,17 @@ opt_Add("--class",      "boolean", 0,                       $g,    undef, "--phy
 opt_Add("--phylum",     "boolean", 0,                       $g,    undef, "--class",   "work at phylum level for tax analyais, incl. ingroup test", "work at phylum level for tax analysis, incl. ingroup test [default: order]", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for skipping stages";
-#               option  type       default               group   requires                incompat   preamble-output                                                 help-output    
-opt_Add("--skipfambig", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ambiguous nucleotides",       "skip stage that filters based on ambiguous nucleotides",       \%opt_HH, \@opt_order_A);
-opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters by taxid",                             "skip stage that filters by taxid",                             \%opt_HH, \@opt_order_A);
-opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                   "skip stage that filters based on VecScreen",                   \%opt_HH, \@opt_order_A);
-opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",          "skip stage that filters based on BLAST hits to self",          \%opt_HH, \@opt_order_A);
-opt_Add("--skipfribos", "boolean", 0,                       $g,"--skipfmspan,--skipfingrup", undef,  "skip stage that filters based on ribotyper/ribolengthchecker", "skip stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
-opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",          "skip stage that filters based on model span of hits",          \%opt_HH, \@opt_order_A);
-opt_Add("--skipingrup", "boolean", 0,                        $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",            "skip stage that performs ingroup analysis",            \%opt_HH, \@opt_order_A);
-opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                 "skip stage that clusters sequences surviving all filters",     \%opt_HH, \@opt_order_A);
-opt_Add("--skiplistms", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that lists missing taxids",                         "skip stage that lists missing taxids",                         \%opt_HH, \@opt_order_A);
+#               option  type       default               group   requires                incompat   preamble-output                                                     help-output    
+opt_Add("--skipfambig", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ambiguous nucleotides",           "skip stage that filters based on ambiguous nucleotides",           \%opt_HH, \@opt_order_A);
+opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters by taxid",                                 "skip stage that filters by taxid",                                 \%opt_HH, \@opt_order_A);
+opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                       "skip stage that filters based on VecScreen",                       \%opt_HH, \@opt_order_A);
+opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",              "skip stage that filters based on BLAST hits to self",              \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribo1", "boolean", 0,                       $g,    undef,                   undef,  "skip 1st stage that filters based on ribotyper",                   "skip 1st stage that filters based on ribotyper",                   \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipfingrup",undef,  "skip 2nd stage that filters based on ribotyper/ribolengthchecker", "skip 2nd stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",              "skip stage that filters based on model span of hits",              \%opt_HH, \@opt_order_A);
+opt_Add("--skipingrup", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",                "skip stage that performs ingroup analysis",                        \%opt_HH, \@opt_order_A);
+opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                     "skip stage that clusters sequences surviving all filters",         \%opt_HH, \@opt_order_A);
+opt_Add("--skiplistms", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that lists missing taxids",                             "skip stage that lists missing taxids",                             \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ambiguous nucleotides";
 #              option   type       default               group  requires incompat                    preamble-output                                            help-output    
@@ -88,18 +89,25 @@ opt_Add("--fbmdiagok",  "boolean",   0,         $g, undef, "--skipfblast,--fbnom
 opt_Add("--fbminuslen", "integer",   50,        $g, undef, "--skipfblast,--fbnominus", "minimum length of BLAST self hit to minus strand is <n>",     "minimum length of BLAST self hit to minus strand is <n>",         \%opt_HH, \@opt_order_A);
 opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnominus", "minimum percent id of BLAST self hit to minus strand is <x>", "minimum percent id of BLAST self hit to minus strand is <x>",     \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
-# THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
+$opt_group_desc_H{++$g} = "options for controlling both ribotyper/ribolengthchecker stages";
 #       option          type       default               group  requires  incompat        preamble-output                                                 help-output    
-opt_Add("--model",      "string",  undef,                   $g,    undef, "--skipfribos", "model to use is <s> (e.g. SSU.Eukarya)",                       "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
-opt_Add("--rlcinfo",    "string",  undef,                   $g,    undef, "--skipfribos", "use rlc model info file <s> instead of default",               "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nomultfail", "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
-opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low scores",           "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
-opt_Add("--nocovfail",  "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
-opt_Add("--nodifffail", "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
-opt_Add("--lowppossc",  "real",    0.50,                    $g,    undef, "--skipfribos", "set --lowppossc <x> option for ribotyper to <x>",               "set --lowppossc <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",       "real",    0.99,                    $g,    undef, "--skipfribos", "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts",   "string",  undef,                   $g,    undef, "--skipfribos", "use ribotyper options listed in <s>",                           "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--model",      "string",  undef,                   $g,    undef, undef,          "model to use is <s> (e.g. SSU.Eukarya)",                       "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
+opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, undef,          "do not fail sequences in ribotyper with low scores",           "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
+opt_Add("--lowppossc",  "real",    0.50,                    $g,    undef, undef,          "set --lowppossc <x> option for ribotyper to <x>",               "set --lowppossc <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options for controlling the first stage that filters based on ribotyper";
+#       option          type       default               group  requires  incompat        preamble-output                                                 help-output    
+opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--skipfribo1", "use ribotyper options listed in <s> for round 1",              "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/ribolengthchecker";
+#       option          type       default        group       requires incompat        preamble-output                                                 help-output    
+opt_Add("--rlcinfo",    "string",  undef,            $g,        undef, "--skipfribo2", "use rlc model info file <s> instead of default",               "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2", "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2", "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
@@ -135,7 +143,8 @@ my $options_okay =
                 'skipfambig'   => \$GetOptions_H{"--skipfambig"},
                 'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
                 'skipfblast'   => \$GetOptions_H{"--skipfblast"},
-                'skipfribos'   => \$GetOptions_H{"--skipfribos"},
+                'skipfribo1'   => \$GetOptions_H{"--skipfribo1"},
+                'skipfribo2'   => \$GetOptions_H{"--skipfribo2"},
                 'skipfmspan'   => \$GetOptions_H{"--skipfmspan"},
                 'skipingrup'   => \$GetOptions_H{"--skipingrup"},
                 'skipclustr'   => \$GetOptions_H{"--skipclustr"},
@@ -152,14 +161,16 @@ my $options_okay =
                 'fbminuslen=s' => \$GetOptions_H{"--fbminuslen"},
                 'fbminuspid=s' => \$GetOptions_H{"--fbminuspid"},
                 'model=s'      => \$GetOptions_H{"--model"},
-                'rlcinfo=s'    => \$GetOptions_H{"--rlcinfo"},
                 'nomultfail'   => \$GetOptions_H{"--nomultfail"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
                 'nocovfail'    => \$GetOptions_H{"--nocovfail"},
                 'nodifffail'   => \$GetOptions_H{"--nodifffail"},
                 'lowpposs=s'   => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"},
-                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
+                'riboopts1=s'  => \$GetOptions_H{"--riboopts1"},
+                'rlcinfo=s'    => \$GetOptions_H{"--rlcinfo"},
+                'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
+                'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
                 'pos=s'        => \$GetOptions_H{"--pos"},
                 'lpos=s'       => \$GetOptions_H{"--lpos"},
                 'rpos=s'       => \$GetOptions_H{"--rpos"},
@@ -217,7 +228,8 @@ my $do_ftaxid = opt_Get("--skipftaxid", \%opt_HH) ? 0 : 1;
 my $do_fambig = opt_Get("--skipfambig", \%opt_HH) ? 0 : 1;
 my $do_fvecsc = opt_Get("--skipfvecsc", \%opt_HH) ? 0 : 1;
 my $do_fblast = opt_Get("--skipfblast", \%opt_HH) ? 0 : 1;
-my $do_fribos = opt_Get("--skipfribos", \%opt_HH) ? 0 : 1;
+my $do_fribo1 = opt_Get("--skipfribo1", \%opt_HH) ? 0 : 1;
+my $do_fribo2 = opt_Get("--skipfribo2", \%opt_HH) ? 0 : 1;
 my $do_fmspan = opt_Get("--skipfmspan", \%opt_HH) ? 0 : 1;
 my $do_ingrup = opt_Get("--skipingrup",  \%opt_HH) ? 0 : 1;
 my $do_clustr = opt_Get("--skipclustr", \%opt_HH) ? 0 : 1;
@@ -231,12 +243,19 @@ if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH))
   die "ERROR, neither --fetch nor --fasta options were used. Exactly one must be.";
 }
 
+# if we are skipping both ribotyper stages, make sure none of the ribotyper options related to both were used
+if((! $do_fribo1) && (! $do_fribo2)) { 
+  if(opt_IsUsed("--model",      \%opt_HH)) { die "ERROR, --model does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("--noscfail",   \%opt_HH)) { die "ERROR, --noscfail does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("--lowppossc",  \%opt_HH)) { die "ERROR, --lowppossc does not make sense in combination with --skipribo1 and --skipribo2"; }
+}
+
 # we don't allow user to skip ALL filter stages, they need to do at least one. 
 # You might think it should be okay to skip all filter stages if they want to 
 # do ingroup analysis or just clustering but both of those require the ribolengthchecker 
 # step because they require an alignment
-if((! $do_ftaxid) && (! $do_fambig) && (! $do_fvecsc) && (! $do_fblast) && (! $do_fribos) && (! $do_fmspan)) { 
-  die "ERROR, at least one of the following filter stages *must* not be skipped: ftaxid, fambig, fvecsc, fblast, fribos"; 
+if((! $do_ftaxid) && (! $do_fambig) && (! $do_fvecsc) && (! $do_fblast) && (! $do_fribo1) && (! $do_fribo2) && (! $do_fmspan)) { 
+  die "ERROR, at least one of the following filter stages *must* not be skipped: ftaxid, fambig, fvecsc, fblast, fribo2"; 
 }  
 
 my $in_fetch_file   = opt_Get("--fetch", \%opt_HH);   # this will be undefined unless --fetch set on the command line
@@ -259,7 +278,8 @@ if(defined $in_special_file) {
 # - required files exist
 # we do this for each stage individually
 
-my $in_riboopts_file = undef;
+my $in_riboopts1_file = undef;
+my $in_riboopts2_file = undef;
 my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".all.modelinfo";
 my $rlc_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
@@ -288,10 +308,28 @@ if($do_fblast) {
   $execs_H{"blastn"} = $env_riboblast_dir  . "/blastn";
 }
 
-if($do_fribos) { 
+if($do_fribo1) { 
   # make sure model exists
   if(! opt_IsUsed("--model", \%opt_HH)) { 
-    die "ERROR, --model is a required option, unless --skipfribos is used";
+    die "ERROR, --model is a required option, unless --skipfribo1 and --skipribo2 are both used";
+  }
+  # make sure the riboopts1 file exists if --riboopts1 used
+  if(opt_IsUsed("--riboopts1", \%opt_HH)) {
+    $in_riboopts1_file = opt_Get("--riboopts1", \%opt_HH);
+    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts1_file, "riboopts file specified with --riboopts1", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
+  }
+}
+
+if($do_fribo1 || $do_fribo2) { 
+  # make sure model exists
+  if(! opt_IsUsed("--model", \%opt_HH)) { 
+    die "ERROR, --model is a required option, unless --skipfribo1 and --skipribo2 are both used";
+  }
+
+  # make sure the riboopts2 file exists if --riboopts2 used
+  if(opt_IsUsed("--riboopts2", \%opt_HH)) {
+    $in_riboopts2_file = opt_Get("--riboopts2", \%opt_HH);
+    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts2_file, "riboopts file specified with --riboopts2", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
   }
 
   # make sure the ribolengthchecker modelinfo files exists
@@ -303,12 +341,6 @@ if($do_fribos) {
     $rlc_modelinfo_file = opt_Get("--rlcinfo", \%opt_HH); }
   if(! opt_IsUsed("--rlcinfo", \%opt_HH)) {
     ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with --rlcinfo", undef, 1); # 1 says: die if it doesn't exist or is empty
-  }
-
-  # make sure the riboinfo file exists if --riboopts used
-  if(opt_IsUsed("--riboopts", \%opt_HH)) {
-    $in_riboopts_file = opt_Get("--riboopts", \%opt_HH);
-    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts_file, "riboopts file specified with --riboopts", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
   }
 
   $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
@@ -367,7 +399,7 @@ $dir_tail =~ s/^.+\///; # remove all but last dir
 my $out_root = $dir . "/" . $dir_tail . ".ribodbcreate";
 
 # checkpoint related variables:
-# 'filters' (filters) checkpoint, after fribos stage
+# 'filters' (filters) checkpoint, after fribo2 stage
 my $npass_filters = 0; # number of seqs that pass all filter stages
 my $nfail_filters = 0; # number of seqs that pass all filter stages
 # 'ingrup' (ingroup) checkpoint, after ingrup stage
@@ -429,8 +461,6 @@ my $progress_w = 80; # the width of the left hand column in our progress output,
 my $start_secs;
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Validating input files", $progress_w, $log_FH, *STDOUT);
 
-
-
 # parse the modelinfo file, this tells us where the CM files are
 my @tmp_family_order_A     = (); # family name, in order, temporary because we enforce that there is only 1 before continuing
 my %tmp_family_modelfile_H = (); # key is family name (e.g. "SSU.Archaea") from @tmp_family_order_A, value is CM file for that family
@@ -440,10 +470,11 @@ my $family           = undef;
 my $family_modelfile = undef;
 my $family_modellen  = undef;
 my $family_fail_str  = "";
-my $local_rlc_modelinfo_file = $out_root . ".rlc.modelinfo";
-my $local_rlc_riboopts_file = $out_root . ".rlc.riboopts";
+my $rt_opts_str; # string of options for ribotyper 1 stage
+my $local_rlc_riboopts_file = $out_root . ".rlc.riboopts";   # riboopts file for fribo2 step
+my $local_rlc_modelinfo_file = $out_root . ".rlc.modelinfo"; # model info file for fribo2 step
 
-if($do_fribos) { 
+if($do_fribo1 || $do_fribo2) { 
   # make sure that the model specified with --model exists
   ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelfile_H, \%tmp_family_modellen_H, \%tmp_family_rtname_HA);
   $family = opt_Get("--model", \%opt_HH);
@@ -466,18 +497,31 @@ if($do_fribos) {
   print RLCINFO ("\n");
   close(RLCINFO);
 
-  # create the riboopts file to supply to ribolengthchecker, unless --riboopts <s> provided in which case use <s>
-  if(opt_IsUsed("--riboopts", \%opt_HH)) { 
-    my $cp_command = sprintf("cp %s $local_rlc_riboopts_file", opt_Get("--riboopts", \%opt_HH));
+  # create the riboopts1 string for ribotyper stage 1, unless --riboopts1 <s> provided in which case we read that
+  if(opt_IsUsed("--riboopts1", \%opt_HH)) { 
+    open(OPTS1, $in_riboopts1_file) || ofile_FileOpenFailure($in_riboopts1_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    $rt_opts_str = <OPTS1>;
+    chomp $rt_opts_str;
+    close(OPTS1);
+  }
+  else { 
+    $rt_opts_str = sprintf("--scfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
+    # --2slow doesn't apply here
+  }
+
+  # create the riboopts2 file to supply to ribolengthchecker, unless --riboopts2 <s> provided in which case use <s>
+  if(opt_IsUsed("--riboopts2", \%opt_HH)) { 
+    my $cp_command = sprintf("cp %s $local_rlc_riboopts_file", opt_Get("--riboopts2", \%opt_HH));
     new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
   else { 
-    open(RIBOOPTS, ">", $local_rlc_riboopts_file) || ofile_FileOpenFailure($local_rlc_riboopts_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(RIBOOPTS2, ">", $local_rlc_riboopts_file) || ofile_FileOpenFailure($local_rlc_riboopts_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
     my $riboopts_str = sprintf("--lowppossc %s --tcov %s", opt_Get("--lowppossc", \%opt_HH), opt_Get("--tcov", \%opt_HH));
     if(! opt_IsUsed("--nodifffail", \%opt_HH)) { $riboopts_str .= " --difffail"; }
     if(! opt_IsUsed("--nomultfail", \%opt_HH)) { $riboopts_str .= " --multfail"; }
-    printf RIBOOPTS ($riboopts_str . "\n"); 
-    close(RIBOOPTS);
+    if(! opt_IsUsed("--ribo2hmm",   \%opt_HH)) { $riboopts_str .= " --2slow"; }
+    printf RIBOOPTS2 ($riboopts_str . "\n"); 
+    close(RIBOOPTS2);
   }
 }
 
@@ -686,12 +730,29 @@ if($do_fblast) {
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
 
+##########################################################
+# 'fribo1' stage: stage that filters based on ribotyper.pl
+##########################################################
+if($do_fribo1) { 
+  $stage_key = "fribo1";
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
+  my $rt_out_file       = $out_root . ".ribotyper";
+  my $rt_short_out_file = $out_root . "/" . $dir_tail . ".ribodbcreate.ribotyper.short.out";
+  my $rt_command = $execs_H{"ribotyper"} . " $rt_opts_str $full_fasta_file $out_root > $rt_out_file";
+  if(! $do_prvcmd) { new_ribo_RunCommand($rt_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$rt_out_file", 0, "output of ribotyper");
+  
+  # parse ribotyper short file
+  $npass = parse_ribotyper_short_file($rt_short_out_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
+}
+
 ###################################################################
-# 'fribos' stage: stage that filters based on ribolengthchecker.pl
+# 'fribo2' stage: stage that filters based on ribolengthchecker.pl
 ###################################################################
 my @rlcpass_seqorder_A = (); # order of sequences that pass rlcpass stage
-if($do_fribos) { 
-  $stage_key = "fribos";
+if($do_fribo2) { 
+  $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribolengthchecker, filtering out ribotyper FAILures", $progress_w, $log_FH, *STDOUT);
     
   my $rlc_options = " -i $local_rlc_modelinfo_file ";
@@ -699,17 +760,16 @@ if($do_fribos) {
   if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $rlc_options .= " --nocovfail "; }
   my $rlc_out_file     = $out_root . ".ribolengthchecker";
   my $rlc_tbl_out_file = $out_root . ".ribolengthchecker.tbl.out";
-  my $local_fasta_file = ribo_RemoveDirPath($full_fasta_file);
   my $rlc_command = $execs_H{"ribolengthchecker"} . " $rlc_options --riboopts $local_rlc_riboopts_file $full_fasta_file $out_root > $rlc_out_file";
   if(! $do_prvcmd) { new_ribo_RunCommand($rlc_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 0, "output of ribolengthchecker");
   
   # parse ribolengthchecker tbl file
-  my ($rt_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, $do_fmspan, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt_npass, $nseq-$rt_npass), $log_FH, *STDOUT);
+  my ($rt2_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, $do_fmspan, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass), $log_FH, *STDOUT);
 
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs ribolengthchecker identified as too long", $progress_w, $log_FH, *STDOUT);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rlc_npass, $rt_npass-$rlc_npass), $log_FH, *STDOUT);
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rlc_npass, $rt2_npass-$rlc_npass), $log_FH, *STDOUT);
 
   $stage_key = "fmspan";
   if($do_fmspan) { 
@@ -987,7 +1047,7 @@ if($do_fblast) {
   push(@column_explanation_A, "#                          <f1> = fractional identity of hit alignment\n");
   push(@column_explanation_A, "#                          <d6> = number of gaps in hit alignment\n");
 }
-if($do_fribos) { 
+if($do_fribo2) { 
   push(@column_explanation_A, "# 'ribotyper[<s>]:         ribotyper failure with unexpected features listed in <s>\n");
   push(@column_explanation_A, "#                          see $out_root-rt/$dir_tail-rt.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
@@ -1367,6 +1427,66 @@ sub parse_parse_vecscreen_combined_file {
 }
 
 #################################################################
+# Subroutine:  parse_ribotyper_short_file()
+# Incept:      EPN, Fri Jun 29 15:25:03 2018
+#
+# Purpose:     Parse a short tbl output file from ribotyper.pl
+#
+# Arguments:
+#   $in_file:             name of input tbl file to parse
+#   $seqfailstr_HR:       ref to hash of failure string to add to here
+#   $seqorder_AR:         ref to array of sequences in order
+#   $opt_HHR:             ref to 2D hash of cmdline options
+#   $ofile_info_HHR:      ref to the ofile info 2D hash
+#
+# Returns:    Number of sequences that pass
+#
+# Dies:       if format of ribotyper short file is unexpected
+# 
+#################################################################
+sub parse_ribotyper_short_file { 
+  my $sub_name = "parse_ribotyper_short_file()";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $seqfailstr_HR, $seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my %curfailstr_H = ();  # will hold fail string 
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my $seqname;
+
+  initialize_hash_to_empty_string(\%curfailstr_H, $seqorder_AR);
+
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  # first line is header
+  my $line = <IN>;
+  while($line = <IN>) { 
+    if($line !~ m/^\#/) { 
+      ##idx  target      classification         strnd   p/f  unexpected_features
+      ##---  ----------  ---------------------  -----  ----  -------------------
+      #1     KJ757513.1  SSU.Eukarya            plus   PASS  -
+      #2     HQ659972.1  SSU.Eukarya            plus   PASS  -
+      #3     AF019063.1  SSU.Eukarya            plus   PASS  -
+      #4     MF683578.1  SSU.Eukarya            plus   FAIL  *LowCoverage:(0.926<0.990);*MultipleHits:(2);
+      chomp $line;
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 6) { 
+        ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 6 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      }
+      my ($seqname, $pass_fail, $ufeatures) = ($el_A[1], $el_A[4], $el_A[5]);
+      if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+      if($pass_fail eq "FAIL") { 
+        $curfailstr_H{$seqname} = "ribotyper1[" . $ufeatures . "];;";
+      }
+    }
+  }
+  close(IN);
+
+  # now output pass and fail files
+  return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ribo1", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
+}
+
+#################################################################
 # Subroutine:  parse_ribolengthchecker_tbl_file()
 # Incept:      EPN, Wed May 30 14:11:47 2018
 #
@@ -1455,7 +1575,7 @@ sub parse_ribolengthchecker_tbl_file {
 
       # add to failstr if necessary
       if($passfail eq "FAIL") { 
-        $rt_curfailstr_H{$target} = "ribotyper[" . $ufeatures . "];;";
+        $rt_curfailstr_H{$target} = "ribotyper2[" . $ufeatures . "];;";
       }
       else { # $passfail eq "PASS"
         # check for ribolengthchecker fail
