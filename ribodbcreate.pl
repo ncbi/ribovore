@@ -92,10 +92,12 @@ $opt_group_desc_H{++$g} = "options for controlling the stage that filters based 
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
 #       option          type       default               group  requires  incompat        preamble-output                                         help-output    
 opt_Add("--model",      "string",  undef,                   $g,    undef, "--skipfribos", "model to use is <s> (e.g. SSU.Eukarya)",                    "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
-opt_Add("-i",           "string",  undef,                   $g,    undef, "--skipfribos", "use rlc model info file <s> instead of default",       "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts",   "string",  undef,                   $g,    undef, "--skipfribos", "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--rlcinfo",    "string",  undef,                   $g,    undef, "--skipfribos", "use rlc model info file <s> instead of default",       "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nomultfail", "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with multiple hits", "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
 opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
 opt_Add("--nocovfail",  "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+opt_Add("--nodifffail", "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts",   "string",  undef,                   $g,    undef, "--skipfribos", "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
@@ -148,10 +150,12 @@ my $options_okay =
                 'fbminuslen=s' => \$GetOptions_H{"--fbminuslen"},
                 'fbminuspid=s' => \$GetOptions_H{"--fbminuspid"},
                 'model=s'      => \$GetOptions_H{"--model"},
-                'i=s'          => \$GetOptions_H{"-i"},
-                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
+                'rlcinfo=s'    => \$GetOptions_H{"--rlcinfo"},
+                'nomultfail'   => \$GetOptions_H{"--nomultfail"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
                 'nocovfail'    => \$GetOptions_H{"--nocovfail"},
+                'nodifffail'   => \$GetOptions_H{"--nodifffail"},
+                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'pos=s'        => \$GetOptions_H{"--pos"},
                 'lpos=s'       => \$GetOptions_H{"--lpos"},
                 'rpos=s'       => \$GetOptions_H{"--rpos"},
@@ -287,14 +291,14 @@ if($do_fribos) {
   }
 
   # make sure the ribolengthchecker modelinfo files exists
-  if(! opt_IsUsed("-i", \%opt_HH)) { 
+  if(! opt_IsUsed("--rlcinfo", \%opt_HH)) { 
     $rlc_modelinfo_file = $df_rlc_modelinfo_file;  
     ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
   }
-  else { # -i used
-    $rlc_modelinfo_file = opt_Get("-i", \%opt_HH); }
-  if(! opt_IsUsed("-i", \%opt_HH)) {
-    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
+  else { # --rlcinfo used
+    $rlc_modelinfo_file = opt_Get("--rlcinfo", \%opt_HH); }
+  if(! opt_IsUsed("--rlcinfo", \%opt_HH)) {
+    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with --rlcinfo", undef, 1); # 1 says: die if it doesn't exist or is empty
   }
 
   # make sure the riboinfo file exists
@@ -428,23 +432,48 @@ $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Validating input files"
 my @tmp_family_order_A     = (); # family name, in order, temporary because we enforce that there is only 1 before continuing
 my %tmp_family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @tmp_family_order_A, value is CM file for that family
 my %tmp_family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @tmp_family_order_A, value is consensus length for that family
+my %tmp_family_rtname_HA   = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is array of ribotyper models to align with this family
 my $family           = undef;
 my $family_modelname = undef;
 my $family_modellen  = undef;
 my $family_fail_str  = "";
+my $local_rlc_modelinfo_file = $out_root . ".rlc.modelinfo";
+my $local_rlc_riboopts_file = $out_root . ".rlc.riboopts";
 
 if($do_fribos) { 
   # make sure that the model specified with --model exists
-  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelname_H, \%tmp_family_modellen_H);
+  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelfile_H, \%tmp_family_modellen_H, \%tmp_family_rtname_HA);
   $family = opt_Get("--model", \%opt_HH);
-  if(! exists $tmp_family_modelname_H{$family}) { 
+  if(! exists $tmp_family_modelfile_H{$family}) { 
     foreach my $tmp_family (@tmp_family_order_A) { $family_fail_str .= $tmp_family. "\n"; }
     ofile_FAIL("ERROR, model $family specified with --model not listed in $rlc_modelinfo_file.\nValid options are:\n$family_fail_str", $pkgstr, $!, $ofile_info_HH{"FH"}); 
   }
-  $family_modelname = $tmp_family_modelname_H{$family};
+  $family_modelfile = $tmp_family_modelfile_H{$family};
   $family_modellen  = $tmp_family_modellen_H{$family};
-  if(! -s $family_modelname) { 
-    ofile_FAIL("ERROR, model file $family_modelname specified in $rlc_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
+  if(! -s $family_modelfile) { 
+    ofile_FAIL("ERROR, model file $family_modelfile specified in $rlc_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
+  }
+  # create the ribolengthchecker info file for $family
+  open(RLCINFO, ">", $local_rlc_modelinfo_file) || ofile_FileOpenFailure($local_rlc_modelinfo_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+  printf RLCINFO ("%s %s %s", $family, $family_modelfile, $family_modellen);
+  foreach my $rtname (@{$tmp_family_rtname_HA{$family}}) { 
+    printf RLCINFO (" %s", $rtname);
+  }
+  print RLCINFO ("\n");
+  close(RLCINFO);
+
+  # create the riboopts file to supply to ribolengthchecker, unless --riboopts <s> provided in which case use <s>
+  if(opt_IsUsed("--riboopts", \%opt_HH)) { 
+    my $cp_command = sprintf("cp %s $local_rlc_riboopts_file", opt_Get("--riboopts", \%opt_HH));
+    new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  }
+  else { 
+    open(RIBOOPTS, ">", $local_rlc_riboopts_file) || ofile_FileOpenFailure($local_rlc_riboopts_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    my $riboopts_str = sprintf("--lowppossc %s --tcov %s", opt_Get("--lowppossc", \%opt_HH), opt_Get("--tcov", \%opt_HH));
+    if(! opt_IsUsed("--nodifffail", \%opt_HH)) { $riboopts_str .= " --difffail"; }
+    if(! opt_IsUsed("--nomultfail", \%opt_HH)) { $riboopts_str .= " --multfail"; }
+    printf RIBOOPTS ($riboopts_str . "\n"); 
+    close(RIBOOPTS);
   }
 }
 
@@ -661,14 +690,13 @@ if($do_fribos) {
   if(! $do_prvcmd) { new_ribo_RunCommand("cp $in_riboopts_file $riboopts_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "riboopts", "$riboopts_file", 0, "copied .riboopts file");
   
-  my $rlc_options = "";
-  if(opt_IsUsed("-i",          \%opt_HH)) { $rlc_options .= " -i " . opt_Get("-i", \%opt_HH); }
-  if(opt_IsUsed("--noscfail",  \%opt_HH)) { $rlc_options .= " --noscfail "; }
-  if(opt_IsUsed("--nocovfail", \%opt_HH)) { $rlc_options .= " --nocovfail "; }
+  my $rlc_options = " -i $local_rlc_modelinfo_file ";
+  if(opt_IsUsed("--noscfail",    \%opt_HH)) { $rlc_options .= " --noscfail "; }
+  if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $rlc_options .= " --nocovfail "; }
   my $rlc_out_file     = $out_root . ".ribolengthchecker";
   my $rlc_tbl_out_file = $out_root . ".ribolengthchecker.tbl.out";
   my $local_fasta_file = ribo_RemoveDirPath($full_fasta_file);
-  my $rlc_command = $execs_H{"ribolengthchecker"} . " --riboopts $riboopts_file $rlc_options $full_fasta_file $out_root > $rlc_out_file";
+  my $rlc_command = $execs_H{"ribolengthchecker"} . " --riboopts $local_rlc_riboopts_file $full_fasta_file $out_root > $rlc_out_file";
   if(! $do_prvcmd) { new_ribo_RunCommand($rlc_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 0, "output of ribolengthchecker");
   
