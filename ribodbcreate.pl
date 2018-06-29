@@ -99,7 +99,7 @@ opt_Add("--nocovfail",  "boolean", 0,                       $g,    undef, "--ski
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
-opt_Add("--pos",         "integer",  undef,                 $g,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--pos",         "integer",  60,                    $g,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 
@@ -311,19 +311,6 @@ if($do_fribos) {
 if($do_clustr) { 
   my $env_ribouclust_dir = ribo_VerifyEnvVariableIsValidDir("RIBOUCLUSTDIR");
   $execs_H{"usearch"} = $env_ribouclust_dir  . "/usearch";
-}
-
-# either --pos or both of --lpos and --rpos are required
-my $in_pos  = undef;
-my $in_lpos = undef;
-my $in_rpos = undef;
-if($do_fmspan) { 
-  if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
-  if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
-  if(opt_IsUsed("--rpos", \%opt_HH)) { $in_rpos = opt_Get("--rpos", \%opt_HH); }
-  if((! defined $in_pos) && (! defined $in_lpos) && (! defined $in_rpos)) { 
-    die "ERROR, either --pos, or both --lpos and --rpos are required.";
-  }
 }
 
 # Currently, we require infernal and easel executables are in the user's path, 
@@ -1386,29 +1373,23 @@ sub parse_ribolengthchecker_tbl_file {
   # for %ms_curfailstr_H,  we only do pass/fail for those that survive ribotyper and ribolengthchecker
   # so we can't initialize those yet, we will fill in the FAILs and PASSes as we see them in the output
 
+  
+  # determine maximum 5' start position and minimum 3' stop position required to be kept
   my $in_pos  = undef;
   my $in_lpos = undef;
   my $in_rpos = undef;
   my $max_lpos = undef;
   my $min_rpos = undef;
-  if($do_fmspan) { 
-    if(opt_IsUsed("--pos",  \%opt_HH)) { $in_pos  = opt_Get("--pos", \%opt_HH); }
-    if(opt_IsUsed("--lpos", \%opt_HH)) { $in_lpos = opt_Get("--lpos", \%opt_HH); }
-    if(opt_IsUsed("--rpos", \%opt_HH)) { $in_rpos = opt_Get("--rpos", \%opt_HH); }
-
-    # determine maximum 5' start position and minimum 3' stop position required to be kept
-    # for each family
-    if(defined $in_pos) { 
-      $max_lpos = $in_pos;
-      $min_rpos = $mlen - $in_pos + 1;
-    }
-    else { 
-      if((! defined $in_lpos) || (! defined $in_rpos)) { 
-        ofile_FAIL("ERROR in $sub_name, --pos not used, but at least one of --lpos or --rpos not used either", "RIBO", $?, $FH_HR);
-      }
-      $max_lpos = $in_lpos;
-      $min_rpos = $in_rpos;
-    }
+  $in_pos  = opt_Get("--pos", \%opt_HH); # use this by default
+  if(opt_IsUsed("--lpos", \%opt_HH)) { 
+    # ignore --pos value, this also requires --rpos, epn-options already checked for this 
+    $max_lpos = opt_Get("--lpos", \%opt_HH);
+    $min_rpos = opt_Get("--rpos", \%opt_HH);
+    $in_pos = undef;
+  }
+  else { 
+    $max_lpos = $in_pos;
+    $min_rpos = $mlen - $in_pos + 1;
   }
 
   # parse each line of the output file
