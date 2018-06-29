@@ -106,7 +106,7 @@ opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfr
 opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
 opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2", "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
+opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
 opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2", "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
@@ -125,7 +125,7 @@ opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f", 
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribodbcreate.pl [-options] <file with seqfetch command> <output file name root>\n";
+my $usage    = "Usage: ribodbcreate.pl [-options] <output file name root>\n";
 $usage      .= "\n";
 my $synopsis = "ribodbcreate.pl :: create representative database of ribosomal RNA sequences";
 my $options_okay = 
@@ -598,6 +598,7 @@ my %not_centroid_H = (); # key is sequence name, value is 1 if sequence is NOT a
 my %width_H       = (); # hash with max widths of "target", "length", "index"
 my $nseq = 0;
 my $full_list_file = $out_root . ".full.seqlist";
+my $have_taxids = 0;
 
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
 ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
@@ -610,10 +611,6 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # index the sequence file
 if(! $do_prvcmd) { new_ribo_RunCommand("esl-sfetch --index $full_fasta_file > /dev/null", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullssi", $full_fasta_file . ".ssi", 0, ".ssi index file for full fasta file");
-
-# initialize the taxid hashes
-initialize_hash_to_empty_string(\%seqtaxid_H,  \@seqorder_A);
-initialize_hash_to_empty_string(\%seqgtaxid_H, \@seqorder_A);
 
 ###########################################################################################
 # Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_ingrup || $do_special)
@@ -629,6 +626,7 @@ if($do_ftaxid || $do_ingrup || $do_special) {
 
   # parse srcchk output to fill %seqtaxid_H
   parse_srcchk_file($full_srcchk_file, \%seqtaxid_H, \@seqorder_A, \%ofile_info_HH);
+  $have_taxids = 1;
 
   # get taxonomy file with taxonomic levels
   my $find_tax_cmd = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile $taxinfo_wlevel_file";
@@ -753,7 +751,7 @@ if($do_fribo1) {
 my @rlcpass_seqorder_A = (); # order of sequences that pass rlcpass stage
 if($do_fribo2) { 
   $stage_key = "fribo2";
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribolengthchecker, filtering out ribotyper FAILures", $progress_w, $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribolengthchecker.pl", $progress_w, $log_FH, *STDOUT);
     
   my $rlc_options = " -i $local_rlc_modelinfo_file ";
   if(opt_IsUsed("--noscfail",    \%opt_HH)) { $rlc_options .= " --noscfail "; }
@@ -1068,6 +1066,8 @@ foreach my $column_explanation_line (@column_explanation_A) {
 }  
 printf RDB ("# %*s  %-*s  %*s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, "idx", $width_H{"target"}, "seqname", $width_H{"length"}, "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
 printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", "idx", "seqname", "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
+my $taxid2print = undef;
+my $gtaxid2print = undef;
 foreach $seqname (@seqorder_A) { 
   if($seqfailstr_H{$seqname} eq "") { 
     $pass_fail  = "PASS";
@@ -1083,9 +1083,12 @@ foreach $seqname (@seqorder_A) {
 
   if($do_special) { $specialstr = ($taxid_is_special_H{$seqtaxid_H{$seqname}}) ? "*yes*" : "*no*"; }
   else            { $specialstr = "-"; }
-    
-  printf RDB ("# %-*s  %-*s  %-*d  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $seqtaxid_H{$seqname}, $seqgtaxid_H{$seqname}, $pass_fail, $cluststr, $specialstr, $seqfailstr);
-  printf TAB ("#%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $seqtaxid_H{$seqname}, $seqgtaxid_H{$seqname}, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+
+  $taxid2print  = ($have_taxids) ? $seqtaxid_H{$seqname} : "-";
+  $gtaxid2print = ($have_taxids) ? $seqgtaxid_H{$seqname} : "-";
+
+  printf RDB ("# %-*s  %-*s  %-*d  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+  printf TAB ("#%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
 }
 close(RDB);
 close(TAB);
