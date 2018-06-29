@@ -540,7 +540,7 @@ if($do_special) {
   }
   close(IN);
 }
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ribo_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################################
 # Preliminary stage: Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
