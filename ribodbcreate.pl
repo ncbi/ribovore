@@ -821,7 +821,7 @@ else {
     my $alimerge_cmd       = "ls " . $out_root . "*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - | esl-alimanip --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
     my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
     my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
-    my $alipid_analyze_cmd = "perl alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
+    my $alipid_analyze_cmd = "alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
       
     if(! $do_prvcmd) { new_ribo_RunCommand($alimerge_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "rfonlystk", "$merged_rfonly_stk_file", 0, "merged RF-column-only alignment");

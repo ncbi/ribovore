@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 use strict;
 
 my $usage = "perl alipid-taxinfo-analyze.pl\n\t<alipid file>\n\t<list file with seqs expected in alipid file>\n\t<tax_info file with group as 4th column>\n\t<output root>";
