@@ -770,27 +770,28 @@ sub ribo_ConvertFetchedNameToAccVersion {
 #   $modelinfo_file:       file to parse
 #   $env_ribo_dir:         directory in which CM files should be found
 #   $family_order_AR:      reference to array of family names, in order read from file, FILLED HERE
-#   $family_modelname_HR:  reference to hash, key is family name, value is path to model, FILLED HERE 
+#   $family_modelfile_HR:  reference to hash, key is family name, value is path to model, FILLED HERE 
 #   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
-#
+#   $family_rtname_HAR     reference to hash, key is family name, value is array of ribotyper model 
+#                          names to align with this model, FILLED HERE
 # Returns:     void; 
 #
 ################################################################# 
 sub ribo_ParseRLCModelinfoFile { 
-  my $nargs_expected = 5;
+  my $nargs_expected = 6;
   my $sub_name = "ribo_ParseModelinfoFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelname_HR, $family_modellen_HR) = @_;
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HR) = @_;
 
   open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
   while(my $line = <IN>) { 
-    ## each line has information on 1 family and has at least 4 tokens: 
+    ## each line has information on 1 family and at least 4 tokens: 
     ## token 1: Name for output files for this family
-    ## token 2: CM file name for this family
+    ## token 2: CM file name for this familyn
     ## token 3: integer, consensus length for the CM for this family
-    ## tokens 4 to N: name of ribotyper files with sequences that should be aligned with this model
+    ## token 4 to N: names of ribotyper models (e.g. SSU_rRNA_archaea) for which we'll use this model to align
     #SSU.Archaea RF01959.cm SSU_rRNA_archaea
     #SSU.Bacteria RF00177.cm SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
     chomp $line; 
@@ -798,13 +799,20 @@ sub ribo_ParseRLCModelinfoFile {
       $line =~ s/^\s+//; # remove leading whitespace
       $line =~ s/\s+$//; # remove trailing whitespace
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 3) { 
-        die "ERROR in $sub_name, not exactly 3 tokens found on line $line of $modelinfo_file";  
+      if(scalar(@el_A) < 4) { 
+        die "ERROR in $sub_name, less than 4 tokens found on line $line of $modelinfo_file";  
       }
-      my ($family, $modelname, $modellen) = @el_A;
+      my $family    = $el_A[0];
+      my $modelfile = $el_A[1];
+      my $modellen  = $el_A[2];
+      my @rtname_A = ();
+      for(my $i = 3; $i < scalar(@el_A); $i++) { 
+        push(@rtname_A, $el_A[$i]);
+      }
       push(@{$family_order_AR}, $family);
-      $family_modelname_HR->{$family} = $env_ribo_dir . "/" . $modelname;
+      $family_modelfil_HR->{$family} = $env_ribo_dir . "/" . $modelname;
       $family_modellen_HR->{$family}  = $modellen;
+      $family_rtname_HAR->{$family} = (@rtname_A);
     }
   }
   close(IN);

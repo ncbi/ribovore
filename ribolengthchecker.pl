@@ -163,6 +163,7 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
   if($extra_ribotyper_options =~ m/\s*\--scfail/)    { die "ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway"; }
   if($extra_ribotyper_options =~ m/\s*\--covfail/)   { die "ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway"; }
   if($extra_ribotyper_options =~ m/\s*\--minusfail/) { die "ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway"; }
+  if($extra_ribotyper_options =~ m/\s*\--inaccept/)  { die "ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway"; }
   close(RIBO);
 }
 
@@ -195,10 +196,13 @@ my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w,
 my @family_order_A     = (); # family names, in order
 my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
 my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
-ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H);
+my %family_rtname_HA   = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is array of ribotyper models to align with this family
+my $family;
+ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H, \%family_rtname_HA);
+# NOTE: the array of ribotyper models in family_rtname_HA for each family should match the models that are assigned to 
+# family $family in ribotyper, as encoded in the ribotyper model file, but THIS IS NOT CURRENTLY CHECKED FOR!
 
 # verify the CM files listed in $modelinfo_file exist
-my $family;
 foreach $family (@family_order_A) { 
   if(! -s $family_modelname_H{$family}) { 
     die "Model file $family_modelname_H{$family} specified in $modelinfo_file does not exist or is empty";
@@ -224,17 +228,27 @@ $start_secs = ribo_OutputProgressPrior("Running ribotyper", $progress_w, undef, 
 
 my $dir_out_tail = $out_root;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
+my $ribotyper_accept_file = $out_root . ".ribolengthchecker.ribotyper.accept";
 my $ribotyper_outdir      = $out_root . "-rt";
 my $ribotyper_outdir_tail = $dir_out_tail . "-rt";
 my $ribotyper_outfile     = $out_root . ".ribotyper.out";
-my $ribotyper_short_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
-my $ribotyper_long_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+my $ribotyper_short_file  = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
+my $ribotyper_long_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
 my $found_family_match;  # set to '1' if a sequence matches one of the families we are aligning for
 my @fail_str_A    = (); # array of strings of FAIL sequences to output 
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
 
+# create the .accept file to supply to ribotyper
+open(ACCEPT, ">", $accept_file) || die "ERROR unable to open $accept_file for writing";
+foreach $family (@family_order_A) { 
+  foreach my $rtname (@{$family_rtname_HA{$family})) { 
+    print ACCEPT $rtname . "\n";
+  }
+}
+close(ACCEPT);
+
 # run ribotyper
-my $ribotyper_options = " -f --keep --minusfail -n " . opt_Get("-n", \%opt_HH);
+my $ribotyper_options = " -f --keep --accept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
 if(! opt_IsUsed("--noscfail", \%opt_HH))  { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
