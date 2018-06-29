@@ -194,18 +194,18 @@ my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w,
 
 # parse the modelinfo file, this tells us where the CM files are
 my @family_order_A     = (); # family names, in order
-my %family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
+my %family_modelfile_H = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is CM file for that family
 my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
 my %family_rtname_HA   = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is array of ribotyper models to align with this family
 my $family;
-ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelname_H, \%family_modellen_H, \%family_rtname_HA);
+ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelfile_H, \%family_modellen_H, \%family_rtname_HA);
 # NOTE: the array of ribotyper models in family_rtname_HA for each family should match the models that are assigned to 
 # family $family in ribotyper, as encoded in the ribotyper model file, but THIS IS NOT CURRENTLY CHECKED FOR!
 
 # verify the CM files listed in $modelinfo_file exist
 foreach $family (@family_order_A) { 
-  if(! -s $family_modelname_H{$family}) { 
-    die "Model file $family_modelname_H{$family} specified in $modelinfo_file does not exist or is empty";
+  if(! -s $family_modelfile_H{$family}) { 
+    die "ERROR, model file $family_modelfile_H{$family} specified in $modelinfo_file does not exist or is empty";
   }
 }
 
@@ -239,16 +239,16 @@ my @fail_str_A    = (); # array of strings of FAIL sequences to output
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
 
 # create the .accept file to supply to ribotyper
-open(ACCEPT, ">", $accept_file) || die "ERROR unable to open $accept_file for writing";
+open(ACCEPT, ">", $ribotyper_accept_file) || die "ERROR unable to open $ribotyper_accept_file for writing";
 foreach $family (@family_order_A) { 
-  foreach my $rtname (@{$family_rtname_HA{$family})) { 
-    print ACCEPT $rtname . "\n";
+  foreach my $rtname (@{$family_rtname_HA{$family}}) { 
+    print ACCEPT $rtname . " acceptable\n";
   }
 }
 close(ACCEPT);
 
 # run ribotyper
-my $ribotyper_options = " -f --keep --accept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
+my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
 if(! opt_IsUsed("--noscfail", \%opt_HH))  { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
@@ -323,8 +323,8 @@ foreach $family (@family_order_A) {
     $cmalign_insert_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.ifile";
     $cmalign_el_file     = $out_root . ".ribolengthchecker." . $family . ".cmalign.elfile";
     $cmalign_out_file    = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
-    #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@ifile_str_A,       sprintf("# %-18s %6s %-12s sequences saved as $cmalign_insert_file\n", "Insert file of", "all", $family));
     push(@elfile_str_A,      sprintf("# %-18s %6s %-12s sequences saved as $cmalign_el_file\n", "EL file of", "all", $family));
@@ -361,8 +361,8 @@ foreach $family (@family_order_A) {
         print OUT $seqname . "\n";
       }
       close(OUT);
-      #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelname_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }
@@ -401,7 +401,7 @@ else {
     }
   }
   else { 
-    printf("#\n# No sequences failed ribotyper.\n");
+    printf("#\n# All sequences failed ribotyper.\n");
   }
   if(scalar(@nomatch_str_A) > 0) {
     printf("#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A)); 

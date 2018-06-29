@@ -768,7 +768,7 @@ sub ribo_ConvertFetchedNameToAccVersion {
 #              
 # Arguments: 
 #   $modelinfo_file:       file to parse
-#   $env_ribo_dir:         directory in which CM files should be found
+#   $env_ribo_dir:         directory in which CM files should be found, if undef, should be full path
 #   $family_order_AR:      reference to array of family names, in order read from file, FILLED HERE
 #   $family_modelfile_HR:  reference to hash, key is family name, value is path to model, FILLED HERE 
 #   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
@@ -782,7 +782,7 @@ sub ribo_ParseRLCModelinfoFile {
   my $sub_name = "ribo_ParseModelinfoFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HR) = @_;
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR) = @_;
 
   open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
 
@@ -810,12 +810,13 @@ sub ribo_ParseRLCModelinfoFile {
         push(@rtname_A, $el_A[$i]);
       }
       push(@{$family_order_AR}, $family);
-      $family_modelfil_HR->{$family} = $env_ribo_dir . "/" . $modelname;
-      $family_modellen_HR->{$family}  = $modellen;
-      $family_rtname_HAR->{$family} = (@rtname_A);
+      $family_modelfile_HR->{$family}  = $env_ribo_dir . "/" . $modelfile;
+      $family_modellen_HR->{$family}   = $modellen;
+      @{$family_rtname_HAR->{$family}} = (@rtname_A);
     }
   }
   close(IN);
+
   return;
 }
 
