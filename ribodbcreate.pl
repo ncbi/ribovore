@@ -91,6 +91,7 @@ opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnom
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ribotyper/ribolengthchecker";
 # THESE OPTIONS SHOULD BE MANUALLY KEPT IN SYNC WITH THE CORRESPONDING OPTION GROUP IN ribolengthchecker.pl
 #       option          type       default               group  requires  incompat        preamble-output                                         help-output    
+opt_Add("--model",      "string",  undef,                   $g,    undef, "--skipfribos", "model to use is <s> (e.g. SSU.Eukarya)",                    "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                   $g,    undef, "--skipfribos", "use rlc model info file <s> instead of default",       "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("--riboopts",   "string",  undef,                   $g,    undef, "--skipfribos", "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, "--skipfribos", "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
@@ -146,6 +147,7 @@ my $options_okay =
                 'fbmdiagok'    => \$GetOptions_H{"--fbmdiagok"},
                 'fbminuslen=s' => \$GetOptions_H{"--fbminuslen"},
                 'fbminuspid=s' => \$GetOptions_H{"--fbminuspid"},
+                'model=s'      => \$GetOptions_H{"--model"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
@@ -250,7 +252,7 @@ if(defined $in_special_file) {
 # we do this for each stage individually
 
 my $in_riboopts_file = undef;
-my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
+my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".all.modelinfo";
 my $rlc_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;
@@ -279,6 +281,11 @@ if($do_fblast) {
 }
 
 if($do_fribos) { 
+  # make sure model exists
+  if(! opt_IsUsed("--model", \%opt_HH)) { 
+    die "ERROR, --model is a required option, unless --skipfribos is used";
+  }
+
   # make sure the ribolengthchecker modelinfo files exists
   if(! opt_IsUsed("-i", \%opt_HH)) { 
     $rlc_modelinfo_file = $df_rlc_modelinfo_file;  
@@ -428,6 +435,8 @@ my $progress_w = 80; # the width of the left hand column in our progress output,
 my $start_secs;
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Validating input files", $progress_w, $log_FH, *STDOUT);
 
+
+
 # parse the modelinfo file, this tells us where the CM files are
 my @tmp_family_order_A     = (); # family name, in order, temporary because we enforce that there is only 1 before continuing
 my %tmp_family_modelname_H = (); # key is family name (e.g. "SSU.Archaea") from @tmp_family_order_A, value is CM file for that family
@@ -435,21 +444,20 @@ my %tmp_family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from 
 my $family           = undef;
 my $family_modelname = undef;
 my $family_modellen  = undef;
+my $family_fail_str  = "";
 
 if($do_fribos) { 
+  # make sure that the model specified with --model exists
   ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelname_H, \%tmp_family_modellen_H);
-
-  # verify that we only have 1 CM file listed in the $rlc_modelinfo_file, and that it exists
-  if(scalar(@tmp_family_order_A) != 1) { 
-    ofile_FAIL("ERROR, expected exactly 1 model listed in $rlc_modelinfo_file, but read " . scalar(@tmp_family_order_A), $pkgstr, $!, $ofile_info_HH{"FH"}); 
+  $family = opt_Get("--model", \%opt_HH);
+  if(! exists $tmp_family_modelname_H{$family}) { 
+    foreach my $tmp_family (@tmp_family_order_A) { $family_fail_str .= $tmp_family. "\n"; }
+    ofile_FAIL("ERROR, model $family specified with --model not listed in $rlc_modelinfo_file.\nValid options are:\n$family_fail_str", $pkgstr, $!, $ofile_info_HH{"FH"}); 
   }
-  $family = $tmp_family_order_A[0];
   $family_modelname = $tmp_family_modelname_H{$family};
   $family_modellen  = $tmp_family_modellen_H{$family};
-  foreach $family (@tmp_family_order_A) { 
-    if(! -s $family_modelname) { 
-      ofile_FAIL("ERROR, model file $family_modelname specified in $rlc_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
-    }
+  if(! -s $family_modelname) { 
+    ofile_FAIL("ERROR, model file $family_modelname specified in $rlc_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
   }
 }
 

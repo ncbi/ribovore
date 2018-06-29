@@ -46,7 +46,6 @@ while($line = <TAXINFO>) {
   if(scalar(@el_A) != 4) { die sprintf("ERROR, could not parse taxinfo file line (%d elements): $line\n", scalar(@el_A)); }
   my ($seq, $seq_taxid, $seq_spec, $group_taxid) = ($el_A[0], $el_A[1], $el_A[2], $el_A[3]);
   if(exists $list_H{$seq}) { 
-    # skip sequences in group 1 (not placed in a group)
     if(! exists $group_ct_H{$group_taxid}) {  
       $group_ct_H{$group_taxid} = 1;
     }
