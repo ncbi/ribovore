@@ -705,6 +705,7 @@ parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_filters
 $start_secs = ofile_OutputProgressPrior("[***Checkpoint] Creating lists that survived all filter stages", $progress_w, $log_FH, *STDOUT);
 $npass_filters = update_and_output_pass_fails(\%seqfailstr_H, undef, \@seqorder_A, 0, $out_root, "surv_filters", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
 $nfail_filters = $nseq - $npass_filters; 
+my $npass_filters_list = $out_root . ".surv_filters.pass.seqlist";
 ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail; ONLY PASSES ADVANCE", $npass_filters, $nfail_filters), $log_FH, *STDOUT);
 
 # define file names for ingrup stage
@@ -714,6 +715,7 @@ my $merged_rfonly_alipid_file = $out_root . "." . $stage_key . ".rfonly.alipid";
 my $merged_list_file          = $out_root . "." . $stage_key . ".seqlist";
 my $alipid_analyze_out_file   = $out_root . "." . $stage_key . ".alipid_analyze.out";
 my $alipid_analyze_tab_file   = $out_root . "." . $stage_key . ".alipid.sum.tab.txt";
+my $ingrup_lost_list = $out_root . ".ingrup.lost." . $level . ".list";
 
 # if no sequences remain, we're done, skip remaining stages
 if($npass_filters == 0) { 
@@ -726,11 +728,11 @@ else {
   ###################################################################
   if($do_ingrup) { 
     $stage_key = "ingrup";
-    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
     my $create_list_cmd = undef;
 
-    # merge alignments created by ribolengthchecker with esl-alimerge
-    my $alimerge_cmd       = "ls " . $out_root . "*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - > $merged_rfonly_stk_file";
+    # merge alignments created by ribolengthchecker with esl-alimerge and remove any seqs that have not
+    # passed up to this point (using esl-alimanip --seq-k)
+    my $alimerge_cmd       = "ls " . $out_root . "*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - | esl-alimanip --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
     my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
     my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
     my $alipid_analyze_cmd = "perl alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
@@ -738,18 +740,44 @@ else {
     if(! $do_prvcmd) { new_ribo_RunCommand($alimerge_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "rfonlystk", "$merged_rfonly_stk_file", 0, "merged RF-column-only alignment");
       
-    if(! $do_prvcmd) { new_ribo_RunCommand($alipid_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
+    if(! $do_prvcmd) { 
+      new_ribo_RunCommand($alipid_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+    }
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$merged_rfonly_alipid_file", 0, "esl-alipid output for $merged_rfonly_stk_file");
       
     if(! $do_prvcmd) { new_ribo_RunCommand($alistat_cmd,        $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "list", "$merged_list_file", 0, "list of sequences in $merged_rfonly_stk_file");
       
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Performing ingroup analysis", $progress_w, $log_FH, *STDOUT);
     if(! $do_prvcmd) { new_ribo_RunCommand($alipid_analyze_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid-analyze", "$alipid_analyze_out_file", 0, "output file from alipid-taxinfo-analyze.pl");
 
     $npass = parse_alipid_analyze_tab_file($alipid_analyze_tab_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
 
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying taxonomic groups lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
+    # determine how many sequences at for each taxonomic group at level $level are still left
+    parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_ingrup_level_ct_H, $ofile_info_HH{"FH"});
+
+    # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
+    # than don't survive the ingroup test, output that
+    my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
+    my $nlost = 0;
+    open(LOST, ">", $ingrup_lost_list) || ofile_FileOpenFailure($ingrup_lost_list, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+    foreach my $gtaxid (sort {$a <=> $b} keys (%full_level_ct_H)) { 
+      if($gtaxid != 0) { 
+        if(($full_level_ct_H{$gtaxid} > 0) && 
+           ((! exists $surv_ingrup_level_ct_H{$gtaxid}) || $surv_ingrup_level_ct_H{$gtaxid} == 0)) { 
+          print LOST $gtaxid . "\n";
+        }
+      }
+    }
+    close LOST;
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", "$ingrup_lost_list", 1, sprintf("list of %d %ss lost in the ingroup analysis", $nlost, $level));
+    ofile_OutputProgressComplete($start_secs, sprintf("%d %ss lost", $nlost, $level), $log_FH, *STDOUT);
 
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # CHECKPOINT: save any sequences that survived to this point as the 'ingrup' set
@@ -758,9 +786,6 @@ else {
     $npass_ingrup = update_and_output_pass_fails(\%seqfailstr_H, undef, \@seqorder_A, 1, $out_root, "surv_ingrup", \%ofile_info_HH); # 1: do output description of pass/fail lists to log file
     $nfail_ingrup = $npass_filters - $npass_ingrup; 
     ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail; ONLY PASSES ADVANCE", $npass_ingrup, $nfail_ingrup), $log_FH, *STDOUT);
-
-    # determine how many sequences at for each taxonomic group at level $level are still left
-    parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_ingrup_level_ct_H, $ofile_info_HH{"FH"});
   } # end of if($do_ingrup)
 
   ######################################################################################
@@ -907,36 +932,40 @@ push(@column_explanation_A, sprintf("# Column 6: 'p/f':     PASS if sequence pas
 push(@column_explanation_A, sprintf("# Column 7: 'clust':   %s\n", ($do_clustr) ? "'C' if sequence selected as centroid of a cluster, 'NC' if not" : "'-' for all sequences due to --skipclustr"));
 push(@column_explanation_A, sprintf("# Column 8: 'special': %s\n", ($do_special) ? "*yes* if sequence belongs to special species taxid listed in --special input file, else '*no*'" : "'-' for all sequences because --special not used"));
 push(@column_explanation_A, sprintf("# Column 9: 'failstr': %s\n", "'-' for PASSing sequences, else list of reasons for FAILure, see below"));
+push(@column_explanation_A, "#\n");
 push(@column_explanation_A, "# Possible substrings in 'failstr' column 9, each substring separated by ';;':\n");
 if($do_fambig) { 
-  push(@column_explanation_A, "# 'ambig[<d>': contains <d> ambiguous nucleotides, which exceeds maximum allowed\n");
+  push(@column_explanation_A, "# 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed\n");
 }
 if($do_ftaxid) { 
   push(@column_explanation_A, "# 'not-specified-species': sequence does not belong to a specified sequence according to NCBI taxonomy\n");
 }
 if($do_fvecsc) { 
-  push(@column_explanation_A, "# 'vecscreen-match[<s>]': vecscreen reported match to vector of strength <s>\n");
+  push(@column_explanation_A, "# 'vecscreen-match[<s>]':  vecscreen reported match to vector of strength <s>\n");
 }
 if($do_fblast) { 
-  push(@column_explanation_A, "# 'blastrepeat[%s]': repetitive sequence identified by blastn\n");
-  push(@column_explanation_A, "#                    <s> = [<c1>|e=<g1>|len=<d1>|<d2>..<d3>/<d4>..<d5>|pid=<f1>|ngap=<d6>]\n");
-  push(@column_explanation_A, "#                    <c1> = + for positive strand, - for negative strand\n");
-  push(@column_explanation_A, "#                    <g1> = E-value; <d1> = maximum of query and subject length in hit alignment\n");
-  push(@column_explanation_A, "#                    <d2>..<d3> = query coordinates of hit\n");
-  push(@column_explanation_A, "#                    <d4>..<d5> = subject coordinates of hit\n");
-  push(@column_explanation_A, "#                    <f1> = fractional identity of hit alignment\n");
-  push(@column_explanation_A, "#                    <d6> = number of gaps in hit alignment\n");
+  push(@column_explanation_A, "# 'blastrepeat[<s>]':      repetitive sequence identified by blastn\n");
+  push(@column_explanation_A, "#                          <s> = <s1>,<s2>,...<sI>...<sN> for N >= 1, where\n");
+  push(@column_explanation_A, "#                          <sI> = <c1>|e=<g1>|len=<d1>|<d2>..<d3>/<d4>..<d5>|pid=<f1>|ngap=<d6>\n");
+  push(@column_explanation_A, "#                          <c1> = + for positive strand, - for negative strand\n");
+  push(@column_explanation_A, "#                          <g1> = E-value of hit\n");
+  push(@column_explanation_A, "#                          <d1> = maximum of query length and subject length in hit alignment\n");
+  push(@column_explanation_A, "#                          <d2>..<d3> = query coordinates of hit\n");
+  push(@column_explanation_A, "#                          <d4>..<d5> = subject coordinates of hit\n");
+  push(@column_explanation_A, "#                          <f1> = fractional identity of hit alignment\n");
+  push(@column_explanation_A, "#                          <d6> = number of gaps in hit alignment\n");
 }
 if($do_fribos) { 
-  push(@column_explanation_A, "# 'ribotyper[<s>]: ribotyper failure with unexpected features listed in <s>\n");
-  push(@column_explanation_A, "#                  see $out_root-rt/$out_root-rt.ribotyper.long.out for explanation of unexpected features\n");
+  push(@column_explanation_A, "# 'ribotyper[<s>]:         ribotyper failure with unexpected features listed in <s>\n");
+  push(@column_explanation_A, "#                          see $out_root-rt/$dir_tail-rt.ribotyper.long.out\n");
+  push(@column_explanation_A, "#                          for explanation of unexpected features\n");
 }
 if($do_fmspan) { 
-  push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]: alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
+  push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
 }
 if($do_ingrup) { 
-  push(@column_explanation_A, "# 'ingroup-analysis[%s]: sequence failed ingroup analysis, classified as type %s\n");
-  push(@column_explanation_A, "#                        see $alipid_analyze_out_file for explanation of types\n");
+  push(@column_explanation_A, "# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis, classified as type %s\n");
+  push(@column_explanation_A, "#                          see $alipid_analyze_out_file for explanation of types\n");
 }
 
 open(RDB, ">", $out_rdb_tbl) || ofile_FileOpenFailure($out_rdb_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
@@ -945,7 +974,7 @@ foreach my $column_explanation_line (@column_explanation_A) {
   print RDB $column_explanation_line;
   print TAB $column_explanation_line;
 }  
-printf RDB ("# %-*s  %-*s  %-*s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, "idx", $width_H{"target"}, "seqname", $width_H{"length"}, "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
+printf RDB ("# %*s  %-*s  %*s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, "idx", $width_H{"target"}, "seqname", $width_H{"length"}, "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
 printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", "idx", "seqname", "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
 foreach $seqname (@seqorder_A) { 
   if($seqfailstr_H{$seqname} eq "") { 
@@ -976,15 +1005,15 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rdbtbl", $out_rdb_tbl
 ##########
 # final stats on number of sequences passing each stage
 ofile_OutputString($log_FH, 1, "#\n");
-ofile_OutputString($log_FH, 1, sprintf("%-60s  %7d  [listed in %s]\n", "# Number of input sequences:", $nseq, $full_list_file));
-ofile_OutputString($log_FH, 1, sprintf("%-60s  %7d  [listed in %s]\n", "# Number surviving all filter stages:", $npass_filters, $out_root . ".surv_filters.pass.seqlist"));
+ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number of input sequences:", $nseq, $full_list_file));
+ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving all filter stages:", $npass_filters, $out_root . ".surv_filters.pass.seqlist"));
 if($do_ingrup) { 
-  ofile_OutputString($log_FH, 1, sprintf("%-60s  %7d  [listed in %s]\n", "# Number surviving ingroup analysis:", $npass_ingrup, $out_root . ".surv_ingrup.pass.seqlist"));
+  ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving ingroup analysis:", $npass_ingrup, $out_root . ".surv_ingrup.pass.seqlist"));
 }
 if($do_clustr) { 
-  ofile_OutputString($log_FH, 1, sprintf("%-60s  %7d  [listed in %s]\n", "# Number surviving clustering (number of clusters):", $npass_clustr, $out_root . ".surv_clustr.pass.seqlist"));
+  ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving clustering (number of clusters):", $npass_clustr, $out_root . ".surv_clustr.pass.seqlist"));
 }
-ofile_OutputString($log_FH, 1, sprintf("%-60s  %7d  [listed in %s]\n", "# Number in final set of surviving sequences:", $npass_final, $final_list_file));
+ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number in final set of surviving sequences:", $npass_final, $final_list_file));
 
 $total_seconds += ribo_SecondsSinceEpoch();
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
