@@ -52,8 +52,6 @@ opt_Add("-h",           "boolean", 0,                        0,    undef, undef,
 opt_Add("-f",           "boolean", 0,                       $g,    undef, undef,       "forcing directory overwrite",                               "force; if <output directory> exists, overwrite it",            \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,       "be verbose",                                                "be verbose; output commands to stdout as they're run",         \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                       $g,    undef, undef,       "use <n> CPUs",                                              "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
-opt_Add("--fetch",      "string",  undef,                   $g,    undef, "--fasta",   "fetch sequences using seqfetch query in <s>",               "fetch sequences using seqfetch query in <s>",                  \%opt_HH, \@opt_order_A);
-opt_Add("--fasta",      "string",  undef,                   $g,    undef, "--fetch",   "sequences provided as fasta input in <s>",                  "don't fetch sequences, <s> is fasta file of input sequences",  \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                       $g,    undef, undef,       "keep all intermediate files",                               "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
 opt_Add("--special",    "string",  undef,                   $g,    undef, undef,       "read list of special species taxids from <s>",              "read list of special species taxids from <s>",                 \%opt_HH, \@opt_order_A);
 opt_Add("--class",      "boolean", 0,                       $g,    undef, "--phylum",  "work at class  level for tax analysis, incl. ingroup test", "work at class  level for tax analysis, incl. ingroup test [default: order]", \%opt_HH, \@opt_order_A);
@@ -125,7 +123,7 @@ opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f", 
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribodbcreate.pl [-options] <output file name root>\n";
+my $usage    = "Usage: ribodbcreate.pl [-options] <input fasta sequence file> <output directory>\n";
 $usage      .= "\n";
 my $synopsis = "ribodbcreate.pl :: create representative database of ribosomal RNA sequences";
 my $options_okay = 
@@ -133,7 +131,6 @@ my $options_okay =
                 'f'            => \$GetOptions_H{"-f"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
-                'fetch=s'      => \$GetOptions_H{"--fetch"},
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
                 'keep'         => \$GetOptions_H{"--keep"},
                 'special=s'    => \$GetOptions_H{"--special"},
@@ -200,13 +197,13 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 }
 
 # check that number of command line args is correct
-if(scalar(@ARGV) != 1) {   
+if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
   print "\nTo see more help on available options, enter ribolengthchcker.pl -h\n\n";
   exit(1);
 }
-my ($dir) = (@ARGV);
+my ($in_fasta_file, $dir) = (@ARGV);
 
 # set options in opt_HH
 opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
@@ -239,10 +236,6 @@ my $do_keep   = opt_Get("--keep",       \%opt_HH) ? 1 : 0;
 my $do_special= opt_IsUsed("--special", \%opt_HH) ? 1 : 0;
 
 # do checks that are too sophisticated for epn-options.pm
-if((! (opt_IsUsed("--fetch", \%opt_HH))) && (! (opt_IsUsed("--fasta", \%opt_HH)))) { 
-  die "ERROR, neither --fetch nor --fasta options were used. Exactly one must be.";
-}
-
 # if we are skipping both ribotyper stages, make sure none of the ribotyper options related to both were used
 if((! $do_fribo1) && (! $do_fribo2)) { 
   if(opt_IsUsed("--model",      \%opt_HH)) { die "ERROR, --model does not make sense in combination with --skipribo1 and --skipribo2"; }
@@ -258,15 +251,10 @@ if((! $do_ftaxid) && (! $do_fambig) && (! $do_fvecsc) && (! $do_fblast) && (! $d
   die "ERROR, at least one of the following filter stages *must* not be skipped: ftaxid, fambig, fvecsc, fblast, fribo2"; 
 }  
 
-my $in_fetch_file   = opt_Get("--fetch", \%opt_HH);   # this will be undefined unless --fetch set on the command line
-my $in_fasta_file   = opt_Get("--fasta", \%opt_HH);   # this will be undefined unless --fasta set on the command line
 my $in_special_file = opt_Get("--special", \%opt_HH); # this will be undefined unless --special used on the command line
 # verify required files exist
-if(defined $in_fetch_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_fetch_file, "--fetch argument", undef, 1); 
-}
 if(defined $in_fasta_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "--fasta argument", undef, 1); 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "<input fasta sequence file> command line argument", undef, 1); 
 }
 if(defined $in_special_file) { 
   ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1); 
@@ -543,37 +531,19 @@ if($do_special) {
 ribo_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################################
-# Preliminary stage: Fetch the sequences (if --fetch) or copy the fasta file (if --fasta)
+# Preliminary stage: Copy the fasta file (if --fasta)
 ###########################################################################################
 my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
-if(defined $in_fetch_file) { 
-  $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Executing command to fetch sequences ", $progress_w, $log_FH, *STDOUT);
-  open(FETCH, $in_fetch_file) || ofile_FileOpenFailure($in_fetch_file, $pkgstr, "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
-  my $fetch_command = <FETCH>; # read only the first line of the file
-  chomp $fetch_command;
-  if($fetch_command =~ m/\>/) { 
-    ofile_FAIL("ERROR, fetch command read from $in_fetch_file includes an output character \>", $pkgstr, $!, $ofile_info_HH{"FH"}); 
-  }
-  $fetch_command .= " > $raw_fasta_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($fetch_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-}
-else { # $in_fasta_file must be defined
-  if(! defined $in_fasta_file) { 
-    ofile_FAIL("ERROR, neither --fetch nor --fasta was used, exactly one must be.", $pkgstr, $!, $ofile_info_HH{"FH"}); 
-  }
-  $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
-  my $cp_command .= "cp $in_fasta_file $raw_fasta_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-}
+$start_secs = ofile_OutputProgressPrior("[Stage: prelim] Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
+my $cp_command .= "cp $in_fasta_file $raw_fasta_file";
+if(! $do_prvcmd) { new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
-# reformat the names of the sequences:
+# reformat the names of the sequences, if necessary
 # gi|675602128|gb|KJ925573.1| becomes KJ925573.1
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Reformatting names of sequences ", $progress_w, $log_FH, *STDOUT);
-my $check_fetched_names_format = (opt_Get("--fetch", \%opt_HH)) ? 1 : 0;
-reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $check_fetched_names_format, $ofile_info_HH{"FH"});
+reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $ofile_info_HH{"FH"});
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullfa", "$full_fasta_file", 0, "fasta file with names possibly updated to accession.version");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -1179,8 +1149,6 @@ sub new_ribo_RunCommand {
 # Arguments:
 #   $in_file:      name of input file to change names of
 #   $out_file:     name of output file to create
-#   $check_format: '1' to check if sequence names match expected format
-#                  and die if they don't
 #   $FH_HR:        REF to hash of file handles, including "cmd"
 #
 # Returns:    void
@@ -1190,10 +1158,10 @@ sub new_ribo_RunCommand {
 #################################################################
 sub reformat_sequence_names_in_fasta_file { 
   my $sub_name = "reformat_sequence_names_in_fasta_file()";
-  my $nargs_expected = 4;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $out_file, $check_format, $FH_HR) = (@_);
+  my ($in_file, $out_file, $FH_HR) = (@_);
 
   open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $FH_HR);
@@ -1206,7 +1174,7 @@ sub reformat_sequence_names_in_fasta_file {
       if($line =~ /^\>\S+\s+(.+)/) { 
         $desc = " " . $1;
       }
-      my $new_name = ribo_ConvertFetchedNameToAccVersion($orig_name, $check_format);
+      my $new_name = ribo_ConvertFetchedNameToAccVersion($orig_name, 0);
       printf OUT (">%s%s\n", $new_name, $desc);
     }
     else { 
