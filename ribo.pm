@@ -159,7 +159,7 @@ sub ribo_OutputProgressComplete {
 }
 
 #################################################################
-# Subroutine:  ribo_RunCommand()
+# Subroutine:  old_ribo_RunCommand()
 # Incept:      EPN, Mon Dec 19 10:43:45 2016
 #
 # Purpose:     Runs a command using system() and exits in error 
@@ -175,7 +175,7 @@ sub ribo_OutputProgressComplete {
 #
 # Dies:       if $cmd fails
 #################################################################
-sub ribo_RunCommand {
+sub old_ribo_RunCommand {
   my $sub_name = "ribo_RunCommand()";
   my $nargs_expected = 2;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
@@ -196,6 +196,59 @@ sub ribo_RunCommand {
 
   if($? != 0) { 
     die "ERROR in $sub_name, the following command failed:\n$cmd\n";
+  }
+
+  return ($stop_time - $start_time);
+}
+
+#################################################################
+# Subroutine:  ribo_RunCommand()
+# Incept:      EPN, Mon Dec 19 10:43:45 2016
+#
+# Purpose:     Runs a command using system() and exits in error 
+#              if the command fails. If $be_verbose, outputs
+#              the command to stdout. If $FH_HR->{"cmd"} is
+#              defined, outputs command to that file handle.
+#
+# Arguments:
+#   $cmd:         command to run, with a "system" command;
+#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
+#   $FH_HR:       REF to hash of file handles, including "cmd"
+#
+# Returns:    amount of time the command took, in seconds
+#
+# Dies:       if $cmd fails
+#################################################################
+sub ribo_RunCommand {
+  my $sub_name = "ribo_RunCommand()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($cmd, $be_verbose, $FH_HR) = @_;
+  
+  my $cmd_FH = undef;
+  if(defined $FH_HR && defined $FH_HR->{"cmd"}) { 
+    $cmd_FH = $FH_HR->{"cmd"};
+  }
+
+  if($be_verbose) { 
+    print ("Running cmd: $cmd\n"); 
+  }
+
+  if(defined $cmd_FH) { 
+    print $cmd_FH ("$cmd\n");
+  }
+
+  my ($seconds, $microseconds) = gettimeofday();
+  my $start_time = ($seconds + ($microseconds / 1000000.));
+
+  system($cmd);
+
+  ($seconds, $microseconds) = gettimeofday();
+  my $stop_time = ($seconds + ($microseconds / 1000000.));
+
+  if($? != 0) { 
+    ofile_FAIL("ERROR in $sub_name, the following command failed:\n$cmd\n", "RIBO", $?, $FH_HR);
   }
 
   return ($stop_time - $start_time);
@@ -262,6 +315,7 @@ sub ribo_ValidateExecutableHash {
 #   $seqlen_HR:    ref to hash of sequence lengths to fill here
 #   $width_HR:     ref to hash to fill with max widths (see Purpose), can be undef
 #   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
 # 
 # Returns:     total number of nucleotides in all sequences read, 
 #              fills %{$seqidx_HR}, %{$seqlen_HR}, and 
@@ -273,12 +327,12 @@ sub ribo_ValidateExecutableHash {
 #
 ################################################################# 
 sub ribo_ProcessSequenceFile { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "ribo_ProcessSequenceFile()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($seqstat_exec, $seq_file, $seqstat_file, $seqidx_HR, $seqlen_HR, $width_HR, $opt_HHR) = (@_);
+  my ($seqstat_exec, $seq_file, $seqstat_file, $seqidx_HR, $seqlen_HR, $width_HR, $opt_HHR, $FH_HR) = (@_);
 
-  ribo_RunCommand($seqstat_exec . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR));
+  ribo_RunCommand($seqstat_exec . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR), $FH_HR);
 
   # parse esl-seqstat file to get lengths
   my $max_targetname_length = length("target"); # maximum length of any target name
@@ -310,6 +364,7 @@ sub ribo_ProcessSequenceFile {
 #   $seqstat_file: path to esl-seqstat output to create
 #   $seqnambig_HR: ref to hash of number of ambiguous nucleotides per sequence, filled here
 #   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        REF to hash of file handles, including "cmd"
 # 
 # Returns:     number of sequences with 1 or more ambiguous nucleotides
 #              fills %{$seqnambig_HR}.
@@ -318,12 +373,12 @@ sub ribo_ProcessSequenceFile {
 #
 ################################################################# 
 sub ribo_CountAmbiguousNucleotidesInSequenceFile { 
-  my $nargs_expected = 5;
+  my $nargs_expected = 6;
   my $sub_name = "ribo_CountAmbiguousNucleotidesInSequenceFile()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($seqstat_exec, $seq_file, $seqstat_file, $seqnambig_HR, $opt_HHR) = (@_);
+  my ($seqstat_exec, $seq_file, $seqstat_file, $seqnambig_HR, $opt_HHR, $FH_HR) = (@_);
 
-  ribo_RunCommand($seqstat_exec . " --dna --comptbl $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR));
+  ribo_RunCommand($seqstat_exec . " --dna --comptbl $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR), $FH_HR);
 
   # parse esl-seqstat file to get lengths
   return ribo_ParseSeqstatCompTblFile($seqstat_file, $seqnambig_HR);

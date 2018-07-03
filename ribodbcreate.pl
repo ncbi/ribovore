@@ -8,15 +8,14 @@ require "epn-options.pm";
 require "epn-ofile.pm";
 require "ribo.pm";
 
-# make sure the RIBODIR variable is set, others we will wait to see
+# make sure the RIBODIR and RIBOEASEL variables are set, others we will wait to see
 # if they are required first
 my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_riboeasel_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $env_vecplus_dir       = undef;
 my $env_ribotax_dir       = undef;
 my $env_riboblast_dir     = undef;
 my $env_ribouclust_dir    = undef;
-#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
-#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
 #########################################################
@@ -272,7 +271,10 @@ my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_versio
 my $rlc_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;
- if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) { 
+
+# we always require esl-sfetch 
+$execs_H{"esl-sfetch"} = $env_riboeasel_dir    . "/esl-sfetch";
+if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
   if($do_fvecsc) { 
     $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
@@ -339,12 +341,6 @@ if($do_clustr) {
   my $env_ribouclust_dir = ribo_VerifyEnvVariableIsValidDir("RIBOUCLUSTDIR");
   $execs_H{"usearch"} = $env_ribouclust_dir  . "/usearch";
 }
-
-# Currently, we require infernal and easel executables are in the user's path, 
-# but do not check. The program will die if the commands using them fail. 
-# The block below is retained in in case we want to use it eventually.
-#$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
-#$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #############################
@@ -357,7 +353,7 @@ if($dir !~ m/\/$/) { $dir =~ s/\/$//; } # remove final '/' if it exists
 if(-d $dir) { 
   $cmd = "rm -rf $dir";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); push(@early_cmd_A, $cmd); 
+    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir directory exists but -f not used
     if(! $do_prvcmd) { 
@@ -368,7 +364,7 @@ if(-d $dir) {
 elsif(-e $dir) { 
   $cmd = "rm $dir";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); push(@early_cmd_A, $cmd); 
+    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir file exists but -f not used
     die "ERROR a file named $dir already exists. Remove it, or use -f to overwrite it."; 
@@ -378,7 +374,7 @@ elsif(-e $dir) {
 # create the dir
 $cmd = "mkdir $dir";
 if(! $do_prvcmd) { 
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
   push(@early_cmd_A, $cmd);
 }
 
@@ -404,9 +400,12 @@ my $nfail_clustr = 0; # number of seqs that pass clustering
 my @arg_desc_A = ("reference accession");
 my @arg_A      = ($dir);
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"} = $env_ribotyper_dir;
-if(defined $env_ribotax_dir) { $extra_H{"\$RIBOTAXDIR"} = $env_ribotax_dir; }
-if(defined $env_vecplus_dir) { $extra_H{"\$VECPLUSDIR"} = $env_vecplus_dir; }
+$extra_H{"\$RIBODIR"}      = $env_ribotyper_dir;
+$extra_H{"\$RIBOEASELDIR"} = $env_riboeasel_dir;
+if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
+if(defined $env_ribotax_dir)    { $extra_H{"\$RIBOTAXDIR"}    = $env_ribotax_dir; }
+if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
+if(defined $env_ribouclust_dir) { $extra_H{"\$RIBOUCLUSTDIR"} = $env_ribouclust_dir; }
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -500,7 +499,7 @@ if($do_fribo1 || $do_fribo2) {
   # create the riboopts2 file to supply to ribolengthchecker, unless --riboopts2 <s> provided in which case use <s>
   if(opt_IsUsed("--riboopts2", \%opt_HH)) { 
     my $cp_command = sprintf("cp %s $local_rlc_riboopts_file", opt_Get("--riboopts2", \%opt_HH));
-    new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand($cp_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
   else { 
     open(RIBOOPTS2, ">", $local_rlc_riboopts_file) || ofile_FileOpenFailure($local_rlc_riboopts_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
@@ -537,7 +536,7 @@ my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
 my $cp_command .= "cp $in_fasta_file $raw_fasta_file";
-if(! $do_prvcmd) { new_ribo_RunCommand($cp_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+if(! $do_prvcmd) { ribo_RunCommand($cp_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # reformat the names of the sequences, if necessary
@@ -571,15 +570,15 @@ my $full_list_file = $out_root . ".full.seqlist";
 my $have_taxids = 0;
 
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
-ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, $ofile_info_HH{"FH"});
 $nseq = scalar(keys %seqidx_H);
-ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH);
-if(! $do_prvcmd) { new_ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH, $ofile_info_HH{"FH"});
+if(! $do_prvcmd) { ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_list_file", 0, "file with list of all $nseq input sequences");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # index the sequence file
-if(! $do_prvcmd) { new_ribo_RunCommand("esl-sfetch --index $full_fasta_file > /dev/null", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+if(! $do_prvcmd) { ribo_RunCommand("esl-sfetch --index $full_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullssi", $full_fasta_file . ".ssi", 0, ".ssi index file for full fasta file");
 
 ###########################################################################################
@@ -591,7 +590,7 @@ my $taxinfo_wlevel_file = $out_root . ".taxinfo_wlevel.txt";
 if($do_ftaxid || $do_ingrup || $do_special) { 
   $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
   $full_srcchk_file = $out_root . ".full.srcchk";
-  if(! $do_prvcmd) { new_ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 0, "srcchk output for all $nseq input sequences");
 
   # parse srcchk output to fill %seqtaxid_H
@@ -600,7 +599,7 @@ if($do_ftaxid || $do_ingrup || $do_special) {
 
   # get taxonomy file with taxonomic levels
   my $find_tax_cmd = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile $taxinfo_wlevel_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($find_tax_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($find_tax_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "taxinfo-level", "$taxinfo_wlevel_file", 0, "taxinfo file with level");
   # parse tax_level file to fill %full_level_ct_H
   parse_tax_level_file($taxinfo_wlevel_file, undef, \%seqgtaxid_H, \%full_level_ct_H, $ofile_info_HH{"FH"});
@@ -669,17 +668,17 @@ if($do_fvecsc) {
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying vector sequences with VecScreen", $progress_w, $log_FH, *STDOUT);
   my $vecscreen_output_file = $out_root . ".vecscreen";
   my $vecscreen_cmd  = $execs_H{"vecscreen"} . " -text_output -query $full_fasta_file > $vecscreen_output_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($vecscreen_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($vecscreen_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "vecout", "$vecscreen_output_file", 0, "vecscreen output file");
 
   # parse vecscreen 
   my $parse_vecscreen_cmd   = $execs_H{"parse_vecscreen.pl"} . " --verbose --input $vecscreen_output_file --outfile_terminal $parse_vecscreen_terminal_file --outfile_internal $parse_vecscreen_internal_file";
   my $combine_summaries_cmd = $execs_H{"combine_summaries.pl"} . " --input_internal $parse_vecscreen_internal_file --input_terminal $parse_vecscreen_terminal_file --outfile $parse_vecscreen_combined_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($parse_vecscreen_cmd,   $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($parse_vecscreen_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevecterm", "$parse_vecscreen_terminal_file", 0, "parse_vecscreen.pl terminal output file");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parsevecint",  "$parse_vecscreen_internal_file", 0, "parse_vecscreen.pl internal output file");
   
-  if(! $do_prvcmd) { new_ribo_RunCommand($combine_summaries_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});}
+  if(! $do_prvcmd) { ribo_RunCommand($combine_summaries_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});}
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "parseveccombined", "$parse_vecscreen_combined_file", 0, "combined parse_vecscreen.pl output file");
 
   # get list of accessions in combined parse_vecscreen output that have non-Weak matches
@@ -707,7 +706,7 @@ if($do_fribo1) {
   my $rt_out_file       = $out_root . ".ribotyper";
   my $rt_short_out_file = $out_root . "/" . $dir_tail . ".ribodbcreate.ribotyper.short.out";
   my $rt_command = $execs_H{"ribotyper"} . " $rt_opts_str $full_fasta_file $out_root > $rt_out_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($rt_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($rt_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$rt_out_file", 0, "output of ribotyper");
   
   # parse ribotyper short file
@@ -729,7 +728,7 @@ if($do_fribo2) {
   my $rlc_out_file     = $out_root . ".ribolengthchecker";
   my $rlc_tbl_out_file = $out_root . ".ribolengthchecker.tbl.out";
   my $rlc_command = $execs_H{"ribolengthchecker"} . " $rlc_options --riboopts $local_rlc_riboopts_file $full_fasta_file $out_root > $rlc_out_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($rlc_command, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($rlc_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 0, "output of ribolengthchecker");
   
   # parse ribolengthchecker tbl file
@@ -793,21 +792,21 @@ else {
     my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
     my $alipid_analyze_cmd = "alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
       
-    if(! $do_prvcmd) { new_ribo_RunCommand($alimerge_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { ribo_RunCommand($alimerge_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "rfonlystk", "$merged_rfonly_stk_file", 0, "merged RF-column-only alignment");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
     if(! $do_prvcmd) { 
-      new_ribo_RunCommand($alipid_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+      ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
     }
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$merged_rfonly_alipid_file", 0, "esl-alipid output for $merged_rfonly_stk_file");
       
-    if(! $do_prvcmd) { new_ribo_RunCommand($alistat_cmd,        $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { ribo_RunCommand($alistat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "list", "$merged_list_file", 0, "list of sequences in $merged_rfonly_stk_file");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Performing ingroup analysis", $progress_w, $log_FH, *STDOUT);
-    if(! $do_prvcmd) { new_ribo_RunCommand($alipid_analyze_cmd, $pkgstr, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid-analyze", "$alipid_analyze_out_file", 0, "output file from alipid-taxinfo-analyze.pl");
 
     $npass = parse_alipid_analyze_tab_file($alipid_analyze_tab_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
@@ -878,12 +877,12 @@ else {
 
     # fetch the sequences
     my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $uclust_in_list_file > $uclust_in_fasta_file";
-    if(! $do_prvcmd) { new_ribo_RunCommand($sfetch_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".fa", "$uclust_in_fasta_file", 0, "fasta file with sequences that survived to cluster stage");
       
     # cluster the sequences
     my $uclust_cmd = $execs_H{"usearch"} . " -cluster_fast $uclust_in_fasta_file -id $cluster_fid -centroids $uclust_out_fasta_file -uc $uclust_summary_file -msaout $uclust_msa_file > $uclust_out_file 2>&1";
-    if(! $do_prvcmd) { new_ribo_RunCommand($uclust_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { ribo_RunCommand($uclust_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".centroid", "$uclust_out_fasta_file",  0, "uclust centroid output fasta file");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".summary",  "$uclust_summary_file",    0, "uclust summary output file");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".msa",      "$uclust_msa_file" . "*",  0, "uclust msa output files");
@@ -891,7 +890,7 @@ else {
       
     # determine which sequences are centroids by running esl-seqstat -a on uclust fasta output
     my $seqstat_cmd = "esl-seqstat -a $uclust_out_fasta_file | grep ^\= | awk '{ print \$2 }' > $uclust_out_list_file";
-    if(! $do_prvcmd) { new_ribo_RunCommand($seqstat_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { ribo_RunCommand($seqstat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 
     open(LIST, $uclust_out_list_file) || ofile_FileOpenFailure($uclust_out_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
     while($seqname = <LIST>) { 
@@ -944,7 +943,7 @@ my $final_fasta_file = $out_root . ".final.fa";
 if($npass_final > 0) { 
   # create the fasta file of the final sequences
   my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $final_list_file > $final_fasta_file";
-  if(! $do_prvcmd) { new_ribo_RunCommand($sfetch_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "final.fa", "$final_fasta_file", 1, "fasta file with final set of surviving sequences");
 }
 
@@ -1083,59 +1082,6 @@ ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number
 $total_seconds += ribo_SecondsSinceEpoch();
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
 exit 0;
-
-#################################################################
-# Subroutine:  new_ribo_RunCommand()
-# Incept:      EPN, Mon Dec 19 10:43:45 2016
-#
-# Purpose:     Runs a command using system() and exits in error 
-#              if the command fails. If $be_verbose, outputs
-#              the command to stdout. If $FH_HR->{"cmd"} is
-#              defined, outputs command to that file handle.
-#
-# Arguments:
-#   $cmd:         command to run, with a "system" command;
-#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
-#   $FH_HR:       REF to hash of file handles, including "cmd"
-#
-# Returns:    amount of time the command took, in seconds
-#
-# Dies:       if $cmd fails
-#################################################################
-sub new_ribo_RunCommand {
-  my $sub_name = "new_ribo_RunCommand()";
-  my $nargs_expected = 4;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($cmd, $pkgstr, $be_verbose, $FH_HR) = @_;
-  
-  my $cmd_FH = undef;
-  if(defined $FH_HR && defined $FH_HR->{"cmd"}) { 
-    $cmd_FH = $FH_HR->{"cmd"};
-  }
-
-  if($be_verbose) { 
-    print ("Running cmd: $cmd\n"); 
-  }
-
-  if(defined $cmd_FH) { 
-    print $cmd_FH ("$cmd\n");
-  }
-
-  my ($seconds, $microseconds) = gettimeofday();
-  my $start_time = ($seconds + ($microseconds / 1000000.));
-
-  system($cmd);
-
-  ($seconds, $microseconds) = gettimeofday();
-  my $stop_time = ($seconds + ($microseconds / 1000000.));
-
-  if($? != 0) { 
-    ofile_FAIL("ERROR in $sub_name, the following command failed:\n$cmd\n", $pkgstr, $?, $FH_HR);
-  }
-
-  return ($stop_time - $start_time);
-}
 
 #################################################################
 # Subroutine:  reformat_sequence_names_in_fasta_file()
@@ -1964,26 +1910,26 @@ sub fblast_stage {
     if($do_blast) { 
       if(! $do_prvcmd) { # NOTE: this will only work if previous run used --fbcall and --keep
         $sfetch_cmd = "esl-sfetch -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
-        new_ribo_RunCommand($sfetch_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         if(! $do_keep) { 
-          new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          ribo_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         }
         $blast_cmd  = $execs_H{"blastn"} . " -evalue $evalue -dbsize $dbsize -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send evalue\" > $chunk_blast_file";
         # previously I tried to use max_target_seqs, but doesn't guarantee top hit will be to self if identical seq (or superseq) exists
-        new_ribo_RunCommand($blast_cmd, "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        ribo_RunCommand($blast_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
       }
       # parse the blast output, keeping track of failures in curfailstr_H
       parse_blast_output_for_self_hits($chunk_blast_file, \%cur_nhit_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
       if((! $do_prvcmd) && (! $do_keep)) { 
-        new_ribo_RunCommand("rm $chunk_fasta_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        new_ribo_RunCommand("rm $chunk_blast_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        ribo_RunCommand("rm $chunk_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        ribo_RunCommand("rm $chunk_blast_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
       }
     }
   }
 
   # clean up final empty sfetch file that may exist
   if((! $do_keep) && (-e $chunk_sfetch_file)) { 
-    new_ribo_RunCommand("rm $chunk_sfetch_file", "RIBO", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
 
   # make sure all seqs were blasted against each other exactly once

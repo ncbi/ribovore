@@ -8,23 +8,20 @@ use Time::HiRes qw(gettimeofday);
 # Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
 require "epn-options.pm";
+require "epn-ofile.pm";
 require "ribo.pm";
 
 # make sure the RIBODIR environment variable is set set
-my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $df_model_dir          = $env_ribotyper_dir . "/models/";
+my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
+my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
-# Currently, we require infernal and easel executables are in user's path, 
-# but don't check. The program will die if the commands using them fail. 
-# Below block is left in in case we want to use it eventually.
-# make sure the required executables are executable
-#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
-#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
-#my %execs_H = (); # hash with paths to all required executables
-#$execs_H{"cmsearch"}    = $env_infernal_exec_dir . "/cmsearch";
-#$execs_H{"esl-seqstat"} = $env_easel_exec_dir    . "/esl-seqstat";
-#$execs_H{"esl-sfetch"}  = $env_easel_exec_dir    . "/esl-sfetch";
-#ribo_ValidateExecutableHash(\%execs_H);
+my %execs_H = (); # hash with paths to all required executables
+$execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
+$execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
+$execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -276,6 +273,7 @@ if($min_secondary_sc > $min_primary_sc) {
 }
 
 my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = ();    # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
 my $r2_secs     = undef; # number of seconds required for round 2 search
@@ -299,20 +297,21 @@ else {  # --skipsearch not used, normal case
   # if $dir_out already exists remove it only if -f also used
   if(-d $dir_out) { 
     $cmd = "rm -rf $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
     else                        { die "ERROR intended output directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
     else                        { die "ERROR a file matching the name of the intended output directory $dir_out already exists. Remove the file, or use -f to overwrite it."; }
   }
   # if $dir_out does not exist, create it
   if(! -d $dir_out) { 
     $cmd = "mkdir $dir_out";
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
   }
 }
+
 my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
 my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
@@ -351,8 +350,42 @@ push(@arg_A, $dir_out);
 push(@arg_desc_A, "model information input file");
 push(@arg_A, $modelinfo_file);
 
-ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
+my %extra_H    = ();
+$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
+$extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
+$extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
+ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
+
+# open the log and command files:
+# set output file names and file handles, and open those file handles
+my %ofile_info_HH = ();  # hash of information on output files we created,
+                         # 1D keys: 
+                         #  "fullpath":  full path to the file
+                         #  "nodirpath": file name, full path minus all directories
+                         #  "desc":      short description of the file
+                         #  "FH":        file handle to output to for this file, maybe undef
+                         # 2D keys:
+                         #  "log": log file of what's output to stdout
+                         #  "cmd": command file with list of all commands executed
+
+# open the log and command files 
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
+my $log_FH = $ofile_info_HH{"FH"}{"log"};
+my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
+# output files are all open, if we exit after this point, we'll need
+# to close these first.
+
+# now we have the log file open, output the banner there too
+ofile_OutputBanner($log_FH, "RIBO", $version, $releasedate, $synopsis, $date, \%extra_H);
+opt_OutputPreamble($log_FH, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
+
+# output any commands we already executed to $log_FH
+foreach $cmd (@early_cmd_A) { 
+  print $cmd_FH $cmd . "\n";
+}
 
 ##############################################
 # determine search methods for rounds 1 and 2
@@ -498,8 +531,7 @@ my $ssi_file = $seq_file . ".ssi";
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0)) { 
   unlink $ssi_file;
 }
-#ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
-ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
   die "ERROR, tried to create $ssi_file, but failed"; 
 }
@@ -526,8 +558,7 @@ my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
-#$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
-$tot_nnt = ribo_ProcessSequenceFile("esl-seqstat", $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, $ofile_info_HH{"FH"});
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
@@ -559,7 +590,7 @@ $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
 $alg1_opts             = determine_cmsearch_opts($alg1, \%opt_HH);
 $r1_sort_cmd           = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH);
-$r1_search_cmd         = "cmsearch -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
+$r1_search_cmd         = $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, undef, *STDOUT);
@@ -568,7 +599,7 @@ else {
   $start_secs = ribo_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  ribo_RunCommand($r1_search_cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($r1_search_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 }
 else { 
   if(! -s $r1_tblout_file) { 
@@ -590,7 +621,7 @@ $r1_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 # Step 4: Sort round 1 output
 ###########################################################################
 $start_secs = ribo_OutputProgressPrior("Sorting classification results", $progress_w, undef, *STDOUT);
-ribo_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 
@@ -614,10 +645,10 @@ close($r1_srt_long_out_FH);
 close($r1_srt_short_out_FH);
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
 $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
 # reopen them, and add tails to the output files
 open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for appending";
@@ -662,8 +693,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
         $seqfile_H{$model} = $out_root . ".$model.fa";
-        #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
-        ribo_RunCommand("esl-sfetch -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
         }
@@ -699,10 +729,10 @@ if(defined $alg2) {
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
       push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
-      push(@r2_search_cmd_A,         "cmsearch -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
+      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg2_opts --tblout " . $r2_tblout_file_A[$midx] . " " . $indi_cmfile_H{$model} . " " . $seqfile_H{$model} . " > " . $r2_searchout_file_A[$midx]);
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        ribo_RunCommand($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH));
+        ribo_RunCommand($r2_search_cmd_A[$midx], opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $r2_tblout_file_A[$midx]);
           if(($alg2 ne "slow") && 
@@ -733,7 +763,7 @@ if(defined $alg2) {
         $cat_cmd .= "$r2_tblout_file_A[$midx] ";
       }
       $cat_cmd .= "> " . $r2_all_tblout_file;
-      ribo_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH));
+      ribo_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
       ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_all_tblout_file);
@@ -749,7 +779,7 @@ if((defined $alg2) && ($nr2 > 0)) {
   $start_secs = ribo_OutputProgressPrior("Sorting search results", $progress_w, undef, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = determine_sort_cmd($alg2, $r2_all_tblout_file, $r2_all_sorted_tblout_file, \%opt_HH);
-  ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $r2_all_sorted_tblout_file);
   }
@@ -778,10 +808,10 @@ if(defined $alg2) {
   close($r2_srt_short_out_FH);
 
   $cmd = "sort -n $r2_unsrt_short_out_file >> $r2_srt_short_out_file";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
   $cmd = "sort -n $r2_unsrt_long_out_file >> $r2_srt_long_out_file";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
   # reopen them, and add tails to the output files
   # now that we know the max sequence name length, we can output headers to the output files
@@ -3162,7 +3192,7 @@ sub determine_cmsearch_opts {
       }
     }
     else { # default for slow, --mid nor --max used (use cmsearch --rfam)
-      $alg_opts .= " --rfam "; 
+      $alg_opts .= " --rfam --onepass "; 
     }
     if(opt_Get("--noali", $opt_HHR)) { 
       $alg_opts .= " --noali ";
