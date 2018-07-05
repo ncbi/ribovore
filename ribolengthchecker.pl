@@ -5,22 +5,19 @@ use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
 require "epn-options.pm";
+require "epn-ofile.pm";
 require "ribo.pm";
 
-# make sure the RIBODIR variable is set
-my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-#my $env_infernal_exec_dir = ribo_VerifyEnvVariableIsValidDir("INFERNALDIR");
-#my $env_easel_exec_dir    = ribo_VerifyEnvVariableIsValidDir("EASELDIR");
-my $df_model_dir          = $env_ribotyper_dir . "/models/";
+# make sure required environment variables are set
+my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
+my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
-# make sure the required executables are executable
-my %execs_H = (); # key is name of program, value is path to the executable
-$execs_H{"ribotyper"}  = $env_ribotyper_dir     . "/ribotyper.pl";
-# Currently, we require infernal and easel executables are in the user's path, 
-# but do not check. The program will die if the commands using them fail. 
-# The block below is retained in in case we want to use it eventually.
-#$execs_H{"cmalign"}    = $env_infernal_exec_dir . "/cmalign";
-#$execs_H{"esl-sfetch"} = $env_easel_exec_dir    . "/esl-sfetch";
+my %execs_H = (); # hash with paths to all required executables
+$execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmsearch";
+$execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"ribotyper"}   = $env_ribotyper_dir    . "/ribotyper.pl";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
@@ -53,6 +50,7 @@ my %opt_group_desc_H = ();
 $opt_group_desc_H{"1"} = "basic options";
 #     option            type       default               group   requires incompat    preamble-output                                     help-output    
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                              "display this help",                                  \%opt_HH, \@opt_order_A);
+opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                      "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-b",           "integer", 10,                       1,    undef, undef,      "number of positions <n> to look for indels",       "number of positions <n> to look for indels at the 5' and 3' boundaries",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
@@ -70,6 +68,7 @@ $usage      .= "\n";
 my $synopsis = "ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
+                'f'            => \$GetOptions_H{"-f"}, 
                 'b=s'          => \$GetOptions_H{"-b"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
@@ -92,7 +91,7 @@ $| = 1;
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
-  ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
+  ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, undef);
   opt_OutputHelp(*STDOUT, $usage, \%opt_HH, \@opt_order_A, \%opt_group_desc_H);
   if(! $options_okay) { die "ERROR, unrecognized option;"; }
   else                { exit 0; } # -h, exit with 0 status
@@ -102,10 +101,10 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter ribolengthchcker.pl -h\n\n";
+  print "\nTo see more help on available options, enter ribolengthchecker.pl -h\n\n";
   exit(1);
 }
-my ($seq_file, $out_root) = (@ARGV);
+my ($seq_file, $dir_out) = (@ARGV);
 
 # set options in opt_HH
 opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
@@ -113,14 +112,34 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my $cmd         = undef; # a command to be run by old_ribo_RunCommand()
+my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = ();    # array of files to remove at end
-my $r1_secs     = undef; # number of seconds required for round 1 search
-my $r2_secs     = undef; # number of seconds required for round 2 search
 my $ncpu        = opt_Get("-n", \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my $nbound      = opt_Get("-b", \%opt_HH); # number of positions to check for indels at 5' and 3' boundaries
 if($ncpu == 1) { $ncpu = 0; } # prefer --cpu 0 to --cpu 1
 
+# if $dir_out already exists remove it only if -f also used
+if(-d $dir_out) { 
+  $cmd = "rm -rf $dir_out";
+  if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+  else                        { die "ERROR intended output directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
+}
+elsif(-e $dir_out) { 
+  $cmd = "rm $dir_out";
+  if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+  else                        { die "ERROR a file matching the name of the intended output directory $dir_out already exists. Remove the file, or use -f to overwrite it."; }
+}
+# if $dir_out does not exist, create it
+if(! -d $dir_out) { 
+  $cmd = "mkdir $dir_out";
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+}
+my $dir_out_tail = $dir_out;
+$dir_out_tail    =~ s/^.+\///; # remove all but last dir
+my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribolengthchecker";
+
+# make sure the sequence and modelinfo files exist
 my $df_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
@@ -129,7 +148,6 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { 
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
-# make sure the sequence and modelinfo files exists
 ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
   ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
@@ -142,13 +160,65 @@ else { # -i used on the command line
 # read command line options for ribotyper from file if --riboopts used
 my $extra_ribotyper_options = "";
 if(opt_IsUsed("--riboopts", \%opt_HH)) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty(opt_Get("--riboopts", \%opt_HH), "--riboopts file", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
+}
+
+#############################################
+# output program banner and open output files
+#############################################
+# output preamble
+my @arg_desc_A = ();
+my @arg_A      = ();
+
+push(@arg_desc_A, "target sequence input file");
+push(@arg_A, $seq_file);
+
+push(@arg_desc_A, "output directory name");
+push(@arg_A, $dir_out);
+
+push(@arg_desc_A, sprintf("model information input file%s", opt_IsUsed("-i", \%opt_HH) ? " (-i)" : " (default)"));
+push(@arg_A, $modelinfo_file);
+
+my %extra_H    = ();
+$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
+$extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
+$extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
+ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
+opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
+
+# open the log and command files:
+# set output file names and file handles, and open those file handles
+my %ofile_info_HH = ();  # hash of information on output files we created,
+                         # 1D keys: 
+                         #  "fullpath":  full path to the file
+                         #  "nodirpath": file name, full path minus all directories
+                         #  "desc":      short description of the file
+                         #  "FH":        file handle to output to for this file, maybe undef
+                         # 2D keys:
+                         #  "log": log file of what's output to stdout
+                         #  "cmd": command file with list of all commands executed
+
+# open the list, log and command files 
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+my $log_FH = $ofile_info_HH{"FH"}{"log"};
+my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
+# output files are all open, if we exit after this point, we'll need
+# to close these first.
+
+# now we have the log file open, output the banner there too
+ofile_OutputBanner($log_FH, "RIBO", $version, $releasedate, $synopsis, $date, \%extra_H);
+opt_OutputPreamble($log_FH, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
+
+# output any commands we already executed to $log_FH
+foreach $cmd (@early_cmd_A) { 
+  print $cmd_FH $cmd . "\n";
+}
+
+# parse --riboopts file
+if(opt_IsUsed("--riboopts", \%opt_HH)) { 
   my $ribotyper_file = opt_Get("--riboopts", \%opt_HH);
-  if(! -e $ribotyper_file) { 
-    die "ERROR, $ribotyper_file supplied with the --riboopts option does not exist"; 
-  }
-  if(! -s $ribotyper_file) { 
-    die "ERROR, $ribotyper_file supplied with the --riboopts option exists but is empty";
-  }
   open(RIBO, $ribotyper_file) || die "ERROR, unable to open file $ribotyper_file for reading ribotyper options";
   $extra_ribotyper_options = <RIBO>;
   chomp $extra_ribotyper_options;
@@ -166,25 +236,6 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
   if($extra_ribotyper_options =~ m/\s*\--inaccept/)  { die "ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway"; }
   close(RIBO);
 }
-
-#############################################
-# output program banner and open output files
-#############################################
-# output preamble
-my @arg_desc_A = ();
-my @arg_A      = ();
-
-push(@arg_desc_A, "target sequence input file");
-push(@arg_A, $seq_file);
-
-push(@arg_desc_A, "output file name root");
-push(@arg_A, $out_root);
-
-push(@arg_desc_A, "model information input file");
-push(@arg_A, $modelinfo_file);
-
-ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
-opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 ###########################################################################
 # Step 1: Parse/validate input files
@@ -215,7 +266,7 @@ my $ssi_file = $seq_file . ".ssi";
 if(-e $ssi_file) { 
   unlink $ssi_file; 
 }
-ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
+old_ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
 if(! -s $ssi_file) { 
   die "ERROR, tried to create $ssi_file, but failed"; 
 } 
@@ -226,11 +277,9 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ####################################################
 $start_secs = ribo_OutputProgressPrior("Running ribotyper", $progress_w, undef, *STDOUT);
 
-my $dir_out_tail = $out_root;
-$dir_out_tail    =~ s/^.+\///; # remove all but last dir
-my $ribotyper_accept_file = $out_root . ".ribolengthchecker.ribotyper.accept";
+my $ribotyper_accept_file = $out_root . "ribotyper.accept";
 my $ribotyper_outdir      = $out_root . "-rt";
-my $ribotyper_outdir_tail = $dir_out_tail . "-rt";
+my $ribotyper_outdir_tail = $dir_out_tail . ".ribolengthchecker-rt";
 my $ribotyper_outfile     = $out_root . ".ribotyper.out";
 my $ribotyper_short_file  = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
 my $ribotyper_long_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
@@ -252,14 +301,14 @@ my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfai
 if(! opt_IsUsed("--noscfail", \%opt_HH))  { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
-ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
+old_ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH));
 ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 # parse ribotyper output and create sfetch input files for sequences to fetch
 my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name
 my %family_sfetch_FH_H = ();        # key: family name, value: output file handle for sfetch input file
 foreach $family (@family_order_A) { 
-  $family_sfetch_filename_H{$family} = $out_root . ".ribolengthchecker." . $family . ".sfetch";
+  $family_sfetch_filename_H{$family} = $out_root . "." . $family . ".sfetch";
   open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
 }
 
@@ -319,12 +368,12 @@ my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign op
 
 foreach $family (@family_order_A) { 
   if(-s $family_sfetch_filename_H{$family}) { 
-    $cmalign_stk_file    = $out_root . ".ribolengthchecker." . $family . ".cmalign.stk";
-    $cmalign_insert_file = $out_root . ".ribolengthchecker." . $family . ".cmalign.ifile";
-    $cmalign_el_file     = $out_root . ".ribolengthchecker." . $family . ".cmalign.elfile";
-    $cmalign_out_file    = $out_root . ".ribolengthchecker." . $family . ".cmalign.out";
-    #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    $cmalign_stk_file    = $out_root . "." . $family . ".cmalign.stk";
+    $cmalign_insert_file = $out_root . "." . $family . ".cmalign.ifile";
+    $cmalign_el_file     = $out_root . "." . $family . ".cmalign.elfile";
+    $cmalign_out_file    = $out_root . "." . $family . ".cmalign.out";
+    #old_ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+    old_ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@ifile_str_A,       sprintf("# %-18s %6s %-12s sequences saved as $cmalign_insert_file\n", "Insert file of", "all", $family));
     push(@elfile_str_A,      sprintf("# %-18s %6s %-12s sequences saved as $cmalign_el_file\n", "EL file of", "all", $family));
@@ -346,11 +395,11 @@ foreach $family (@family_order_A) {
   foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig", "partial-ambig") { 
     if((exists $family_length_class_HHA{$family}{$length_class}) && 
        (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
-      $length_class_list_file = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".list";
-      $cmalign_stk_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".stk";
-      $cmalign_insert_file    = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".ifile";
-      $cmalign_el_file        = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".elfile";
-      $cmalign_out_file       = $out_root . ".ribolengthchecker." . $family . "." . $length_class . ".cmalign";
+      $length_class_list_file = $out_root . "." . $family . "." . $length_class . ".list";
+      $cmalign_stk_file       = $out_root . "." . $family . "." . $length_class . ".stk";
+      $cmalign_insert_file    = $out_root . "." . $family . "." . $length_class . ".ifile";
+      $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
+      $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
       open(OUT, ">", $length_class_list_file) || die "ERROR, unable to open $length_class_list_file for writing";
       push(@listfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $length_class_list_file\n", "List of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       push(@stkfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_stk_file\n", "Alignment of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
@@ -361,8 +410,8 @@ foreach $family (@family_order_A) {
         print OUT $seqname . "\n";
       }
       close(OUT);
-      #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      #old_ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
+      old_ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH));
     }
   }
 }

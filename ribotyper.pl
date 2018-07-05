@@ -11,7 +11,7 @@ require "epn-options.pm";
 require "epn-ofile.pm";
 require "ribo.pm";
 
-# make sure the RIBODIR environment variable is set set
+# make sure required environment variables are set
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
@@ -316,6 +316,7 @@ my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
 my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribotyper";
 
+# make sure the sequence and modelinfo files exist
 my $df_modelinfo_file = $df_model_dir . "ribo." . $model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
@@ -324,7 +325,6 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { 
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
-# make sure the sequence and modelinfo files exist
 ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
   ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
@@ -347,7 +347,7 @@ push(@arg_A, $seq_file);
 push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
-push(@arg_desc_A, "model information input file");
+push(@arg_desc_A, sprintf("model information input file%s", opt_IsUsed("-i", \%opt_HH) ? " (-i)" : " (default)"));
 push(@arg_A, $modelinfo_file);
 
 my %extra_H    = ();
