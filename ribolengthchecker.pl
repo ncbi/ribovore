@@ -206,7 +206,7 @@ my $FH_HR  = $ofile_info_HH{"FH"};
 # to close these first.
 
 # now we have the log file open, output the banner there too
-ofile_OutputBanner($log_FH, "RIBO", $version, $releasedate, $synopsis, $date, \%extra_H);
+ofile_OutputBanner($log_FH, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble($log_FH, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 # output any commands we already executed to $log_FH
