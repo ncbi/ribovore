@@ -225,13 +225,13 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
       ofile_FAIL("ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line", "RIBO", 1, $FH_HR);
     }
   }
-  if($extra_ribotyper_options =~ m/\s*\-f/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR);
-  if($extra_ribotyper_options =~ m/\s*\--keep/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, it will be used anyway", "RIBO", 1, $FH_HR);
-  if($extra_ribotyper_options =~ m/\s*\-n/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR);
-  if($extra_ribotyper_options =~ m/\s*\--scfail/)    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR);
-  if($extra_ribotyper_options =~ m/\s*\--covfail/)   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR);
-  if($extra_ribotyper_options =~ m/\s*\--minusfail/) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR);
-  if($extra_ribotyper_options =~ m/\s*\--inaccept/)  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR);
+  if($extra_ribotyper_options =~ m/\s*\-f/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--keep/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\-n/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--scfail/)    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--covfail/)   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--minusfail/) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--inaccept/)  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR); }
   close(RIBO);
 }
 
@@ -293,6 +293,7 @@ foreach $family (@family_order_A) {
   }
 }
 close(ACCEPT);
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
 
 # run ribotyper
 my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
@@ -339,8 +340,9 @@ close(RIBO);
 
 foreach $family (@family_order_A) { 
   close($family_sfetch_FH_H{$family});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, "sfetch file for $family");
 }
-
+                                                       
 ####################################################
 # Step 3: Run cmalign on full sequence file
 ####################################################
@@ -398,79 +400,71 @@ foreach $family (@family_order_A) {
       $cmalign_insert_file    = $out_root . "." . $family . "." . $length_class . ".ifile";
       $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
+
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "EL",      $cmalign_el_file,     1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+
       open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
-      push(@listfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $length_class_list_file\n", "List of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      push(@stkfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_stk_file\n", "Alignment of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      push(@ifile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_insert_file\n", "Insert file of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      push(@elfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_el_file\n", "EL file of", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      push(@cmalignfile_str_A, sprintf("# %-18s %6d %-12s %10s sequences saved as $cmalign_out_file\n", "cmalign output for", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }
       close(OUT);
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "listfile", $length_class_list_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "List file", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
       ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
     }
   }
 }
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-
+                                                       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+                                                       
 ##############################
 # Create output file and exit.
 ##############################
 my $output_file = $out_root . ".ribolengthchecker.tbl.out";
 output_tabular_file($output_file, $ribotyper_short_file, $nbound, \%out_tbl_HH, $FH_HR);
 
-print("#\n");
-my $str;
-foreach $str (@listfile_str_A)    { print $str; }
-print("#\n");
-foreach $str (@stkfile_str_A)     { print $str; }
-print("#\n");
-foreach $str (@ifile_str_A)     { print $str; }
-print("#\n");
-foreach $str (@elfile_str_A)     { print $str; }
-print("#\n");
-foreach $str (@cmalignfile_str_A) { print $str; }
-
 if((scalar(@fail_str_A) == 0) && (scalar(@nomatch_str_A) == 0)) { 
-  printf("#\n# All input sequences passed ribotyper and were aligned.\n#\n");
+  ofile_OutputString($log_FH, 1, "#\n# All input sequences passed ribotyper and were aligned.\n");
 }
 else { 
   if(scalar(@fail_str_A) > 0) { 
-    printf("#\n# WARNING: %d sequence(s) classified as one of:", scalar(@fail_str_A)); 
+    ofile_OutputString($log_FH, 1, "#\n# WARNING: %d sequence(s) classified as one of:", scalar(@fail_str_A)); 
     foreach $family (@family_order_A) { 
-      print " $family";
+      ofile_OutputString($log_FH, 1, " $family");
     }
-    print(", but FAILed ribotyper:\n");
+    ofile_OutputString($log_FH, 1, ", but FAILed ribotyper:\n");
     foreach my $str (@fail_str_A) { 
-      print "#  " . $str;
+      ofile_OutputString($log_FH, 1, "#  " . $str);
     }
   }
   else { 
-    printf("#\n# All sequences failed ribotyper.\n");
+    ofile_OutputString($log_FH, 1, "#\n# All sequences failed ribotyper.\n");
   }
   if(scalar(@nomatch_str_A) > 0) {
-    printf("#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A)); 
+    ofile_OutputString($log_FH, 1, "#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A)); 
     foreach $family (@family_order_A) { 
-      print " $family";
+      ofile_OutputString($log_FH, 1, " $family");
     }
-    print("\n");
+    ofile_OutputString($log_FH, 1, "\n");
     foreach my $str (@nomatch_str_A) { 
-      print "#  " . $str;
+      ofile_OutputString($log_FH, 1, "#  " . $str);
     }
   }
   else { 
-    printf("#\n# All sequences that passed ribotyper were aligned.\n");
+    ofile_OutputString($log_FH, 1, "#\n# All sequences that passed ribotyper were aligned.\n");
   }
-  print("#\n# See details in:\n#  $ribotyper_short_file\n#  and\n#  $ribotyper_long_file\n#\n");
+  ofile_OutputString($log_FH, 1, "#\n# See details in:\n#  $ribotyper_short_file\n#  and\n#  $ribotyper_long_file\n#\n");
 }
 
-print("#\n# ribotyper output saved as $ribotyper_outfile\n");
-print("# ribotyper output directory saved as $ribotyper_outdir\n");
+ofile_OutputString($log_FH, 1, "#\n# ribotyper output saved as $ribotyper_outfile\n");
+ofile_OutputString($log_FH, 1, "# ribotyper output directory saved as $ribotyper_outdir\n");
 
-print("#\n# Tabular output saved to file $output_file\n");
-print("#\n#[RIBO-SUCCESS]\n");
+ofile_OutputString($log_FH, 1, "#\n# Tabular output saved to file $output_file\n");
+
+$total_seconds += ribo_SecondsSinceEpoch();
+ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 
 #################################################################
 # SUBROUTINES
