@@ -184,7 +184,7 @@ $| = 1;
 
 # print help and exit if necessary
 if((! $options_okay) || ($GetOptions_H{"-h"})) { 
-  ribo_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date);
+  ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, undef);
   opt_OutputHelp(*STDOUT, $usage, \%opt_HH, \@opt_order_A, \%opt_group_desc_H);
   if(! $options_okay) { die "ERROR, unrecognized option;"; }
   else                { exit 0; } # -h, exit with 0 status
@@ -443,20 +443,20 @@ my $final_long_out_FH     = undef; # output file handle for final long output fi
 my $final_short_out_FH    = undef; # output file handle for final short output file
 
 
-open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for writing";
-open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for writing";
-open($r1_srt_long_out_FH,    ">", $r1_srt_long_out_file)    || die "ERROR unable to open $r1_srt_long_out_file for writing";
-open($r1_srt_short_out_FH,   ">", $r1_srt_short_out_file)   || die "ERROR unable to open $r1_srt_short_out_file for writing";
+open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || ofile_FileOpenFailure($r1_unsrt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || ofile_FileOpenFailure($r1_unsrt_short_out_FH, "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_srt_long_out_FH,    ">", $r1_srt_long_out_file)    || ofile_FileOpenFailure($r1_srt_long_out_FH,    "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_srt_short_out_FH,   ">", $r1_srt_short_out_file)   || ofile_FileOpenFailure($r1_srt_short_out_FH,   "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
 if(defined $alg2) { 
-  open($r2_unsrt_long_out_FH,  ">", $r2_unsrt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for writing";
-  open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for writing";
-  open($r2_srt_long_out_FH,    ">", $r2_srt_long_out_file)    || die "ERROR unable to open $r2_srt_long_out_file for writing";
-  open($r2_srt_short_out_FH,   ">", $r2_srt_short_out_file)   || die "ERROR unable to open $r2_srt_short_out_file for writing";
-  open($final_long_out_FH,     ">", $final_long_out_file)     || die "ERROR unable to open $final_long_out_file for writing";
-  open($final_short_out_FH,    ">", $final_short_out_file)    || die "ERROR unable to open $final_short_out_file for writing";
+  open($r2_unsrt_long_out_FH,  ">", $r2_unsrt_long_out_file)  || ofile_FileOpenFailure($r1_unsrt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || ofile_FileOpenFailure($r1_unsrt_short_out_FH, "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_srt_long_out_FH,    ">", $r2_srt_long_out_file)    || ofile_FileOpenFailure($r1_srt_long_out_FH,    "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_srt_short_out_FH,   ">", $r2_srt_short_out_file)   || ofile_FileOpenFailure($r1_srt_short_out_FH,   "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($final_long_out_FH,     ">", $final_long_out_file)     || ofile_FileOpenFailure($final_long_out_FH,     "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($final_short_out_FH,    ">", $final_short_out_file)    || ofile_FileOpenFailure($final_short_out_FH,    "RIBO", "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
 }
-my $have_evalues_r1 = determine_if_we_have_evalues(1, \%opt_HH);
-my $have_evalues_r2 = determine_if_we_have_evalues(2, \%opt_HH);
+my $have_evalues_r1 = determine_if_we_have_evalues(1, \%opt_HH, $ofile_info_HH{"FH"});
+my $have_evalues_r2 = determine_if_we_have_evalues(2, \%opt_HH, $ofile_info_HH{"FH"});
 my @ufeature_A    = (); # array of unexpected feature strings
 my %ufeature_ct_H = (); # hash of counts of unexpected features (keys are elements of @{$ufeature_A})
 initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
@@ -465,7 +465,7 @@ initialize_ufeature_stats(\@ufeature_A, \%ufeature_ct_H, \%opt_HH);
 # Step 1: Parse/validate input files
 ###########################################################################
 my $progress_w = 48; # the width of the left hand column in our progress output, hard-coded
-my $start_secs = ribo_OutputProgressPrior("Validating input files", $progress_w, undef, *STDOUT);
+my $start_secs = ofile_OutputProgressPrior("Validating input files", $progress_w, $log_FH, *STDOUT);
 
 # parse model info file, which checks that all CM files exist
 # variables related to fams and domains
@@ -475,12 +475,12 @@ my %indi_cmfile_H = (); # hash of individual CM files; key model name: path to i
 my %sfetchfile_H  = (); # key is model, value is name of sfetch input file to use to create $seqfile_H{$model}
 my %seqfile_H     = (); # key is model, value is name of sequence file search this model with for round 2, undef if none
 
-my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH);
+my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
 my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
-$width_H{"model"} = parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H);
+$width_H{"model"} = parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
 
 # determine max width of domain, family, and classification (formed as family.domain)
 $width_H{"domain"}         = length("domain");
@@ -504,7 +504,7 @@ if(opt_IsUsed("--inaccept", \%opt_HH)) {
     $accept_H{$model}   = 0;
     $question_H{$model} = 0;
   }    
-  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H, \%question_H);
+  parse_inaccept_file(opt_Get("--inaccept", \%opt_HH), \%accept_H, \%question_H, $ofile_info_HH{"FH"});
 }
 else { # --inaccept not used, all models are acceptable
   foreach $model (keys %domain_H) { 
@@ -521,14 +521,14 @@ if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0)) {
 }
 ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-  die "ERROR, tried to create $ssi_file, but failed"; 
+  ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $ofile_info_HH{"FH"}); 
 }
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################
 # Step 2: Use esl-seqstat to determine sequence lengths of all target seqs
 ###########################################################################
-$start_secs = ribo_OutputProgressPrior("Determining target sequence lengths", $progress_w, undef, *STDOUT);
+$start_secs = ofile_OutputProgressPrior("Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
 my $tot_nnt = 0;   # total number of nucleotides in target sequence file (summed length of all seqs)
 my $Z_value = 0;   # total number of Mb of search space in target sequence file, 
                    # this is (2*$tot_nnt)/1000000 (the 2 is because we search both strands)
@@ -550,15 +550,15 @@ $tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
-output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H);
+output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H, $ofile_info_HH{"FH"});
 output_short_headers($r1_srt_short_out_FH, \%width_H);
 if(defined $alg2) { 
-  output_long_headers($r2_srt_long_out_FH, 2, \%opt_HH, \%width_H);
+  output_long_headers($r2_srt_long_out_FH, 2, \%opt_HH, \%width_H, $ofile_info_HH{"FH"});
   output_short_headers($r2_srt_short_out_FH, \%width_H);
-  output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H);
+  output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H, $ofile_info_HH{"FH"});
   output_short_headers($final_short_out_FH, \%width_H);
 }
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################
 # Step 3: classify sequences using round 1 search algorithm
@@ -576,22 +576,22 @@ my $r1_sort_cmd = "";
 $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
 $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
-$alg1_opts             = determine_cmsearch_opts($alg1, \%opt_HH);
-$r1_sort_cmd           = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH);
+$alg1_opts             = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"});
+$r1_sort_cmd           = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
 $r1_search_cmd         = $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu $alg1_opts --tblout $r1_tblout_file $master_model_file $seq_file > $r1_searchout_file";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Classifying sequences", $progress_w, $log_FH, *STDOUT);
 }
 else { 
-  $start_secs = ribo_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
 }
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   ribo_RunCommand($r1_search_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 }
 else { 
   if(! -s $r1_tblout_file) { 
-    die "ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not";
+    ofile_FAIL("ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
   }
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
@@ -612,26 +612,26 @@ else {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
   }
 }
-$r1_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+$r1_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################
 # Step 4: Sort round 1 output
 ###########################################################################
-$start_secs = ribo_OutputProgressPrior("Sorting classification results", $progress_w, undef, *STDOUT);
+$start_secs = ofile_OutputProgressPrior("Sorting classification results", $progress_w, $log_FH, *STDOUT);
 ribo_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ###########################################################################
 
 ###########################################################################
 # Step 5: Parse round 1 sorted output
 ###########################################################################
-$start_secs = ribo_OutputProgressPrior("Processing classification results", $progress_w, undef, *STDOUT);
+$start_secs = ofile_OutputProgressPrior("Processing classification results", $progress_w, $log_FH, *STDOUT);
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
-                      \%family_H, \%domain_H, \%accept_H, \%question_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH);
+                      \%family_H, \%domain_H, \%accept_H, \%question_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, $ofile_info_HH{"FH"});
 
 # add data for sequences with 0 hits and then sort the output files 
 # based on sequence index from original input file.
-output_all_hitless_targets($r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 1: round 1
+output_all_hitless_targets($r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, $ofile_info_HH{"FH"}); # 1: round 1
 
 # now close the unsorted file handles (we're done with these) 
 # and also the sorted file handles (so we can output directly to them using system())
@@ -664,14 +664,14 @@ $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
 ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
 # reopen them, and add tails to the output files
-open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for appending";
-open($r1_srt_short_out_FH, ">>", $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for appending";
-output_long_tail($r1_srt_long_out_FH, 1, \@ufeature_A, \%opt_HH); # 1: round 1 of searching
+open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
+open($r1_srt_short_out_FH, ">>", $r1_srt_short_out_file) || ofile_FileOpenFailure($r1_srt_short_out_FH, "RIBO", "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
+output_long_tail($r1_srt_long_out_FH, 1, \@ufeature_A, \%opt_HH, $ofile_info_HH{"FH"}); # 1: round 1 of searching
 output_short_tail($r1_srt_short_out_FH, \@ufeature_A, \%opt_HH);
 close($r1_srt_short_out_FH);
 close($r1_srt_long_out_FH);
 
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################
 # Step 6: Parse the round 1 output to create sfetch files for fetching
@@ -679,7 +679,7 @@ ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 ###########################################################################
 if(defined $alg2) { # only do this if we're doing a second round of searching
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = ribo_OutputProgressPrior("Fetching per-model sequence sets", $progress_w, undef, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("Fetching per-model sequence sets", $progress_w, $log_FH, *STDOUT);
     
     my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
     # first initialize all arrays to empty
@@ -688,14 +688,14 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     }
     
     # fill the arrays with sequence names for each model
-    parse_round1_long_file($r1_srt_long_out_file, \%seqsub_HA); 
+    parse_round1_long_file($r1_srt_long_out_file, \%seqsub_HA, $ofile_info_HH{"FH"}); 
     
     # create the sfetch files with sequence names
     foreach $model (sort keys %family_H) { 
       $sfetchfile_H{$model} = undef;
       if(scalar(@{$seqsub_HA{$model}}) > 0) { 
         $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
-        write_array_to_file($seqsub_HA{$model}, $sfetchfile_H{$model}); 
+        write_array_to_file($seqsub_HA{$model}, $sfetchfile_H{$model}, $ofile_info_HH{"FH"}); 
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $sfetchfile_H{$model});
         }
@@ -704,7 +704,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         }
       }
     }
-    ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     
     foreach $model (sort keys %family_H) { 
       if(defined $sfetchfile_H{$model}) { 
@@ -735,12 +735,12 @@ my $r2_all_sort_cmd;              # sort command for $r2_all_tblout_file to crea
 my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
 if(defined $alg2) { 
-  $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH);
+  $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH, $ofile_info_HH{"FH"});
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = ribo_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, undef, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, $log_FH, *STDOUT);
   }
   else { 
-    $start_secs = ribo_OutputProgressPrior("Skipping sequence search (using results from previous run)", $progress_w, undef, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("Skipping sequence search (using results from previous run)", $progress_w, $log_FH, *STDOUT);
   }
   my $cmd  = undef;
   foreach $model (sort keys %family_H) { 
@@ -769,28 +769,28 @@ if(defined $alg2) {
       }
       else { 
         if(! -s $r2_tblout_file_A[$midx]) { 
-          die "ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not";
+          ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
         }
       }
       $midx++; 
     }
   }
   $nr2 = $midx;
-  $r2_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+  $r2_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
   # concatenate round 2 tblout files 
   my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
   $r2_all_tblout_file = $out_root . ".r2.all.cmsearch.tbl";
   if(defined $alg2) { 
     if($nr2 >= 1) { 
-      $start_secs = ribo_OutputProgressPrior("Concatenating tabular round 2 search results", $progress_w, undef, *STDOUT);
+      $start_secs = ofile_OutputProgressPrior("Concatenating tabular round 2 search results", $progress_w, $log_FH, *STDOUT);
       $cat_cmd = "cat $r2_tblout_file_A[0] ";
       for($midx = 1; $midx < $nr2; $midx++) { 
         $cat_cmd .= "$r2_tblout_file_A[$midx] ";
       }
       $cat_cmd .= "> " . $r2_all_tblout_file;
       ribo_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-      ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+      ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_all_tblout_file);
       }
@@ -805,9 +805,9 @@ if(defined $alg2) {
 # Step 8: Sort round 2 output
 ###########################################################################
 if((defined $alg2) && ($nr2 > 0)) { 
-  $start_secs = ribo_OutputProgressPrior("Sorting search results", $progress_w, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Sorting search results", $progress_w, $log_FH, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
-  $r2_all_sort_cmd = determine_sort_cmd($alg2, $r2_all_tblout_file, $r2_all_sorted_tblout_file, \%opt_HH);
+  $r2_all_sort_cmd = determine_sort_cmd($alg2, $r2_all_tblout_file, $r2_all_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
   ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $r2_all_sorted_tblout_file);
@@ -815,21 +815,21 @@ if((defined $alg2) && ($nr2 > 0)) {
   else { 
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sortedr2alltblout", $r2_all_sorted_tblout_file, 0, "sorted concatenated tblout file for round 2");
   }
-  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 
 ###########################################################################
 # Step 9: Parse round 2 sorted output
 ###########################################################################
 if(defined $alg2) { 
-  $start_secs = ribo_OutputProgressPrior("Processing tabular round 2 search results", $progress_w, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Processing tabular round 2 search results", $progress_w, $log_FH, *STDOUT);
   if($nr2 > 0) { 
     parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
-                          \%family_H, \%domain_H, \%accept_H, \%question_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH);
+                          \%family_H, \%domain_H, \%accept_H, \%question_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, $ofile_info_HH{"FH"});
   }
   # add data for sequences with 0 hits and then sort the output files 
   # based on sequence index from original input file.
-  output_all_hitless_targets($r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H); # 2: round 2
+  output_all_hitless_targets($r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, $ofile_info_HH{"FH"}); # 2: round 2
 
   # now close the unsorted file handles (we're done with these) 
   # and also the sorted file handles (so we can output directly to them using system())
@@ -847,9 +847,9 @@ if(defined $alg2) {
 
   # reopen them, and add tails to the output files
   # now that we know the max sequence name length, we can output headers to the output files
-  open($r2_srt_long_out_FH,  ">>", $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for appending";
-  open($r2_srt_short_out_FH, ">>", $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for appending";
-  output_long_tail($r2_srt_long_out_FH, 2, \@ufeature_A, \%opt_HH); # 2: round 2 of searching
+  open($r2_srt_long_out_FH,  ">>", $r2_srt_long_out_file)  || ofile_FileOpenFailure($r2_srt_long_out_FH,   "RIBO", "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
+  open($r2_srt_short_out_FH, ">>", $r2_srt_short_out_file) || ofile_FileOpenFailure($r2_srt_short_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
+  output_long_tail($r2_srt_long_out_FH, 2, \@ufeature_A, \%opt_HH, $ofile_info_HH{"FH"}); # 2: round 2 of searching
   output_short_tail($r2_srt_short_out_FH, \@ufeature_A, \%opt_HH);
   close($r2_srt_short_out_FH);
   close($r2_srt_long_out_FH);
@@ -867,7 +867,7 @@ if(defined $alg2) {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_srt_short",    $r2_srt_short_out_file,   0, "round 2 sorted short output file");
   }
   
-  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 ###########################################################################
 # Step 10: Combine the round 1 and round 2 output files to create the 
@@ -878,49 +878,46 @@ my %class_stats_HH = (); # hash of hashes with summary statistics
                          # 2D key: "nseq", "nnt_cov", "nnt_tot"
 
 if(defined $alg2) { 
-  $start_secs = ribo_OutputProgressPrior("Creating final output files", $progress_w, undef, *STDOUT);
-  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
-  open($r1_srt_short_out_FH, $r1_srt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for reading";
-  open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || die "ERROR unable to open $r2_unsrt_long_out_file for reading";
-  open($r2_srt_short_out_FH, $r2_srt_short_out_file) || die "ERROR unable to open $r2_unsrt_short_out_file for reading";
+  $start_secs = ofile_OutputProgressPrior("Creating final output files", $progress_w, $log_FH, *STDOUT);
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r1_srt_short_out_FH, $r1_srt_short_out_file) || ofile_FileOpenFailure($r1_srt_short_out_FH, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || ofile_FileOpenFailure($r2_srt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r2_srt_short_out_FH, $r2_srt_short_out_file) || ofile_FileOpenFailure($r2_srt_short_out_FH, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
   output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1,  # 1: $do_short = TRUE
-                                     undef, undef, \%width_H, \%opt_HH);
+                                     undef, undef, \%width_H, \%opt_HH, $ofile_info_HH{"FH"});
   output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0,  # 0: $do_short = FALSE
-                                     \%class_stats_HH, \%ufeature_ct_H, \%width_H, \%opt_HH);
+                                     \%class_stats_HH, \%ufeature_ct_H, \%width_H, \%opt_HH, $ofile_info_HH{"FH"});
   output_short_tail($final_short_out_FH, \@ufeature_A, \%opt_HH);
-  output_long_tail($final_long_out_FH, "final", \@ufeature_A, \%opt_HH);
+  output_long_tail($final_long_out_FH, "final", \@ufeature_A, \%opt_HH, $ofile_info_HH{"FH"});
   close($final_short_out_FH);
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "short_out",  $final_short_out_file, 0, "final short output file");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "long_out",   $final_long_out_file, 0, "final long output file");
-  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "short_out",  $final_short_out_file, 1, "Short (6 column) output");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "long_out",   $final_long_out_file,  1, sprintf("Long (%d column) output", determine_number_of_columns_in_long_output_file("final", \%opt_HH, $ofile_info_HH{"FH"})));
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 else { 
   # no $alg2, so we only did one round of searching, fill the %class_stats_HH and %ufeature_ct_H stats hashes
-  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for reading";
-  get_stats_from_long_file_for_sole_round($r1_srt_long_out_FH, \%class_stats_HH, \%ufeature_ct_H, \%opt_HH);
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  get_stats_from_long_file_for_sole_round($r1_srt_long_out_FH, \%class_stats_HH, \%ufeature_ct_H, \%opt_HH, $ofile_info_HH{"FH"});
 }
 
+##########
+# Conclude
+##########
 # remove files we don't want anymore, then exit
 foreach my $file (@to_remove_A) { 
   unlink $file;
 }
 
 output_summary_statistics(*STDOUT, \%class_stats_HH);
+output_summary_statistics($log_FH, \%class_stats_HH);
 output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
+output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
 
 $total_seconds += ribo_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
-  
-#printf("#\n# Round 1 short (6 column) output saved to file $r1_srt_short_out_file\n");
-#printf("# Round 1 long (%d column) output saved to file $r1_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(1, \%opt_HH));
-#if(defined $alg2) { 
-#  printf("# Round 2 short (6 column) output saved to file $r2_srt_short_out_file\n");
-#  printf("# Round 2 long (%d column) output saved to file $r2_srt_long_out_file\n", determine_number_of_columns_in_long_output_file(2, \%opt_HH));
-#}
-printf("#\n# Short (6 column) output saved to file $final_short_out_file\n");
-printf("# Long (%d column) output saved to file $final_long_out_file\n", determine_number_of_columns_in_long_output_file("final", \%opt_HH));
-printf("#\n#[RIBO-SUCCESS]\n");
+output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
 
+ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 ###########################################################################
 
 #####################################################################
@@ -963,7 +960,8 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $indi_cmfile_HR:  ref to hash of CM files, key is model name, value is path to CM file
-#   $opt_HHR:         reference to 2D hash of cmdline options (needed to determine if -i was used)
+#   $opt_HHR:         ref to 2D hash of cmdline options (needed to determine if -i was used)
+#   $FH_HR:           ref to hash of file handles, including "cmd"
 #
 # Returns:     Path to master CM file. Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
 # 
@@ -977,11 +975,11 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 ################################################################# 
 sub parse_modelinfo_file { 
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR) = @_;
+  my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
 
   my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
   my $found_master      = 0;     # set to '1' when we find master file line
@@ -1006,13 +1004,13 @@ sub parse_modelinfo_file {
   # *all*            -   -       ribo.0p02.cm
   # ---
   # exactly one line must have model name as '*all*'
-  open(IN, $modelinfo_file) || die "ERROR unable to open $modelinfo_file for reading"; 
+  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
   while(my $line = <IN>) { 
     if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
       chomp $line;
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 4) { 
-        die "ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line"; 
+        ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", "RIBO", 1, $FH_HR);
       }
       my($model, $family, $domain, $cmfile) = (@el_A);
       
@@ -1024,16 +1022,16 @@ sub parse_modelinfo_file {
         $in_nondf = ribo_CheckIfFileExistsAndIsNonEmpty($non_df_model_file, undef, $sub_name, 0); # don't die if it doesn't exist
         $in_df    = ribo_CheckIfFileExistsAndIsNonEmpty($df_model_file,     undef, $sub_name, 0); # don't die if it doesn't exist
         if(($in_nondf != 0) && ($in_df != 0)) { # exists in two places
-          die "ERROR in $sub_name, looking for model file $cmfile, found it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\nIt can only exist in one of these places, so either\nrename it or remove of the copies (do NOT remove the copy from the default model directory unless you put it there)\n."
+          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, found it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\nIt can only exist in one of these places, so either\nrename it or remove of the copies (do NOT remove the copy from the default model directory unless you put it there).\n", "RIBO", 1, $ofile_info_HH{"FH"});
         }
         elsif(($in_nondf == 0) && ($in_df == 0)) { 
-          die "ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n";
+          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n", "RIBO", 1, $ofile_info_HH{"FH"});
         }
         elsif(($in_nondf == -1) && ($in_df == 0)) { 
-          die "ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty";
+          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
         }
         elsif(($in_nondf == 0) && ($in_df == -1)) { 
-          die "ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty";
+          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
         }
        elsif($in_nondf == 1) { 
           $cmfile = $non_df_model_file;
@@ -1042,7 +1040,7 @@ sub parse_modelinfo_file {
           $cmfile = $df_model_file;
         }
         else { 
-          die "ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n";
+          ofile_FAIL("ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n", "RIBO", 1, $ofile_info_HH{"FH"});
         }
       }     
       else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
@@ -1052,14 +1050,14 @@ sub parse_modelinfo_file {
         
       if($model eq "*all*") { 
         if($found_master) { 
-          die "ERROR read model $model twice in $modelinfo_file";
+          ofile_FAIL("ERROR read model $model twice in $modelinfo_file", "RIBO", 1, $ofile_info_HH{"FH"});
         }
         $found_master = 1;
         $master_cmfile = $cmfile;
       }
       else { 
         if(exists $family_HR->{$model}) { 
-          die "ERROR read model $model twice in $modelinfo_file"; 
+          ofile_FAIL("ERROR read model $model twice in $modelinfo_file", "RIBO", 1, $ofile_info_HH{"FH"}); 
         }
         $family_HR->{$model}      = $family;
         $domain_HR->{$model}      = $domain;
@@ -1071,15 +1069,15 @@ sub parse_modelinfo_file {
 
   if(! $found_master) { 
     if($opt_i_used) { 
-      die "ERROR in $sub_name, didn't read special line with '*all*' as first token\nin modelinfo file $modelinfo_file (specified with -i) which\nspecifies the master CM file"; 
+      ofile_FAIL("ERROR in $sub_name, didn't read special line with '*all*' as first token\nin modelinfo file $modelinfo_file (specified with -i) which\nspecifies the master CM file", "RIBO", 1, $FH_HR); 
     }
     else { 
-      die "ERROR in $sub_name, didn't read special line'*all*' as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?\n";
+      ofile_FAIL("ERROR in $sub_name, didn't read special line'*all*' as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?", "RIBO", 1, $FH_HR);
     }
   }
 
   return $master_cmfile;
-}
+  }
 
 #################################################################
 # Subroutine : parse_inaccept_file()
@@ -1093,6 +1091,7 @@ sub parse_modelinfo_file {
 #                    This hash should already be defined with all model names and all values as '0'.
 #   $question_HR:    ref to hash of names, key is model name, value is '1' if model is questionable
 #                    This hash should already be defined with all model names and all values as '0'.
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing. Updates %{$accept_HR} and %{$question_HR}.
 # 
@@ -1100,17 +1099,15 @@ sub parse_modelinfo_file {
 #
 ################################################################# 
 sub parse_inaccept_file { 
-  my $nargs_expected = 3;
+  my $nargs_expected = 4;
   my $sub_name = "parse_inaccept_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($inaccept_file, $accept_HR, $question_HR) = @_;
+  my ($inaccept_file, $accept_HR, $question_HR, $FH_HR) = @_;
 
-  open(IN, $inaccept_file) || die "ERROR unable to open input accept file $inaccept_file for reading";
-
-# example lines (two token per line)
-# SSU_rRNA_archaea questionable
-# SSU_rRNA_bacteria acceptable
+  # example lines (two token per line)
+  # SSU_rRNA_archaea questionable
+  # SSU_rRNA_bacteria acceptable
 
   # construct string of all valid model names to use for error message
   my $valid_name_str = "\n";
@@ -1120,37 +1117,37 @@ sub parse_inaccept_file {
   }
 
   my $accept_or_question; # second token from the inaccept file
-  open(IN, $inaccept_file) || die "ERROR unable to open $inaccept_file for reading"; 
+  open(IN, $inaccept_file) || ofile_FileOpenFailure($inaccept_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   while(my $line = <IN>) { 
     chomp $line;
     if(($line !~ m/^\#/) && ($line =~ m/\w/))  { # skip comment and blank lines
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 2) { 
-        die "ERROR, in $sub_name, there are not exactly two tokens in inaccept input file $inaccept_file, line $line\nEach line should have a valid model name then white space and then the word 'acceptable' or the word 'questionable' "; 
+        ofile_FAIL("ERROR, in $sub_name, there are not exactly two tokens in inaccept input file $inaccept_file, line $line\nEach line should have a valid model name then white space and then the word 'acceptable' or the word 'questionable' ", "RIBO", 1, $FH_HR); 
       }
       ($model, $accept_or_question) = (@el_A);
       
       if(! exists $accept_HR->{$model}) { 
-        die "ERROR, in $sub_name, read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+        ofile_FAIL("ERROR, in $sub_name, read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str", "RIBO", 1, $FH_HR); 
       }
       if(! exists $question_HR->{$model}) { 
-        die "ERROR, in $sub_name,  read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str"; 
+        ofile_FAIL("ERROR, in $sub_name,  read invalid model name \"$model\" in inaccept input file $inaccept_file\nValid model names are $valid_name_str", "RIBO", 1, $FH_HR); 
       }
 
       if($accept_or_question eq "acceptable") { 
         if($question_HR->{$model}) { 
-          die "ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable";
+          ofile_FAIL("ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable", "RIBO", 1, $FH_HR);
         }
         $accept_HR->{$model} = 1;
       }
       elsif($accept_or_question eq "questionable") { 
         if($accept_HR->{$model}) { 
-          die "ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable";
+          ofile_FAIL("ERROR, in $sub_name, read model name \"$model\" name twice in $inaccept_file, once with acceptable and once with questionable", "RIBO", 1, $FH_HR);
         }
         $question_HR->{$model} = 1;
       }
       else { 
-        die "ERROR, in $sub_name, read unexpected second token $accept_or_question on line: $line\n";
+        ofile_FAIL("ERROR, in $sub_name, read unexpected second token $accept_or_question on line: $line", "RIBO", 1, $FH_HR);
       }
     }
   }
@@ -1177,8 +1174,9 @@ sub parse_inaccept_file {
 #   $master_model_file: master model file to parse
 #   $family_HR:         ref to hash of families for each model, 
 #                       ALREADY FILLED, we use this only for validation
-#   $indi_cmfile_HR     ref to hash of individual CM files for each model,
+#   $indi_cmfile_HR:    ref to hash of individual CM files for each model,
 #                       ALREADY FILLED we use this only for validation
+#   $FH_HR:             ref to hash of file handles, including "cmd"
 #
 # Returns:     Maximum length of any model read from the model file.
 # 
@@ -1189,11 +1187,11 @@ sub parse_inaccept_file {
 #
 ################################################################# 
 sub parse_and_validate_model_files { 
-  my $nargs_expected = 3;
+  my $nargs_expected = 4;
   my $sub_name = "parse_and_validate_model_files";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($master_model_file, $family_HR, $indi_cmfile_HR) = @_;
+  my ($master_model_file, $family_HR, $indi_cmfile_HR, $FH_HR) = @_;
 
   # make copy of %{$family_HR} with all values set to '0' 
   my $model; # a model name
@@ -1219,30 +1217,30 @@ sub parse_and_validate_model_files {
 
   my $nnames = scalar(@name_A);
   if($nnames != scalar(@cksum_A)) { 
-    die "ERROR in $sub_name, did not read the same number of names and checksum lines from master model file:\n$master_model_file\n"; 
+    ofile_FAIL("ERROR in $sub_name, did not read the same number of names and checksum lines from master model file:\n$master_model_file", "RIBO", 1, $FH_HR); 
   }
   if($nnames != (2 * $expected_nmodels)) { 
     # each CM file has 2 occurrences of each name, once for the CM and once for the HMM filter
-    die sprinft("ERROR in $sub_name, expected to read 2 names for each model for a total of %d names, but read $nnames\nDoes the master model file $master_model_file have more models than are listed in the modelinfo file?\nIf so, remove the ones that are not in the modelinfo file\n", 2*$expected_nmodels); 
+    ofile_FAIL(sprintf("ERROR in $sub_name, expected to read 2 names for each model for a total of %d names, but read $nnames\nDoes the master model file $master_model_file have more models than are listed in the modelinfo file?\nIf so, remove the ones that are not in the modelinfo file\n", 2*$expected_nmodels), "RIBO", 1, $FH_HR); 
   }
   for(my $i = 0; $i < scalar(@name_A); $i++) { 
     $model = $name_A[$i];
     $cksum = $cksum_A[$i];
     $indi_cmfile = $indi_cmfile_HR->{$model};
     if(! exists $tmp_family_model_H{$model}) { 
-      die "ERROR read model \"$model\" from model file $master_model_file that is not listed in the model info file.";
+      ofile_FAIL("ERROR read model \"$model\" from model file $master_model_file that is not listed in the model info file.", "RIBO", 1, $FH_HR);
     }
     if($tmp_family_model_H{$model} == 0) { # only check if we haven't seen this name before
       $indi_cksum_output = `grep -w ^CKSUM $indi_cmfile | awk '{ print \$2 }'`;
       @indi_cksum_A = split("\n", $indi_cksum_output);
       if(scalar(@indi_cksum_A) != 2) { 
-        die "ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model and exactly 2 lines containing the token CKSUM in the entire file"; 
+        ofile_FAIL("ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model and exactly 2 lines containing the token CKSUM in the entire file", "RIBO", 1, $FH_HR); 
       }
       if($indi_cksum_A[0] != $indi_cksum_A[1]) { 
-        die "ERROR in $sub_name, the two CKSUM lines from $indi_cmfile differ unexpectedly"; 
+        ofile_FAIL("ERROR in $sub_name, the two CKSUM lines from $indi_cmfile differ unexpectedly", "RIBO", 1, $FH_HR); 
       }
       if($indi_cksum_A[0] != $cksum) { 
-        die "ERROR in $sub_name, for model $model, checksum mismatch between the master CM file and the individual CM file\nmaster CM file: $master_model_file\nindividual CM file: $indi_cmfile\nAre you sure these models are the same? They are required to be identical.\n";
+        ofile_FAIL("ERROR in $sub_name, for model $model, checksum mismatch between the master CM file and the individual CM file\nmaster CM file: $master_model_file\nindividual CM file: $indi_cmfile\nAre you sure these models are the same? They are required to be identical.\n", "RIBO", 1, $FH_HR);
       }
     }
     # if we get here, checksum test has passed
@@ -1254,7 +1252,7 @@ sub parse_and_validate_model_files {
 
   foreach $model (keys %tmp_family_model_H) { 
     if($tmp_family_model_H{$model} == 0) { 
-      die "ERROR model \"$model\" read from model info file is not in the model file.";
+      ofile_FAIL("ERROR model \"$model\" read from model info file is not in the model file.", "RIBO", 1, $FH_HR);
     }
   }
 
@@ -1284,6 +1282,7 @@ sub parse_and_validate_model_files {
 #   $question_HR:     ref to hash of questionable models, key is model name, value is '1' if questionable
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
+#   $FH_HR:           ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing. Fills %{$family_H}, %{$domain_HR}
 # 
@@ -1296,15 +1295,15 @@ sub parse_and_validate_model_files {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 13;
+  my $nargs_expected = 14;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $long_out_FH, $short_out_FH) = @_;
+  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
 
   # validate search method (sanity check) 
   if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
-    die "ERROR in $sub_name, invalid search method $alg";
+    ofile_FAIL("ERROR in $sub_name, invalid search method $alg", "RIBO", 1, $FH_HR);
   }
 
   # determine minimum bit score cutoff
@@ -1354,7 +1353,7 @@ sub parse_sorted_tbl_file {
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
 
-  open(IN, $sorted_tbl_file) || die "ERROR unable to open sorted tabular file $sorted_tbl_file for reading";
+  open(IN, $sorted_tbl_file) || ofile_FileOpenFailure($sorted_tbl_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   my ($target, $model, $domain, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
       (undef, undef, undef, undef, undef, undef, undef, undef, undef, undef);
@@ -1362,12 +1361,12 @@ sub parse_sorted_tbl_file {
   my $cur_domain_or_model;    # domain (default) or model (--samedomain) of current hit
   my $best_domain_or_model;  # domain (default) or model (--samedomain) of current 'best' hit
   my $nhits_above_thresh = 0; # number of hits above threshold for current sequence
-  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
-  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
-  my $have_evalues           = determine_if_we_have_evalues($round, $opt_HHR);
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR, $FH_HR);
+  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR, $FH_HR);
+  my $have_evalues           = determine_if_we_have_evalues($round, $opt_HHR, $FH_HR);
   my $sort_by_evalues        = opt_Get("--evalues", $opt_HHR);
   if($sort_by_evalues && (! $have_evalues)) { 
-    die "ERROR, trying to sort by E-values but we don't have them. Coding error."; 
+    ofile_FAIL("ERROR, trying to sort by E-values but we don't have them. Coding error.", "RIBO", 1, $FH_HR); 
   }
 
   while(my $line = <IN>) { 
@@ -1384,12 +1383,12 @@ sub parse_sorted_tbl_file {
     $line =~ s/^\s+//; # remove leading whitespace
     
     if($line =~ m/^\#/) { 
-      die "ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.";
+      ofile_FAIL("ERROR, found line that begins with #, input should have these lines removed and be sorted by the first column:$line.", "RIBO", 1, $FH_HR);
     }
     my @el_A = split(/\s+/, $line);
 
     if($alg eq "fast") {
-      if(scalar(@el_A) != 9) { die "ERROR did not find 9 columns in fast cmsearch tabular output at line: $line"; }
+      if(scalar(@el_A) != 9) { ofile_FAIL("ERROR did not find 9 columns in fast cmsearch tabular output at line: $line", "RIBO", 1, $FH_HR); }
       # NC_013790.1 SSU_rRNA_archaea 1215.0  760337  762896      +     ..  ?      2937203
       ($target, $model, $score, $seqfrom, $seqto, $strand) = 
           ($el_A[0], $el_A[1], $el_A[2], $el_A[3], $el_A[4], $el_A[5]);
@@ -1400,14 +1399,14 @@ sub parse_sorted_tbl_file {
       ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
       ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
       #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
-      if(scalar(@el_A) < 18) { die "ERROR found less than 18 columns in cmsearch tabular output at line: $line"; }
+      if(scalar(@el_A) < 18) { ofile_FAIL("ERROR found less than 18 columns in cmsearch tabular output at line: $line", "RIBO", 1, $FH_HR); }
       ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
           ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
     }
 
     $family = $family_HR->{$model};
     if(! defined $family) { 
-      die "ERROR unrecognized model $model, no family information";
+      ofile_FAIL("ERROR unrecognized model $model, no family information", "RIBO", 1, $FH_HR);
     }
     $domain = $domain_HR->{$model}; # the domain for this model
     $cur_domain_or_model = (opt_Get("--samedomain", $opt_HHR)) ? $model : $domain;
@@ -1415,12 +1414,12 @@ sub parse_sorted_tbl_file {
     # two sanity checks:
     # make sure we have sequence length information for this sequence
     if(! exists $seqlen_HR->{$target}) { 
-      die "ERROR found sequence $target we didn't read length information for in $seqstat_file";
+      ofile_FAIL("ERROR found sequence $target we didn't read length information for in $seqstat_file", "RIBO", 1, $FH_HR);
     }
     # make sure we haven't output information for this sequence already
     if((($round == 1) && ($seqlen_HR->{$target} < 0)) || 
        (($round == 2) && ($seqlen_HR->{$target} > 0)))  { 
-      die "ERROR found line with target $target previously output, did you sort by sequence name?";
+      ofile_FAIL("ERROR found line with target $target previously output, did you sort by sequence name?", "RIBO", 1, $FH_HR);
     }
     # finished parsing data for this line
     ######################################################
@@ -1437,7 +1436,7 @@ sub parse_sorted_tbl_file {
                           $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                           \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
                           \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                          \%best_model_HH, \%second_model_HH);
+                          \%best_model_HH, \%second_model_HH, $FH_HR);
         $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
       }
       # re-initialize
@@ -1495,7 +1494,7 @@ sub parse_sorted_tbl_file {
     if(((exists $best_model_HH{$family})  && (defined $best_model_HH{$family}{"model"})) && 
        ((exists $second_model_HH{$family}) && (defined $second_model_HH{$family}{"model"})) && 
        ($best_model_HH{$family}{"model"} eq $second_model_HH{$family}{"model"})) { 
-      die "ERROR, coding error, best model and second model are identical for $family $target";
+      ofile_FAIL("ERROR, coding error, best model and second model are identical for $family $target", "RIBO", 1, $FH_HR);
     }
   }
 
@@ -1506,7 +1505,7 @@ sub parse_sorted_tbl_file {
                       $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                       \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
                       \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                      \%best_model_HH, \%second_model_HH);
+                      \%best_model_HH, \%second_model_HH, $FH_HR);
     $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
   }
   $nhits_above_thresh   = 0;
@@ -1584,6 +1583,7 @@ sub set_model_vars {
 #                   is width (maximum length) of any target/model
 #   $seqidx_HR:     hash of target sequence indices
 #   $seqlen_HR:     hash of target sequence lengths
+#   $FH_HR:         ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -1591,16 +1591,16 @@ sub set_model_vars {
 #
 ################################################################# 
 sub output_all_hitless_targets { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "output_all_hitless_targets";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_FH, $short_FH, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR) = @_;
+  my ($long_FH, $short_FH, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $FH_HR) = @_;
 
   my $target;
 
-  my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR);
-  my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
+  my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR, $FH_HR);
+  my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR, $FH_HR);
 
   if($round eq "1") { 
     foreach $target (keys %{$seqlen_HR}) { 
@@ -1744,6 +1744,7 @@ sub output_one_hitless_target {
 #   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   $best_model_HHR:         hit stats for best model (best model)
 #   $second_model_HHR:       hit stats for second model (second-best model)
+#   $FH_HR:                  ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -1752,17 +1753,17 @@ sub output_one_hitless_target {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 24;
+  my $nargs_expected = 25;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
       $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nhits_at_HHR, $nnts_HHR, $nnts_at_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
-      $best_model_HHR, $second_model_HHR) = @_;
+      $best_model_HHR, $second_model_HHR, $FH_HR) = @_;
 
   if((! defined $short_FH) && (! defined $long_FH)) { 
-    die "ERROR in $sub_name, neither short nor long file handles are defined"; 
+    ofile_FAIL("ERROR in $sub_name, neither short nor long file handles are defined", "RIBO", 1, $FH_HR); 
   }
 
   # determine the winning family
@@ -1799,7 +1800,7 @@ sub output_one_target {
   if(defined $second_model_HHR->{$wfamily}{"model"}) { 
     $two_tbits = $tbits_HHR->{$second_model_HHR->{$wfamily}{"model"}}{$second_model_HHR->{$wfamily}{"strand"}};
     if($round eq "2") { # sanity check
-      die "ERROR in $sub_name, round 2, but we have hits to more than one model"; 
+      ofile_FAIL("ERROR in $sub_name, round 2, but we have hits to more than one model", "RIBO", 1, $FH_HR); 
     }
   }
 
@@ -1831,7 +1832,7 @@ sub output_one_target {
       for(my $j = $i+1; $j < $nhits; $j++) { 
         my $bd1 = $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i];
         my $bd2 = $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$j];
-        my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2);
+        my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2, $FH_HR);
         if($noverlap > $noverlap_allowed) { 
           if($duplicate_model_region_str eq "") { 
             $duplicate_model_region_str .= "DuplicateRegion:"; 
@@ -1915,7 +1916,7 @@ sub output_one_target {
       }
     }
   }
-  if(! defined $wfamily) { die "ERROR wfamily undefined for $target"; }
+  if(! defined $wfamily) { ofile_FAIL("ERROR wfamily undefined for $target", "RIBO", 1, $FH_HR); }
   my $best_coverage = (abs($best_model_HHR->{$wfamily}{"stop"} - $best_model_HHR->{$wfamily}{"start"}) + 1) / $seqlen;
   my $tot_coverage  = $nnts / $seqlen;
   my $one_evalue2print = ($have_evalues) ? sprintf("%8g  ", $best_model_HHR->{$wfamily}{"evalue"}) : "";
@@ -1943,8 +1944,8 @@ sub output_one_target {
     # $sort_by_evalues and second hit by E-value bit score exceeds top hit by E-value
     # sanity check
     if(($second_model_HHR->{$wfamily}{"score"} > $best_model_HHR->{$wfamily}{"score"}) && (! $sort_by_evalues)) { 
-      die sprintf("ERROR in $sub_name, second best hit has higher score than best hit (%.2f > %2.f) and sort_by_evalues is FALSE", 
-                  $second_model_HHR->{$wfamily}{"score"}, $best_model_HHR->{$wfamily}{"score"});
+      ofile_FAIL(sprintf("ERROR in $sub_name, second best hit has higher score than best hit (%.2f > %2.f) and sort_by_evalues is FALSE", 
+                         $second_model_HHR->{$wfamily}{"score"}, $best_model_HHR->{$wfamily}{"score"}), "RIBO", 1, $FH_HR);
     }
     $score_ppos_diff  = $score_total_diff / (abs($best_model_HHR->{$wfamily}{"stop"} - $best_model_HHR->{$wfamily}{"start"}) + 1);
     if($do_ppos_score_diff) { 
@@ -2265,6 +2266,7 @@ sub output_short_headers {
 #   $opt_HHR:   ref to 2D options hash
 #   $width_HR:  ref to hash, keys include "model" and "target", 
 #               value is width (maximum length) of any target/model
+#   $FH_HR:     ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -2272,11 +2274,11 @@ sub output_short_headers {
 #
 ################################################################# 
 sub output_long_headers { 
-  my $nargs_expected = 4;
+  my $nargs_expected = 5;
   my $sub_name = "output_long_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $round, $opt_HHR, $width_HR) = (@_);
+  my ($FH, $round, $opt_HHR, $width_HR, $FH_HR) = (@_);
 
   my $index_dash_str   = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
   my $target_dash_str  = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
@@ -2285,9 +2287,9 @@ sub output_long_headers {
   my $domain_dash_str  = ribo_GetMonoCharacterString($width_HR->{"domain"}, "-");
   my $length_dash_str  = ribo_GetMonoCharacterString($width_HR->{"length"}, "-");
 
-  my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR);
-  my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR);
-  my $have_evalues_r1   = determine_if_we_have_evalues(1, $opt_HHR);
+  my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR, $FH_HR);
+  my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR, $FH_HR);
+  my $have_evalues_r1   = determine_if_we_have_evalues(1, $opt_HHR, $FH_HR);
 
   my $best_model_group_width   = $width_HR->{"model"} + 2 + 6 + 2 + 6 + 2 + 4 + 2 + 3 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + $width_HR->{"length"} + 2 + $width_HR->{"length"};
   my $second_model_group_width = $width_HR->{"model"} + 2 + 6;
@@ -2494,6 +2496,7 @@ sub output_short_tail {
 #                  output file.
 #   $ufeature_AR:  ref to array of all unexpected feature strings
 #   $opt_HHR:      reference to options 2D hash
+#   $FH_HR:        ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -2501,16 +2504,16 @@ sub output_short_tail {
 #
 ################################################################# 
 sub output_long_tail { 
-  my $nargs_expected = 4;
+  my $nargs_expected = 5;
   my $sub_name = "output_long_tail";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $round, $ufeature_AR, $opt_HHR) = (@_);
+  my ($FH, $round, $ufeature_AR, $opt_HHR, $FH_HR) = (@_);
 
-  my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR);  # 
-  my $have_evalues_r1        = determine_if_we_have_evalues     (1, $opt_HHR);       # do we have E-values in round 1? 
-  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR);
-  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR);
+  my $have_evalues           = determine_if_we_have_evalues     ($round, $opt_HHR, $FH_HR);  # do we have E-values in this round
+  my $have_evalues_r1        = determine_if_we_have_evalues     (1, $opt_HHR, $FH_HR);       # do we have E-values in round 1? 
+  my $have_accurate_coverage = determine_if_coverage_is_accurate($round, $opt_HHR, $FH_HR);      
+  my $have_model_coords      = determine_if_we_have_model_coords($round, $opt_HHR, $FH_HR);
 
   my $inaccurate_cov_str = ("#                                  (these values are inaccurate, run with --1hmm or --1slow to get accurate coverage)\n");
 
@@ -2863,6 +2866,7 @@ sub center_string {
 # Arguments:
 #   $round:    what round of searching we're in, '1', '2', or 'final'
 #   $opt_HHR:  reference to 2D hash of cmdline options
+#   $FH_HR:    ref to hash of file handles, including "cmd"
 #
 # Returns:  '1' if coverage is accurate, else '0'
 # 
@@ -2871,10 +2875,10 @@ sub center_string {
 #################################################################
 sub determine_if_coverage_is_accurate { 
   my $sub_name = "determine_if_coverage_is_accurate()";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($round, $opt_HHR) = (@_);
+  my ($round, $opt_HHR, $FH_HR) = (@_);
 
   my $have_accurate_coverage = 0;
   if($round eq "1") { 
@@ -2885,7 +2889,7 @@ sub determine_if_coverage_is_accurate {
     $have_accurate_coverage = 1; # always true for round 2
   }
   else { 
-    die "ERROR in $sub_name, invalid round value of $round"; 
+    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
   }
 
   return $have_accurate_coverage;
@@ -2902,6 +2906,7 @@ sub determine_if_coverage_is_accurate {
 # Arguments:
 #   $round:   what round of searching we're in, '1', '2', or 'final'
 #   $opt_HHR: reference to 2D hash of cmdline options
+#   $FH_HR:   ref to hash of file handles, including "cmd"
 #
 # Returns:  '1' if we have model coords, else '0'
 # 
@@ -2910,10 +2915,10 @@ sub determine_if_coverage_is_accurate {
 #################################################################
 sub determine_if_we_have_model_coords { 
   my $sub_name = "determine_if_we_have_model_coords()";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($round, $opt_HHR) = (@_);
+  my ($round, $opt_HHR, $FH_HR) = (@_);
 
   my $have_model_coords = 0;
   if($round eq "1") { 
@@ -2924,14 +2929,14 @@ sub determine_if_we_have_model_coords {
     $have_model_coords = 1; # always true for round 2
   }
   else { 
-    die "ERROR in $sub_name, invalid round value of $round"; 
+    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
   }
 
   return $have_model_coords;
 }
 
 #################################################################
-# Subroutine: determine_if_we_evalues()
+# Subroutine: determine_if_we_have_evalues()
 # Incept:     EPN, Fri May  5 10:51:03 2017
 #
 # Purpose:    Based on the command line options and what round
@@ -2941,6 +2946,7 @@ sub determine_if_we_have_model_coords {
 # Arguments:
 #   $round:   what round of searching we're in, '1', '2', or 'final'
 #   $opt_HHR: reference to 2D hash of cmdline options
+#   $FH_HR:   ref to hash of file handles, including "cmd"
 #
 # Returns:  '1' if we have model coords, else '0'
 # 
@@ -2949,10 +2955,10 @@ sub determine_if_we_have_model_coords {
 #################################################################
 sub determine_if_we_have_evalues { 
   my $sub_name = "determine_if_we_have_evalues()";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($round, $opt_HHR) = (@_);
+  my ($round, $opt_HHR, $FH_HR) = (@_);
 
   my $have_evalues = 0;
   if($round eq "1") { 
@@ -2963,7 +2969,7 @@ sub determine_if_we_have_evalues {
     $have_evalues = 1; # always true for round 2
   }
   else { 
-    die "ERROR in $sub_name, invalid round value of $round"; 
+    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
   }
 
   return $have_evalues;
@@ -2982,6 +2988,7 @@ sub determine_if_we_have_evalues {
 # Arguments:
 #   $regstr1:  string 1 defining region 1
 #   $regstr2:  string 2 defining region 2
+#   $FH_HR:    ref to hash of file handles, including "cmd"
 #
 # Returns:  Two values:
 #           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
@@ -2994,16 +3001,16 @@ sub determine_if_we_have_evalues {
 #################################################################
 sub get_overlap { 
   my $sub_name = "get_overlap()";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($regstr1, $regstr2) = (@_);
+  my ($regstr1, $regstr2, $FH_HR) = (@_);
 
-  my ($start1, $stop1, $strand1) = decompose_region_str($regstr1);
-  my ($start2, $stop2, $strand2) = decompose_region_str($regstr2);
+  my ($start1, $stop1, $strand1) = decompose_region_str($regstr1, $FH_HR);
+  my ($start2, $stop2, $strand2) = decompose_region_str($regstr2, $FH_HR);
 
   if($strand1 ne $strand2) { 
-    die "ERROR in $sub_name, different strands for regions $regstr1 and $regstr2";
+    ofile_FAIL("ERROR in $sub_name, different strands for regions $regstr1 and $regstr2", "RIBO", 1, $FH_HR);
   }
 
   if($strand1 eq "-") { 
@@ -3015,7 +3022,7 @@ sub get_overlap {
     $stop2  = $tmp;
   }
 
-  return get_overlap_helper($start1, $stop1, $start2, $stop2);
+  return get_overlap_helper($start1, $stop1, $start2, $stop2, $FH_HR);
 }
 
 #################################################################
@@ -3030,6 +3037,7 @@ sub get_overlap {
 #  $end1:   end   position of hit 1 (must be >= $end1)
 #  $start2: start position of hit 2 (must be <= $end2)
 #  $end2:   end   position of hit 2 (must be >= $end2)
+#  $FH_HR:    ref to hash of file handles, including "cmd"
 #
 # Returns:  Two values:
 #           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
@@ -3037,17 +3045,19 @@ sub get_overlap {
 #           $overlap_reg: region of overlap, "" if none
 #
 # Dies:     if $end1 < $start1 or $end2 < $start2.
+#
+#################################################################
 sub get_overlap_helper {
   my $sub_name = "get_overlap_helper";
-  my $nargs_exp = 4;
-  if(scalar(@_) != 4) { die "ERROR $sub_name entered with wrong number of input args"; }
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($start1, $end1, $start2, $end2) = @_; 
+  my ($start1, $end1, $start2, $end2, $FH_HR) = @_; 
 
   # printf("in $sub_name $start1..$end1 $start2..$end2\n");
 
-  if($start1 > $end1) { die "ERROR in $sub_name start1 > end1 ($start1 > $end1)"; }
-  if($start2 > $end2) { die "ERROR in $sub_name start2 > end2 ($start2 > $end2)"; }
+  if($start1 > $end1) { ofile_FAIL("ERROR in $sub_name start1 > end1 ($start1 > $end1)", "RIBO", 1, $FH_HR); }
+  if($start2 > $end2) { ofile_FAIL("ERROR in $sub_name start2 > end2 ($start2 > $end2)", "RIBO", 1, $FH_HR); }
 
   # Given: $start1 <= $end1 and $start2 <= $end2.
   
@@ -3065,7 +3075,7 @@ sub get_overlap_helper {
   if($end1 < $start2) { return (0, ""); }                                           # case 1
   if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
   if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
-  die "ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2";
+  ofile_FAIL("ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2", "RIBO", 1, $FH_HR);
 
   return; # NOT REACHED
 }
@@ -3081,6 +3091,7 @@ sub get_overlap_helper {
 #  $order_AR:    ref to array of original indices corresponding to @{$tosort_AR}
 #  $allow_dups:  '1' to allow duplicates in $tosort_AR, '0' to not and die if
 #                they're found
+#  $FH_HR:       ref to hash of file handles, including "cmd"
 #
 # Returns:  string indicating the order of the elements in $tosort_AR in the sorted
 #           array.
@@ -3088,18 +3099,20 @@ sub get_overlap_helper {
 # Dies:     - if some of the regions in @{$tosort_AR} are on different strands
 #             or are in the wrong format
 #           - if there are duplicate values in $tosort_AR and $allow_dups is 0
+#
+#################################################################
 sub sort_hit_array { 
   my $sub_name = "sort_hit_array";
-  my $nargs_exp = 3;
-  if(scalar(@_) != 3) { die "ERROR $sub_name entered with wrong number of input args"; }
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($tosort_AR, $order_AR, $allow_dups) = @_;
+  my ($tosort_AR, $order_AR, $allow_dups, $FH_HR) = @_;
 
   my ($i, $j); # counters
 
   my $nel = scalar(@{$tosort_AR});
 
-  if($nel == 1) { die "ERROR in $sub_name, nel is 1 (should be > 1)"; }
+  if($nel == 1) { ofile_FAIL("ERROR in $sub_name, nel is 1 (should be > 1)", "RIBO", 1, $FH_HR); }
 
   # make sure all elements are on the same strand
   my(undef, undef, $strand) = decompose_region_str($tosort_AR->[0]);
@@ -3122,7 +3135,7 @@ sub sort_hit_array {
   if(! $allow_dups) { 
     for($i = 1; $i < $nel; $i++) { 
       if($hash{$order_AR->[($i-1)]} eq $hash{$order_AR->[$i]}) { 
-        die "ERROR in $sub_name, duplicate values exist in the array: " . $hash{$order_AR->[$i]} . " appears twice"; 
+        ofile_FAIL("ERROR in $sub_name, duplicate values exist in the array: " . $hash{$order_AR->[$i]} . " appears twice", "RIBO", 1, $FH_HR); 
       }
     }
   }
@@ -3149,7 +3162,8 @@ sub sort_hit_array {
 #             decompose it and return <d1>, <d2> and <strand>.
 #
 # Args:
-#  $regstr:    region string in format <d1>.<d2>
+#  $regstr:   region string in format <d1>.<d2>
+#  $FH_HR:    ref to hash of file handles, including "cmd"
 #
 # Returns:  Three values:
 #           <d1>: beginning of region
@@ -3159,14 +3173,14 @@ sub sort_hit_array {
 # Dies:     if $regstr is not in correct format 
 sub decompose_region_str { 
   my $sub_name = "decompose_region_str";
-  my $nargs_exp = 1;
-  if(scalar(@_) != 1) { die "ERROR $sub_name entered with wrong number of input args"; }
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($regstr) = @_;
+  my ($regstr, $FH_HR) = @_;
 
   my ($d1, $d2, $strand); 
   if($regstr =~ /(\d+)\.(\d+)/) { ($d1, $d2) = ($1, $2); }
-  else                          { die "ERROR in $sub_name, region string $regstr not parseable"; }
+  else                          { ofile_FAIL("ERROR in $sub_name, region string $regstr not parseable", "RIBO", 1, $FH_HR); }
 
   $strand = ($d1 <= $d2) ? "+" : "-";
 
@@ -3212,6 +3226,7 @@ sub get_dir_path {
 # Arguments: 
 #   $alg:      algorithm, either "fast", "hmmonly" or "slow"
 #   $opt_HHR:  reference to 2D hash of cmdline options
+#   $FH_HR:    ref to hash of file handles, including "cmd"
 # 
 # Returns:     String of options to use for cmsearch.
 #
@@ -3219,10 +3234,10 @@ sub get_dir_path {
 # 
 ################################################################# 
 sub determine_cmsearch_opts { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "determine_cmsearch_opts()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($alg, $opt_HHR) = @_;
+  my ($alg, $opt_HHR, $FH_HR) = @_;
 
   my $alg_opts = undef;
   if($alg eq "fast") { 
@@ -3252,7 +3267,7 @@ sub determine_cmsearch_opts {
     }
   }
   else { 
-    die "ERROR in $sub_name, algorithm is invalid: $alg\n";
+    ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", "RIBO", 1, $FH_HR);
   }
 
   return $alg_opts;
@@ -3272,6 +3287,7 @@ sub determine_cmsearch_opts {
 #   $in_file:  name of input tblout file
 #   $out_file: name of output tblout file
 #   $opt_HHR:  reference to 2D hash of cmdline options
+#   $FH_HR:    ref to hash of file handles, including "cmd"
 # 
 # Returns:     String that is the sort command with input and 
 #              output file included.
@@ -3280,10 +3296,10 @@ sub determine_cmsearch_opts {
 # 
 ################################################################# 
 sub determine_sort_cmd {
-  my $nargs_expected = 4;
+  my $nargs_expected = 5;
   my $sub_name = "determine_sort_cmd()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($alg, $in_file, $out_file, $opt_HHR) = @_;
+  my ($alg, $in_file, $out_file, $opt_HHR, $FH_HR) = @_;
 
   my $sort_cmd = undef;
   my $sort_by_evalues = opt_Get("--evalues", $opt_HHR);
@@ -3300,7 +3316,7 @@ sub determine_sort_cmd {
     }
   }
   else { 
-    die "ERROR in $sub_name, algorithm is invalid: $alg\n";
+    ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", "RIBO", 1, $FH_HR);
   }
 
   return $sort_cmd;
@@ -3318,6 +3334,7 @@ sub determine_sort_cmd {
 #   $long_file:    'long' format file to parse
 #   $seqsub_HAR:   ref to hash of arrays, key is model name, value is array of 
 #                  sequences that match best to the model
+#   $FH_HR:        ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing. Updates %{$seqsub_HAR}.
 # 
@@ -3325,17 +3342,17 @@ sub determine_sort_cmd {
 #
 ################################################################# 
 sub parse_round1_long_file {
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "parse_round1_long_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($long_file, $seqsub_HAR) = @_;
+  my ($long_file, $seqsub_HAR, $FH_HR) = @_;
 
-  my @el_A    = (); # array of elements in a line
+  my @el_A    = ();    # array of elements in a line
   my $model   = undef; # a model
   my $seqname = undef; # a sequence name
 
-  open(IN, $long_file) || die "ERROR in $sub_name, unable to open $long_file for reading";
+  open(IN, $long_file) || ofile_FileOpenFailure($long_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
     if($line !~ m/^\#/) { # skip comment lines
@@ -3343,7 +3360,7 @@ sub parse_round1_long_file {
       ($seqname, $model) = ($el_A[1], $el_A[7]);
       if($model ne "-") { 
         if(! exists $seqsub_HAR->{$model}) {
-          die "ERROR in $sub_name, unexpected model value: $model\nline: $line\n";
+          ofile_FAIL("ERROR in $sub_name, unexpected model value: $model\nline: $line", "RIBO", 1, $FH_HR);
         }
         push(@{$seqsub_HAR->{$model}}, $seqname);
       }
@@ -3364,6 +3381,7 @@ sub parse_round1_long_file {
 # Arguments: 
 #   $AR:    reference to array 
 #   $file:  name of file to create
+#   $FH_HR: ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -3371,17 +3389,17 @@ sub parse_round1_long_file {
 #
 ################################################################# 
 sub write_array_to_file {
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "write_array_to_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($AR, $file) = @_;
+  my ($AR, $file, $FH_HR) = @_;
 
   if((! defined $AR) || (scalar(@{$AR}) == 0)) { 
-    die "ERROR in $sub_name, array is empty or not defined";
+    ofile_FAIL("ERROR in $sub_name, array is empty or not defined", "RIBO", 1, $FH_HR);
   }
 
-  open(OUT, ">", $file) || die "ERROR in $sub_name, unable to open file $file for writing";
+  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   foreach my $el (@{$AR}) { 
     print OUT $el . "\n"; 
@@ -3413,6 +3431,7 @@ sub write_array_to_file {
 #   $width_HR:       hash, key is "model" or "target", value 
 #                    is width (maximum length) of any target/model
 #   $opt_HHR:        reference to 2D hash of cmdline options
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -3421,11 +3440,11 @@ sub write_array_to_file {
 #
 ################################################################# 
 sub output_combined_short_or_long_file { 
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   my $sub_name = "output_combined_short_or_long_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $ufeature_ct_HR, $width_HR, $opt_HHR) = @_;
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $ufeature_ct_HR, $width_HR, $opt_HHR, $FH_HR) = @_;
 
   my $r1_line;             # line from round 1 file
   my $r2_line;             # line from round 2 file 
@@ -3438,10 +3457,10 @@ sub output_combined_short_or_long_file {
   my $ufeature = undef;    # a single unexpected feature
   my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
   my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
-  my $have_evalues_r1      = determine_if_we_have_evalues(1, $opt_HHR);
-  my $have_evalues_r2      = determine_if_we_have_evalues(2, $opt_HHR);
-  my $have_model_coords_r1 = determine_if_we_have_model_coords(1, $opt_HHR);
-  my $have_model_coords_r2 = determine_if_we_have_model_coords(2, $opt_HHR);
+  my $have_evalues_r1      = determine_if_we_have_evalues(1, $opt_HHR, $FH_HR);
+  my $have_evalues_r2      = determine_if_we_have_evalues(2, $opt_HHR, $FH_HR);
+  my $have_model_coords_r1 = determine_if_we_have_model_coords(1, $opt_HHR, $FH_HR);
+  my $have_model_coords_r2 = determine_if_we_have_model_coords(2, $opt_HHR, $FH_HR);
   my $expected_ncols_r1 = 0; # number of columns we expect in round 1 file
   my $expected_ncols_r2 = 0; # number of columns we expect in round 2 file
   my $ncols_r1          = 0; # actual number of columns in round 1 line
@@ -3466,12 +3485,12 @@ sub output_combined_short_or_long_file {
     $expected_ncols_r1 = 6;
     $expected_ncols_r2 = 6;
     if(defined $stats_HHR) { 
-      die "ERROR in $sub_name, do_short is true and stats_HHR is defined";
+      ofile_FAIL("ERROR in $sub_name, do_short is true and stats_HHR is defined", "RIBO", 1, $FH_HR);
     }
   }
   else { 
-    $expected_ncols_r1 = determine_number_of_columns_in_long_output_file("1",     $opt_HHR);
-    $expected_ncols_r2 = determine_number_of_columns_in_long_output_file("2",     $opt_HHR);
+    $expected_ncols_r1 = determine_number_of_columns_in_long_output_file("1", $opt_HHR, $FH_HR);
+    $expected_ncols_r2 = determine_number_of_columns_in_long_output_file("2", $opt_HHR, $FH_HR);
   }
 
   # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
@@ -3521,15 +3540,15 @@ sub output_combined_short_or_long_file {
       @r1_el_A = split(/\s+/, $r1_line);
       @r2_el_A = split(/\s+/, $r2_line);
       if($r1_el_A[1] ne $r2_el_A[1]) { 
-        die "ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")\nr1 line: $r1_line\nr2 line: $r2_line\n"; 
+        ofile_FAIL("ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")\nr1 line: $r1_line\nr2 line: $r2_line", "RIBO", 1, $FH_HR); 
       }
       $ncols_r1 = scalar(@r1_el_A);
       $ncols_r2 = scalar(@r2_el_A);
       if($ncols_r1 != $expected_ncols_r1) { 
-        die "ERROR in $sub_name, read unexpected number of columns on line $r1_lidx of round 1 file (" . $ncols_r1 . " != " . $expected_ncols_r1 . ")";
+        ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $r1_lidx of round 1 file (" . $ncols_r1 . " != " . $expected_ncols_r1 . ")", "RIBO", 1, $FH_HR);
       }
       if($ncols_r2 != $expected_ncols_r2) { 
-        die "ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")";
+        ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")", "RIBO", 1, $FH_HR);
       }
 
       # pick out the r1 columns: 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' to add to the $r2_line
@@ -3625,7 +3644,7 @@ sub output_combined_short_or_long_file {
 
       # update the ufeature counts hash if we have one
       if(defined $ufeature_ct_HR) { 
-        update_one_ufeature_sequence($ufeature_ct_HR, $r2_el_A[($ncols_r2-1)]);
+        update_one_ufeature_sequence($ufeature_ct_HR, $r2_el_A[($ncols_r2-1)], $FH_HR);
       }
 
       print $out_FH $r2_line . "\n";
@@ -3638,10 +3657,10 @@ sub output_combined_short_or_long_file {
     }
     # check for some unexpected errors
     elsif(($have_r1_line) && (! $have_r2_line)) { 
-      die "ERROR in $sub_name, ran out of sequences from round 1 output before round 2"; 
+      ofile_FAIL("ERROR in $sub_name, ran out of sequences from round 1 output before round 2", "RIBO", 1, $FH_HR); 
     }
     elsif((! $have_r1_line) && ($have_r2_line)) { 
-      die "ERROR in $sub_name, ran out of sequences from round 2 output before round 1"; 
+      ofile_FAIL("ERROR in $sub_name, ran out of sequences from round 2 output before round 1", "RIBO", 1, $FH_HR); 
     }
     else { # don't have either line
       $keep_going = 0;
@@ -3669,6 +3688,7 @@ sub output_combined_short_or_long_file {
 #   $ufeature_ct_HR: ref to hash of unexpected feature counts 
 #                    filled here
 #   $opt_HHR:        reference to 2D hash of cmdline options
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -3677,11 +3697,11 @@ sub output_combined_short_or_long_file {
 #
 ################################################################# 
 sub get_stats_from_long_file_for_sole_round { 
-  my $nargs_expected = 4;
+  my $nargs_expected = 5;
   my $sub_name = "get_stats_from_long_file_for_sole_round";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_FH, $stats_HHR, $ufeature_ct_HR, $opt_HHR) = @_;
+  my ($in_FH, $stats_HHR, $ufeature_ct_HR, $opt_HHR, $FH_HR) = @_;
 
   my $keep_going = 0;     # '1' to keep reading lines from the file
   my $line;               # line from long file
@@ -3702,7 +3722,7 @@ sub get_stats_from_long_file_for_sole_round {
   initialize_class_stats(\%{$stats_HHR->{"*none*"}});
   initialize_class_stats(\%{$stats_HHR->{"*all*"}});
 
-  $expected_ncols = determine_number_of_columns_in_long_output_file("1", $opt_HHR);
+  $expected_ncols = determine_number_of_columns_in_long_output_file("1", $opt_HHR, $FH_HR);
 
   # we know that the first few lines of the file are comment lines, that begin with "#", chew them up
   $line = <$in_FH>;
@@ -3727,7 +3747,7 @@ sub get_stats_from_long_file_for_sole_round {
     @el_A = split(/\s+/, $line);
     $ncols = scalar(@el_A);
     if($ncols != $expected_ncols) { 
-      die "ERROR in $sub_name, read unexpected number of columns on line $lidx of file (" . $ncols . " != " . $expected_ncols . ")";
+      ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $lidx of file (" . $ncols . " != " . $expected_ncols . ")", "RIBO", 1, $FH_HR);
     }
 
     # update %{$stats_HHR}
@@ -3743,7 +3763,7 @@ sub get_stats_from_long_file_for_sole_round {
 
     # update the ufeature counts hash if we have one
     if(defined $ufeature_ct_HR) { 
-      update_one_ufeature_sequence($ufeature_ct_HR, $el_A[($ncols-1)]);
+      update_one_ufeature_sequence($ufeature_ct_HR, $el_A[($ncols-1)], $FH_HR);
     }
 
     $line = <$in_FH>; 
@@ -3940,6 +3960,7 @@ sub initialize_ufeature_stats {
 #   $ufeature_ct_HR: ref to hash
 #   $ufeature_str:   the ufeature string with potentially >= 1 
 #                    unexpected features.
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:  void
 # 
@@ -3949,21 +3970,21 @@ sub initialize_ufeature_stats {
 #################################################################
 sub update_one_ufeature_sequence { 
   my $sub_name = "update_one_ufeature_sequence";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($ufeature_ct_HR, $ufeature_str) = (@_);
+  my ($ufeature_ct_HR, $ufeature_str, $FH_HR) = (@_);
 
   # print("in $sub_name, string is $ufeature_str\n");
 
   my @ufeatures_A = ();
   if($ufeature_str eq "-") { 
-    update_one_ufeature_count($ufeature_ct_HR, "CLEAN");
+    update_one_ufeature_count($ufeature_ct_HR, "CLEAN", $FH_HR);
   }
   else { 
     my @ufeatures_A = split(";", $ufeature_str);
     foreach my $ufeature (@ufeatures_A) { 
-      update_one_ufeature_count($ufeature_ct_HR, $ufeature);
+      update_one_ufeature_count($ufeature_ct_HR, $ufeature, $FH_HR);
     }
   }
 
@@ -3980,6 +4001,7 @@ sub update_one_ufeature_sequence {
 # Arguments:
 #   $ufeature_ct_HR: ref to hash
 #   $ufeature:       the ufeature to update
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:  void
 # 
@@ -3988,10 +4010,10 @@ sub update_one_ufeature_sequence {
 #################################################################
 sub update_one_ufeature_count { 
   my $sub_name = "update_one_ufeature_count";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($ufeature_ct_HR, $ufeature) = (@_);
+  my ($ufeature_ct_HR, $ufeature, $FH_HR) = (@_);
 
   # remove ':' and anything after, this removes any hit/sequence specific information
   $ufeature =~ s/\:.+$//;
@@ -4015,6 +4037,7 @@ sub update_one_ufeature_count {
 # Arguments:
 #   $round:   what round of searching we're interested in, '1', '2', or 'final'
 #   $opt_HHR: reference to 2D hash of cmdline options
+#   $FH_HR:   ref to hash of file handles, including "cmd"
 #
 # Returns:  Number of columns.
 # 
@@ -4023,14 +4046,14 @@ sub update_one_ufeature_count {
 #################################################################
 sub determine_number_of_columns_in_long_output_file { 
   my $sub_name = "determine_number_of_columns_in_long_output_file";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($round, $opt_HHR) = (@_);
+  my ($round, $opt_HHR, $FH_HR) = (@_);
 
-  my $have_evalues      = determine_if_we_have_evalues($round, \%opt_HH);
-  my $have_evalues_r1   = determine_if_we_have_evalues(1, \%opt_HH);
-  my $have_model_coords = determine_if_we_have_model_coords($round, \%opt_HH);
+  my $have_evalues      = determine_if_we_have_evalues($round, \%opt_HH, $FH_HR);
+  my $have_evalues_r1   = determine_if_we_have_evalues(1, \%opt_HH, $FH_HR);
+  my $have_model_coords = determine_if_we_have_model_coords($round, \%opt_HH, $FH_HR);
 
   my $ncols = 18;
   if($have_evalues)      { $ncols++; }

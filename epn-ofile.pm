@@ -106,6 +106,7 @@ sub ofile_OpenAndAddFileToOutputInfo {
 
   return;
 }
+
 #################################################################
 # Subroutine: ofile_AddClosedFileToOutputInfo()
 # Incept:     EPN, Thu May 24 15:52:11 2018
@@ -181,7 +182,7 @@ sub ofile_HelperAddFileToOutputInfo {
  
   my ($ofile_info_HHR, $pkgstr, $key2d, $fullpath, $mainout, $desc) = @_;
 
-  # we can only pass $FH_HR to DNAORG_FAIL if that hash already exists
+  # we can only pass $FH_HR to ofile_FAIL if that hash already exists
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
 
   # make sure $mainout value is 0 or 1
@@ -257,7 +258,7 @@ sub ofile_ValidateOutputFileInfoHashOfHashes {
  
   my ($ofile_info_HHR, $pkgstr) = (@_);
   
-  # we can only pass $FH_HR to DNAORG_FAIL if that hash already exists
+  # we can only pass $FH_HR to ofile_FAIL if that hash already exists
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
 
   my @same_keys1d_A = ("order", "fullpath", "nodirpath", "mainout", "desc"); # all of these 2nd dim hashes should have same set of keys
@@ -495,14 +496,14 @@ sub ofile_OutputConclusionAndCloseFiles {
       ofile_OutputTiming("# CPU time: ", $total_secs, 1, $log_FH); 
       ofile_OutputString($log_FH, 1, "#            hh:mm:ss\n");
       ofile_OutputString($log_FH, 1, "# \n");
-      ofile_OutputString($log_FH, 1, "# DNAORG-SUCCESS\n");
+      ofile_OutputString($log_FH, 1, "# " . $pkgstr . "-SUCCESS\n");
     }
   }
   if(defined $cmd_FH) { 
     ofile_OutputString($cmd_FH, 0, "# " . `date`);      # prints date,        e.g.: 'Mon Feb 22 16:37:09 EST 2016'
     ofile_OutputString($cmd_FH, 0, "# " . `uname -a`);  # prints system info, e.g.: 'Linux cbbdev13 2.6.32-573.7.1.el6.x86_64 #1 SMP Tue Sep 22 22:00:00 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux'
     if($total_secs ne "") { # don't print this if rvr-align is caller
-      ofile_OutputString($cmd_FH, 0, "# DNAORG-SUCCESS\n");
+      ofile_OutputString($cmd_FH, 0, "# " . $pkgstr . "-SUCCESS\n");
     }
   }
 
