@@ -369,10 +369,10 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "log": log file of what's output to stdout
                          #  "cmd": command file with list of all commands executed
 
-# open the log and command files 
+# open the list, log and command files 
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
 ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
 ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -442,18 +442,6 @@ my $r2_srt_short_out_FH   = undef; # output file handle for unsorted short outpu
 my $final_long_out_FH     = undef; # output file handle for final long output file
 my $final_short_out_FH    = undef; # output file handle for final short output file
 
-if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $r1_unsrt_long_out_file);
-  push(@to_remove_A, $r1_unsrt_short_out_file);
-  if(defined $alg2) { 
-    push(@to_remove_A, $r1_srt_long_out_file);
-    push(@to_remove_A, $r1_srt_short_out_file);
-    push(@to_remove_A, $r2_unsrt_long_out_file);
-    push(@to_remove_A, $r2_unsrt_short_out_file);
-    push(@to_remove_A, $r2_srt_long_out_file);
-    push(@to_remove_A, $r2_srt_short_out_file);
-  }
-}
 
 open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || die "ERROR unable to open $r1_unsrt_long_out_file for writing";
 open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || die "ERROR unable to open $r1_unsrt_short_out_file for writing";
@@ -558,7 +546,7 @@ my $seqstat_file = $out_root . ".seqstat";
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $seqstat_file);
 }
-$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, $ofile_info_HH{"FH"});
+$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 
 # now that we know the max sequence name length, we can output headers to the output files
@@ -615,6 +603,15 @@ if(! opt_Get("--keep", \%opt_HH)) {
     push(@to_remove_A, $r1_searchout_file);
   }
 }
+else { 
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sortedr1tblout", $r1_sorted_tblout_file, 0, "sorted .tblout file for round 1");
+  if(($alg1 ne "slow" || 
+      $alg1 ne "hmmonly") && 
+     (! opt_Get("--noali", \%opt_HH))) { 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
+  }
+}
 $r1_secs = ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 
 ###########################################################################
@@ -643,6 +640,22 @@ close($r1_unsrt_long_out_FH);
 close($r1_unsrt_short_out_FH);
 close($r1_srt_long_out_FH);
 close($r1_srt_short_out_FH);
+if(! opt_Get("--keep", \%opt_HH)) { 
+  push(@to_remove_A, $r1_unsrt_long_out_file);
+  push(@to_remove_A, $r1_unsrt_short_out_file);
+  if(defined $alg2) { 
+    push(@to_remove_A, $r1_srt_long_out_file);
+    push(@to_remove_A, $r1_srt_short_out_file);
+  }
+}
+else { 
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_unsrt_long",   $r1_unsrt_long_out_file, 0, "round 1 unsorted long output file");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_unsrt_short",  $r1_unsrt_short_out_file, 0, "round 1 unsorted short output file");
+  if(defined $alg2) { 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_srt_long",   $r1_srt_long_out_file, 0, "round 1 sorted long output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_srt_short",  $r1_srt_short_out_file, 0, "round 1 sorted short output file");
+  }
+}
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
 ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
@@ -686,6 +699,9 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $sfetchfile_H{$model});
         }
+        else { 
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sfetch" . $model, $sfetchfile_H{$model}, 0, "sfetch file for $model");
+        }
       }
     }
     ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
@@ -696,6 +712,9 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $seqfile_H{$model});
+        }
+        else { 
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "seqfile" . $model, $seqfile_H{$model}, 0, "seqfile file for $model");
         }
       }
     }
@@ -740,6 +759,13 @@ if(defined $alg2) {
             push(@to_remove_A, $r2_searchout_file_A[$midx]);
           }
         }
+        else { 
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");
+          if(($alg2 ne "slow") && 
+             (! opt_Get("--noali", \%opt_HH))) { 
+            ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, "$model .tblout file for round 2");
+          }
+        }
       }
       else { 
         if(! -s $r2_tblout_file_A[$midx]) { 
@@ -768,6 +794,9 @@ if(defined $alg2) {
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_all_tblout_file);
       }
+      else { 
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2alltblout", $r2_all_tblout_file, 0, "concatenated tblout file for round 2");
+      }
     }
   }
 }
@@ -782,6 +811,9 @@ if((defined $alg2) && ($nr2 > 0)) {
   ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $r2_all_sorted_tblout_file);
+  }
+  else { 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sortedr2alltblout", $r2_all_sorted_tblout_file, 0, "sorted concatenated tblout file for round 2");
   }
   ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
@@ -821,6 +853,19 @@ if(defined $alg2) {
   output_short_tail($r2_srt_short_out_FH, \@ufeature_A, \%opt_HH);
   close($r2_srt_short_out_FH);
   close($r2_srt_long_out_FH);
+
+  if(! opt_Get("--keep", \%opt_HH)) { 
+    push(@to_remove_A, $r2_unsrt_long_out_file);
+    push(@to_remove_A, $r2_unsrt_short_out_file);
+    push(@to_remove_A, $r2_srt_long_out_file);
+    push(@to_remove_A, $r2_srt_short_out_file);
+  }
+  else { 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_unsrt_long",   $r2_unsrt_long_out_file,  0, "round 2 unsorted long output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_unsrt_short",  $r2_unsrt_short_out_file, 0, "round 2 unsorted short output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_srt_long",     $r2_srt_long_out_file,    0, "round 2 sorted long output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_srt_short",    $r2_srt_short_out_file,   0, "round 2 sorted short output file");
+  }
   
   ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
@@ -845,6 +890,8 @@ if(defined $alg2) {
   output_short_tail($final_short_out_FH, \@ufeature_A, \%opt_HH);
   output_long_tail($final_long_out_FH, "final", \@ufeature_A, \%opt_HH);
   close($final_short_out_FH);
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "short_out",  $final_short_out_file, 0, "final short output file");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "long_out",   $final_long_out_file, 0, "final long output file");
   ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
 }
 else { 

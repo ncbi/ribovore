@@ -176,7 +176,7 @@ sub ribo_OutputProgressComplete {
 # Dies:       if $cmd fails
 #################################################################
 sub old_ribo_RunCommand {
-  my $sub_name = "ribo_RunCommand()";
+  my $sub_name = "old_ribo_RunCommand()";
   my $nargs_expected = 2;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
@@ -308,14 +308,14 @@ sub ribo_ValidateExecutableHash {
 #              length (key: "length").
 #              
 # Arguments: 
-#   $seqstat_exec: path to esl-seqstat executable
-#   $seq_file:     sequence file to process
-#   $seqstat_file: path to esl-seqstat output to create
-#   $seqidx_HR:    ref to hash of sequence indices to fill here
-#   $seqlen_HR:    ref to hash of sequence lengths to fill here
-#   $width_HR:     ref to hash to fill with max widths (see Purpose), can be undef
-#   $opt_HHR:      reference to 2D hash of cmdline options
-#   $FH_HR:        REF to hash of file handles, including "cmd"
+#   $seqstat_exec:   path to esl-seqstat executable
+#   $seq_file:       sequence file to process
+#   $seqstat_file:   path to esl-seqstat output to create
+#   $seqidx_HR:      ref to hash of sequence indices to fill here
+#   $seqlen_HR:      ref to hash of sequence lengths to fill here
+#   $width_HR:       ref to hash to fill with max widths (see Purpose), can be undef
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#   $ofile_info_HHR: ref to the ofile info 2D hash
 # 
 # Returns:     total number of nucleotides in all sequences read, 
 #              fills %{$seqidx_HR}, %{$seqlen_HR}, and 
@@ -330,9 +330,12 @@ sub ribo_ProcessSequenceFile {
   my $nargs_expected = 8;
   my $sub_name = "ribo_ProcessSequenceFile()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($seqstat_exec, $seq_file, $seqstat_file, $seqidx_HR, $seqlen_HR, $width_HR, $opt_HHR, $FH_HR) = (@_);
+  my ($seqstat_exec, $seq_file, $seqstat_file, $seqidx_HR, $seqlen_HR, $width_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
   ribo_RunCommand($seqstat_exec . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR), $FH_HR);
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "seqstat", $seqstat_file, 0, "esl-seqstat -a output for $seq_file");
 
   # parse esl-seqstat file to get lengths
   my $max_targetname_length = length("target"); # maximum length of any target name
