@@ -347,9 +347,6 @@ push(@arg_A, $seq_file);
 push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
-push(@arg_desc_A, sprintf("model information input file%s", opt_IsUsed("-i", \%opt_HH) ? " (-i)" : " (default)"));
-push(@arg_A, $modelinfo_file);
-
 my %extra_H    = ();
 $extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
