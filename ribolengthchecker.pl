@@ -15,9 +15,11 @@ my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmsearch";
-$execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
-$execs_H{"ribotyper"}   = $env_ribotyper_dir    . "/ribotyper.pl";
+$execs_H{"cmalign"}      = $env_riboinfernal_dir . "/cmsearch";
+$execs_H{"esl-sfetch"}   = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
+$execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
+$execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
@@ -264,7 +266,7 @@ my $ssi_file = $seq_file . ".ssi";
 if(-e $ssi_file) { 
   unlink $ssi_file; 
 }
-ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $FH_HR);
+ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $FH_HR);
 if(! -s $ssi_file) { 
   ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $FH_HR); 
 } 
@@ -373,7 +375,7 @@ foreach $family (@family_order_A) {
     $cmalign_el_file     = $out_root . "." . $family . ".cmalign.elfile";
     $cmalign_out_file    = $out_root . "." . $family . ".cmalign.out";
     #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
-    ribo_RunCommand("esl-sfetch -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
+    ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@ifile_str_A,       sprintf("# %-18s %6s %-12s sequences saved as $cmalign_insert_file\n", "Insert file of", "all", $family));
     push(@elfile_str_A,      sprintf("# %-18s %6s %-12s sequences saved as $cmalign_el_file\n", "EL file of", "all", $family));
@@ -389,9 +391,13 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ####################################################
 # Step 5: Realigning all seqs in per-class files
 ####################################################
-$start_secs = ofile_OutputProgressPrior("Running cmalign again for each length class", $progress_w, $log_FH, *STDOUT);
+$start_secs = ofile_OutputProgressPrior("Extracting alignments for each length class", $progress_w, $log_FH, *STDOUT);
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
+  my $family_cmalign_stk_file    = $out_root . "." . $family . ".cmalign.stk";
+  my $family_cmalign_insert_file = $out_root . "." . $family . ".cmalign.ifile";
+  my $family_cmalign_el_file     = $out_root . "." . $family . ".cmalign.elfile";
+  my $family_cmalign_out_file    = $out_root . "." . $family . ".cmalign.out";
   foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig", "partial-ambig") { 
     if((exists $family_length_class_HHA{$family}{$length_class}) && 
        (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
@@ -401,10 +407,6 @@ foreach $family (@family_order_A) {
       $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
 
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "EL",      $cmalign_el_file,     1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
 
       open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
@@ -412,12 +414,23 @@ foreach $family (@family_order_A) {
       }
       close(OUT);
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "listfile", $length_class_list_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "List file", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      #ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $length_class_list_file | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
-      ribo_RunCommand("esl-sfetch -f $seq_file $length_class_list_file | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
+
+      # extract relevant lines from insert file and EL file:
+      subset_from_insert_or_el_or_cmalign_file($family_cmalign_insert_file, $cmalign_insert_file, $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
+      subset_from_insert_or_el_or_cmalign_file($family_cmalign_el_file,     $cmalign_el_file,     $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
+      subset_from_insert_or_el_or_cmalign_file($family_cmalign_out_file,    $cmalign_out_file,    $family_length_class_HHA{$family}{$length_class}, 1, $FH_HR);
+
+      # extract subset from the alignment
+      ribo_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | esl-reformat --mingap pfam - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), $FH_HR);
+
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "EL",      $cmalign_el_file,     1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
     }
   }
 }
-                                                       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
                                                        
 ##############################
 # Create output file and exit.
@@ -430,7 +443,7 @@ if((scalar(@fail_str_A) == 0) && (scalar(@nomatch_str_A) == 0)) {
 }
 else { 
   if(scalar(@fail_str_A) > 0) { 
-    ofile_OutputString($log_FH, 1, "#\n# WARNING: %d sequence(s) classified as one of:", scalar(@fail_str_A)); 
+    ofile_OutputString($log_FH, 1, sprintf("#\n# WARNING: %d sequence(s) classified as one of:", scalar(@fail_str_A))); 
     foreach $family (@family_order_A) { 
       ofile_OutputString($log_FH, 1, " $family");
     }
@@ -443,7 +456,7 @@ else {
     ofile_OutputString($log_FH, 1, "#\n# All sequences failed ribotyper.\n");
   }
   if(scalar(@nomatch_str_A) > 0) {
-    ofile_OutputString($log_FH, 1, "#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A)); 
+    ofile_OutputString($log_FH, 1, sprintf("#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A))); 
     foreach $family (@family_order_A) { 
       ofile_OutputString($log_FH, 1, " $family");
     }
@@ -815,3 +828,90 @@ sub parse_stk_file {
   return;
 }
 
+#################################################################
+# Subroutine : subset_from_insert_or_el_or_cmalign_file()
+# Incept:      EPN, Mon Jul  9 13:53:42 2018
+#
+# Purpose:     Given an insert, EL or cmalign output file 
+#              and an array of sequences to save output for,
+#              save that output to a new file.
+#              
+# Arguments: 
+#   $master_file:  master file to extract subset of lines from
+#   $sub_file:     file to create with subset of lines
+#   $AR:           ref to array with names of seqs for $sub_file
+#   $cmalign_flag: '1' if file is a cmalign output file, '0' if it
+#                  is an insert or EL file
+#   $FH_HR:        ref to hash of file handles, including "cmd"
+#
+# Returns:     void; 
+#
+################################################################# 
+sub subset_from_insert_or_el_or_cmalign_file { 
+  my $nargs_expected = 5;
+  my $sub_name = "subset_from_insert_or_el_or_cmalign_file()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($master_file, $sub_file, $AR, $cmalign_flag, $FH_HR) = @_;
+
+  open(IN,  $master_file)   || ofile_FileOpenFailure($master_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $sub_file) || ofile_FileOpenFailure($sub_file,    "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+
+  my $col_idx = ($cmalign_flag) ? 1 : 0; # if cmalign file, column 1 has sequence name, else column 0 does
+  my $noncomment_line_ctr = 0;
+
+  # convert array into a hash of identity
+  my %H = ();
+  my $el;
+  foreach $el (@{$AR}) { 
+    $H{$el} = 1; 
+  }
+
+  while(my $line = <IN>) { 
+    my $print_flag = 0;
+    my $orig_line = $line;
+    if(($line !~ m/^\#/) && ($line !~ m/^\/\//)) { 
+      $noncomment_line_ctr++;
+      if(($noncomment_line_ctr == 1) && (! $cmalign_flag)) { 
+        $print_flag = 1; # print first non-comment line in EL and insert files
+      }
+      else { # only print non-comment line if it pertains to a sequence in @{$AR}
+        $line =~ s/^\s+//; # remove leading  whitespace
+        $line =~ s/\s+$//; # remove trailing whitespace
+        my @el_A = split(/\s+/, $line); 
+        if(scalar(@el_A) <= $col_idx) { 
+          ofile_FAIL("ERROR in $sub_name, unable to parse line, too few elements: $line", "RIBO", 1, $FH_HR);
+        }
+        if(exists $H{$el_A[$col_idx]}) { 
+          if($H{$el_A[$col_idx]} != 1) { 
+            ofile_FAIL("ERROR in $sub_name, read $el_A[$col_idx] more than once: $line", "RIBO", 1, $FH_HR);
+          }
+          $print_flag = 1; 
+          $H{$el_A[$col_idx]} = 0;
+        }
+      }
+    }
+    else { # line begins with # or //, always print it
+      $print_flag = 1;
+    }
+    if($print_flag) { 
+      print OUT $orig_line;
+    }
+  }
+  close(OUT);
+  close(IN);
+  
+  my $failstr = "";
+  # make sure each sequence was found
+  foreach $el (@{$AR}) { 
+    if($H{$el} != 0) { 
+      $failstr .= $el . "\n";
+    }
+  }
+  if($failstr ne "") { 
+    ofile_FAIL("ERROR in $sub_name, at least one sequence not found in $master_file:\n$failstr", "RIBO", 1, $FH_HR);
+  }
+
+  return;
+}
