@@ -440,6 +440,7 @@ foreach $family (@family_order_A) {
     $outfile_H{"ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
     $outfile_H{"elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
     $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
+    $outfile_H{"seqlist"} = $family_sfetch_filename_H{$family};
     ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
 
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   0, "insert file for $family");

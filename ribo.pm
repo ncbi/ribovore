@@ -1065,6 +1065,7 @@ sub ribo_RemoveFileUsingSystemRm {
 ################################################################# 
 sub ribo_ConcatenateListOfFiles { 
   my $nargs_expected = 5;
+
   my $sub_name = "ribo_ConcatenateListOfFiles()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
   my ($file_AR, $outfile, $caller_sub_name, $opt_HHR, $FH_HR) = @_;
@@ -1255,9 +1256,9 @@ sub ribo_ParseQsubFile {
 #   $model_file:     path to model file to use 
 #   $seq_file:       sequence file to search against
 #   $opts:           options to provide to cmsearch or cmalign
-#   $outfile_HR:     ref to hash, 
-#                    if $executable eq "cmsearch", keys must be "tblout" and "stdout"
-#                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", and "stdout"
+#   $file_HR:        ref to hash, 
+#                    if $executable eq "cmsearch", keys must be "tblout" and "cmsearch"
+#                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", "cmalign", and "seqlist"
 #   $opt_HHR:        ref to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
 #
@@ -1271,31 +1272,31 @@ sub ribo_RunCmsearchOrCmalign {
   my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($executable, $qsub_prefix, $qsub_suffix, $model_file, $seq_file, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($executable, $qsub_prefix, $qsub_suffix, $model_file, $seq_file, $opts, $file_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   # we can only pass $FH_HR to ofile_FAIL if that hash already exists
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
-  my @reqd_outfile_keys = (); # array of required outfile_HR keys for this executable program
-  my $outfile_key = undef;    # a single outfile key
+  my @reqd_file_keys = (); # array of required outfile_HR keys for this executable program
+  my $file_key = undef;    # a single outfile key
 
   ribo_CheckIfFileExistsAndIsNonEmpty($seq_file,   undef, $sub_name, 1, $FH_HR); 
   ribo_CheckIfFileExistsAndIsNonEmpty($model_file, undef, $sub_name, 1, $FH_HR); 
 
-  # determine if we have the appropriate paths defined in %{$outfile_HR} 
+  # determine if we have the appropriate paths defined in %{$file_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
   if($executable =~ /cmsearch$/) { 
-    @reqd_outfile_keys = ("cmsearch", "tblout");
+    @reqd_file_keys = ("cmsearch", "tblout");
   }
   elsif($executable =~ /cmalign$/) { 
-    @reqd_outfile_keys = ("cmalign", "stk", "ifile", "elfile");
+    @reqd_file_keys = ("cmalign", "stk", "ifile", "elfile", "seqlist");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
   }
-  foreach $outfile_key (@reqd_outfile_keys) { 
-    if(! exists $outfile_HR->{$outfile_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $outfile_key file not set", "RIBO", 1, $FH_HR); }
+  foreach $file_key (@reqd_file_keys) { 
+    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $file_key file not set", "RIBO", 1, $FH_HR); }
     # remove this file if it already exists
-    if(-e $outfile_HR->{$outfile_key}) { ribo_RemoveFileUsingSystemRm($outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    if(-e $file_HR->{$file_key}) { ribo_RemoveFileUsingSystemRm($file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
   } 
 
   # determine if we are running on the farm or locally
@@ -1315,7 +1316,7 @@ sub ribo_RunCmsearchOrCmalign {
     $do_local = 0;
   }
 
-  # determine if we have the appropriate paths defined in %{$outfile_HR} 
+  # determine if we have the appropriate paths defined in %{$file_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
   # and run the program
   if($executable =~ /cmsearch$/) { 
@@ -1356,9 +1357,9 @@ sub ribo_RunCmsearchOrCmalign {
 #  $tot_nseq:        number of sequences in $seq_file
 #  $tot_len_nt:      total length of all nucleotides in $seq_file
 #  $opts:            string of cmsearch or cmalign options
-#  $outfile_HR:      ref to hash, 
-#                    if $executable eq "cmsearch", keys must be "tblout" and "stdout"
-#                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", and "stdout"
+#  $file_HR:         ref to hash, 
+#                    if $executable eq "cmsearch", keys must be "tblout" and "cmsearch"
+#                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", "cmalign", and "seqlist"
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
@@ -1371,42 +1372,42 @@ sub ribo_RunCmsearchOrCmalignWrapper {
   my $nargs_expected = 15;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($execs_HR, $program_choice, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($execs_HR, $program_choice, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $file_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
   my $start_secs; # timing start
   my $out_dir = ribo_RemoveFileTail($out_root);
   my $executable = undef;     # path to the cmsearch or cmalign executable
-  my @reqd_outfile_keys = (); # array of required outfile_HR keys for this executable program
-  my $outfile_key = undef;    # a single outfile key
+  my @reqd_file_keys = (); # array of required file_HR keys for this executable program
+  my $file_key = undef;    # a single outfile key
   my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
   my $wait_str = undef;       # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
 
-  # determine if we have the appropriate paths defined in %{$outfile_HR} 
+  # determine if we have the appropriate paths defined in %{$file_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
   if($program_choice eq "cmsearch") { 
     $executable = $execs_HR->{"cmsearch"};
-    @reqd_outfile_keys = ("cmsearch", "tblout");
+    @reqd_file_keys = ("cmsearch", "tblout");
     $wait_key = "tblout";
     $wait_str = "[ok]";
   }
   elsif($program_choice eq "cmalign") { 
     $executable = $execs_HR->{"cmalign"};
-    @reqd_outfile_keys = ("cmalign", "stk", "ifile", "elfile");
+    @reqd_file_keys = ("cmalign", "stk", "ifile", "elfile", "seqlist");
     $wait_key = "cmalign";
     $wait_str = "# CPU time:";
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
   }
-  foreach $outfile_key (@reqd_outfile_keys) { 
-    if(! exists $outfile_HR->{$outfile_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $outfile_key file not set", "RIBO", 1, $FH_HR); }
+  foreach $file_key (@reqd_file_keys) { 
+    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $file_key file not set", "RIBO", 1, $FH_HR); }
   } 
 
   if(! opt_Get("-p", $opt_HHR)) { 
     # run job locally
-    ribo_RunCmsearchOrCmalign($executable, undef, undef, $model_file, $seq_file, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+    ribo_RunCmsearchOrCmalign($executable, undef, undef, $model_file, $seq_file, $opts, $file_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
   }
   else { 
     my %tmp_outfile_HA = (); # hash of arrays of temporary files for all jobs to concatenate or otherwise combine, and then remove
@@ -1420,9 +1421,9 @@ sub ribo_RunCmsearchOrCmalignWrapper {
       %tmp_outfile_H = ();
       my $seq_file_tail = ribo_RemoveDirPath($seq_file);
       my $tmp_seq_file  = $out_dir . "." . $seq_file_tail . "." . $f;
-      foreach $outfile_key ((@reqd_outfile_keys), "err") { 
-        $tmp_outfile_H{$outfile_key} = $tmp_seq_file . "." . $outfile_key;
-        push(@{$tmp_outfile_HA{$outfile_key}}, $tmp_outfile_H{$outfile_key});
+      foreach $file_key ((@reqd_file_keys), "err") { 
+        $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
+        push(@{$tmp_outfile_HA{$file_key}}, $tmp_outfile_H{$file_key});
       }
       ribo_RunCmsearchOrCmalign($executable, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, \%tmp_outfile_H, $opt_HHR, $ofile_info_HHR); 
     }
@@ -1439,19 +1440,19 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     ofile_OutputString($log_FH, 1, "# "); # necessary because waitForFarmJobsToFinish() creates lines that summarize wait time and so we need a '#' before 'done' printed by outputProgressComplete()
 
     # concatenate/merge files into one 
-    foreach $outfile_key (@reqd_outfile_keys) { 
-      if($outfile_key eq "stk") { # special case
-        ribo_MergeAlignments($execs_HR->{"esl-alimerge"}, $tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $opt_HHR, $ofile_info_HHR);
+    foreach $file_key (@reqd_file_keys) { 
+      if($file_key eq "stk") { # special case
+        ribo_MergeAlignmentsAndReorder($execs_HR, $tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $file_HR->{"seqlist"}, $opt_HHR, $ofile_info_HHR);
       }
-      else { 
-        ribo_ConcatenateListOfFiles($tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+      elsif($file_key ne "seqlist") { # another special case, don't concatenate seqlist files
+        ribo_ConcatenateListOfFiles($tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
     }
 
     # remove temporary files if --keep not enabled
     if(! opt_Get("--keep", $opt_HHR)) { 
-      foreach $outfile_key ((@reqd_outfile_keys), "err") { 
-        foreach my $tmp_file (@{$tmp_outfile_HA{$outfile_key}}) {
+      foreach $file_key ((@reqd_file_keys), "err") { 
+        foreach my $tmp_file (@{$tmp_outfile_HA{$file_key}}) {
           if(-e $tmp_file) { 
             ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
           }
@@ -1464,15 +1465,18 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 }
 
 #################################################################
-# Subroutine:  ribo_MergeAlignments()
+# Subroutine:  ribo_MergeAlignmentsAndReorder()
 # Incept:      EPN, Tue Jul 10 09:14:49 2018
 #
-# Purpose:     Given an array of alignment files, merge them into one.
+# Purpose:     Given an array of alignment files, merge them into one
+#              and reorder all sequences to the order in the file 
+#              $seqlist.
 #
 # Arguments: 
-#  $executable:      path to esl-alimerge executable
+#  $execs_HR:        ref to hash with paths to executables
 #  $AR:              ref to array of files to merge
 #  $merged_stk_file: path to merged stk file to create
+#  $seqlist_file:    file with list of all sequences in the correct order
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
@@ -1480,12 +1484,12 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 # 
 # Dies: If esl-alimerge fails
 ################################################################# 
-sub ribo_MergeAlignments { 
-  my $sub_name = "ribo_MergeAlignments";
-  my $nargs_expected = 5;
+sub ribo_MergeAlignmentsAndReorder { 
+  my $sub_name = "ribo_MergeAlignmentsAndReorder";
+  my $nargs_expected = 6;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($executable, $AR, $merged_stk_file, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($execs_HR, $AR, $merged_stk_file, $seqlist_file, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
@@ -1495,7 +1499,7 @@ sub ribo_MergeAlignments {
   ribo_WriteArrayToFile($AR, $list_file, $FH_HR);
 
   # merge the alignments with esl-alimerge
-  ribo_RunCommand($executable . " --outformat pfam --list $list_file > $merged_stk_file", opt_Get("-v", $opt_HHR), $FH_HR);
+  ribo_RunCommand($execs_HR->{"esl-alimerge"} . " --list $list_file | " . $execs_HR->{"esl-alimanip"} . " --seq-k $seqlist_file --k-reorder --outformat pfam - > $merged_stk_file", opt_Get("-v", $opt_HHR), $FH_HR);
 
   if(opt_Get("--keep", $opt_HHR)) { 
     ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$merged_stk_file.list", $merged_stk_file, 0, "list of alignment files merged to create " . ribo_RemoveDirPath($merged_stk_file));
