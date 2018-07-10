@@ -15,9 +15,10 @@ my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"cmalign"}      = $env_riboinfernal_dir . "/cmsearch";
+$execs_H{"cmalign"}      = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-sfetch"}   = $env_riboeasel_dir    . "/esl-sfetch";
 $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
+$execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
 $execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
 ribo_ValidateExecutableHash(\%execs_H);
@@ -57,6 +58,9 @@ opt_Add("-b",           "integer", 10,                       1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                      "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+
 # options related to the ribotyper call
 $opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
 opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
@@ -65,9 +69,9 @@ opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,
 
 $opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);o
+opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>", "number of KB of sequence for each farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>", "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
 opt_Add("--maxnjobs",   "integer", 2500,                      3,     "-p", undef,      "maximum allowed number of jobs for compute farm",       "set max number of jobs to submit to compute farm to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
@@ -84,6 +88,8 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
                 'i=s'          => \$GetOptions_H{"-i"},
+                's=s'          => \$GetOptions_H{"-s"},
+                'keep'         => \$GetOptions_H{"--keep"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
                 'nocovfail'    => \$GetOptions_H{"--nocovfail"}, 
@@ -157,29 +163,6 @@ my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
 my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribolengthchecker";
 
-# make sure the sequence and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
-my $modelinfo_file = undef;
-if(! opt_IsUsed("-i", \%opt_HH)) {
-  $modelinfo_file = $df_modelinfo_file;
-}
-else { 
-  $modelinfo_file = opt_Get("-i", \%opt_HH);
-}
-ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1); # 1 says: die if it doesn't exist or is empty
-if(! opt_IsUsed("-i", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
-}
-else { # -i used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1); # 1 says: die if it doesn't exist or is empty
-}
-# we check for the existence of model files after we parse the model info file, below
-
-# read command line options for ribotyper from file if --riboopts used
-my $extra_ribotyper_options = "";
-if(opt_IsUsed("--riboopts", \%opt_HH)) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty(opt_Get("--riboopts", \%opt_HH), "--riboopts file", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
-}
 
 #############################################
 # output program banner and open output files
@@ -232,6 +215,42 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
+# make sure the sequence,qsubinfo and modelinfo files exist
+my $df_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".modelinfo";
+my $modelinfo_file = undef;
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  $modelinfo_file = $df_modelinfo_file;
+}
+else { 
+  $modelinfo_file = opt_Get("-i", \%opt_HH);
+}
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $model_version_str . ".qsubinfo";
+my $qsubinfo_file = undef;
+# if -p, check for existence of qsub info file
+if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
+else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
+
+ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+if(! opt_IsUsed("-i", \%opt_HH)) {
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+}
+else { # -i used on the command line
+  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+}
+if(! opt_IsUsed("-q", \%opt_HH)) {
+  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+}
+else { # -q used on the command line
+  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+}
+# we check for the existence of model files after we parse the model info file, below
+
+# read command line options for ribotyper from file if --riboopts used
+my $extra_ribotyper_options = "";
+if(opt_IsUsed("--riboopts", \%opt_HH)) { 
+  ribo_CheckIfFileExistsAndIsNonEmpty(opt_Get("--riboopts", \%opt_HH), "--riboopts file", undef, 1, $ofile_info_HH{"FH"}); # last argument as 1 says: die if it doesn't exist or is empty
+}
+
 # parse --riboopts file
 if(opt_IsUsed("--riboopts", \%opt_HH)) { 
   my $ribotyper_file = opt_Get("--riboopts", \%opt_HH);
@@ -267,6 +286,8 @@ my %family_modelfile_H = (); # key is family name (e.g. "SSU.Archaea") from @fam
 my %family_modellen_H  = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is consensus length for that family
 my %family_rtname_HA   = (); # key is family name (e.g. "SSU.Archaea") from @family_order_A, value is array of ribotyper models to align with this family
 my $family;
+my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
+my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
 ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelfile_H, \%family_modellen_H, \%family_rtname_HA);
 # NOTE: the array of ribotyper models in family_rtname_HA for each family should match the models that are assigned to 
 # family $family in ribotyper, as encoded in the ribotyper model file, but THIS IS NOT CURRENTLY CHECKED FOR!
@@ -276,6 +297,11 @@ foreach $family (@family_order_A) {
   if(! -s $family_modelfile_H{$family}) { 
     ofile_FAIL("ERROR, model file $family_modelfile_H{$family} specified in $modelinfo_file does not exist or is empty", "RIBO", 1, $FH_HR);
   }
+}
+
+# parse qsub file, if nec
+if(opt_IsUsed("-p", \%opt_HH)) { 
+  ($qsub_prefix, $qsub_suffix) = ribo_ParseQsubFile($qsubinfo_file, $ofile_info_HH{"FH"});
 }
 
 # index the fasta file, the index will be used later to fetch with esl-sfetch
@@ -295,15 +321,23 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ####################################################
 $start_secs = ofile_OutputProgressPrior("Running ribotyper", $progress_w, $log_FH, *STDOUT);
 
-my $ribotyper_accept_file = $out_root . "ribotyper.accept";
-my $ribotyper_outdir      = $out_root . "-rt";
-my $ribotyper_outdir_tail = $dir_out_tail . ".ribolengthchecker-rt";
-my $ribotyper_outfile     = $out_root . ".ribotyper.out";
-my $ribotyper_short_file  = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
-my $ribotyper_long_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+my $ribotyper_accept_file  = $out_root . "ribotyper.accept";
+my $ribotyper_outdir       = $out_root . "-rt";
+my $ribotyper_outdir_tail  = $dir_out_tail . ".ribolengthchecker-rt";
+my $ribotyper_outfile      = $out_root . ".ribotyper.out";
+my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
+my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+my $ribotyper_seqstat_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.seqstat";
 my $found_family_match;  # set to '1' if a sequence matches one of the families we are aligning for
 my @fail_str_A    = (); # array of strings of FAIL sequences to output 
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
+
+# information about the sequences, which we get by processing the ribotyper seqstat file
+my $tot_nnt  = 0;  # total number of nucleotides in target sequence file (summed length of all seqs)
+my $nseq     = 0;  # total number of sequences in target sequence file
+my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
+my %seqlen_H = (); # key: sequence name, value: length of sequence
+my %width_H  = (); # hash, key is "target", value is maximum length of target
 
 # create the .accept file to supply to ribotyper
 open(ACCEPT, ">", $ribotyper_accept_file) || ofile_FileOpenFailure($ribotyper_accept_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
@@ -319,19 +353,26 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_ac
 my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
 if(! opt_IsUsed("--noscfail",  \%opt_HH)) { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
-if(! opt_IsUsed("-p",          \%opt_HH)) { $ribotyper_options .= " -p"; }
-if(! opt_IsUsed("-q",          \%opt_HH)) { $ribotyper_options .= " -q"; }
+if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
+if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
 ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), $FH_HR);
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+# parse the ribotyper seqstat file
+$tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \%seqidx_H, \%seqlen_H);
 
 # parse ribotyper output and create sfetch input files for sequences to fetch
 my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name
 my %family_sfetch_FH_H       = ();  # key: family name, value: output file handle for sfetch input file
 my %family_seqfile_H         = ();  # key: family name, value: fasta file 
+my %family_nseq_H            = ();  # key: family name, value: number of sequences in the fasta file $family_seqfile_H{$family}
+my %family_nnt_H             = ();  # key: family name, value: number of nucleotides in the fasta file $family_seqfile_H{$family}
 foreach $family (@family_order_A) { 
   $family_sfetch_filename_H{$family} = $out_root . "." . $family . ".sfetch";
   $family_seqfile_H{$family}         = $out_root . "." . $family . ".fa";
+  $family_nseq_H{$family}            = 0;
+  $family_nnt_H{$family}             = 0;
   open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
 }
 
@@ -349,6 +390,8 @@ while(my $line = <RIBO>) {
         $found_family_match = 1;
         if($passfail eq "PASS") { 
           print { $family_sfetch_FH_H{$family} } ($seqname . "\n");
+          $family_nseq_H{$family}++;
+          $family_nnt_H{$family} += $seqlen_H{$seqname};
         }
         else { 
           push(@fail_str_A, ($seqname . "\n"));
@@ -367,9 +410,9 @@ foreach $family (@family_order_A) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, "sfetch file for $family");
 }
                                                        
-####################################################
-# Step 3: Run cmalign on full sequence file
-####################################################
+##########################################################
+# Step 3: Run cmalign on sequences that passed ribotyper
+##########################################################
 $start_secs = ofile_OutputProgressPrior("Running cmalign and classifying sequence lengths", $progress_w, $log_FH, *STDOUT);
 # for each family to align, run cmalign:
 my $nfiles = 0;               # number of fasta files that exist for this sequence directory
@@ -383,11 +426,6 @@ my %family_length_class_HHA;  # key 1D is family, key 2D is length class (e.g. '
                               # for this family that belong to this length class
 my %out_tbl_HH = ();          # hash of hashes with information for output file
                               # key 1 is sequence name, key 2 is a column name, e.g. pred_cmfrom
-my @stkfile_str_A     = (); # list of output alignment files we create
-my @ifile_str_A       = (); # list of output insert files we create
-my @elfile_str_A      = (); # list of output EL (local end) files we create
-my @cmalignfile_str_A = (); # list of output cmalign files we create
-my @listfile_str_A    = (); # list of output list files we create
 my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign options that are consistently used in all cmalign calls
 
 foreach $family (@family_order_A) { 
@@ -402,17 +440,12 @@ foreach $family (@family_order_A) {
     $outfile_H{"ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
     $outfile_H{"elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
     $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
-    ribo_RunCmsearchOrCmalignWrapper($execs_H{"cmalign"}, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $tot_nseq, $tot_len_nt, \$outfile_H, \%opt_HH, \%ofile_info_HH);
+    ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},  0, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"}, 0, "EL file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},    0, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"} 0, "cmalign output file for $family");
-
-    push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
-    push(@ifile_str_A,       sprintf("# %-18s %6s %-12s sequences saved as $cmalign_insert_file\n", "Insert file of", "all", $family));
-    push(@elfile_str_A,      sprintf("# %-18s %6s %-12s sequences saved as $cmalign_el_file\n", "EL file of", "all", $family));
-    push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   0, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"},  0, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},     0, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"}, 0, "cmalign output file for $family");
 
     # parse cmalign file
     parse_cmalign_file($outfile_H{"cmalign"}, \%out_tbl_HH, $FH_HR);
@@ -470,7 +503,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ##############################
 # Create output file and exit.
 ##############################
-my $output_file = $out_root . ".ribolengthchecker.tbl.out";
+my $output_file = $out_root . ".tbl";
 output_tabular_file($output_file, $ribotyper_short_file, $nbound, \%out_tbl_HH, $FH_HR);
 
 if((scalar(@fail_str_A) == 0) && (scalar(@nomatch_str_A) == 0)) { 

@@ -353,8 +353,8 @@ sub ribo_CountAmbiguousNucleotidesInSequenceFile {
 #              
 # Arguments: 
 #   $seqstat_file:            file to parse
-#   $max_targetname_length_R: REF to the maximum length of any target name, updated here
-#   $max_length_length_R:     REF to the maximum length of string-ized length of any target seq, updated here
+#   $max_targetname_length_R: REF to the maximum length of any target name, updated here, can be undef
+#   $max_length_length_R:     REF to the maximum length of string-ized length of any target seq, updated here, can be undef
 #   $nseq_R:                  REF to the number of sequences read, updated here
 #   $seqidx_HR:               REF to hash of sequence indices to fill here
 #   $seqlen_HR:               REF to hash of sequence lengths to fill here
@@ -413,12 +413,12 @@ sub ribo_ParseSeqstatFile {
       $tot_length += $length;
 
       $targetname_length = length($targetname);
-      if($targetname_length > $$max_targetname_length_R) { 
+      if((defined $max_targetname_length_R) && ($targetname_length > $$max_targetname_length_R)) { 
         $$max_targetname_length_R = $targetname_length;
       }
 
       $seqlength_length  = length($length);
-      if($seqlength_length > $$max_length_length_R) { 
+      if((defined $max_length_length_R) && ($seqlength_length > $$max_length_length_R)) { 
         $$max_length_length_R = $seqlength_length;
       }
 
@@ -517,6 +517,7 @@ sub ribo_ParseSeqstatCompTblFile {
 #   $filedesc:         description of file
 #   $calling_sub_name: name of calling subroutine (can be undef)
 #   $do_die:           '1' if we should die if it does not exist.  
+#   $FH_HR:            ref to hash of file handles
 # 
 # Returns:     Return '1' if it does and is non empty, '0' if it does
 #              not exist, or '-1' if it exists but is empty.
@@ -525,24 +526,24 @@ sub ribo_ParseSeqstatCompTblFile {
 # 
 ################################################################# 
 sub ribo_CheckIfFileExistsAndIsNonEmpty { 
-  my $nargs_expected = 4;
+  my $nargs_expected = 5;
   my $sub_name = "ribo_CheckIfFileExistsAndIsNonEmpty()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($filename, $filedesc, $calling_sub_name, $do_die) = @_;
+  my ($filename, $filedesc, $calling_sub_name, $do_die, $FH_HR) = @_;
 
   if(! -e $filename) { 
     if($do_die) { 
-      die sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
-                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : "")); 
+      ofile_FAIL("ERROR in $sub_name, %sfile $filename%s does not exist.", 
+                 (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
+                 (defined $filedesc         ? " ($filedesc)" : ""), "RIBO", 1, $FH_HR); 
     }
     return 0;
   }
   elsif(! -s $filename) { 
     if($do_die) { 
-      die sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
+      ofile_FAIL("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
                   (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : "")); 
+                  (defined $filedesc         ? " ($filedesc)" : ""), "RIBO", 1, $FH_HR); 
     }
     return -1;
   }
@@ -936,7 +937,8 @@ sub ribo_WaitForFarmJobsToFinish {
   }
 
   my $keep_going = 1;  # set to 0 if all jobs are finished
-  ofile_OutputString($log_FH, 1, "\n");
+  ofile_OutputString($log_FH, 0, "\n");
+  print STDERR "\n";
   while(($secs_waited < (($nmin * 60) + $cur_sleep_secs)) && # we add $cur_sleep so we check one final time before exiting after time limit is reached
         ($keep_going)) { 
     # check to see if jobs are finished, every $cur_sleep seconds
@@ -972,7 +974,8 @@ sub ribo_WaitForFarmJobsToFinish {
     }
 
     # output update
-    ofile_OutputString($log_FH, 1, sprintf("#\t%4d of %4d jobs finished (%.1f minutes spent waiting)\n", $nfinished, $njobs, $secs_waited / 60.));
+    ofile_OutputString($log_FH, 0, sprintf("#\t%4d of %4d jobs finished (%.1f minutes spent waiting)\n", $nfinished, $njobs, $secs_waited / 60.));
+    printf STDERR ("#\t%4d of %4d jobs finished (%.1f minutes spent waiting)\n", $nfinished, $njobs, $secs_waited / 60.);
 
     if($nfinished == $njobs) { 
       # we're done break out of it
@@ -1275,8 +1278,8 @@ sub ribo_RunCmsearchOrCmalign {
   my @reqd_outfile_keys = (); # array of required outfile_HR keys for this executable program
   my $outfile_key = undef;    # a single outfile key
 
-  ribo_CheckIfFileExistsAndIsNonEmpty($seq_file,   undef, $sub_name, 1); 
-  ribo_CheckIfFileExistsAndIsNonEmpty($model_file, undef, $sub_name, 1); 
+  ribo_CheckIfFileExistsAndIsNonEmpty($seq_file,   undef, $sub_name, 1, $FH_HR); 
+  ribo_CheckIfFileExistsAndIsNonEmpty($model_file, undef, $sub_name, 1, $FH_HR); 
 
   # determine if we have the appropriate paths defined in %{$outfile_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
@@ -1341,7 +1344,8 @@ sub ribo_RunCmsearchOrCmalign {
 #              See ribotyper.pl for examples of these options.
 #
 # Arguments: 
-#  $executable:      path to cmsearch or cmalign executable
+#  $execs_HR:        ref to hash with paths to executables
+#  $program_choice:  "cmalign" or "cmsearch"
 #  $qsub_prefix:     qsub command prefix to use when submitting to farm, if -p
 #  $qsub_suffix:     qsub command suffix to use when submitting to farm, if -p
 #  $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
@@ -1364,28 +1368,34 @@ sub ribo_RunCmsearchOrCmalign {
 ################################################################# 
 sub ribo_RunCmsearchOrCmalignWrapper { 
   my $sub_name = "ribo_RunCmsearchOrCmalignWrapper";
-  my $nargs_expected = 14;
+  my $nargs_expected = 15;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($executable, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($execs_HR, $program_choice, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
   my $start_secs; # timing start
   my $out_dir = ribo_RemoveFileTail($out_root);
+  my $executable = undef;     # path to the cmsearch or cmalign executable
   my @reqd_outfile_keys = (); # array of required outfile_HR keys for this executable program
   my $outfile_key = undef;    # a single outfile key
   my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
+  my $wait_str = undef;       # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
 
   # determine if we have the appropriate paths defined in %{$outfile_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
-  if($executable =~ /cmsearch$/) { 
+  if($program_choice eq "cmsearch") { 
+    $executable = $execs_HR->{"cmsearch"};
     @reqd_outfile_keys = ("cmsearch", "tblout");
     $wait_key = "tblout";
+    $wait_str = "[ok]";
   }
-  elsif($executable =~ /cmalign$/) { 
+  elsif($program_choice eq "cmalign") { 
+    $executable = $execs_HR->{"cmalign"};
     @reqd_outfile_keys = ("cmalign", "stk", "ifile", "elfile");
     $wait_key = "cmalign";
+    $wait_str = "# CPU time:";
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
@@ -1418,10 +1428,11 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     }
     
     # wait for the jobs to finish
-    ofile_OutputString($log_FH, 1, sprintf("\n"));
+    ofile_OutputString($log_FH, 0, sprintf("\n"));
+    print STDERR "\n";
     $start_secs = ribo_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
-                                           $progress_w, $log_FH, *STDOUT);
-    my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, "[ok]", opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+                                           $progress_w, $log_FH, *STDERR);
+    my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
     }
@@ -1430,7 +1441,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     # concatenate/merge files into one 
     foreach $outfile_key (@reqd_outfile_keys) { 
       if($outfile_key eq "stk") { # special case
-        ribo_MergeAlignments($tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+        ribo_MergeAlignments($execs_HR->{"esl-alimerge"}, $tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $opt_HHR, $ofile_info_HHR);
       }
       else { 
         ribo_ConcatenateListOfFiles($tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
@@ -1576,18 +1587,17 @@ sub ribo_FastaFileSplitRandomly {
   
   if(defined $rng_seed) { srand($rng_seed); }
 
-  printf("fa_file: $fa_file, tot_nseq: $tot_nseq, tot_nres: $tot_nres\n");
-
   # determine number of files to create
   my $nfiles = int($tot_nres / $targ_nres);
+  if($nfiles < 1) { $nfiles = 1; }
   # nfiles must be less than or equal to: $nseq and 300
   if($nfiles > $tot_nseq) { $nfiles = $tot_nseq; }
   if($nfiles > 300)       { $nfiles = 300; }
-  $targ_nres = int($tot_nres / $nfiles);
-
   if($nfiles <= 0) { 
     ofile_FAIL("ERROR in $sub_name, trying to make $nfiles files", "RIBO", 1, $FH_HR);
   }
+  $targ_nres = int($tot_nres / $nfiles);
+
 
   # We need to open up all output file handles at once, we'll randomly
   # choose which one to print each sequence to. We need to keep track
