@@ -605,14 +605,14 @@ my $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
 my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Classifying sequences", $progress_w, $log_FH, *STDOUT);
   my %outfile_H = (); 
   $outfile_H{"tblout"}   = $r1_tblout_file;
   $outfile_H{"cmsearch"} = $r1_searchout_file;
   ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
 }
 else { 
-  $start_secs = ribo_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, undef, *STDOUT);
   if(! -s $r1_tblout_file) { 
     ofile_FAIL("ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
   }

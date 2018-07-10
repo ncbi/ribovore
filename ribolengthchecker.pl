@@ -551,7 +551,13 @@ ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_in
 #################################################################
 # SUBROUTINES
 #################################################################
-
+# List of subroutines:
+#
+# output_tabular_file
+# parse_cmalign_file
+# parse_stk_file
+# subset_from_insert_or_el_or_cmalign_file
+# 
 #################################################################
 # Subroutine : output_tabular_file()
 # Incept:      EPN, Mon Oct 23 16:20:55 2017
@@ -638,39 +644,6 @@ sub output_tabular_file {
   close(IN);
   return;
 }
-
-#################################################################
-# subroutine : debug_print_hash
-# sub class  : general
-# 
-# EPN 03.08.05
-# 
-# purpose : Print to standard output the keys and values of a 
-#           given hash
-#
-# args : (1) $hash_ref 
-#            reference to hash to print
-#        (2) $hash_name
-#            name of hash to print
-################################################################# 
-
-sub debug_print_hash
-{
-  my ($hash_ref, $hash_name) = @_;
-    
-  print("IN DEBUG PRINT HASH\n");
-  print("printing hash : $hash_name\n");
-  my $i = 1;
-  foreach my $header (sort keys (%{$hash_ref}))
-  {
-    print("$i KEY    : $header\n");
-    print("$i VALUE : $hash_ref->{$header}\n");
-    $i++;
-  }
-  print("finished printing hash : $hash_name\n");
-  print("LEAVING DEBUG PRINT HASH\n");
-}
-
 
 #################################################################
 # Subroutine : parse_cmalign_file()
