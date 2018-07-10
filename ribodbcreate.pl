@@ -1120,7 +1120,7 @@ sub reformat_sequence_names_in_fasta_file {
       if($line =~ /^\>\S+\s+(.+)/) { 
         $desc = " " . $1;
       }
-      my $new_name = ribo_ConvertFetchedNameToAccVersion($orig_name, 0);
+      my $new_name = ribo_ConvertFetchedNameToAccVersion($orig_name, 0, $FH_HR);
       printf OUT (">%s%s\n", $new_name, $desc);
     }
     else { 

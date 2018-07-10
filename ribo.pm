@@ -246,7 +246,7 @@ sub ribo_ValidateExecutableHash {
   }
   
   if(defined $fail_str) { 
-    die "ERROR in $sub_name(),\n$fail_str"; 
+    die "ERROR in $sub_name(),\n$fail_str"; # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
   }
 
   return;
@@ -298,7 +298,7 @@ sub ribo_ProcessSequenceFile {
   my $max_targetname_length = length("target"); # maximum length of any target name
   my $max_length_length     = length("length"); # maximum length of the string-ized length of any target
   my $nseq                  = 0; # number of sequences read
-  my $tot_length = ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqidx_HR, $seqlen_HR); 
+  my $tot_length = ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqidx_HR, $seqlen_HR, $FH_HR); 
 
   if(defined $width_HR) { 
     $width_HR->{"target"} = $max_targetname_length;
@@ -341,7 +341,7 @@ sub ribo_CountAmbiguousNucleotidesInSequenceFile {
   ribo_RunCommand($seqstat_exec . " --dna --comptbl $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR), $FH_HR);
 
   # parse esl-seqstat file to get lengths
-  return ribo_ParseSeqstatCompTblFile($seqstat_file, $seqnambig_HR);
+  return ribo_ParseSeqstatCompTblFile($seqstat_file, $seqnambig_HR, $FH_HR);
 }
 
 
@@ -358,6 +358,7 @@ sub ribo_CountAmbiguousNucleotidesInSequenceFile {
 #   $nseq_R:                  REF to the number of sequences read, updated here
 #   $seqidx_HR:               REF to hash of sequence indices to fill here
 #   $seqlen_HR:               REF to hash of sequence lengths to fill here
+#   $FH_HR:                   REF to hash of file handles, including "cmd"
 #
 # Returns:     Total number of nucleotides read (summed length of all sequences). 
 #              Fills %{$seqidx_HR} and %{$seqlen_HR} and updates 
@@ -369,13 +370,13 @@ sub ribo_CountAmbiguousNucleotidesInSequenceFile {
 #
 ################################################################# 
 sub ribo_ParseSeqstatFile { 
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   my $sub_name = "ribo_ParseSeqstatFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqidx_HR, $seqlen_HR) = @_;
+  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqidx_HR, $seqlen_HR, $FH_HR) = @_;
 
-  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+  open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   my $nread = 0;            # number of sequences read
   my $tot_length = 0;       # summed length of all sequences
@@ -426,7 +427,7 @@ sub ribo_ParseSeqstatFile {
   }
   close(IN);
   if($nread == 0) { 
-    die "ERROR did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat";
+    ofile_FAIL("ERROR in $sub_name, did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat", "RIBO", 1, $FH_HR);
   }
   if($at_least_one_dup) { 
     my $i = 1;
@@ -436,7 +437,7 @@ sub ribo_ParseSeqstatFile {
       $i++;
     }
     $die_string .= "\n";
-    die $die_string;
+    ofile_FAIL($die_string, "RIBO", 1, $FH_HR);
   }
 
   $$nseq_R = $nread;
@@ -460,13 +461,13 @@ sub ribo_ParseSeqstatFile {
 #
 ################################################################# 
 sub ribo_ParseSeqstatCompTblFile { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "ribo_ParseSeqstatCompTblFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($seqstat_file, $seqnambig_HR) = @_;
+  my ($seqstat_file, $seqnambig_HR, $FH_HR) = @_;
 
-  open(IN, $seqstat_file) || die "ERROR unable to open esl-seqstat file $seqstat_file for reading";
+  open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   my $nread = 0;            # number of sequences read
   my $nread_w_ambig = 0;    # summed length of all sequences
@@ -498,7 +499,7 @@ sub ribo_ParseSeqstatCompTblFile {
       $seqnambig_HR->{$seqname} = $nambig;
     }
     elsif($line !~ m/^\#/) { 
-      die "ERROR unable to parse esl-seqstat --comptbl line $line from file $seqstat_file";
+      ofile_FAIL("ERROR in $sub_name, unable to parse esl-seqstat --comptbl line $line from file $seqstat_file", "RIBO", 1, $FH_HR);
     }
   }
   close(IN);
@@ -584,6 +585,7 @@ sub ribo_SecondsSinceEpoch {
 # Arguments:
 #   $len:   desired length of the string to return
 #   $char:  desired character
+#   $FH_HR: ref to hash of file handles
 #
 # Returns:  A string of $char repeated $len times.
 # 
@@ -592,16 +594,16 @@ sub ribo_SecondsSinceEpoch {
 #################################################################
 sub ribo_GetMonoCharacterString {
   my $sub_name = "ribo_GetMonoCharacterString";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($len, $char) = @_;
+  my ($len, $char, $FH_HR) = @_;
 
   if(! verify_integer($len)) { 
-    die "ERROR in $sub_name, passed in length ($len) is not a non-negative integer";
+    ofile_FAIL("ERROR in $sub_name, passed in length ($len) is not a non-negative integer", "RIBO", 1, $FH_HR);
   }
   if($len < 0) { 
-    die "ERROR in $sub_name, passed in length ($len) is a negative integer";
+    ofile("ERROR in $sub_name, passed in length ($len) is a negative integer", "RIBO", 1, $FH_HR);
   }
     
   my $ret_str = "";
@@ -697,10 +699,12 @@ sub ribo_VerifyEnvVariableIsValidDir
 
   if(! exists($ENV{"$envvar"})) { 
     die "ERROR, the environment variable $envvar is not set";
+    # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
   }
   my $envdir = $ENV{"$envvar"};
   if(! (-d $envdir)) { 
     die "ERROR, the directory specified by your environment variable $envvar does not exist.\n"; 
+    # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
   }    
 
   return $envdir
@@ -770,6 +774,7 @@ sub ribo_RemoveFileTail {
 #   $fetched_name: name of sequence
 #   $do_die:       '1' to die if the $fetch_name doesn't match the 
 #                  expected format
+#   $FH_HR:        ref to hash of file handles
 #
 # Returns: $accver_name: accession version format of the name
 #          or $fetched_name if $fetched_name doesn't match 
@@ -780,10 +785,10 @@ sub ribo_RemoveFileTail {
 ################################################################# 
 sub ribo_ConvertFetchedNameToAccVersion {
   my $sub_name = "ribo_ConvertFetchedNameToAccVersion()";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($fetched_name, $do_die) = (@_);
+  my ($fetched_name, $do_die, $FH_HR) = (@_);
   
   # example: gi|675602128|gb|KJ925573.1|
   my $accver_name = undef;
@@ -792,7 +797,7 @@ sub ribo_ConvertFetchedNameToAccVersion {
   }
   else { 
     if($do_die) { 
-      die "ERROR, in $sub_name, $fetched_name did not match the expected format for a fetched sequence, expect something like: gi|675602128|gb|KJ925573.1|"; 
+      ofile_FAIL("ERROR, in $sub_name, $fetched_name did not match the expected format for a fetched sequence, expect something like: gi|675602128|gb|KJ925573.1|", "RIBO", 1, $FH_HR); 
     }
     $accver_name = $fetched_name;
   }
@@ -816,17 +821,19 @@ sub ribo_ConvertFetchedNameToAccVersion {
 #   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
 #   $family_rtname_HAR     reference to hash, key is family name, value is array of ribotyper model 
 #                          names to align with this model, FILLED HERE
+#   $FH_HR:                ref to hash of file handles
+#
 # Returns:     void; 
 #
 ################################################################# 
 sub ribo_ParseRLCModelinfoFile { 
-  my $nargs_expected = 6;
-  my $sub_name = "ribo_ParseModelinfoFile";
+  my $nargs_expected = 7;
+  my $sub_name = "ribo_ParseRLCModelinfoFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR) = @_;
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR, $FH_HR) = @_;
 
-  open(IN, $modelinfo_file) || die "ERROR unable to open model info file $modelinfo_file for reading";
+  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
     ## each line has information on 1 family and at least 4 tokens: 
@@ -842,7 +849,7 @@ sub ribo_ParseRLCModelinfoFile {
       $line =~ s/\s+$//; # remove trailing whitespace
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) < 4) { 
-        die "ERROR in $sub_name, less than 4 tokens found on line $line of $modelinfo_file";  
+        ofile_FAIL("ERROR in $sub_name, less than 4 tokens found on line $line of $modelinfo_file", "RIBO", 1, $FH_HR);  
       }
       my $family    = $el_A[0];
       my $modelfile = $el_A[1];

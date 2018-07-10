@@ -288,7 +288,7 @@ my %family_rtname_HA   = (); # key is family name (e.g. "SSU.Archaea") from @fam
 my $family;
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
-ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelfile_H, \%family_modellen_H, \%family_rtname_HA);
+ribo_ParseRLCModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelfile_H, \%family_modellen_H, \%family_rtname_HA, $ofile_info_HH{"FH"});
 # NOTE: the array of ribotyper models in family_rtname_HA for each family should match the models that are assigned to 
 # family $family in ribotyper, as encoded in the ribotyper model file, but THIS IS NOT CURRENTLY CHECKED FOR!
 
@@ -360,7 +360,7 @@ ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # parse the ribotyper seqstat file
-$tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \%seqidx_H, \%seqlen_H);
+$tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \%seqidx_H, \%seqlen_H, $FH_HR);
 
 # parse ribotyper output and create sfetch input files for sequences to fetch
 my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name

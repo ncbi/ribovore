@@ -585,12 +585,12 @@ $nseq    = scalar(keys %seqlen_H);
 
 # now that we know the max sequence name length, we can output headers to the output files
 output_long_headers($r1_srt_long_out_FH, 1, \%opt_HH, \%width_H, $ofile_info_HH{"FH"});
-output_short_headers($r1_srt_short_out_FH, \%width_H);
+output_short_headers($r1_srt_short_out_FH, \%width_H, $ofile_info_HH{"FH"});
 if(defined $alg2) { 
   output_long_headers($r2_srt_long_out_FH, 2, \%opt_HH, \%width_H, $ofile_info_HH{"FH"});
-  output_short_headers($r2_srt_short_out_FH, \%width_H);
+  output_short_headers($r2_srt_short_out_FH, \%width_H, $ofile_info_HH{"FH"});
   output_long_headers($final_long_out_FH, "final", \%opt_HH, \%width_H, $ofile_info_HH{"FH"});
-  output_short_headers($final_short_out_FH, \%width_H);
+  output_short_headers($final_short_out_FH, \%width_H, $ofile_info_HH{"FH"});
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -940,14 +940,14 @@ foreach my $file (@to_remove_A) {
   unlink $file;
 }
 
-output_summary_statistics(*STDOUT, \%class_stats_HH);
-output_summary_statistics($log_FH, \%class_stats_HH);
-output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
-output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"});
+output_summary_statistics(*STDOUT, \%class_stats_HH, $ofile_info_HH{"FH"});
+output_summary_statistics($log_FH, \%class_stats_HH, $ofile_info_HH{"FH"});
+output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"}, $ofile_info_HH{"FH"});
+output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"}, $ofile_info_HH{"FH"});
 
 $total_seconds += ribo_SecondsSinceEpoch();
-output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
-output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds);
+output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds, $ofile_info_HH{"FH"});
+output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds, $ofile_info_HH{"FH"});
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 ###########################################################################
@@ -2254,6 +2254,7 @@ sub output_one_target {
 #   $FH:        file handle to output to
 #   $width_HR:  ref to hash, keys include "model" and "target", 
 #               value is width (maximum length) of any target/model
+#   $FH_HR:     ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -2261,15 +2262,15 @@ sub output_one_target {
 #
 ################################################################# 
 sub output_short_headers { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_short_headers";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $width_HR) = (@_);
+  my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
-  my $class_dash_str  = ribo_GetMonoCharacterString($width_HR->{"classification"}, "-");
+  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
+  my $class_dash_str  = ribo_GetMonoCharacterString($width_HR->{"classification"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %5s  %4s  %s\n", 
               $width_HR->{"index"}, "#idx", 
@@ -2312,12 +2313,12 @@ sub output_long_headers {
 
   my ($FH, $round, $opt_HHR, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str   = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
-  my $target_dash_str  = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
-  my $model_dash_str   = ribo_GetMonoCharacterString($width_HR->{"model"},  "-");
-  my $family_dash_str  = ribo_GetMonoCharacterString($width_HR->{"family"}, "-");
-  my $domain_dash_str  = ribo_GetMonoCharacterString($width_HR->{"domain"}, "-");
-  my $length_dash_str  = ribo_GetMonoCharacterString($width_HR->{"length"}, "-");
+  my $index_dash_str   = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str  = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
+  my $model_dash_str   = ribo_GetMonoCharacterString($width_HR->{"model"},  "-", $FH_HR);
+  my $family_dash_str  = ribo_GetMonoCharacterString($width_HR->{"family"}, "-", $FH_HR);
+  my $domain_dash_str  = ribo_GetMonoCharacterString($width_HR->{"domain"}, "-", $FH_HR);
+  my $length_dash_str  = ribo_GetMonoCharacterString($width_HR->{"length"}, "-", $FH_HR);
 
   my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR, $FH_HR);
   my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR, $FH_HR);
@@ -2358,8 +2359,8 @@ sub output_long_headers {
     } 
   }
 
-  my $best_model_group_dash_str   = ribo_GetMonoCharacterString($best_model_group_width, "-");
-  my $second_model_group_dash_str = ribo_GetMonoCharacterString($second_model_group_width, "-");
+  my $best_model_group_dash_str   = ribo_GetMonoCharacterString($best_model_group_width, "-", $FH_HR);
+  my $second_model_group_dash_str = ribo_GetMonoCharacterString($second_model_group_width, "-", $FH_HR);
   
   # line 1
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s", 
@@ -2370,12 +2371,12 @@ sub output_long_headers {
               "", 
               $width_HR->{"family"}, "", 
               $width_HR->{"domain"}, "", 
-              $best_model_group_width, center_string($best_model_group_width, "best-scoring model"), 
+              $best_model_group_width, center_string($best_model_group_width, "best-scoring model", $FH_HR), 
               "", 
               "");
   if($round ne "2") { # round 2: skip second model section
     printf $FH ("  %-*s", 
-                $second_model_group_width, center_string($second_model_group_width, (opt_Get("--samedomain", $opt_HHR)) ? "second best-scoring model" : "different domain's best-scoring model"));
+                $second_model_group_width, center_string($second_model_group_width, (opt_Get("--samedomain", $opt_HHR) ? "second best-scoring model" : "different domain's best-scoring model"), $FH_HR));
   }
   printf $FH ("  %s\n", "");
   
@@ -2867,6 +2868,7 @@ sub debug_print {
 # Arguments:
 #   $width:  width to center in
 #   $str:    string to center
+#   $FH_HR:  ref to hash of file handles, including "cmd"
 #
 # Returns:  $str prepended with spaces so that it centers
 # 
@@ -2875,15 +2877,15 @@ sub debug_print {
 #################################################################
 sub center_string { 
   my $sub_name = "center_string";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($width, $str) = @_;
+  my ($width, $str, $FH_HR) = @_;
 
   my $nspaces_to_prepend = int(($width - length($str)) / 2);
   if($nspaces_to_prepend < 0) { $nspaces_to_prepend = 0; }
 
-  return ribo_GetMonoCharacterString($nspaces_to_prepend, " ") . $str; 
+  return ribo_GetMonoCharacterString($nspaces_to_prepend, " ", $FH_HR) . $str; 
 }
 
 #################################################################
@@ -4072,6 +4074,7 @@ sub determine_number_of_columns_in_long_output_file {
 # Arguments:
 #   $out_FH:          output file handle
 #   $class_stats_HHR: ref to the class statistics 2D hash
+#   $FH_HR:           ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -4080,10 +4083,10 @@ sub determine_number_of_columns_in_long_output_file {
 #################################################################
 sub output_summary_statistics { 
   my $sub_name = "output_summary_statistics";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR) = (@_);
+  my ($out_FH, $class_stats_HHR, $FH_HR) = (@_);
 
   # determine max width of each column
   my %width_H = ();  # key: name of column, value max width for column
@@ -4136,13 +4139,13 @@ sub output_summary_statistics {
                   $width_H{"fail"},     "that FAIL");
   # line 3
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
-                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-"),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-"),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-"),
-                  $width_H{"length"},   ribo_GetMonoCharacterString($width_H{"length"}, "-"),
-                  $width_H{"coverage"}, ribo_GetMonoCharacterString($width_H{"coverage"}, "-"),
-                  $width_H{"pass"},     ribo_GetMonoCharacterString($width_H{"pass"}, "-"),
-                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-"));
+                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-", $FH_HR),
+                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-", $FH_HR),
+                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR),
+                  $width_H{"length"},   ribo_GetMonoCharacterString($width_H{"length"}, "-", $FH_HR),
+                  $width_H{"coverage"}, ribo_GetMonoCharacterString($width_H{"coverage"}, "-", $FH_HR),
+                  $width_H{"pass"},     ribo_GetMonoCharacterString($width_H{"pass"}, "-", $FH_HR),
+                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-", $FH_HR));
   
   $class = "*input*";
   printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*s  %*s\n", 
@@ -4217,6 +4220,7 @@ sub output_summary_statistics {
 #   $r1_secs:         number of seconds required for round 1 searches
 #   $r2_secs:         number of seconds required for round 2 searches
 #   $tot_secs:        number of seconds required for entire script
+#   $FH_HR:           ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -4225,10 +4229,10 @@ sub output_summary_statistics {
 #################################################################
 sub output_timing_statistics { 
   my $sub_name = "output_timing_statistics";
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs, $tot_secs) = (@_);
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs, $tot_secs, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -4266,12 +4270,12 @@ sub output_timing_statistics {
   
   # line 2
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
-                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-"),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-"),
-                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"}, "-"),
-                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"}, "-"),
-                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-"),
-                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-"));
+                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-", $FH_HR),
+                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-", $FH_HR),
+                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"}, "-", $FH_HR),
+                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"}, "-", $FH_HR),
+                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
+                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR));
   
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -4319,6 +4323,7 @@ sub output_timing_statistics {
 #   $ufeature_ct_HR: ref to the ufeature count hash
 #   $ufeature_AR:    ref to array of ufeature strings
 #   $tot_nseq:       total number of sequences in input file
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -4327,10 +4332,10 @@ sub output_timing_statistics {
 #################################################################
 sub output_ufeature_statistics { 
   my $sub_name = "output_ufeature_statistics";
-  my $nargs_expected = 4;
+  my $nargs_expected = 5;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $ufeature_ct_HR, $ufeature_AR, $tot_nseq) = (@_);
+  my ($out_FH, $ufeature_ct_HR, $ufeature_AR, $tot_nseq, $FH_HR) = (@_);
 
   my $ufeature = undef; # an unexpected feature
 
@@ -4374,10 +4379,10 @@ sub output_ufeature_statistics {
 
   # line 3
   printf $out_FH ("# %-*s  %-*s  %*s  %*s\n", 
-                  $width_H{"ufeature"}, ribo_GetMonoCharacterString($width_H{"ufeature"}, "-"),
-                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-"),
-                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-"),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-"));
+                  $width_H{"ufeature"}, ribo_GetMonoCharacterString($width_H{"ufeature"}, "-", $FH_HR),
+                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-", $FH_HR),
+                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-", $FH_HR),
+                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR));
 
   foreach $ufeature (@{$ufeature_AR}) { 
     if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN")) { 
