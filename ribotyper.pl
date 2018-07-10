@@ -958,27 +958,56 @@ ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_in
 # List of subroutines:
 #
 # Functions for parsing files:
-# parse_modelinfo_file:     parse the model info input file
-# parse_inaccept_file:      parse the inaccept input file (--inaccept)
-# parse_model_file:         parse the model file 
-# parse_sorted_tbl_file:    parse sorted tabular search results
+# parse_modelinfo_file:           parse the model info input file
+# parse_inaccept_file:            parse the inaccept input file (--inaccept)
+# parse_and_validate_model_files: parse and validate the model files
+# parse_sorted_tblout_file:       parse sorted tabular search results
 #
 # Helper functions for parse_sorted_tbl_file():
-# init_model_vars:          initialize variables for parse_sorted_tbl_file()
-# set_modelvars:            set variables for parse_sorted_tbl_file()
+# set_modelvars:                  set variables for parse_sorted_tbl_file()
 # 
 # Functions for output: 
-# output_one_target:         output info on one target sequence
-#                            helper for parse_sorted_tbl_file()
-# output_short_headers:      output headers for short output file
-# output_long_headers:       output headers for long output file
+# output_all_hitless_targets:                output info for all targets with zero hits
+# output_one_hitless_targets:                output info for one target with zero hits
+# output_one_target:                         output info on one target sequence
+# output_short_headers:                      output headers for short output file
+# output_long_headers:                       output headers for long output file
+# output_short_tail:                         output column explanations to short file
+# output_long_tail:                          output column explanations to long file
+# output_unexpected_features_explanation:    output explanation of possible ufeatures
+# determine_unexpected_features_explanation: create explanation of possible ufeatures
+# debug_print:                               debug printing of a hit
+# center_string:                             center a string for outputting
+# output_summary_statistics:                 output tabular summary statistics 
+# output_timing_statistics:                  output timing statistics
+# output_ufeature_statistics:                output counts of each unexpected feature
+# output_combined_short_or_long_file:        combine the short and long files into one
+# debug_print_model_stats:                   output all values in a model stats hash, for debugging
+# debug_print_class_stats:                   output all values in a class stats hash, for debugging
 #
-# Miscellaneous functions:
-# debug_print:              print out info of a hit for debugging
-# center_string:            center a string inside a string of whitespace of specified length
+# Determine stuff from the cmdline options and current round:
 # determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
+# determine_if_we_have_model_coords(): determine if our hit results include model boundaries
+# determine_if_we_have_evalues():      determine if our hit results include E-values
+# determine_cmsearch_opts():           determine options to use for cmsearch
+# determine_sort_cmd:                  determine the sort cmd for current round
+# determine_number_of_columns_in_long_output_file: self-explanatory
+#
+# Functions related to calculating stats:
+# initialize_class_stats: initializes the class stats
+# initialize_ufeature_stats: initializes the ufeature stats
+# get_stats_from_long_file_for_sole_round: for single round, get stats
+# parse_round1_long_file: parse the long file output from round 1
+# update_class_stats: updates class stats 
+# update_one_ufeature_count: updates ufeatures stats 
+# update_one_ufeature_sequence: updates ufeatures stats 
+#
+# Functions related to determining overlaps:
 # get_overlap():            determine the extent of overlap of two regions
 # get_overlap_helper():     does actual work to determine overlap
+# sort_hit_array():         sort an array of regions of hits
+# decompose_region_str():   given a string for a region, return start, stop, strand
+#
 #
 #################################################################
 # Subroutine : parse_modelinfo_file()
@@ -1025,8 +1054,9 @@ sub parse_modelinfo_file {
   # either be in this directory or in $df_model_dir
   my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
   if($opt_i_used) { 
-    $non_df_modelinfo_dir = get_dir_path($modelinfo_file);
+    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
   }
+
 
   # actually parse modelinfo file: 
   # example lines:
@@ -1290,7 +1320,6 @@ sub parse_and_validate_model_files {
 
   return $model_width;
 }
-
 
 #################################################################
 # Subroutine : parse_sorted_tblout_file()
@@ -2889,1183 +2918,6 @@ sub center_string {
 }
 
 #################################################################
-# Subroutine: determine_if_coverage_is_accurate()
-# Incept:     EPN, Thu Apr 20 10:30:28 2017
-#
-# Purpose:    Based on the command line options and what round we are in,
-#             determine if the coverage values are accurate. With the
-#             fast mode, coverage values are not accurate, but with
-#             some options like --1hmm and --1slow, they are.
-#
-# Arguments:
-#   $round:    what round of searching we're in, '1', '2', or 'final'
-#   $opt_HHR:  reference to 2D hash of cmdline options
-#   $FH_HR:    ref to hash of file handles, including "cmd"
-#
-# Returns:  '1' if coverage is accurate, else '0'
-# 
-# Dies:     if round is not "1", "2", or "final"
-#
-#################################################################
-sub determine_if_coverage_is_accurate { 
-  my $sub_name = "determine_if_coverage_is_accurate()";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($round, $opt_HHR, $FH_HR) = (@_);
-
-  my $have_accurate_coverage = 0;
-  if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_accurate_coverage = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_accurate_coverage = 1; }
-  }
-  elsif($round eq "2" || $round eq "final") { 
-    $have_accurate_coverage = 1; # always true for round 2
-  }
-  else { 
-    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
-  }
-
-  return $have_accurate_coverage;
-}
-
-#################################################################
-# Subroutine: determine_if_we_have_model_coords()
-# Incept:     EPN, Tue May  2 09:40:34 2017
-#
-# Purpose:    Based on the command line options and what round
-#             we are in, determine if the search output includes 
-#             model coordinates or not.
-#
-# Arguments:
-#   $round:   what round of searching we're in, '1', '2', or 'final'
-#   $opt_HHR: reference to 2D hash of cmdline options
-#   $FH_HR:   ref to hash of file handles, including "cmd"
-#
-# Returns:  '1' if we have model coords, else '0'
-# 
-# Dies:     Never
-#
-#################################################################
-sub determine_if_we_have_model_coords { 
-  my $sub_name = "determine_if_we_have_model_coords()";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($round, $opt_HHR, $FH_HR) = (@_);
-
-  my $have_model_coords = 0;
-  if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_model_coords = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_model_coords = 1; }
-  }
-  elsif($round eq "2" || $round eq "final") { 
-    $have_model_coords = 1; # always true for round 2
-  }
-  else { 
-    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
-  }
-
-  return $have_model_coords;
-}
-
-#################################################################
-# Subroutine: determine_if_we_have_evalues()
-# Incept:     EPN, Fri May  5 10:51:03 2017
-#
-# Purpose:    Based on the command line options and what round
-#             we are in, determine the search output includes 
-#             E-values or not.
-#
-# Arguments:
-#   $round:   what round of searching we're in, '1', '2', or 'final'
-#   $opt_HHR: reference to 2D hash of cmdline options
-#   $FH_HR:   ref to hash of file handles, including "cmd"
-#
-# Returns:  '1' if we have model coords, else '0'
-# 
-# Dies:     Never
-#
-#################################################################
-sub determine_if_we_have_evalues { 
-  my $sub_name = "determine_if_we_have_evalues()";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($round, $opt_HHR, $FH_HR) = (@_);
-
-  my $have_evalues = 0;
-  if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_evalues = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_evalues = 1; }
-  }
-  elsif($round eq "2" || $round eq "final") { 
-    $have_evalues = 1; # always true for round 2
-  }
-  else { 
-    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
-  }
-
-  return $have_evalues;
-}
-
-#################################################################
-# Subroutine: get_overlap()
-# Incept:     EPN, Mon Apr 24 15:47:13 2017
-#
-# Purpose:    Determine if there is overlap between two regions
-#             defined by strings of the format <d1>-<d2> where
-#             <d1> is the beginning of the region and <d2> is the
-#             end. If strand is "+" then <d1> <= <d2> and if strand
-#             is "-" then <d1> >= <d2>.
-#
-# Arguments:
-#   $regstr1:  string 1 defining region 1
-#   $regstr2:  string 2 defining region 2
-#   $FH_HR:    ref to hash of file handles, including "cmd"
-#
-# Returns:  Two values:
-#           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
-#                         0 if none
-#           $overlap_reg: region of overlap, "" if none
-# 
-# Dies:     If regions are not formatted correctly, or
-#           regions are different strands.
-#
-#################################################################
-sub get_overlap { 
-  my $sub_name = "get_overlap()";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($regstr1, $regstr2, $FH_HR) = (@_);
-
-  my ($start1, $stop1, $strand1) = decompose_region_str($regstr1, $FH_HR);
-  my ($start2, $stop2, $strand2) = decompose_region_str($regstr2, $FH_HR);
-
-  if($strand1 ne $strand2) { 
-    ofile_FAIL("ERROR in $sub_name, different strands for regions $regstr1 and $regstr2", "RIBO", 1, $FH_HR);
-  }
-
-  if($strand1 eq "-") { 
-    my $tmp = $start1; 
-    $start1 = $stop1;
-    $stop1  = $tmp;
-    $tmp    = $start2;
-    $start2 = $stop2;
-    $stop2  = $tmp;
-  }
-
-  return get_overlap_helper($start1, $stop1, $start2, $stop2, $FH_HR);
-}
-
-#################################################################
-# Subroutine: get_overlap_helper()
-# Incept:     EPN, Mon Mar 14 13:47:57 2016 [dnaorg_scripts:dnaorg.pm:getOverlap()]
-#
-# Purpose:    Calculate number of nucleotides of overlap between
-#             two regions.
-#
-# Args:
-#  $start1: start position of hit 1 (must be <= $end1)
-#  $end1:   end   position of hit 1 (must be >= $end1)
-#  $start2: start position of hit 2 (must be <= $end2)
-#  $end2:   end   position of hit 2 (must be >= $end2)
-#  $FH_HR:    ref to hash of file handles, including "cmd"
-#
-# Returns:  Two values:
-#           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
-#                         0 if none
-#           $overlap_reg: region of overlap, "" if none
-#
-# Dies:     if $end1 < $start1 or $end2 < $start2.
-#
-#################################################################
-sub get_overlap_helper {
-  my $sub_name = "get_overlap_helper";
-  my $nargs_expected = 5;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($start1, $end1, $start2, $end2, $FH_HR) = @_; 
-
-  # printf("in $sub_name $start1..$end1 $start2..$end2\n");
-
-  if($start1 > $end1) { ofile_FAIL("ERROR in $sub_name start1 > end1 ($start1 > $end1)", "RIBO", 1, $FH_HR); }
-  if($start2 > $end2) { ofile_FAIL("ERROR in $sub_name start2 > end2 ($start2 > $end2)", "RIBO", 1, $FH_HR); }
-
-  # Given: $start1 <= $end1 and $start2 <= $end2.
-  
-  # Swap if nec so that $start1 <= $start2.
-  if($start1 > $start2) { 
-    my $tmp;
-    $tmp   = $start1; $start1 = $start2; $start2 = $tmp;
-    $tmp   =   $end1;   $end1 =   $end2;   $end2 = $tmp;
-  }
-  
-  # 3 possible cases:
-  # Case 1. $start1 <=   $end1 <  $start2 <=   $end2  Overlap is 0
-  # Case 2. $start1 <= $start2 <=   $end1 <    $end2  
-  # Case 3. $start1 <= $start2 <=   $end2 <=   $end1
-  if($end1 < $start2) { return (0, ""); }                                           # case 1
-  if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
-  if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
-  ofile_FAIL("ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2", "RIBO", 1, $FH_HR);
-
-  return; # NOT REACHED
-}
-
-#################################################################
-# Subroutine: sort_hit_array()
-# Incept:     EPN, Tue Apr 25 06:23:42 2017
-#
-# Purpose:    Sort an array of regions of hits.
-#
-# Args:
-#  $tosort_AR:   ref of array to sort
-#  $order_AR:    ref to array of original indices corresponding to @{$tosort_AR}
-#  $allow_dups:  '1' to allow duplicates in $tosort_AR, '0' to not and die if
-#                they're found
-#  $FH_HR:       ref to hash of file handles, including "cmd"
-#
-# Returns:  string indicating the order of the elements in $tosort_AR in the sorted
-#           array.
-#
-# Dies:     - if some of the regions in @{$tosort_AR} are on different strands
-#             or are in the wrong format
-#           - if there are duplicate values in $tosort_AR and $allow_dups is 0
-#
-#################################################################
-sub sort_hit_array { 
-  my $sub_name = "sort_hit_array";
-  my $nargs_expected = 4;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($tosort_AR, $order_AR, $allow_dups, $FH_HR) = @_;
-
-  my ($i, $j); # counters
-
-  my $nel = scalar(@{$tosort_AR});
-
-  if($nel == 1) { ofile_FAIL("ERROR in $sub_name, nel is 1 (should be > 1)", "RIBO", 1, $FH_HR); }
-
-  # make sure all elements are on the same strand
-  my(undef, undef, $strand) = decompose_region_str($tosort_AR->[0], $FH_HR);
-  for($i = 1; $i < $nel; $i++) { 
-    my(undef, undef, $cur_strand) = decompose_region_str($tosort_AR->[$i], $FH_HR);
-    if($strand ne $cur_strand) { 
-      die "ERROR in $sub_name, not all regions are on same strand, region 1: $tosort_AR->[0] $strand, region " . $i+1 . ": $tosort_AR->[$i] $cur_strand";
-    }
-  }
-
-  # make a temporary hash and sort it by value
-  my %hash = ();
-  for($i = 0; $i < $nel; $i++) { 
-    $hash{($i+1)} = $tosort_AR->[$i];
-  }
-  # the <=> comparison function means sort numerically ascending
-  @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
-
-  # now that we have the sorted order, we can easily check for dups
-  if(! $allow_dups) { 
-    for($i = 1; $i < $nel; $i++) { 
-      if($hash{$order_AR->[($i-1)]} eq $hash{$order_AR->[$i]}) { 
-        ofile_FAIL("ERROR in $sub_name, duplicate values exist in the array: " . $hash{$order_AR->[$i]} . " appears twice", "RIBO", 1, $FH_HR); 
-      }
-    }
-  }
-
-  # reverse array if strand is "-"
-  if($strand eq "-") { 
-    @{$order_AR} = reverse @{$order_AR};
-  }
-
-  # construct return string
-  my $ret_str = $order_AR->[0];
-  for($i = 1; $i < $nel; $i++) { 
-    $ret_str .= "," . $order_AR->[$i];
-  }
-
-  return $ret_str;
-}
-
-#################################################################
-# Subroutine: decompose_region_str()
-# Incept:     EPN, Wed Apr 26 06:09:45 2017
-#
-# Purpose:    Given a 'region' string in the format <d1>.<d2>, 
-#             decompose it and return <d1>, <d2> and <strand>.
-#
-# Args:
-#  $regstr:   region string in format <d1>.<d2>
-#  $FH_HR:    ref to hash of file handles, including "cmd"
-#
-# Returns:  Three values:
-#           <d1>: beginning of region
-#           <d2>: end of region
-#           <strand>: "+" if <d1> <= <d2>, else "-"
-#
-# Dies:     if $regstr is not in correct format 
-sub decompose_region_str { 
-  my $sub_name = "decompose_region_str";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($regstr, $FH_HR) = @_;
-
-  my ($d1, $d2, $strand); 
-  if($regstr =~ /(\d+)\.(\d+)/) { ($d1, $d2) = ($1, $2); }
-  else                          { ofile_FAIL("ERROR in $sub_name, region string $regstr not parseable", "RIBO", 1, $FH_HR); }
-
-  $strand = ($d1 <= $d2) ? "+" : "-";
-
-  return($d1, $d2, $strand);
-}
-
-
-#################################################################
-# Subroutine : get_dir_path()
-# Incept:      EPN, Thu May  4 09:39:06 2017
-#              EPN, Mon Mar 15 10:17:11 2010 [ssu.pm:ReturnDirPath()]
-#
-# Purpose:     Given a file name return the directory path, with the final '/'
-#              For example: "foodir/foodir2/foo.stk" becomes "foodir/foodir2/".
-#
-# Arguments: 
-#   $orig_file: name of original file
-# 
-# Returns:     The string $orig_file with actual file name removed 
-#              or "./" if $orig_file is "".
-#
-################################################################# 
-sub get_dir_path {
-  my $narg_expected = 1;
-  my $sub_name = "get_dir_path()";
-  if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-  my $orig_file = $_[0];
-  
-  $orig_file =~ s/[^\/]+$//; # remove final string of non '/' characters
-  
-  if($orig_file eq "") { return "./";       }
-  else                 { return $orig_file; }
-}
-
-#################################################################
-# Subroutine : determine_cmsearch_opts()
-# Incept:      EPN, Thu May  4 13:14:10 2017
-#
-# Purpose:     Determine the CM search options given an algorithm
-#              type of either "fast", "hmmonly", or "slow" and 
-#              a reference to the command line options.
-#
-# Arguments: 
-#   $alg:      algorithm, either "fast", "hmmonly" or "slow"
-#   $opt_HHR:  reference to 2D hash of cmdline options
-#   $FH_HR:    ref to hash of file handles, including "cmd"
-# 
-# Returns:     String of options to use for cmsearch.
-#
-# Dies:        If $alg string is invalid.
-# 
-################################################################# 
-sub determine_cmsearch_opts { 
-  my $nargs_expected = 3;
-  my $sub_name = "determine_cmsearch_opts()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($alg, $opt_HHR, $FH_HR) = @_;
-
-  my $alg_opts = undef;
-  if($alg eq "fast") { 
-    $alg_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc --noali ";
-  }
-  elsif($alg eq "slow") { 
-    if(opt_Get("--mid", $opt_HHR)) { 
-      $alg_opts .= " --mid "; 
-    }
-    elsif(opt_Get("--max", $opt_HHR)) { 
-      $alg_opts .= " --max "; 
-      if(opt_IsUsed("--smxsize", $opt_HHR)) { 
-        $alg_opts .= " --smxsize " . opt_Get("--smxsize", $opt_HHR) . " ";
-      }
-    }
-    else { # default for slow, --mid nor --max used (use cmsearch --rfam)
-      $alg_opts .= " --rfam --onepass "; 
-    }
-    if(opt_Get("--noali", $opt_HHR)) { 
-      $alg_opts .= " --noali ";
-    }
-  }
-  elsif($alg eq "hmmonly") { 
-    $alg_opts .= " --hmmonly ";
-    if(opt_Get("--noali", $opt_HHR)) { 
-      $alg_opts .= " --noali ";
-    }
-  }
-  else { 
-    ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", "RIBO", 1, $FH_HR);
-  }
-
-  return $alg_opts;
-}
-
-#################################################################
-# Subroutine : determine_sort_cmd()
-# Incept:      EPN, Thu Jan  4 15:40:44 2018
-#
-# Purpose:     Determine the unix sort command to properly sort
-#              the tblout file given an algorihtm type of either
-#              "fast", "hmmonly", or "slow" and a reference to the 
-#              command line options.
-#
-# Arguments: 
-#   $alg:      algorithm, either "fast", "hmmonly" or "slow"
-#   $in_file:  name of input tblout file
-#   $out_file: name of output tblout file
-#   $opt_HHR:  reference to 2D hash of cmdline options
-#   $FH_HR:    ref to hash of file handles, including "cmd"
-# 
-# Returns:     String that is the sort command with input and 
-#              output file included.
-#
-# Dies:        If $alg string is invalid.
-# 
-################################################################# 
-sub determine_sort_cmd {
-  my $nargs_expected = 5;
-  my $sub_name = "determine_sort_cmd()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($alg, $in_file, $out_file, $opt_HHR, $FH_HR) = @_;
-
-  my $sort_cmd = undef;
-  my $sort_by_evalues = opt_Get("--evalues", $opt_HHR);
-
-  if($alg eq "fast") { 
-    $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 3,3rn > $out_file";
-  }
-  elsif($alg eq "slow" || $alg eq "hmmonly") { 
-    if($sort_by_evalues) { 
-      $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 16,16g -k 15,15rn > $out_file";
-    }
-    else { 
-      $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 15,15rn -k 16,16g > $out_file";
-    }
-  }
-  else { 
-    ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", "RIBO", 1, $FH_HR);
-  }
-
-  return $sort_cmd;
-}
-
-#################################################################
-# Subroutine : parse_round1_long_file()
-# Incept:      EPN, Thu May  4 13:54:36 2017
-#
-# Purpose:     Parse a 'long' output file created by this script
-#              and fill %seqsub_HA with names of sequences to 
-#              that are best-matches to each model.
-#              
-# Arguments: 
-#   $long_file:    'long' format file to parse
-#   $seqsub_HAR:   ref to hash of arrays, key is model name, value is array of 
-#                  sequences that match best to the model
-#   $FH_HR:        ref to hash of file handles, including "cmd"
-#
-# Returns:     Nothing. Updates %{$seqsub_HAR}.
-# 
-# Dies:        If $long_file is in incorrect format.
-#
-################################################################# 
-sub parse_round1_long_file {
-  my $nargs_expected = 3;
-  my $sub_name = "parse_round1_long_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($long_file, $seqsub_HAR, $FH_HR) = @_;
-
-  my @el_A    = ();    # array of elements in a line
-  my $model   = undef; # a model
-  my $seqname = undef; # a sequence name
-
-  open(IN, $long_file) || ofile_FileOpenFailure($long_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-
-  while(my $line = <IN>) { 
-    if($line !~ m/^\#/) { # skip comment lines
-      @el_A = split(/\s+/, $line);
-      ($seqname, $model) = ($el_A[1], $el_A[7]);
-      if($model ne "-") { 
-        if(! exists $seqsub_HAR->{$model}) {
-          ofile_FAIL("ERROR in $sub_name, unexpected model value: $model\nline: $line", "RIBO", 1, $FH_HR);
-        }
-        push(@{$seqsub_HAR->{$model}}, $seqname);
-      }
-    }
-  }
-  close(IN);
-  
-  return;
-}
-
-
-#################################################################
-# Subroutine : output_combined_short_or_long_file()
-# Incept:      EPN, Mon May  8 14:09:49 2017
-#
-# Purpose:     Combine the round 1 and round 2 long output files 
-#              to create the final file.
-#              
-# Arguments: 
-#   $out_FH:         file handle to print to
-#   $r1_in_FH:       file handle of open round 1 long file
-#   $r2_in_FH:       file handle of open round 2 long file
-#   $do_short:       '1' if we're combining short files, '0' if 
-#                    we're combining long files
-#   $stats_HHR:      ref to 2D hash of stats:
-#                    1D key: model name, "*all*" or "*none*"
-#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
-#                    filled here, can and should be undef if $do_short is '1'
-#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
-#                    filled here, can and should be undef if $do_short is '1'
-#   $width_HR:       hash, key is "model" or "target", value 
-#                    is width (maximum length) of any target/model
-#   $opt_HHR:        reference to 2D hash of cmdline options
-#   $FH_HR:          ref to hash of file handles, including "cmd"
-#
-# Returns:  Nothing.
-# 
-# Dies:     If there are not the same sequences in 
-#           the same order in the round 1 and round 2 files.
-#
-################################################################# 
-sub output_combined_short_or_long_file { 
-  my $nargs_expected = 9;
-  my $sub_name = "output_combined_short_or_long_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $ufeature_ct_HR, $width_HR, $opt_HHR, $FH_HR) = @_;
-
-  my $r1_line;             # line from round 1 file
-  my $r2_line;             # line from round 2 file 
-  my $r1_lidx;             # line index in round 1 file
-  my $r2_lidx;             # line index in round 2 file
-  my $keep_going = 1;      # flag to keep reading the input files, set to '0' to stop
-  my @r1_el_A = ();        # array of space-delimited tokens in a round 1 line
-  my @r2_el_A = ();        # array of space-delimited tokens in a round 1 line
-  my @r1_ufeatures_A = (); # array of unexpected features in round 1 line
-  my $ufeature = undef;    # a single unexpected feature
-  my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
-  my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
-  my $have_evalues_r1      = determine_if_we_have_evalues(1, $opt_HHR, $FH_HR);
-  my $have_evalues_r2      = determine_if_we_have_evalues(2, $opt_HHR, $FH_HR);
-  my $have_model_coords_r1 = determine_if_we_have_model_coords(1, $opt_HHR, $FH_HR);
-  my $have_model_coords_r2 = determine_if_we_have_model_coords(2, $opt_HHR, $FH_HR);
-  my $expected_ncols_r1 = 0; # number of columns we expect in round 1 file
-  my $expected_ncols_r2 = 0; # number of columns we expect in round 2 file
-  my $ncols_r1          = 0; # actual number of columns in round 1 line
-  my $ncols_r2          = 0; # actual number of columns in round 2 line
-  my $r2_to_add         = undef; # string to add to r2 line, the 'second-best model' columns from r1 line
-  my $r2_final_column   = undef; # final column of r2 line
-  # variables for a single target related to updating %{$stats_HHR}
-  my $class  = undef; # classification
-  my $pf     = undef; # 'PASS' or 'FAIL'
-  my $nnt    = undef; # size of current target in number of nucleotides
-  my $fam    = undef; # family of current target
-  my $domain = undef; # domain of current target
-  my $model  = undef; # model of current target
-  my $tcov   = undef; # total coverage of current target
-  if(defined $stats_HHR) { 
-    initialize_class_stats(\%{$stats_HHR->{"*input*"}});
-    initialize_class_stats(\%{$stats_HHR->{"*none*"}});
-    initialize_class_stats(\%{$stats_HHR->{"*all*"}});
-  }
-
-  if($do_short) { 
-    $expected_ncols_r1 = 6;
-    $expected_ncols_r2 = 6;
-    if(defined $stats_HHR) { 
-      ofile_FAIL("ERROR in $sub_name, do_short is true and stats_HHR is defined", "RIBO", 1, $FH_HR);
-    }
-  }
-  else { 
-    $expected_ncols_r1 = determine_number_of_columns_in_long_output_file("1", $opt_HHR, $FH_HR);
-    $expected_ncols_r2 = determine_number_of_columns_in_long_output_file("2", $opt_HHR, $FH_HR);
-  }
-
-  # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
-  $r1_line = <$r1_in_FH>;
-  $r1_lidx++;
-  while((defined $r1_line) && ($r1_line =~ m/^\#/)) { 
-    $r1_line = <$r1_in_FH>; 
-    $r1_lidx++;
-  }
-
-  $r2_line = <$r2_in_FH>;
-  $r2_lidx++;
-  while((defined $r2_line) && ($r2_line =~ m/^\#/)) { 
-    $r2_line = <$r2_in_FH>; 
-    $r2_lidx++;
-  }
-
-  while($keep_going) { 
-    my $have_r1_line = ((defined $r1_line) && ($r1_line !~ m/^\#/)) ? 1 : 0;
-    my $have_r2_line = ((defined $r2_line) && ($r2_line !~ m/^\#/)) ? 1 : 0;
-    if($have_r1_line && $have_r2_line) { 
-      chomp $r1_line;
-      chomp $r2_line;
-      # example short lines:
-      #idx  target                                         classification         strnd   p/f  unexpected_features
-      #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
-      #15   00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
-      #16   01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
-      #
-      # example long lines:
-      # (round 1 without e-values)
-      #                                                                                                                                    best-scoring model                                                        different domain's best-scoring model  
-      #                                                                                               ---------------------------------------------------------------------------------------------                  -------------------------------------  
-      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   tcov   bcov   bfrom     bto  scdiff  scd/nt  model                          tscore  unexpected_features
-      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  -----  -----  ------  ------  ------  ------  -----------------------------  ------  -------------------
-      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  1.000  1.000     600       1   378.6   0.631  SSU_rRNA_microsporidia          232.6  opposite_strand
-      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.7  2076.7  1.02  1.000  1.000       1    2046  1253.1   0.612  SSU_rRNA_microsporidia          823.6  -
-      #
-      # (round 2 with e-values)
-      #                                                                                                                                                best-scoring model                                                                    
-      #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
-      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
-      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
-      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
-      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
-
-      @r1_el_A = split(/\s+/, $r1_line);
-      @r2_el_A = split(/\s+/, $r2_line);
-      if($r1_el_A[1] ne $r2_el_A[1]) { 
-        ofile_FAIL("ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")\nr1 line: $r1_line\nr2 line: $r2_line", "RIBO", 1, $FH_HR); 
-      }
-      $ncols_r1 = scalar(@r1_el_A);
-      $ncols_r2 = scalar(@r2_el_A);
-      if($ncols_r1 != $expected_ncols_r1) { 
-        ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $r1_lidx of round 1 file (" . $ncols_r1 . " != " . $expected_ncols_r1 . ")", "RIBO", 1, $FH_HR);
-      }
-      if($ncols_r2 != $expected_ncols_r2) { 
-        ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")", "RIBO", 1, $FH_HR);
-      }
-
-      # pick out the r1 columns: 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' to add to the $r2_line
-      $r2_to_add = undef;
-      if(! $do_short) { 
-        # we want to add round 1 columns 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' 
-        # to round 2 lines to get final lines
-        if($have_evalues_r1) { 
-          $r2_to_add = sprintf("  %6s  %6s  %-*s  %6s  %8s", 
-                               $r1_el_A[($ncols_r1-6)],  # 'scdiff'
-                               $r1_el_A[($ncols_r1-5)],  # 'scd/nt'
-                               $width_HR->{"model"}, $r1_el_A[($ncols_r1-4)],  # 'model'
-                               $r1_el_A[($ncols_r1-3)], # 'tscore'
-                               $r1_el_A[($ncols_r1-2)]); # 'evalue'
-        }
-        else { 
-          $r2_to_add = sprintf("  %6s  %6s  %-*s  %6s", 
-                               $r1_el_A[($ncols_r1-5)], # 'scdiff'
-                               $r1_el_A[($ncols_r1-4)], # 'scd/nt'
-                               $width_HR->{"model"}, $r1_el_A[($ncols_r1-3)],  # 'model'
-                               $r1_el_A[($ncols_r1-2)]); # 'tscore'
-        }
-        # now save the final column:
-        $r2_final_column = $r2_el_A[($ncols_r2-1)];
-        # remove final column 
-        $r2_line =~ s/\s\s\S+$//; # remove final column
-        # now stick in the $r2_to_add
-        $r2_line .= $r2_to_add . "  " . $r2_final_column;
-      }
-
-      # look for the three types of unexpected error that we want from round 1 to add to round 2:
-      # 1) low_score_difference_between_top_two...
-      # 2) very_low_score_difference_between_top_two... 
-      # 3) hits_to_more_than_one_family...
-      # either one can have a "*" at the beginning of it (which we want to capture
-      # because it will cause the sequence to FAIL) 
-      # we append these to the end of our current unexpected_features
-      if($r1_el_A[($ncols_r1-1)] ne $r2_el_A[($ncols_r2-1)]) { 
-        $did_edit_r2_line = 0;
-        $did_make_fail    = 0;
-        @r1_ufeatures_A = split(";", $r1_el_A[($ncols_r1-1)]); 
-        foreach $ufeature (@r1_ufeatures_A) { 
-
-          if(($ufeature =~ m/LowScoreDifference/) ||
-             ($ufeature =~ m/MultipleFamilies/)) { 
-            $did_edit_r2_line = 1;
-            if($ufeature =~ m/^\*/) { 
-              $did_make_fail = 1;
-            }
-            if($r2_el_A[($ncols_r2-1)] eq "-") { 
-              $r2_el_A[($ncols_r2-1)] = $ufeature . ";";
-            }
-            else { 
-              $r2_el_A[($ncols_r2-1)] .= $ufeature . ";";
-            }
-          }
-        }
-        if($did_edit_r2_line) { 
-          if($did_make_fail) { 
-            # sequence 'FAILs' now
-            if($do_short) { # short file, change the PASS to FAIL
-              $r2_el_A[4] = "FAIL";
-              if($r2_line =~ /(^\d+\s+\S+\s+\S+\s+\S+\s+)PASS(\s+.+$)/) { 
-                $r2_line = $1 . "FAIL" . $2;
-              }
-            }
-            else { # long file, change the PASS to FAIL if it exists
-              $r2_el_A[2] = "FAIL";
-              if($r2_line =~ /(^\d+\s+\S+\s+)PASS(\s+.+$)/) { 
-                $r2_line = $1 . "FAIL" . $2;
-              }
-            }
-          }
-          # now append round 1 error to final column of round 2 output:
-          $r2_line =~ s/\s\s\S+$//; # remove final column
-          $r2_line .= "  " . $r2_el_A[($ncols_r2-1)];
-        }
-      }
-
-      # update %{$stats_HHR}
-      if(defined $stats_HHR) { 
-        # we know that $do_short if FALSE, so we're dealing with the long file
-        ($pf, $nnt, $fam, $domain, $model, $tcov) = ($r2_el_A[2], $r2_el_A[3], $r2_el_A[5], $r2_el_A[6], $r2_el_A[7], $r2_el_A[14]);
-        $class = $fam . "." . $domain;
-        if($class eq "-.-") { $class = "*none*"; }
-        if(! defined $stats_HHR->{$class}) { 
-          initialize_class_stats(\%{$stats_HHR->{$class}})
-        }
-        update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
-        update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
-        update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
-      }
-
-      # update the ufeature counts hash if we have one
-      if(defined $ufeature_ct_HR) { 
-        update_one_ufeature_sequence($ufeature_ct_HR, $r2_el_A[($ncols_r2-1)], $FH_HR);
-      }
-
-      print $out_FH $r2_line . "\n";
-
-      # get new lines
-      $r1_line = <$r1_in_FH>; 
-      $r2_line = <$r2_in_FH>; 
-      $r1_lidx++;
-      $r2_lidx++;
-    }
-    # check for some unexpected errors
-    elsif(($have_r1_line) && (! $have_r2_line)) { 
-      ofile_FAIL("ERROR in $sub_name, ran out of sequences from round 1 output before round 2", "RIBO", 1, $FH_HR); 
-    }
-    elsif((! $have_r1_line) && ($have_r2_line)) { 
-      ofile_FAIL("ERROR in $sub_name, ran out of sequences from round 2 output before round 1", "RIBO", 1, $FH_HR); 
-    }
-    else { # don't have either line
-      $keep_going = 0;
-    }
-  }
-      
-  return;
-}
-
-#################################################################
-# Subroutine : get_stats_from_long_file_for_sole_round()
-# Incept:      EPN, Tue Dec  5 09:41:28 2017
-#
-# Purpose:     Obtain stats from a long output file. Only 
-#              necessary when script is run in 1-round-only mode,
-#              otherwise this is done in output_combined_short_or_long_file()
-#              when called for the long file.
-#              
-# Arguments: 
-#   $in_FH:          file handle of open round 1 (of 1) long file
-#   $stats_HHR:      ref to 2D hash of stats:
-#                    1D key: model name, "*all*" or "*none*"
-#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
-#                    filled here
-#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
-#                    filled here
-#   $opt_HHR:        reference to 2D hash of cmdline options
-#   $FH_HR:          ref to hash of file handles, including "cmd"
-#
-# Returns:  Nothing.
-# 
-# Dies:     If there are not the same sequences in 
-#           the same order in the round 1 and round 2 files.
-#
-################################################################# 
-sub get_stats_from_long_file_for_sole_round { 
-  my $nargs_expected = 5;
-  my $sub_name = "get_stats_from_long_file_for_sole_round";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($in_FH, $stats_HHR, $ufeature_ct_HR, $opt_HHR, $FH_HR) = @_;
-
-  my $keep_going = 0;     # '1' to keep reading lines from the file
-  my $line;               # line from long file
-  my $lidx;               # line index
-  my @el_A = ();          # array of space-delimited tokens in a line
-  my $expected_ncols = 0; # number of columns we expect in the file
-  my $ncols          = 0; # actual number of columns in line
-  # variables for a single target related to updating %{$stats_HHR}
-  my $class  = undef; # classification
-  my $pf     = undef; # 'PASS' or 'FAIL'
-  my $nnt    = undef; # size of current target in number of nucleotides
-  my $fam    = undef; # family of current target
-  my $domain = undef; # domain of current target
-  my $model  = undef; # model of current target
-  my $tcov   = undef; # total coverage of current target
-
-  initialize_class_stats(\%{$stats_HHR->{"*input*"}});
-  initialize_class_stats(\%{$stats_HHR->{"*none*"}});
-  initialize_class_stats(\%{$stats_HHR->{"*all*"}});
-
-  $expected_ncols = determine_number_of_columns_in_long_output_file("1", $opt_HHR, $FH_HR);
-
-  # we know that the first few lines of the file are comment lines, that begin with "#", chew them up
-  $line = <$in_FH>;
-  $lidx++;
-  while((defined $line) && ($line =~ m/^\#/)) { 
-    $line = <$in_FH>; 
-    $lidx++;
-  }
-  $keep_going = 1;
-  
-  while($keep_going) { 
-    chomp $line;
-    # example lines
-    # (round 2 with e-values)
-    #                                                                                                                                                best-scoring model                                                                    
-    #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
-    #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
-    #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
-    #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
-    #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
-
-    @el_A = split(/\s+/, $line);
-    $ncols = scalar(@el_A);
-    if($ncols != $expected_ncols) { 
-      ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $lidx of file (" . $ncols . " != " . $expected_ncols . ")", "RIBO", 1, $FH_HR);
-    }
-
-    # update %{$stats_HHR}
-    ($pf, $nnt, $fam, $domain, $model, $tcov) = ($el_A[2], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[14]);
-    $class = $fam . "." . $domain;
-    if($class eq "-.-") { $class = "*none*"; }
-    if(! defined $stats_HHR->{$class}) { 
-      initialize_class_stats(\%{$stats_HHR->{$class}})
-    }
-    update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
-    update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
-    update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
-
-    # update the ufeature counts hash if we have one
-    if(defined $ufeature_ct_HR) { 
-      update_one_ufeature_sequence($ufeature_ct_HR, $el_A[($ncols-1)], $FH_HR);
-    }
-
-    $line = <$in_FH>; 
-    $keep_going = ((defined $line) && ($line !~ m/^\#/)) ? 1 : 0;
-  }
-      
-  return;
-}
-
-#################################################################
-# Subroutine: update_class_stats
-# Incept:     EPN, Tue May  9 09:35:07 2017
-#
-# Purpose:    Update a class_stats hash given the relevant info
-#             for one sequence.
-#
-# Arguments:
-#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
-#   $tcov:     total fractional coverage for this sequence
-#   $nnt:      number of nucleotides for this sequence
-#   $pass:     '1' if sequence passes, else '0'
-#
-# Returns:  void
-# 
-# Dies:     Never
-#
-#################################################################
-sub update_class_stats { 
-  my $sub_name = "update_class_stats";
-  my $nargs_expected = 4;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($stats_HR, $tcov, $nnt, $pass) = (@_);
-
-  if($tcov eq "-") { $tcov = 0.; }
-
-  $stats_HR->{"nseq"}++;
-  $stats_HR->{"summed_tcov"} += $tcov;
-  $stats_HR->{"nnt_tot"}     += $nnt;
-  if($pass) { $stats_HR->{"npass"}++; }
-
-  return;
-}
-
-#################################################################
-# Subroutine: debug_print_class_stats
-# Incept:     EPN, Wed May 10 12:10:03 2017
-#
-# Purpose:    Output all values in a class_stats hash.
-#
-# Arguments:
-#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
-#   $class:    name of class
-#
-# Returns:  void
-# 
-# Dies:     Never
-#
-#################################################################
-sub debug_print_class_stats { 
-  my $sub_name = "debug_print_class_stats";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($stats_HR, $class) = (@_);
-
-  printf("debug_print_class_stats, class: $class\n");
-
-  printf("nseq:        %d\n", $stats_HR->{"nseq"});
-  printf("summed_tcov: %f\n", $stats_HR->{"summed_tcov"});
-  printf("nnt_tot:     %d\n", $stats_HR->{"nnt_tot"});
-  printf("npass:       %d\n", $stats_HR->{"npass"});
-  printf("\n");
-
-  return;
-}
-
-#################################################################
-# Subroutine: initialize_class_stats
-# Incept:     EPN, Tue May  9 10:51:08 2017
-#
-# Purpose:    Initialize a class_stats hash.
-#
-# Arguments:
-#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
-#
-# Returns:  void
-# 
-# Dies:     Never
-#
-#################################################################
-sub initialize_class_stats { 
-  my $sub_name = "initialize_class_stats";
-  my $nargs_expected = 1;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($stats_HR) = (@_);
-
-  %{$stats_HR} = ();
-  $stats_HR->{"nseq"}        = 0;
-  $stats_HR->{"summed_tcov"} = 0.;
-  $stats_HR->{"nnt_tot"}     = 0;
-  $stats_HR->{"npass"}       = 0;
-
-  return;
-}
-
-#################################################################
-# Subroutine: initialize_ufeature_stats
-# Incept:     EPN, Tue May  9 21:03:39 2017
-#
-# Purpose:    Initialize a ufeature array and counts hash.
-#             Array elements, which will be keys in the 
-#             counts hash, are unique messages/descriptions 
-#             of each possible unexpected feature. Hash
-#             values will be counts. 
-#
-# Arguments:
-#   $ufeature_AR:    ref to array of all unexpected feature strings
-#   $ufeature_ct_HR: ref to hash of counts
-#   $opt_HHR:        reference to 2D hash of cmdline options
-#
-# Returns:  void
-# 
-# Dies:     Never
-#
-#################################################################
-sub initialize_ufeature_stats { 
-  my $sub_name = "initialize_ufeature_stats";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($ufeature_AR, $ufeature_ct_HR, $opt_HHR) = (@_);
-
-  @{$ufeature_AR}    = ();
-  %{$ufeature_ct_HR} = ();
-
-  # first category is a special one, it will hold the counts of
-  # sequences with 0 unexpected features
-  push(@{$ufeature_AR}, "CLEAN");
-
-  # next, we want the unexpected features that will cause failures 
-  # those that always cause failures (regardless of cmdline options):
-  push(@{$ufeature_AR}, "*NoHits");
-  push(@{$ufeature_AR}, "*UnacceptableModel");
-  push(@{$ufeature_AR}, "*MultipleFamilies");
-  push(@{$ufeature_AR}, "*BothStrands");
-  push(@{$ufeature_AR}, "*DuplicateRegion");
-  push(@{$ufeature_AR}, "*InconsistentHits");
-
-  # those that can cause failure, if they do so:
-  if(opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "*QuestionableModel"); }
-  if(opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "*MinusStrand"); }
-  if(opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "*LowScore"); }
-  if(opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*LowCoverage"); }
-  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*LowScoreDifference"); }
-  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*VeryLowScoreDifference"); }
-  if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*MultipleHits"); }
-  if(opt_Get("--esdfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*EvalueScoreDiscrepancyAboveThreshold"); }
-
-  # those that are only reported if a specific option is enabled
-  if(opt_IsUsed("--shortfail", $opt_HHR)) { push(@{$ufeature_AR}, "*TooShort"); }
-  if(opt_IsUsed("--longfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*TooLong"); }
-
-  # those that don't cause failure, if they don't
-  if(! opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "QuestionableModel"); }
-  if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "MinusStrand"); }
-  if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "LowScore"); }
-  if(! opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "LowCoverage"); }
-  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "LowScoreDifference"); }
-  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "VeryLowScoreDifference"); }
-  if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "MultipleHits"); }
-
-  # those that can only be reported if special other options are enabled
-  if(opt_Get("--evalues", $opt_HHR)) { 
-    if(! opt_Get("--esdfail",  $opt_HHR)) { push(@{$ufeature_AR}, "EvalueScoreDiscrepancyAboveThreshold"); }
-  }
-
-  foreach my $ufeature (@{$ufeature_AR}) { 
-    $ufeature_ct_HR->{$ufeature} = 0;
-  }
-
-  return;
-}
-
-#################################################################
-# Subroutine: update_one_ufeature_sequence
-# Incept:     EPN, Tue May  9 15:36:32 2017
-#
-# Purpose:    Call update_one_ufeature_count for each 
-#             unusual feature for a sequence.
-#
-# Arguments:
-#   $ufeature_ct_HR: ref to hash
-#   $ufeature_str:   the ufeature string with potentially >= 1 
-#                    unexpected features.
-#   $FH_HR:          ref to hash of file handles, including "cmd"
-#
-# Returns:  void
-# 
-# Dies:     - If $ufeature_str contains a $ufeature that does not exist 
-#             in %{$ufeature_ct_HR}
-#
-#################################################################
-sub update_one_ufeature_sequence { 
-  my $sub_name = "update_one_ufeature_sequence";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($ufeature_ct_HR, $ufeature_str, $FH_HR) = (@_);
-
-  # print("in $sub_name, string is $ufeature_str\n");
-
-  my @ufeatures_A = ();
-  if($ufeature_str eq "-") { 
-    update_one_ufeature_count($ufeature_ct_HR, "CLEAN", $FH_HR);
-  }
-  else { 
-    my @ufeatures_A = split(";", $ufeature_str);
-    foreach my $ufeature (@ufeatures_A) { 
-      update_one_ufeature_count($ufeature_ct_HR, $ufeature, $FH_HR);
-    }
-  }
-
-  return; 
-}
-
-#################################################################
-# Subroutine: update_one_ufeature_count
-# Incept:     EPN, Tue May  9 15:19:40 2017
-#
-# Purpose:    Update a ufeature counts hash by incrementing 
-#             the relevant count by 1.
-#
-# Arguments:
-#   $ufeature_ct_HR: ref to hash
-#   $ufeature:       the ufeature to update
-#   $FH_HR:          ref to hash of file handles, including "cmd"
-#
-# Returns:  void
-# 
-# Dies:     - If $ufeature that does not exist in %{$ufeature_ct_HR}
-#
-#################################################################
-sub update_one_ufeature_count { 
-  my $sub_name = "update_one_ufeature_count";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($ufeature_ct_HR, $ufeature, $FH_HR) = (@_);
-
-  # remove ':' and anything after, this removes any hit/sequence specific information
-  $ufeature =~ s/\:.+$//;
-
-  if(! exists $ufeature_ct_HR->{$ufeature}) { 
-    die "ERROR in $sub_name, unknown unusual feature: $ufeature";
-  }
-
-  $ufeature_ct_HR->{$ufeature}++;
-
-  return;
-}
-
-#################################################################
-# Subroutine: determine_number_columns_long_output_file()
-# Incept:     EPN, Mon May  8 15:32:52 2017
-#
-# Purpose:    Determine how many columns should be in the long 
-#             output file for a given round.
-#
-# Arguments:
-#   $round:   what round of searching we're interested in, '1', '2', or 'final'
-#   $opt_HHR: reference to 2D hash of cmdline options
-#   $FH_HR:   ref to hash of file handles, including "cmd"
-#
-# Returns:  Number of columns.
-# 
-# Dies:     Never
-#
-#################################################################
-sub determine_number_of_columns_in_long_output_file { 
-  my $sub_name = "determine_number_of_columns_in_long_output_file";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($round, $opt_HHR, $FH_HR) = (@_);
-
-  my $have_evalues      = determine_if_we_have_evalues($round, \%opt_HH, $FH_HR);
-  my $have_evalues_r1   = determine_if_we_have_evalues(1, \%opt_HH, $FH_HR);
-  my $have_model_coords = determine_if_we_have_model_coords($round, \%opt_HH, $FH_HR);
-
-  my $ncols = 18;
-  if($have_evalues)      { $ncols++; }
-  if($have_model_coords) { $ncols += 2; }
-  if($round ne "2") { # add in columns for 'second-best model'
-    # no 'second-best model' for round 2, never ever
-    $ncols += 4; # 'scdiff', 'scd/nt', 'model', 'tscore';
-    if($have_evalues_r1) { $ncols++; } # 'e-value' column in 2nd best model
-  }
-
-  return $ncols;
-}
-
-
-#################################################################
 # Subroutine: output_summary_statistics()
 # Incept:     EPN, Tue May  9 09:42:59 2017
 #
@@ -4400,6 +3252,267 @@ sub output_ufeature_statistics {
 }
 
 #################################################################
+# Subroutine : output_combined_short_or_long_file()
+# Incept:      EPN, Mon May  8 14:09:49 2017
+#
+# Purpose:     Combine the round 1 and round 2 long output files 
+#              to create the final file.
+#              
+# Arguments: 
+#   $out_FH:         file handle to print to
+#   $r1_in_FH:       file handle of open round 1 long file
+#   $r2_in_FH:       file handle of open round 2 long file
+#   $do_short:       '1' if we're combining short files, '0' if 
+#                    we're combining long files
+#   $stats_HHR:      ref to 2D hash of stats:
+#                    1D key: model name, "*all*" or "*none*"
+#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
+#                    filled here, can and should be undef if $do_short is '1'
+#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
+#                    filled here, can and should be undef if $do_short is '1'
+#   $width_HR:       hash, key is "model" or "target", value 
+#                    is width (maximum length) of any target/model
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#   $FH_HR:          ref to hash of file handles, including "cmd"
+#
+# Returns:  Nothing.
+# 
+# Dies:     If there are not the same sequences in 
+#           the same order in the round 1 and round 2 files.
+#
+################################################################# 
+sub output_combined_short_or_long_file { 
+  my $nargs_expected = 9;
+  my $sub_name = "output_combined_short_or_long_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_FH, $r1_in_FH, $r2_in_FH, $do_short, $stats_HHR, $ufeature_ct_HR, $width_HR, $opt_HHR, $FH_HR) = @_;
+
+  my $r1_line;             # line from round 1 file
+  my $r2_line;             # line from round 2 file 
+  my $r1_lidx;             # line index in round 1 file
+  my $r2_lidx;             # line index in round 2 file
+  my $keep_going = 1;      # flag to keep reading the input files, set to '0' to stop
+  my @r1_el_A = ();        # array of space-delimited tokens in a round 1 line
+  my @r2_el_A = ();        # array of space-delimited tokens in a round 1 line
+  my @r1_ufeatures_A = (); # array of unexpected features in round 1 line
+  my $ufeature = undef;    # a single unexpected feature
+  my $did_edit_r2_line;    # flag, set to 1 if we edited the r2 line, 0 if not
+  my $did_make_fail;       # flag, set to 1 if we edited the r2 line and it should become FAIL, 0 if not
+  my $have_evalues_r1      = determine_if_we_have_evalues(1, $opt_HHR, $FH_HR);
+  my $have_evalues_r2      = determine_if_we_have_evalues(2, $opt_HHR, $FH_HR);
+  my $have_model_coords_r1 = determine_if_we_have_model_coords(1, $opt_HHR, $FH_HR);
+  my $have_model_coords_r2 = determine_if_we_have_model_coords(2, $opt_HHR, $FH_HR);
+  my $expected_ncols_r1 = 0; # number of columns we expect in round 1 file
+  my $expected_ncols_r2 = 0; # number of columns we expect in round 2 file
+  my $ncols_r1          = 0; # actual number of columns in round 1 line
+  my $ncols_r2          = 0; # actual number of columns in round 2 line
+  my $r2_to_add         = undef; # string to add to r2 line, the 'second-best model' columns from r1 line
+  my $r2_final_column   = undef; # final column of r2 line
+  # variables for a single target related to updating %{$stats_HHR}
+  my $class  = undef; # classification
+  my $pf     = undef; # 'PASS' or 'FAIL'
+  my $nnt    = undef; # size of current target in number of nucleotides
+  my $fam    = undef; # family of current target
+  my $domain = undef; # domain of current target
+  my $model  = undef; # model of current target
+  my $tcov   = undef; # total coverage of current target
+  if(defined $stats_HHR) { 
+    initialize_class_stats(\%{$stats_HHR->{"*input*"}});
+    initialize_class_stats(\%{$stats_HHR->{"*none*"}});
+    initialize_class_stats(\%{$stats_HHR->{"*all*"}});
+  }
+
+  if($do_short) { 
+    $expected_ncols_r1 = 6;
+    $expected_ncols_r2 = 6;
+    if(defined $stats_HHR) { 
+      ofile_FAIL("ERROR in $sub_name, do_short is true and stats_HHR is defined", "RIBO", 1, $FH_HR);
+    }
+  }
+  else { 
+    $expected_ncols_r1 = determine_number_of_columns_in_long_output_file("1", $opt_HHR, $FH_HR);
+    $expected_ncols_r2 = determine_number_of_columns_in_long_output_file("2", $opt_HHR, $FH_HR);
+  }
+
+  # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
+  $r1_line = <$r1_in_FH>;
+  $r1_lidx++;
+  while((defined $r1_line) && ($r1_line =~ m/^\#/)) { 
+    $r1_line = <$r1_in_FH>; 
+    $r1_lidx++;
+  }
+
+  $r2_line = <$r2_in_FH>;
+  $r2_lidx++;
+  while((defined $r2_line) && ($r2_line =~ m/^\#/)) { 
+    $r2_line = <$r2_in_FH>; 
+    $r2_lidx++;
+  }
+
+  while($keep_going) { 
+    my $have_r1_line = ((defined $r1_line) && ($r1_line !~ m/^\#/)) ? 1 : 0;
+    my $have_r2_line = ((defined $r2_line) && ($r2_line !~ m/^\#/)) ? 1 : 0;
+    if($have_r1_line && $have_r2_line) { 
+      chomp $r1_line;
+      chomp $r2_line;
+      # example short lines:
+      #idx  target                                         classification         strnd   p/f  unexpected_features
+      #---  ---------------------------------------------  ---------------------  -----  ----  -------------------
+      #15   00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  PASS  opposite_strand
+      #16   01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   PASS  -
+      #
+      # example long lines:
+      # (round 1 without e-values)
+      #                                                                                                                                    best-scoring model                                                        different domain's best-scoring model  
+      #                                                                                               ---------------------------------------------------------------------------------------------                  -------------------------------------  
+      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   tcov   bcov   bfrom     bto  scdiff  scd/nt  model                          tscore  unexpected_features
+      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  -----  -----  ------  ------  ------  ------  -----------------------------  ------  -------------------
+      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  1.000  1.000     600       1   378.6   0.631  SSU_rRNA_microsporidia          232.6  opposite_strand
+      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.7  2076.7  1.02  1.000  1.000       1    2046  1253.1   0.612  SSU_rRNA_microsporidia          823.6  -
+      #
+      # (round 2 with e-values)
+      #                                                                                                                                                best-scoring model                                                                    
+      #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
+      #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
+      #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
+      #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
+      #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
+
+      @r1_el_A = split(/\s+/, $r1_line);
+      @r2_el_A = split(/\s+/, $r2_line);
+      if($r1_el_A[1] ne $r2_el_A[1]) { 
+        ofile_FAIL("ERROR in $sub_name, read different sequence on line $r1_lidx of round 1 file (" . $r1_el_A[1] . ") and $r2_lidx of round 2 file (" . $r2_el_A[1] . ")\nr1 line: $r1_line\nr2 line: $r2_line", "RIBO", 1, $FH_HR); 
+      }
+      $ncols_r1 = scalar(@r1_el_A);
+      $ncols_r2 = scalar(@r2_el_A);
+      if($ncols_r1 != $expected_ncols_r1) { 
+        ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $r1_lidx of round 1 file (" . $ncols_r1 . " != " . $expected_ncols_r1 . ")", "RIBO", 1, $FH_HR);
+      }
+      if($ncols_r2 != $expected_ncols_r2) { 
+        ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $r2_lidx of round 2 file (" . $ncols_r2 . " != " . $expected_ncols_r2 . ")", "RIBO", 1, $FH_HR);
+      }
+
+      # pick out the r1 columns: 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' to add to the $r2_line
+      $r2_to_add = undef;
+      if(! $do_short) { 
+        # we want to add round 1 columns 'scdiff', 'scd/nt' 'model', 'tscore' and possibly 'evalue' 
+        # to round 2 lines to get final lines
+        if($have_evalues_r1) { 
+          $r2_to_add = sprintf("  %6s  %6s  %-*s  %6s  %8s", 
+                               $r1_el_A[($ncols_r1-6)],  # 'scdiff'
+                               $r1_el_A[($ncols_r1-5)],  # 'scd/nt'
+                               $width_HR->{"model"}, $r1_el_A[($ncols_r1-4)],  # 'model'
+                               $r1_el_A[($ncols_r1-3)], # 'tscore'
+                               $r1_el_A[($ncols_r1-2)]); # 'evalue'
+        }
+        else { 
+          $r2_to_add = sprintf("  %6s  %6s  %-*s  %6s", 
+                               $r1_el_A[($ncols_r1-5)], # 'scdiff'
+                               $r1_el_A[($ncols_r1-4)], # 'scd/nt'
+                               $width_HR->{"model"}, $r1_el_A[($ncols_r1-3)],  # 'model'
+                               $r1_el_A[($ncols_r1-2)]); # 'tscore'
+        }
+        # now save the final column:
+        $r2_final_column = $r2_el_A[($ncols_r2-1)];
+        # remove final column 
+        $r2_line =~ s/\s\s\S+$//; # remove final column
+        # now stick in the $r2_to_add
+        $r2_line .= $r2_to_add . "  " . $r2_final_column;
+      }
+
+      # look for the three types of unexpected error that we want from round 1 to add to round 2:
+      # 1) low_score_difference_between_top_two...
+      # 2) very_low_score_difference_between_top_two... 
+      # 3) hits_to_more_than_one_family...
+      # either one can have a "*" at the beginning of it (which we want to capture
+      # because it will cause the sequence to FAIL) 
+      # we append these to the end of our current unexpected_features
+      if($r1_el_A[($ncols_r1-1)] ne $r2_el_A[($ncols_r2-1)]) { 
+        $did_edit_r2_line = 0;
+        $did_make_fail    = 0;
+        @r1_ufeatures_A = split(";", $r1_el_A[($ncols_r1-1)]); 
+        foreach $ufeature (@r1_ufeatures_A) { 
+
+          if(($ufeature =~ m/LowScoreDifference/) ||
+             ($ufeature =~ m/MultipleFamilies/)) { 
+            $did_edit_r2_line = 1;
+            if($ufeature =~ m/^\*/) { 
+              $did_make_fail = 1;
+            }
+            if($r2_el_A[($ncols_r2-1)] eq "-") { 
+              $r2_el_A[($ncols_r2-1)] = $ufeature . ";";
+            }
+            else { 
+              $r2_el_A[($ncols_r2-1)] .= $ufeature . ";";
+            }
+          }
+        }
+        if($did_edit_r2_line) { 
+          if($did_make_fail) { 
+            # sequence 'FAILs' now
+            if($do_short) { # short file, change the PASS to FAIL
+              $r2_el_A[4] = "FAIL";
+              if($r2_line =~ /(^\d+\s+\S+\s+\S+\s+\S+\s+)PASS(\s+.+$)/) { 
+                $r2_line = $1 . "FAIL" . $2;
+              }
+            }
+            else { # long file, change the PASS to FAIL if it exists
+              $r2_el_A[2] = "FAIL";
+              if($r2_line =~ /(^\d+\s+\S+\s+)PASS(\s+.+$)/) { 
+                $r2_line = $1 . "FAIL" . $2;
+              }
+            }
+          }
+          # now append round 1 error to final column of round 2 output:
+          $r2_line =~ s/\s\s\S+$//; # remove final column
+          $r2_line .= "  " . $r2_el_A[($ncols_r2-1)];
+        }
+      }
+
+      # update %{$stats_HHR}
+      if(defined $stats_HHR) { 
+        # we know that $do_short if FALSE, so we're dealing with the long file
+        ($pf, $nnt, $fam, $domain, $model, $tcov) = ($r2_el_A[2], $r2_el_A[3], $r2_el_A[5], $r2_el_A[6], $r2_el_A[7], $r2_el_A[14]);
+        $class = $fam . "." . $domain;
+        if($class eq "-.-") { $class = "*none*"; }
+        if(! defined $stats_HHR->{$class}) { 
+          initialize_class_stats(\%{$stats_HHR->{$class}})
+        }
+        update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+        update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
+        update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+      }
+
+      # update the ufeature counts hash if we have one
+      if(defined $ufeature_ct_HR) { 
+        update_one_ufeature_sequence($ufeature_ct_HR, $r2_el_A[($ncols_r2-1)], $FH_HR);
+      }
+
+      print $out_FH $r2_line . "\n";
+
+      # get new lines
+      $r1_line = <$r1_in_FH>; 
+      $r2_line = <$r2_in_FH>; 
+      $r1_lidx++;
+      $r2_lidx++;
+    }
+    # check for some unexpected errors
+    elsif(($have_r1_line) && (! $have_r2_line)) { 
+      ofile_FAIL("ERROR in $sub_name, ran out of sequences from round 1 output before round 2", "RIBO", 1, $FH_HR); 
+    }
+    elsif((! $have_r1_line) && ($have_r2_line)) { 
+      ofile_FAIL("ERROR in $sub_name, ran out of sequences from round 2 output before round 1", "RIBO", 1, $FH_HR); 
+    }
+    else { # don't have either line
+      $keep_going = 0;
+    }
+  }
+      
+  return;
+}
+
+#################################################################
 # Subroutine: debug_print_model_stats
 # Incept:     EPN, Thu May 11 14:13:27 2017
 #
@@ -4439,4 +3552,898 @@ sub debug_print_model_stats {
   }
   return;
 }
+
+#################################################################
+# Subroutine: debug_print_class_stats
+# Incept:     EPN, Wed May 10 12:10:03 2017
+#
+# Purpose:    Output all values in a class_stats hash.
+#
+# Arguments:
+#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
+#   $class:    name of class
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub debug_print_class_stats { 
+  my $sub_name = "debug_print_class_stats";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($stats_HR, $class) = (@_);
+
+  printf("debug_print_class_stats, class: $class\n");
+
+  printf("nseq:        %d\n", $stats_HR->{"nseq"});
+  printf("summed_tcov: %f\n", $stats_HR->{"summed_tcov"});
+  printf("nnt_tot:     %d\n", $stats_HR->{"nnt_tot"});
+  printf("npass:       %d\n", $stats_HR->{"npass"});
+  printf("\n");
+
+  return;
+}
+
+#################################################################
+# Subroutine: determine_if_coverage_is_accurate()
+# Incept:     EPN, Thu Apr 20 10:30:28 2017
+#
+# Purpose:    Based on the command line options and what round we are in,
+#             determine if the coverage values are accurate. With the
+#             fast mode, coverage values are not accurate, but with
+#             some options like --1hmm and --1slow, they are.
+#
+# Arguments:
+#   $round:    what round of searching we're in, '1', '2', or 'final'
+#   $opt_HHR:  reference to 2D hash of cmdline options
+#   $FH_HR:    ref to hash of file handles, including "cmd"
+#
+# Returns:  '1' if coverage is accurate, else '0'
+# 
+# Dies:     if round is not "1", "2", or "final"
+#
+#################################################################
+sub determine_if_coverage_is_accurate { 
+  my $sub_name = "determine_if_coverage_is_accurate()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($round, $opt_HHR, $FH_HR) = (@_);
+
+  my $have_accurate_coverage = 0;
+  if($round eq "1") { 
+    if(opt_Get("--1hmm",  $opt_HHR)) { $have_accurate_coverage = 1; }
+    if(opt_Get("--1slow", $opt_HHR)) { $have_accurate_coverage = 1; }
+  }
+  elsif($round eq "2" || $round eq "final") { 
+    $have_accurate_coverage = 1; # always true for round 2
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
+  }
+
+  return $have_accurate_coverage;
+}
+
+#################################################################
+# Subroutine: determine_if_we_have_model_coords()
+# Incept:     EPN, Tue May  2 09:40:34 2017
+#
+# Purpose:    Based on the command line options and what round
+#             we are in, determine if the search output includes 
+#             model coordinates or not.
+#
+# Arguments:
+#   $round:   what round of searching we're in, '1', '2', or 'final'
+#   $opt_HHR: reference to 2D hash of cmdline options
+#   $FH_HR:   ref to hash of file handles, including "cmd"
+#
+# Returns:  '1' if we have model coords, else '0'
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_if_we_have_model_coords { 
+  my $sub_name = "determine_if_we_have_model_coords()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($round, $opt_HHR, $FH_HR) = (@_);
+
+  my $have_model_coords = 0;
+  if($round eq "1") { 
+    if(opt_Get("--1hmm",  $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1slow", $opt_HHR)) { $have_model_coords = 1; }
+  }
+  elsif($round eq "2" || $round eq "final") { 
+    $have_model_coords = 1; # always true for round 2
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
+  }
+
+  return $have_model_coords;
+}
+
+#################################################################
+# Subroutine: determine_if_we_have_evalues()
+# Incept:     EPN, Fri May  5 10:51:03 2017
+#
+# Purpose:    Based on the command line options and what round
+#             we are in, determine the search output includes 
+#             E-values or not.
+#
+# Arguments:
+#   $round:   what round of searching we're in, '1', '2', or 'final'
+#   $opt_HHR: reference to 2D hash of cmdline options
+#   $FH_HR:   ref to hash of file handles, including "cmd"
+#
+# Returns:  '1' if we have model coords, else '0'
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_if_we_have_evalues { 
+  my $sub_name = "determine_if_we_have_evalues()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($round, $opt_HHR, $FH_HR) = (@_);
+
+  my $have_evalues = 0;
+  if($round eq "1") { 
+    if(opt_Get("--1hmm",  $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1slow", $opt_HHR)) { $have_evalues = 1; }
+  }
+  elsif($round eq "2" || $round eq "final") { 
+    $have_evalues = 1; # always true for round 2
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, invalid round value of $round", "RIBO", 1, $FH_HR); 
+  }
+
+  return $have_evalues;
+}
+
+#################################################################
+# Subroutine : determine_cmsearch_opts()
+# Incept:      EPN, Thu May  4 13:14:10 2017
+#
+# Purpose:     Determine the CM search options given an algorithm
+#              type of either "fast", "hmmonly", or "slow" and 
+#              a reference to the command line options.
+#
+# Arguments: 
+#   $alg:      algorithm, either "fast", "hmmonly" or "slow"
+#   $opt_HHR:  reference to 2D hash of cmdline options
+#   $FH_HR:    ref to hash of file handles, including "cmd"
+# 
+# Returns:     String of options to use for cmsearch.
+#
+# Dies:        If $alg string is invalid.
+# 
+################################################################# 
+sub determine_cmsearch_opts { 
+  my $nargs_expected = 3;
+  my $sub_name = "determine_cmsearch_opts()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($alg, $opt_HHR, $FH_HR) = @_;
+
+  my $alg_opts = undef;
+  if($alg eq "fast") { 
+    $alg_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --nohmmonly --notrunc --noali ";
+  }
+  elsif($alg eq "slow") { 
+    if(opt_Get("--mid", $opt_HHR)) { 
+      $alg_opts .= " --mid "; 
+    }
+    elsif(opt_Get("--max", $opt_HHR)) { 
+      $alg_opts .= " --max "; 
+      if(opt_IsUsed("--smxsize", $opt_HHR)) { 
+        $alg_opts .= " --smxsize " . opt_Get("--smxsize", $opt_HHR) . " ";
+      }
+    }
+    else { # default for slow, --mid nor --max used (use cmsearch --rfam)
+      $alg_opts .= " --rfam --onepass "; 
+    }
+    if(opt_Get("--noali", $opt_HHR)) { 
+      $alg_opts .= " --noali ";
+    }
+  }
+  elsif($alg eq "hmmonly") { 
+    $alg_opts .= " --hmmonly ";
+    if(opt_Get("--noali", $opt_HHR)) { 
+      $alg_opts .= " --noali ";
+    }
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", "RIBO", 1, $FH_HR);
+  }
+
+  return $alg_opts;
+}
+
+#################################################################
+# Subroutine : determine_sort_cmd()
+# Incept:      EPN, Thu Jan  4 15:40:44 2018
+#
+# Purpose:     Determine the unix sort command to properly sort
+#              the tblout file given an algorihtm type of either
+#              "fast", "hmmonly", or "slow" and a reference to the 
+#              command line options.
+#
+# Arguments: 
+#   $alg:      algorithm, either "fast", "hmmonly" or "slow"
+#   $in_file:  name of input tblout file
+#   $out_file: name of output tblout file
+#   $opt_HHR:  reference to 2D hash of cmdline options
+#   $FH_HR:    ref to hash of file handles, including "cmd"
+# 
+# Returns:     String that is the sort command with input and 
+#              output file included.
+#
+# Dies:        If $alg string is invalid.
+# 
+################################################################# 
+sub determine_sort_cmd {
+  my $nargs_expected = 5;
+  my $sub_name = "determine_sort_cmd()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($alg, $in_file, $out_file, $opt_HHR, $FH_HR) = @_;
+
+  my $sort_cmd = undef;
+  my $sort_by_evalues = opt_Get("--evalues", $opt_HHR);
+
+  if($alg eq "fast") { 
+    $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 3,3rn > $out_file";
+  }
+  elsif($alg eq "slow" || $alg eq "hmmonly") { 
+    if($sort_by_evalues) { 
+      $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 16,16g -k 15,15rn > $out_file";
+    }
+    else { 
+      $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 15,15rn -k 16,16g > $out_file";
+    }
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", "RIBO", 1, $FH_HR);
+  }
+
+  return $sort_cmd;
+}
+
+#################################################################
+# Subroutine: determine_number_columns_long_output_file()
+# Incept:     EPN, Mon May  8 15:32:52 2017
+#
+# Purpose:    Determine how many columns should be in the long 
+#             output file for a given round.
+#
+# Arguments:
+#   $round:   what round of searching we're interested in, '1', '2', or 'final'
+#   $opt_HHR: reference to 2D hash of cmdline options
+#   $FH_HR:   ref to hash of file handles, including "cmd"
+#
+# Returns:  Number of columns.
+# 
+# Dies:     Never
+#
+#################################################################
+sub determine_number_of_columns_in_long_output_file { 
+  my $sub_name = "determine_number_of_columns_in_long_output_file";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($round, $opt_HHR, $FH_HR) = (@_);
+
+  my $have_evalues      = determine_if_we_have_evalues($round, \%opt_HH, $FH_HR);
+  my $have_evalues_r1   = determine_if_we_have_evalues(1, \%opt_HH, $FH_HR);
+  my $have_model_coords = determine_if_we_have_model_coords($round, \%opt_HH, $FH_HR);
+
+  my $ncols = 18;
+  if($have_evalues)      { $ncols++; }
+  if($have_model_coords) { $ncols += 2; }
+  if($round ne "2") { # add in columns for 'second-best model'
+    # no 'second-best model' for round 2, never ever
+    $ncols += 4; # 'scdiff', 'scd/nt', 'model', 'tscore';
+    if($have_evalues_r1) { $ncols++; } # 'e-value' column in 2nd best model
+  }
+
+  return $ncols;
+}
+
+
+#################################################################
+# Subroutine: initialize_class_stats
+# Incept:     EPN, Tue May  9 10:51:08 2017
+#
+# Purpose:    Initialize a class_stats hash.
+#
+# Arguments:
+#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub initialize_class_stats { 
+  my $sub_name = "initialize_class_stats";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($stats_HR) = (@_);
+
+  %{$stats_HR} = ();
+  $stats_HR->{"nseq"}        = 0;
+  $stats_HR->{"summed_tcov"} = 0.;
+  $stats_HR->{"nnt_tot"}     = 0;
+  $stats_HR->{"npass"}       = 0;
+
+  return;
+}
+
+#################################################################
+# Subroutine: initialize_ufeature_stats
+# Incept:     EPN, Tue May  9 21:03:39 2017
+#
+# Purpose:    Initialize a ufeature array and counts hash.
+#             Array elements, which will be keys in the 
+#             counts hash, are unique messages/descriptions 
+#             of each possible unexpected feature. Hash
+#             values will be counts. 
+#
+# Arguments:
+#   $ufeature_AR:    ref to array of all unexpected feature strings
+#   $ufeature_ct_HR: ref to hash of counts
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub initialize_ufeature_stats { 
+  my $sub_name = "initialize_ufeature_stats";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature_AR, $ufeature_ct_HR, $opt_HHR) = (@_);
+
+  @{$ufeature_AR}    = ();
+  %{$ufeature_ct_HR} = ();
+
+  # first category is a special one, it will hold the counts of
+  # sequences with 0 unexpected features
+  push(@{$ufeature_AR}, "CLEAN");
+
+  # next, we want the unexpected features that will cause failures 
+  # those that always cause failures (regardless of cmdline options):
+  push(@{$ufeature_AR}, "*NoHits");
+  push(@{$ufeature_AR}, "*UnacceptableModel");
+  push(@{$ufeature_AR}, "*MultipleFamilies");
+  push(@{$ufeature_AR}, "*BothStrands");
+  push(@{$ufeature_AR}, "*DuplicateRegion");
+  push(@{$ufeature_AR}, "*InconsistentHits");
+
+  # those that can cause failure, if they do so:
+  if(opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "*QuestionableModel"); }
+  if(opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "*MinusStrand"); }
+  if(opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "*LowScore"); }
+  if(opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*LowCoverage"); }
+  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*LowScoreDifference"); }
+  if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*VeryLowScoreDifference"); }
+  if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*MultipleHits"); }
+  if(opt_Get("--esdfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*EvalueScoreDiscrepancyAboveThreshold"); }
+
+  # those that are only reported if a specific option is enabled
+  if(opt_IsUsed("--shortfail", $opt_HHR)) { push(@{$ufeature_AR}, "*TooShort"); }
+  if(opt_IsUsed("--longfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*TooLong"); }
+
+  # those that don't cause failure, if they don't
+  if(! opt_Get("--questfail", $opt_HHR)) { push(@{$ufeature_AR}, "QuestionableModel"); }
+  if(! opt_Get("--minusfail", $opt_HHR)) { push(@{$ufeature_AR}, "MinusStrand"); }
+  if(! opt_Get("--scfail",    $opt_HHR)) { push(@{$ufeature_AR}, "LowScore"); }
+  if(! opt_Get("--covfail",   $opt_HHR)) { push(@{$ufeature_AR}, "LowCoverage"); }
+  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "LowScoreDifference"); }
+  if(! opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "VeryLowScoreDifference"); }
+  if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "MultipleHits"); }
+
+  # those that can only be reported if special other options are enabled
+  if(opt_Get("--evalues", $opt_HHR)) { 
+    if(! opt_Get("--esdfail",  $opt_HHR)) { push(@{$ufeature_AR}, "EvalueScoreDiscrepancyAboveThreshold"); }
+  }
+
+  foreach my $ufeature (@{$ufeature_AR}) { 
+    $ufeature_ct_HR->{$ufeature} = 0;
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine : get_stats_from_long_file_for_sole_round()
+# Incept:      EPN, Tue Dec  5 09:41:28 2017
+#
+# Purpose:     Obtain stats from a long output file. Only 
+#              necessary when script is run in 1-round-only mode,
+#              otherwise this is done in output_combined_short_or_long_file()
+#              when called for the long file.
+#              
+# Arguments: 
+#   $in_FH:          file handle of open round 1 (of 1) long file
+#   $stats_HHR:      ref to 2D hash of stats:
+#                    1D key: model name, "*all*" or "*none*"
+#                    2D key: "nseq", "npass", "summed_tcov", "nnt_tot"
+#                    filled here
+#   $ufeature_ct_HR: ref to hash of unexpected feature counts 
+#                    filled here
+#   $opt_HHR:        reference to 2D hash of cmdline options
+#   $FH_HR:          ref to hash of file handles, including "cmd"
+#
+# Returns:  Nothing.
+# 
+# Dies:     If there are not the same sequences in 
+#           the same order in the round 1 and round 2 files.
+#
+################################################################# 
+sub get_stats_from_long_file_for_sole_round { 
+  my $nargs_expected = 5;
+  my $sub_name = "get_stats_from_long_file_for_sole_round";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_FH, $stats_HHR, $ufeature_ct_HR, $opt_HHR, $FH_HR) = @_;
+
+  my $keep_going = 0;     # '1' to keep reading lines from the file
+  my $line;               # line from long file
+  my $lidx;               # line index
+  my @el_A = ();          # array of space-delimited tokens in a line
+  my $expected_ncols = 0; # number of columns we expect in the file
+  my $ncols          = 0; # actual number of columns in line
+  # variables for a single target related to updating %{$stats_HHR}
+  my $class  = undef; # classification
+  my $pf     = undef; # 'PASS' or 'FAIL'
+  my $nnt    = undef; # size of current target in number of nucleotides
+  my $fam    = undef; # family of current target
+  my $domain = undef; # domain of current target
+  my $model  = undef; # model of current target
+  my $tcov   = undef; # total coverage of current target
+
+  initialize_class_stats(\%{$stats_HHR->{"*input*"}});
+  initialize_class_stats(\%{$stats_HHR->{"*none*"}});
+  initialize_class_stats(\%{$stats_HHR->{"*all*"}});
+
+  $expected_ncols = determine_number_of_columns_in_long_output_file("1", $opt_HHR, $FH_HR);
+
+  # we know that the first few lines of the file are comment lines, that begin with "#", chew them up
+  $line = <$in_FH>;
+  $lidx++;
+  while((defined $line) && ($line =~ m/^\#/)) { 
+    $line = <$in_FH>; 
+    $lidx++;
+  }
+  $keep_going = 1;
+  
+  while($keep_going) { 
+    chomp $line;
+    # example lines
+    # (round 2 with e-values)
+    #                                                                                                                                                best-scoring model                                                                    
+    #                                                                                               ---------------------------------------------------------------------------------------------------------------------                  
+    #idx  target                                          p/f  length  #fm  fam  domain             model                          strnd  #ht  tscore  bscore  b/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  unexpected_features
+    #---  ---------------------------------------------  ----  ------  ---  ---  -----------------  -----------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  -------------------
+    #15    00229::Oxytricha_granulifera.::AF164122        PASS     600    1  SSU  Eukarya            SSU_rRNA_eukarya               minus    1   611.2   611.2  1.02  8.8e-187  0.915  0.915     549       1    720   1266 opposite_strand
+    #16    01710::Oryza_sativa.::X00755                   PASS    2046    1  SSU  Eukarya            SSU_rRNA_eukarya               plus     1  2076.6  2076.6  1.01         0  0.885  0.885      75    1885      1   1850 -
+
+    @el_A = split(/\s+/, $line);
+    $ncols = scalar(@el_A);
+    if($ncols != $expected_ncols) { 
+      ofile_FAIL("ERROR in $sub_name, read unexpected number of columns on line $lidx of file (" . $ncols . " != " . $expected_ncols . ")", "RIBO", 1, $FH_HR);
+    }
+
+    # update %{$stats_HHR}
+    ($pf, $nnt, $fam, $domain, $model, $tcov) = ($el_A[2], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[14]);
+    $class = $fam . "." . $domain;
+    if($class eq "-.-") { $class = "*none*"; }
+    if(! defined $stats_HHR->{$class}) { 
+      initialize_class_stats(\%{$stats_HHR->{$class}})
+    }
+    update_class_stats(\%{$stats_HHR->{$class}},    $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+    update_class_stats(\%{$stats_HHR->{"*input*"}}, 1.0,   $nnt, 0);
+    update_class_stats(\%{$stats_HHR->{"*all*"}},   $tcov, $nnt, ($pf eq "PASS") ? 1 : 0);
+
+    # update the ufeature counts hash if we have one
+    if(defined $ufeature_ct_HR) { 
+      update_one_ufeature_sequence($ufeature_ct_HR, $el_A[($ncols-1)], $FH_HR);
+    }
+
+    $line = <$in_FH>; 
+    $keep_going = ((defined $line) && ($line !~ m/^\#/)) ? 1 : 0;
+  }
+      
+  return;
+}
+
+#################################################################
+# Subroutine : parse_round1_long_file()
+# Incept:      EPN, Thu May  4 13:54:36 2017
+#
+# Purpose:     Parse a 'long' output file created by this script
+#              and fill %seqsub_HA with names of sequences to 
+#              that are best-matches to each model.
+#              
+# Arguments: 
+#   $long_file:    'long' format file to parse
+#   $seqsub_HAR:   ref to hash of arrays, key is model name, value is array of 
+#                  sequences that match best to the model
+#   $FH_HR:        ref to hash of file handles, including "cmd"
+#
+# Returns:     Nothing. Updates %{$seqsub_HAR}.
+# 
+# Dies:        If $long_file is in incorrect format.
+#
+################################################################# 
+sub parse_round1_long_file {
+  my $nargs_expected = 3;
+  my $sub_name = "parse_round1_long_file";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($long_file, $seqsub_HAR, $FH_HR) = @_;
+
+  my @el_A    = ();    # array of elements in a line
+  my $model   = undef; # a model
+  my $seqname = undef; # a sequence name
+
+  open(IN, $long_file) || ofile_FileOpenFailure($long_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  while(my $line = <IN>) { 
+    if($line !~ m/^\#/) { # skip comment lines
+      @el_A = split(/\s+/, $line);
+      ($seqname, $model) = ($el_A[1], $el_A[7]);
+      if($model ne "-") { 
+        if(! exists $seqsub_HAR->{$model}) {
+          ofile_FAIL("ERROR in $sub_name, unexpected model value: $model\nline: $line", "RIBO", 1, $FH_HR);
+        }
+        push(@{$seqsub_HAR->{$model}}, $seqname);
+      }
+    }
+  }
+  close(IN);
+  
+  return;
+}
+
+#################################################################
+# Subroutine: update_class_stats
+# Incept:     EPN, Tue May  9 09:35:07 2017
+#
+# Purpose:    Update a class_stats hash given the relevant info
+#             for one sequence.
+#
+# Arguments:
+#   $stats_HR: ref to 1D hash, keys: "nseq", "summed_tcov", "nnt_tot", "npass"
+#   $tcov:     total fractional coverage for this sequence
+#   $nnt:      number of nucleotides for this sequence
+#   $pass:     '1' if sequence passes, else '0'
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub update_class_stats { 
+  my $sub_name = "update_class_stats";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($stats_HR, $tcov, $nnt, $pass) = (@_);
+
+  if($tcov eq "-") { $tcov = 0.; }
+
+  $stats_HR->{"nseq"}++;
+  $stats_HR->{"summed_tcov"} += $tcov;
+  $stats_HR->{"nnt_tot"}     += $nnt;
+  if($pass) { $stats_HR->{"npass"}++; }
+
+  return;
+}
+
+#################################################################
+# Subroutine: update_one_ufeature_count
+# Incept:     EPN, Tue May  9 15:19:40 2017
+#
+# Purpose:    Update a ufeature counts hash by incrementing 
+#             the relevant count by 1.
+#
+# Arguments:
+#   $ufeature_ct_HR: ref to hash
+#   $ufeature:       the ufeature to update
+#   $FH_HR:          ref to hash of file handles, including "cmd"
+#
+# Returns:  void
+# 
+# Dies:     - If $ufeature that does not exist in %{$ufeature_ct_HR}
+#
+#################################################################
+sub update_one_ufeature_count { 
+  my $sub_name = "update_one_ufeature_count";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature_ct_HR, $ufeature, $FH_HR) = (@_);
+
+  # remove ':' and anything after, this removes any hit/sequence specific information
+  $ufeature =~ s/\:.+$//;
+
+  if(! exists $ufeature_ct_HR->{$ufeature}) { 
+    die "ERROR in $sub_name, unknown unusual feature: $ufeature";
+  }
+
+  $ufeature_ct_HR->{$ufeature}++;
+
+  return;
+}
+
+
+#################################################################
+# Subroutine: update_one_ufeature_sequence
+# Incept:     EPN, Tue May  9 15:36:32 2017
+#
+# Purpose:    Call update_one_ufeature_count for each 
+#             unusual feature for a sequence.
+#
+# Arguments:
+#   $ufeature_ct_HR: ref to hash
+#   $ufeature_str:   the ufeature string with potentially >= 1 
+#                    unexpected features.
+#   $FH_HR:          ref to hash of file handles, including "cmd"
+#
+# Returns:  void
+# 
+# Dies:     - If $ufeature_str contains a $ufeature that does not exist 
+#             in %{$ufeature_ct_HR}
+#
+#################################################################
+sub update_one_ufeature_sequence { 
+  my $sub_name = "update_one_ufeature_sequence";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($ufeature_ct_HR, $ufeature_str, $FH_HR) = (@_);
+
+  # print("in $sub_name, string is $ufeature_str\n");
+
+  my @ufeatures_A = ();
+  if($ufeature_str eq "-") { 
+    update_one_ufeature_count($ufeature_ct_HR, "CLEAN", $FH_HR);
+  }
+  else { 
+    my @ufeatures_A = split(";", $ufeature_str);
+    foreach my $ufeature (@ufeatures_A) { 
+      update_one_ufeature_count($ufeature_ct_HR, $ufeature, $FH_HR);
+    }
+  }
+
+  return; 
+}
+
+#################################################################
+# Subroutine: get_overlap()
+# Incept:     EPN, Mon Apr 24 15:47:13 2017
+#
+# Purpose:    Determine if there is overlap between two regions
+#             defined by strings of the format <d1>-<d2> where
+#             <d1> is the beginning of the region and <d2> is the
+#             end. If strand is "+" then <d1> <= <d2> and if strand
+#             is "-" then <d1> >= <d2>.
+#
+# Arguments:
+#   $regstr1:  string 1 defining region 1
+#   $regstr2:  string 2 defining region 2
+#   $FH_HR:    ref to hash of file handles, including "cmd"
+#
+# Returns:  Two values:
+#           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
+#                         0 if none
+#           $overlap_reg: region of overlap, "" if none
+# 
+# Dies:     If regions are not formatted correctly, or
+#           regions are different strands.
+#
+#################################################################
+sub get_overlap { 
+  my $sub_name = "get_overlap()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($regstr1, $regstr2, $FH_HR) = (@_);
+
+  my ($start1, $stop1, $strand1) = decompose_region_str($regstr1, $FH_HR);
+  my ($start2, $stop2, $strand2) = decompose_region_str($regstr2, $FH_HR);
+
+  if($strand1 ne $strand2) { 
+    ofile_FAIL("ERROR in $sub_name, different strands for regions $regstr1 and $regstr2", "RIBO", 1, $FH_HR);
+  }
+
+  if($strand1 eq "-") { 
+    my $tmp = $start1; 
+    $start1 = $stop1;
+    $stop1  = $tmp;
+    $tmp    = $start2;
+    $start2 = $stop2;
+    $stop2  = $tmp;
+  }
+
+  return get_overlap_helper($start1, $stop1, $start2, $stop2, $FH_HR);
+}
+
+#################################################################
+# Subroutine: get_overlap_helper()
+# Incept:     EPN, Mon Mar 14 13:47:57 2016 [dnaorg_scripts:dnaorg.pm:getOverlap()]
+#
+# Purpose:    Calculate number of nucleotides of overlap between
+#             two regions.
+#
+# Args:
+#  $start1: start position of hit 1 (must be <= $end1)
+#  $end1:   end   position of hit 1 (must be >= $end1)
+#  $start2: start position of hit 2 (must be <= $end2)
+#  $end2:   end   position of hit 2 (must be >= $end2)
+#  $FH_HR:    ref to hash of file handles, including "cmd"
+#
+# Returns:  Two values:
+#           $noverlap:    Number of nucleotides of overlap between hit1 and hit2, 
+#                         0 if none
+#           $overlap_reg: region of overlap, "" if none
+#
+# Dies:     if $end1 < $start1 or $end2 < $start2.
+#
+#################################################################
+sub get_overlap_helper {
+  my $sub_name = "get_overlap_helper";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($start1, $end1, $start2, $end2, $FH_HR) = @_; 
+
+  # printf("in $sub_name $start1..$end1 $start2..$end2\n");
+
+  if($start1 > $end1) { ofile_FAIL("ERROR in $sub_name start1 > end1 ($start1 > $end1)", "RIBO", 1, $FH_HR); }
+  if($start2 > $end2) { ofile_FAIL("ERROR in $sub_name start2 > end2 ($start2 > $end2)", "RIBO", 1, $FH_HR); }
+
+  # Given: $start1 <= $end1 and $start2 <= $end2.
+  
+  # Swap if nec so that $start1 <= $start2.
+  if($start1 > $start2) { 
+    my $tmp;
+    $tmp   = $start1; $start1 = $start2; $start2 = $tmp;
+    $tmp   =   $end1;   $end1 =   $end2;   $end2 = $tmp;
+  }
+  
+  # 3 possible cases:
+  # Case 1. $start1 <=   $end1 <  $start2 <=   $end2  Overlap is 0
+  # Case 2. $start1 <= $start2 <=   $end1 <    $end2  
+  # Case 3. $start1 <= $start2 <=   $end2 <=   $end1
+  if($end1 < $start2) { return (0, ""); }                                           # case 1
+  if($end1 <   $end2) { return (($end1 - $start2 + 1), ($start2 . "-" . $end1)); }  # case 2
+  if($end2 <=  $end1) { return (($end2 - $start2 + 1), ($start2 . "-" . $end2)); }  # case 3
+  ofile_FAIL("ERROR in $sub_name, unforeseen case in $start1..$end1 and $start2..$end2", "RIBO", 1, $FH_HR);
+
+  return; # NOT REACHED
+}
+
+#################################################################
+# Subroutine: sort_hit_array()
+# Incept:     EPN, Tue Apr 25 06:23:42 2017
+#
+# Purpose:    Sort an array of regions of hits.
+#
+# Args:
+#  $tosort_AR:   ref of array to sort
+#  $order_AR:    ref to array of original indices corresponding to @{$tosort_AR}
+#  $allow_dups:  '1' to allow duplicates in $tosort_AR, '0' to not and die if
+#                they're found
+#  $FH_HR:       ref to hash of file handles, including "cmd"
+#
+# Returns:  string indicating the order of the elements in $tosort_AR in the sorted
+#           array.
+#
+# Dies:     - if some of the regions in @{$tosort_AR} are on different strands
+#             or are in the wrong format
+#           - if there are duplicate values in $tosort_AR and $allow_dups is 0
+#
+#################################################################
+sub sort_hit_array { 
+  my $sub_name = "sort_hit_array";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($tosort_AR, $order_AR, $allow_dups, $FH_HR) = @_;
+
+  my ($i, $j); # counters
+
+  my $nel = scalar(@{$tosort_AR});
+
+  if($nel == 1) { ofile_FAIL("ERROR in $sub_name, nel is 1 (should be > 1)", "RIBO", 1, $FH_HR); }
+
+  # make sure all elements are on the same strand
+  my(undef, undef, $strand) = decompose_region_str($tosort_AR->[0], $FH_HR);
+  for($i = 1; $i < $nel; $i++) { 
+    my(undef, undef, $cur_strand) = decompose_region_str($tosort_AR->[$i], $FH_HR);
+    if($strand ne $cur_strand) { 
+      die "ERROR in $sub_name, not all regions are on same strand, region 1: $tosort_AR->[0] $strand, region " . $i+1 . ": $tosort_AR->[$i] $cur_strand";
+    }
+  }
+
+  # make a temporary hash and sort it by value
+  my %hash = ();
+  for($i = 0; $i < $nel; $i++) { 
+    $hash{($i+1)} = $tosort_AR->[$i];
+  }
+  # the <=> comparison function means sort numerically ascending
+  @{$order_AR} = (sort {$hash{$a} <=> $hash{$b}} (keys %hash));
+
+  # now that we have the sorted order, we can easily check for dups
+  if(! $allow_dups) { 
+    for($i = 1; $i < $nel; $i++) { 
+      if($hash{$order_AR->[($i-1)]} eq $hash{$order_AR->[$i]}) { 
+        ofile_FAIL("ERROR in $sub_name, duplicate values exist in the array: " . $hash{$order_AR->[$i]} . " appears twice", "RIBO", 1, $FH_HR); 
+      }
+    }
+  }
+
+  # reverse array if strand is "-"
+  if($strand eq "-") { 
+    @{$order_AR} = reverse @{$order_AR};
+  }
+
+  # construct return string
+  my $ret_str = $order_AR->[0];
+  for($i = 1; $i < $nel; $i++) { 
+    $ret_str .= "," . $order_AR->[$i];
+  }
+
+  return $ret_str;
+}
+
+#################################################################
+# Subroutine: decompose_region_str()
+# Incept:     EPN, Wed Apr 26 06:09:45 2017
+#
+# Purpose:    Given a 'region' string in the format <d1>.<d2>, 
+#             decompose it and return <d1>, <d2> and <strand>.
+#
+# Args:
+#  $regstr:   region string in format <d1>.<d2>
+#  $FH_HR:    ref to hash of file handles, including "cmd"
+#
+# Returns:  Three values:
+#           <d1>: beginning of region
+#           <d2>: end of region
+#           <strand>: "+" if <d1> <= <d2>, else "-"
+#
+# Dies:     if $regstr is not in correct format 
+sub decompose_region_str { 
+  my $sub_name = "decompose_region_str";
+  my $nargs_expected = 2;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($regstr, $FH_HR) = @_;
+
+  my ($d1, $d2, $strand); 
+  if($regstr =~ /(\d+)\.(\d+)/) { ($d1, $d2) = ($1, $2); }
+  else                          { ofile_FAIL("ERROR in $sub_name, region string $regstr not parseable", "RIBO", 1, $FH_HR); }
+
+  $strand = ($d1 <= $d2) ? "+" : "-";
+
+  return($d1, $d2, $strand);
+}
+
+
+
+
+
+
 
