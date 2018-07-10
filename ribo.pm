@@ -1361,7 +1361,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     # wait for the jobs to finish
     ofile_OutputString($log_FH, 0, sprintf("\n"));
     print STDERR "\n";
-    $start_secs = ribo_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
+    $start_secs = ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
                                            $progress_w, $log_FH, *STDERR);
     my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
