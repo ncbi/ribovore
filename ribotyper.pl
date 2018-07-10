@@ -57,7 +57,6 @@ opt_Add("-f",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 0,                        1,    undef, undef,      "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-q",           "string",  undef,                    1,    "-p",  undef,      "use qsub info file <s> instead of default",      "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
@@ -111,11 +110,12 @@ opt_Add("--max",          "boolean", 0,                       8,  undef,  "--mid
 opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef,      "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"9"} = "options for parallelizing cmsearch on a compute farm";
-#     option            type       default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("-p",           "boolean", 0,                         9,    undef, undef,      "parallelize cmsearch on a compute farm",                "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                        9,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>", "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--maxnjobs",   "integer", 2500,                      9,     "-p", undef,      "maximum allowed number of jobs for compute farm",       "set max number of jobs to submit to compute farm to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--wait",       "integer", 500,                       9,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",           "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+#     option            type       default                group   requires incompat    preamble-output                                                help-output    
+opt_Add("-p",           "boolean", 0,                         9,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
+opt_Add("-q",           "string",  undef,                     9,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 10,                        9,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--maxnjobs",   "integer", 2500,                      9,     "-p", undef,      "maximum allowed number of jobs for compute farm",             "set max number of jobs to submit to compute farm to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                       9,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         9,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"10"} = "advanced options";
@@ -137,7 +137,6 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
-                'q=s'          => \$GetOptions_H{"-q"},
                 's=s'          => \$GetOptions_H{"-s"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
@@ -177,6 +176,7 @@ my $options_okay =
                 'smxsize=s'    => \$GetOptions_H{"--smxsize"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
+                'q=s'          => \$GetOptions_H{"-q"},
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'maxnjobs=s'   => \$GetOptions_H{"--maxnjobs"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
@@ -605,7 +605,10 @@ my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) .
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ribo_OutputProgressPrior("Classifying sequences", $progress_w, $log_FH, *STDOUT);
-  run_cmsearch_wrapper(\%execs_H, \%seqlen_H, $out_root, $alg1_opts, $master_model_file, $seq_file, $nseq, $tot_nnt, $r1_tblout_file, $r1_searchout_file, $progress_w, \%opt_HH, \%ofile_info_HH);
+  my %outfile_H = (); 
+  $outfile_H{"tblout"}   = $r1_tblout_file;
+  $outfile_H{"cmsearch"} = $r1_searchout_file;
+  ribo_RunCmsearchOrCmalignWrapper($execs_H{"cmsearch"}, $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
 }
 else { 
   $start_secs = ribo_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, undef, *STDOUT);
@@ -720,8 +723,8 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
       $sfetchfile_H{$model} = undef;
       if(scalar(@{$seqsub_HA{$model}}) > 0) { 
         $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
-        write_array_to_file($seqsub_HA{$model}, $sfetchfile_H{$model}, $ofile_info_HH{"FH"}); 
-        $totseqlen_H{$model} = sum_seqlen_given_array($seqsub_HA{$model}, \%seqlen_H, $ofile_info_HH{"FH"});
+        ribo_WriteArrayToFile($seqsub_HA{$model}, $sfetchfile_H{$model}, $ofile_info_HH{"FH"}); 
+        $totseqlen_H{$model} = ribo_SumSeqlenGivenArray($seqsub_HA{$model}, \%seqlen_H, $ofile_info_HH{"FH"});
         $nseq_H{$model}      = scalar(@{$seqsub_HA{$model}});
         if(! opt_Get("--keep", \%opt_HH)) { 
           push(@to_remove_A, $sfetchfile_H{$model});
@@ -778,7 +781,10 @@ if(defined $alg2) {
       push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        run_cmsearch_wrapper(\%execs_H, \%seqlen_H, $out_root, $alg2_opts, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $r2_tblout_file_A[$midx], $r2_searchout_file_A[$midx], $progress_w, \%opt_HH, \%ofile_info_HH);
+        my %outfile_H = (); 
+        $outfile_H{"tblout"}   = $r2_tblout_file_A[$midx];
+        $outfile_H{"cmsearch"} = $r2_searchout_file_A[$midx];
+        ribo_RunCmsearchOrCmalignWrapper($execs_H{"cmsearch"}, $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
         ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
@@ -3396,43 +3402,6 @@ sub parse_round1_long_file {
   return;
 }
 
-#################################################################
-# Subroutine : write_array_to_file()
-# Incept:      EPN, Thu May  4 14:11:03 2017
-#
-# Purpose:     Create a file with each element in an array on 
-#              a different line.
-#              
-# Arguments: 
-#   $AR:    reference to array 
-#   $file:  name of file to create
-#   $FH_HR: ref to hash of file handles, including "cmd"
-#
-# Returns:  Nothing.
-# 
-# Dies:     If $AR is empty.
-#
-################################################################# 
-sub write_array_to_file {
-  my $nargs_expected = 3;
-  my $sub_name = "write_array_to_file";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($AR, $file, $FH_HR) = @_;
-
-  if((! defined $AR) || (scalar(@{$AR}) == 0)) { 
-    ofile_FAIL("ERROR in $sub_name, array is empty or not defined", "RIBO", 1, $FH_HR);
-  }
-
-  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "reading", $FH_HR);
-
-  foreach my $el (@{$AR}) { 
-    print OUT $el . "\n"; 
-  }
-  close(OUT);
-
-  return;
-}
 
 #################################################################
 # Subroutine : output_combined_short_or_long_file()
@@ -4465,448 +4434,3 @@ sub debug_print_model_stats {
   return;
 }
 
-#################################################################
-# Subroutine:  run_cmsearch_wrapper()
-# Incept:      EPN, Thu Jul  5 15:24:19 2018
-#
-# Purpose:     Run one or more cmsearch jobs on the farm
-#              or locally, after possibly splitting up the input
-#              sequence file. 
-#              The following must all be valid options in opt_HHR:
-#              -p, --nkb, --wait, --keep, -v, --maxnjobs
-#              See ribotyper.pl for examples of these options.
-#
-# Arguments: 
-#  $execs_HR:        ref to executables with "cmsearch" defined as a key
-#  $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
-#  $out_root:        output root for naming sequence files
-#  $opts:            string of cmsearch options
-#  $model_file:      path to model file to use 
-#  $seq_file:        name of sequence file with all sequences to run against
-#  $tot_nseq:        number of sequences in $seq_file
-#  $tot_len_nt:      total length of all nucleotides in $seq_file
-#  $tblout_file:     string for name of concatenated tblout file to create
-#  $stdout_file:     string for name of concatenated tblout file to create
-#  $progress_w:      width for outputProgressPrior output
-#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
-#  $ofile_info_HHR:  REF to 2D hash of output file information
-#
-# Returns:     void
-# 
-# Dies: If an executable doesn't exist, or cmsearch command fails if we're running locally
-################################################################# 
-sub run_cmsearch_wrapper { 
-  my $sub_name = "run_cmsearch_wrapper";
-  my $nargs_expected = 13;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($execs_HR, $seqlen_HR, $out_root, $opts, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $tblout_file, $stdout_file, $progress_w, $opt_HHR, $ofile_info_HHR) = @_;
-
-  my $program_choice = "cmsearch";
-  my @tmp_seq_file_A = ();    # array of sequence files created by splitting the input sequence file
-  my @tmp_tblout_file_A = (); # array of tblout files, we'll remove after we're done, unless --keep
-  my @tmp_stdout_file_A = (); # array of cmsearch stdout files, we'll remove after we're done, unless --keep
-  my @tmp_err_file_A = ();    # array of error files we'll remove after we're done, unless --keep (empty if we run locally)
-  my $nfasta_created = 0;     # number of fasta files created by splitting input file
-  my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
-  my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
-  my $start_secs; # timing start
-  my $out_dir = ribo_RemoveFileTail($out_root);
-
-  if(! opt_Get("-p", $opt_HHR)) { 
-    # run jobs locally
-    # $start_secs = ofile_OutputProgressPrior("Running $program_choice locally", $progress_w, $log_FH, *STDOUT);
-    my $tmp_tblout_file = $out_root . ".tblout";
-    my $tmp_stdout_file = $out_root . ".stdout";
-    run_cmsearch($execs_HR->{"$program_choice"}, undef, undef, $model_file, $seq_file, $opts, $stdout_file, $tblout_file, $opt_HHR, $ofile_info_HHR); # undefs: run locally
-    # ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-  }
-  else { 
-    # we need to split up the sequence file, and submit a separate set of cmsearch jobs for each
-    my $nfasta_created = fasta_file_split_randomly($seq_file, \%seqlen_H, $out_dir, $tot_nseq, $tot_nnt, opt_Get("--nkb", $opt_HHR) * 1000, opt_Get("-s", $opt_HHR), $ofile_info_HHR->{"FH"});
-
-    # submit all jobs to the farm
-    for(my $f = 1; $f <= $nfasta_created; $f++) { 
-      my $seq_file_tail   = ribo_RemoveDirPath($seq_file);
-      my $tmp_seq_file    = $out_dir . "." . $seq_file_tail . "." . $f;
-      my $tmp_tblout_file = $tmp_seq_file . ".tblout";
-      my $tmp_stdout_file = $tmp_seq_file . ".cmsearch";
-      my $tmp_err_file    = $tmp_seq_file . ".err";
-      push(@tmp_seq_file_A,    $tmp_seq_file);
-      push(@tmp_tblout_file_A, $tmp_tblout_file);
-      push(@tmp_stdout_file_A, $tmp_stdout_file);
-      push(@tmp_err_file_A,    $tmp_err_file);
-      run_cmsearch($execs_HR->{"$program_choice"}, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, $tmp_stdout_file, $tmp_tblout_file, $opt_HHR, $ofile_info_HHR); 
-    }
-    
-    # wait for the jobs to finish
-    ofile_OutputString($log_FH, 1, sprintf("\n"));
-    $start_secs = ribo_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
-                                      $progress_w, $log_FH, *STDOUT);
-    my $njobs_finished = ribo_WaitForFarmJobsToFinish(\@tmp_tblout_file_A, \@tmp_err_file_A, "[ok]", opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
-    if($njobs_finished != $nfasta_created) { 
-      ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
-    }
-    ofile_OutputString($log_FH, 1, "# "); # necessary because waitForFarmJobsToFinish() creates lines that summarize wait time and so we need a '#' before 'done' printed by outputProgressComplete()
-
-    # concatenate all the tblout files into one 
-    ribo_ConcatenateListOfFiles(\@tmp_tblout_file_A, $tblout_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
-    ribo_ConcatenateListOfFiles(\@tmp_stdout_file_A, $stdout_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
-    # remove temporary files if --keep not enabled
-    if(! opt_Get("--keep", $opt_HHR)) { 
-      foreach my $tmp_file (@tmp_seq_file_A, @tmp_tblout_file_A, @tmp_stdout_file_A, @tmp_err_file_A) { 
-        if(-e $tmp_file) { 
-          ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
-        }
-      }
-    }
-  } # end of 'else' entered if -p used
-
-  return;
-}
-
-#################################################################
-# Subroutine: run_cmsearch
-# Incept:     EPN, Thu Jul  5 15:05:53 2018
-#
-# Purpose:    Perform a search using cmsearch and store information 
-#             on the output files
-#
-# Arguments:
-#   $cmsearch:       path to cmsearch executable
-#   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
-#   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
-#   $model_file:     path to model file to use 
-#   $seq_file:       sequence file to search against
-#   $opts:           options to provide to cmsearch
-#   $stdout_file:    name of stdout file to create
-#   $tblout_file:    name of tblout file to create
-#   $opt_HHR:        ref to 2D hash of cmdline options
-#   $ofile_info_HHR: ref to the ofile info 2D hash
-#
-# Returns:  void
-# 
-# Dies:     Never
-#
-#################################################################
-sub run_cmsearch { 
-  my $sub_name = "run_cmsearch()";
-  my $nargs_expected = 10;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($executable, $qsub_prefix, $qsub_suffix, $model_file, $seq_file, $opts, $stdout_file, $tblout_file, $opt_HHR, $ofile_info_HHR) = @_;
-
-  # we can only pass $FH_HR to ofile_FAIL if that hash already exists
-  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
-
-  ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, undef, $sub_name, 1); 
-
-  # determine if we are running on the farm or locally
-  my $cmd = "";
-  my $do_local = 1;
-  my $cmd_suffix = "";
-  if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-    $cmd = $qsub_prefix;
-    $cmd_suffix = $qsub_suffix;
-    # replace ![errfile]! with $errfile
-    # replace ![jobname]! with $jobname
-    my $jobname = "j" . ribo_RemoveDirPath($seq_file);
-    my $errfile = $seq_file . ".err";
-    if(-e $errfile) { ribo_RemoveFileUsingSystemRm($errfile, $sub_name, $opt_HHR, $ofile_info_HHR); }
-    $cmd =~ s/\!\[errfile\]\!/$errfile/g;
-    $cmd =~ s/\!\[jobname\]\!/$jobname/g;
-    $do_local = 0;
-  }
-
-  $cmd .= "$executable $opts --tblout $tblout_file $model_file $seq_file > $stdout_file" . $cmd_suffix;
-
-  # remove the tblout file if it exists, this is important because we'll use the existence and
-  # final line of this file to determine when the jobs are finished, if it already exists, we'll
-  # think the job is finished before it actual is.
-  if(-e $tblout_file) { ribo_RemoveFileUsingSystemRm($tblout_file, $sub_name, $opt_HHR, $ofile_info_HHR); }
-
-  # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
-  # else submit it to the farm and return, caller will deal with monitoring it
-  ribo_RunCommand($cmd, opt_Get("-v", $opt_HHR), $FH_HR);
-
-  return;
-}
-
-#################################################################
-# Subroutine: sum_seqlen_given_array
-# Incept:     EPN, Fri Jul  6 09:30:43 2018
-#
-# Purpose:    Given an array of sequence names and a hash with 
-#             lengths for each, return total length for all 
-#             sequences.
-#
-# Arguments:
-#   $seqname_AR:  ref to array of sequence names
-#   $seqlen_HR:   ref to hash, key is sequence name, 
-#                 value is length
-#   $FH_HR:       ref to hash of file handles, including "cmd"
-#
-# Returns:  void
-# 
-# Dies:     If sequence listed in @{$seqname_AR} is not in %{$seqlen_HR}
-#
-#################################################################
-sub sum_seqlen_given_array { 
-  my $sub_name = "sum_seqlen_given_array()";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($seqname_AR, $seqlen_HR, $FH_HR) = @_;
-  
-  my $tot_seqlen = 0;
-  foreach my $seqname (@{$seqname_AR}) { 
-    if(! exists $seqlen_HR->{$seqname}) { 
-      ofile_FAIL("ERROR in $sub_name, $seqname does not exist in the seqlen_H hash", "RIBO", 1, $FH_HR);
-    }
-    $tot_seqlen += $seqlen_HR->{$seqname};
-  }
-
-  return $tot_seqlen;
-}
-
-#################################################################
-# Subroutine: fasta_file_split_randomly
-# Incept:     EPN, Fri Jul  6 09:56:37 2018
-#
-# Purpose:    Given a fasta file and a hash with sequence lengths
-#             for all sequences in the file, split the file into
-#             <n> files randomly, such that each sequence is randomly
-#             placed in one of the <n> files with the exception that
-#             the first i=1 to <n> sequences are placed in files 
-#             1 to <n> (so that each file gets at least one sequence).
-#
-# Arguments:
-#   $fa_file:     the fasta file
-#   $seqlen_HR:   ref to hash, key is sequence name, value is sequence length
-#   $out_dir:     output directory for placing sequence files
-#   $tot_nseq:    total number of sequences
-#   $tot_nres:    total number of nucleotides in all sequences
-#   $targ_nres:   target number of residues per file
-#   $rng_seed:    seed for srand(), to seed RNG, undef to not seed it
-#   $FH_HR:       ref to hash of file handles, including "cmd"
-# 
-# Returns:  Number of files created.
-# 
-# Dies:     If we trouble parsing/splitting the fasta file
-#################################################################
-sub fasta_file_split_randomly {
-  my $sub_name = "fasta_file_split_randomly()";
-  my $nargs_expected = 8;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  #my $random_number = int(rand(100));
-  my ($fa_file, $seqlen_HR, $out_dir, $tot_nseq, $tot_nres, $targ_nres, $rng_seed, $FH_HR) = @_;
-
-  my $do_debug = 0;
-
-  my $in_FH = undef;
-  open($in_FH, $fa_file) || ofile_FileOpenFailure($fa_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
-  
-  if(defined $rng_seed) { srand($rng_seed); }
-
-  # determine number of files to create
-  my $nfiles = int($tot_nres / $targ_nres);
-  # nfiles must be less than or equal to: $nseq and 300
-  if($nfiles > $nseq) { $nfiles = $nseq; }
-  if($nfiles > 300)   { $nfiles = 300; }
-  $targ_nres = int($tot_nres / $nfiles);
-
-  # We need to open up all output file handles at once, we'll randomly
-  # choose which one to print each sequence to. We need to keep track
-  # of total length of all sequences output to each file so we know
-  # when to close them. Once a file is closed, we won't choose to
-  # write to it anymore, using the @map_A array as follows:
-  #
-  # We define an array @r2f_map_A with an element for each of the $nfiles
-  # output files. For each sequence, we randomly choose a number
-  # between 0 and $nfiles-1 to pick which output file to write the
-  # sequence to. Initially $r2f_map_A[$i] == $i, but when if we close file
-  # $i we set $r2f_map_A[$i] to $r2f_map_A[$nremaining-1], then choose a
-  # random int between 0 and $nremaining-1. This gets us a random
-  # sample without replacement. 
-  #
-  # @f2r_map_A is the inverse of @r2f_mapA, which we need only so that
-  # we can guarantee that each file gets at least 1 sequence.
-  # 
-  my @r2f_map_A = ();  # map of random index to file number, $r2f_map_A[$ridx] = file number that random choice $ridx pertains to
-  my @f2r_map_A = ();  # map of file number to random index, $f2r_map_A[$fidx] = random choice $ridx that file number $fidx pertains to
-  my @nres_per_out_A = ();
-  my $nres_tot_out = 0;  # total number of sequences output thus far
-  my @nseq_per_out_A = ();
-  my @out_filename_A = (); # array of file names
-  my @out_FH_A = (); # [0..$nfiles-1], the actual open file handles
-  my @isopen_A = (); # [0..$i..$nfiles-1], '1' if file $i is open, '0' if it has been closed
-  my $nopen = 0; # number of files that are still open
-  my $checkpoint_fraction_step = 0.05; # if($do_randomize) we will output update each time this fraction of total sequence has been output
-  my $checkpoint_fraction = $checkpoint_fraction_step;
-  my $checkpoint_nres = $checkpoint_fraction * $tot_nres;
-  my $fidx; # file index of current file in @out_filename_A and file handle in @out_FH_A
-  my $nres_this_seq = 0; # number of residues in current file
-  
-  # variables only used if $do_randomize
-  my $ridx; # randomly selected index in @map_A for current sequence
-  my $FH; # pointer to current file handle to print to
-  my $nseq_remaining = $tot_nseq;
-  my $nseq_output    = 0;
-  my $fa_file_tail = ribo_RemoveDirPath($fa_file);
-
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { $r2f_map_A[$fidx] = $fidx; }
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { $f2r_map_A[$fidx] = $fidx; }
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { $nres_per_out_A[$fidx] = 0; }
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { $nseq_per_out_A[$fidx] = 0; }
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { $out_filename_A[$fidx] = $out_dir . "." . $fa_file_tail . "." . ($fidx+1); } 
-
-  # open up all output file handles, else open only the first
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { 
-    open($out_FH_A[$fidx], ">", $out_filename_A[$fidx]) || ofile_FileOpenFailure($out_filename_A[$fidx], "RIBO", $sub_name, $!, "writing", $FH_HR);
-    $isopen_A[$fidx] = 1;
-  }
-  $nopen = $nfiles; # will be decremented as we close files
-
-  # read file until we see the first header line
-  my ($next_header_line, $next_seqname) = fasta_file_read_and_output_next_seq($in_FH, undef, $FH_HR); 
-  # this will die if any non-whitespace characters exist before first header line
-
-  while($nseq_remaining > 0) { 
-    if(! defined $next_header_line) { 
-      ofile_FAIL("ERROR in $sub_name, read too few sequences in $fa_file, read expected $tot_nseq", "RIBO", 1, $FH_HR); 
-    }
-    if(! exists $seqlen_HR->{$next_seqname}) { 
-      ofile_FAIL("ERROR in $sub_name, no sequence length information exists for $next_seqname", "RIBO", 1, $FH_HR);
-    }
-    $nres_this_seq = $seqlen_HR->{$next_seqname};
-
-    # first $nfiles sequences go to file $nseq_output so we guarantee we have >= 1 seq per file, 
-    # remaining seqs are randomly placed
-    if($nseq_output < $nfiles) { 
-      $fidx = $nseq_output;
-      $ridx = $f2r_map_A[$fidx];
-    }
-    else { 
-      $ridx = int(rand($nopen)); 
-      $fidx = $r2f_map_A[$ridx];
-    }
-    $FH = $out_FH_A[$fidx];
-
-    # output seq
-    print $FH $next_header_line; 
-    ($next_header_line, $next_seqname) = fasta_file_read_and_output_next_seq($in_FH, $FH, $FH_HR);
-    
-    $nseq_remaining--;
-    $nseq_output++;
-    
-    # update counts of sequences and residues for the file we just printed to
-    $nres_per_out_A[$fidx] += $nres_this_seq;
-    $nseq_per_out_A[$fidx]++;
-    $nres_tot_out += $nres_this_seq;
-
-    # if we've reached our checkpoint output update
-    if($do_debug && ($nres_tot_out > $checkpoint_nres)) { 
-      my $nfiles_above_fract = 0;
-      for(my $tmp_fidx = 0; $tmp_fidx < $nfiles; $tmp_fidx++) { 
-        if($nres_per_out_A[$tmp_fidx] > ($checkpoint_fraction * $targ_nres)) { $nfiles_above_fract++; }
-      }
-      $checkpoint_fraction += $checkpoint_fraction_step;
-      $checkpoint_nres = $checkpoint_fraction * $tot_nres;
-    }
-
-    # check if we need to close this file now, if so close it and open a new one (if nec)
-    if(($nres_per_out_A[$fidx] >= $targ_nres) || ($nseq_remaining == 0)) { 
-      if(($nopen > 1) || ($nseq_remaining == 0)) { 
-        # don't close the final file unless we have zero sequences left
-        close($out_FH_A[$fidx]);
-        $isopen_A[$fidx] = 0;
-        if($do_debug) { printf("$out_filename_A[$fidx] finished (%d seqs, %d residues)\n", $nseq_per_out_A[$fidx], $nres_per_out_A[$fidx]); }
-        # update r2f_map_A so we can no longer choose the file handle we just closed 
-        if($ridx != ($nopen-1)) { # edge case
-          $r2f_map_A[$ridx] = $r2f_map_A[($nopen-1)];
-        }
-        $f2r_map_A[$r2f_map_A[($nopen-1)]] = $ridx; 
-        $r2f_map_A[($nopen-1)] = -1; # this random index is now invalid
-        $f2r_map_A[$fidx]      = -1; # this file is now closed
-        $nopen--;
-      }
-    }
-  }
-
-  # go through and close any files that are still open
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { 
-    if($isopen_A[$fidx] == 1) { 
-      # file still open, close it
-      close($out_FH_A[$fidx]);
-      if($do_debug) { printf("$out_filename_A[$fidx] finished (%d seqs, %d residues)\n", $nseq_per_out_A[$fidx], $nres_per_out_A[$fidx]); }
-    }
-  }
-
-  return $nfiles;
-}
-
-#################################################################
-# Subroutine: fasta_file_read_and_output_next_seq
-# Incept:     EPN, Fri Jul  6 11:04:52 2018
-#
-# Purpose:    Given an open input file handle for a fasta sequence
-#             and an open output file handle, read the next sequence and
-#             and output it to the output file, by outputting all lines
-#             we read until the next header line. Then return the
-#             header line we stopped reading on.
-#             If $out_FH is undef, do not output, which allows this
-#             function to be called to return the first header line
-#             of the file, but if $out_FH is undef, then require
-#             that all lines read before the header line are empty,
-#             else die.
-#
-# Arguments:
-#   $in_FH:       input file handle
-#   $out_FH:      output file handle, can be undef
-#   $FH_HR:       ref to hash of file handles, for printing errors if we die"
-# 
-# Returns:  2 values:
-#           $next_header_line: next header line in the file, undef 
-#                              if we do not read one before end of the file
-#           $next_seqname:     sequence name on next header line
-#
-# Dies:     If $out_FH is undef and there are non-whitespace characters
-#           prior to the first header line read.
-#           If $next_header_line is defined and we can't parse it to get the
-#           sequence name.
-#################################################################
-sub fasta_file_read_and_output_next_seq { 
-  my $sub_name = "fasta_file_read_and_output_next_seq";
-  my $nargs_expected = 3;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($in_FH, $out_FH, $FH_HR) = @_;
-
-  my $line = undef;
-  $line = <$in_FH>;
-  while((defined $line) && ($line !~ m/^\>/)) { 
-    # does this line have any nonwhitespace characters? 
-    if(! defined $out_FH) { 
-      chomp $line;
-      if($line =~ m/\S/) { 
-        ofile_FAIL("ERROR in $sub_name, read line with non-whitespace character when none were expected:\n$line", "RIBO", 1, $FH_HR);
-      }
-    }
-    else { 
-      print $out_FH $line;
-    }
-    $line = <$in_FH>; 
-  }
-  my $seqname = undef;
-  if(defined $line) { 
-    if($line =~ m/^\>(\S+)/) { 
-      $seqname = $1;
-    }
-    else { 
-      ofile_FAIL("ERROR in $sub_name, unable to parse sequence name from header line: $line", "RIBO", 1, $FH_HR);
-    }
-  }
-  
-  return ($line, $seqname);
-}

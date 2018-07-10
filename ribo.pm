@@ -159,49 +159,6 @@ sub ribo_OutputProgressComplete {
 }
 
 #################################################################
-# Subroutine:  old_ribo_RunCommand()
-# Incept:      EPN, Mon Dec 19 10:43:45 2016
-#
-# Purpose:     Runs a command using system() and exits in error 
-#              if the command fails. If $be_verbose, outputs
-#              the command to stdout. If $FH_HR->{"cmd"} is
-#              defined, outputs command to that file handle.
-#
-# Arguments:
-#   $cmd:         command to run, with a "system" command;
-#   $be_verbose:  '1' to output command to stdout before we run it, '0' not to
-#
-# Returns:    amount of time the command took, in seconds
-#
-# Dies:       if $cmd fails
-#################################################################
-sub old_ribo_RunCommand {
-  my $sub_name = "old_ribo_RunCommand()";
-  my $nargs_expected = 2;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($cmd, $be_verbose) = @_;
-  
-  if($be_verbose) { 
-    print ("Running cmd: $cmd\n"); 
-  }
-
-  my ($seconds, $microseconds) = gettimeofday();
-  my $start_time = ($seconds + ($microseconds / 1000000.));
-
-  system($cmd);
-
-  ($seconds, $microseconds) = gettimeofday();
-  my $stop_time = ($seconds + ($microseconds / 1000000.));
-
-  if($? != 0) { 
-    die "ERROR in $sub_name, the following command failed:\n$cmd\n";
-  }
-
-  return ($stop_time - $start_time);
-}
-
-#################################################################
 # Subroutine:  ribo_RunCommand()
 # Incept:      EPN, Mon Dec 19 10:43:45 2016
 #
@@ -773,6 +730,32 @@ sub ribo_RemoveDirPath {
   return $fullpath;
 }
 
+#################################################################
+# Subroutine : ribo_RemoveFileTail()
+# Incept:      EPN, Mon Jul  9 11:12:56 2018
+#
+# Purpose:     Given a full path of a file remove the file
+#              For example: "foodir/foodir2/foo.stk" becomes "foodir/foodir2/"
+#
+# Arguments: 
+#   $fullpath: name of original file
+# 
+# Returns:     The string $fullpath with file removed. If there is no
+#              directory in the path, returns unaltered $fullpath (name of file).
+#
+################################################################# 
+sub ribo_RemoveFileTail {
+  my $sub_name = "ribo_RemoveFileTail()";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my $fullpath = $_[0];
+  
+  $fullpath =~ s/\/[\/]+/\//;
+
+  return $fullpath;
+}
+
 
 #################################################################
 # Subroutine : ribo_ConvertFetchedNameToAccVersion()
@@ -877,6 +860,967 @@ sub ribo_ParseRLCModelinfoFile {
 
   return;
 }
+
+#################################################################
+# Subroutine : ribo_WaitForFarmJobsToFinish()
+# Incept:      EPN, Thu Jul  5 14:45:46 2018
+#              EPN, Mon Feb 29 16:20:54 2016 [dnaorg_scripts:waitForFarmJobsToFinish()]
+#
+# Purpose: Wait for jobs on the farm to finish by checking the final
+#          line of their output files (in @{$outfile_AR}) to see
+#          if the final line is exactly the string
+#          $finished_string. We'll wait a maximum of $nmin
+#          minutes, then return the number of jobs that have
+#          finished. If all jobs finish before $nmin minutes we
+#          return at that point.
+#
+#          A job is considered 'finished in error' if it outputs
+#          anything to its err file in @{$errfile_AR}. (We do not kill
+#          the job, although for the jobs we are monitoring with this
+#          subroutine, it should already have died (though we don't
+#          guarantee that in anyway).) If any jobs 'finish in error'
+#          this subroutine will continue until all jobs have finished
+#          or we've waited $nmin minutes and then it will cause the
+#          program to exit in error and output an error message
+#          listing the jobs that have 'finished in error'
+#          
+#          When $do_errcheck is 1, this function considers any output
+#          written to stderr output files in @{$errfile_AR} to mean
+#          that the corresponding job has 'failed' and should be
+#          considered to have finished. When $do_errchecks is 0
+#          we don't look at the err files.
+# 
+#
+# Arguments: 
+#  $outfile_AR:      ref to array of output files that will be created by jobs we are waiting for
+#  $errfile_AR:      ref to array of err files that will be created by jobs we are waiting for if 
+#                    any stderr output is created
+#  $finished_str:    string that indicates a job is finished e.g. "[ok]"
+#  $nmin:            number of minutes to wait
+#  $do_errcheck:     '1' to consider output to an error file a 'failure' of a job, '0' not to.
+#  $FH_HR:           REF to hash of file handles
+#
+# Returns:     Number of jobs (<= scalar(@{$outfile_AR})) that have
+#              finished.
+# 
+# Dies: never.
+#
+################################################################# 
+sub ribo_WaitForFarmJobsToFinish { 
+  my $sub_name = "ribo_WaitForFarmJobsToFinish()";
+  my $nargs_expected = 6;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($outfile_AR, $errfile_AR, $finished_str, $nmin, $do_errcheck, $FH_HR) = @_;
+
+  my $log_FH = $FH_HR->{"log"};
+
+  my $njobs = scalar(@{$outfile_AR});
+  if($njobs != scalar(@{$errfile_AR})) { 
+    ofile_FAIL(sprintf("ERROR in $sub_name, number of elements in outfile array ($njobs) differ from number of jobs in errfile array (%d)", scalar(@{$errfile_AR})), 1, $FH_HR);
+  }
+  my @is_finished_A  = ();  # $is_finished_A[$i] is 1 if job $i is finished (either successfully or having failed), else 0
+  my @is_failed_A    = ();  # $is_failed_A[$i] is 1 if job $i has finished and failed (all failed jobs are considered 
+                            # to be finished), else 0. We only use this array if the --errcheck option is enabled.
+  my $nfinished      = 0;   # number of jobs finished
+  my $nfail          = 0;   # number of jobs that have failed
+  my $cur_sleep_secs = 15;  # number of seconds to wait between checks, we'll double this until we reach $max_sleep, every $doubling_secs seconds
+  my $doubling_secs  = 120; # number of seconds to wait before doublign $cur_sleep
+  my $max_sleep_secs = 120; # maximum number of seconds we'll wait between checks
+  my $secs_waited    = 0;   # number of total seconds we've waited thus far
+
+  # initialize @is_finished_A to all '0's
+  for(my $i = 0; $i < $njobs; $i++) { 
+    $is_finished_A[$i] = 0;
+    $is_failed_A[$i] = 0;
+  }
+
+  my $keep_going = 1;  # set to 0 if all jobs are finished
+  ofile_OutputString($log_FH, 1, "\n");
+  while(($secs_waited < (($nmin * 60) + $cur_sleep_secs)) && # we add $cur_sleep so we check one final time before exiting after time limit is reached
+        ($keep_going)) { 
+    # check to see if jobs are finished, every $cur_sleep seconds
+    sleep($cur_sleep_secs);
+    $secs_waited += $cur_sleep_secs;
+    if($secs_waited >= $doubling_secs) { 
+      $cur_sleep_secs *= 2;
+      if($cur_sleep_secs > $max_sleep_secs) { # reset to max if we've exceeded it
+        $cur_sleep_secs = $max_sleep_secs;
+      }
+    }
+
+    for(my $i = 0; $i < $njobs; $i++) { 
+      if(! $is_finished_A[$i]) { 
+        if(-s $outfile_AR->[$i]) { 
+          my $final_line = `tail -n 1 $outfile_AR->[$i]`;
+          chomp $final_line;
+          if($final_line =~ m/\r$/) { chop $final_line; } # remove ^M if it exists
+          if($final_line =~ m/\Q$finished_str\E/) { 
+            $is_finished_A[$i] = 1;
+            $nfinished++;
+          }
+        }
+        if(($do_errcheck) && (-s $errfile_AR->[$i])) { # errfile exists and is non-empty, this is a failure, even if we saw $finished_str above
+          if(! $is_finished_A[$i]) { 
+            $nfinished++;
+          }
+          $is_finished_A[$i] = 1;
+          $is_failed_A[$i] = 1;
+          $nfail++;
+        }
+      }
+    }
+
+    # output update
+    ofile_OutputString($log_FH, 1, sprintf("#\t%4d of %4d jobs finished (%.1f minutes spent waiting)\n", $nfinished, $njobs, $secs_waited / 60.));
+
+    if($nfinished == $njobs) { 
+      # we're done break out of it
+      $keep_going = 0;
+    }
+  }
+
+  if($nfail > 0) { 
+    # construct error message
+    my $errmsg = "ERROR in $sub_name, $nfail of $njobs finished in error (output to their respective error files).\n";
+    $errmsg .= "Specifically the jobs that were supposed to create the following output and err files:\n";
+    for(my $i = 0; $i < $njobs; $i++) { 
+      if($is_failed_A[$i]) { 
+        $errmsg .= "\t$outfile_AR->[$i]\t$errfile_AR->[$i]\n";
+      }
+    }
+    ofile_FAIL($errmsg, 1, $FH_HR);
+  }
+
+  # if we get here we have no failures
+  return $nfinished;
+}
+
+#################################################################
+# Subroutine: ribo_RemoveFileUsingSystemRm
+# Incept:     EPN, Fri Mar  4 15:57:25 2016 [dnaorg_scripts]
+#
+# Purpose:    Remove a file from the filesystem by using
+#             the system rm command.
+# Arguments:
+#   $file:            file to remove
+#   $caller_sub_name: name of caller, can be undef
+#   $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#   $FH_HR:           REF to hash of file handles, including "log" and "cmd"
+# 
+# Returns: void
+#
+# Dies:    - if the file does not exist
+#
+#################################################################
+sub ribo_RemoveFileUsingSystemRm { 
+  my $sub_name = "ribo_RemoveFileUsingSystemRm";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+ 
+  my ($file, $caller_sub_name, $opt_HHR, $FH_HR) = (@_);
+  
+  if(! -e $file) { 
+    DNAORG_FAIL(sprintf("ERROR in $sub_name, %s trying to remove file $file but it does not exist", 
+                (defined $caller_sub_name) ? "called by $caller_sub_name," : 0), 1, $FH_HR); 
+  }
+
+  ribo_RunCommand("rm $file", opt_Get("-v", $opt_HHR), $FH_HR);
+
+  return;
+}
+
+#################################################################
+# Subroutine : ribo_ConcatenateListOfFiles()
+# Incept:      EPN, Sun Apr 24 08:08:15 2016 [dnaorg_scripts]
+#
+# Purpose:     Concatenate a list of files into one file.
+#              If the list has more than 500 files, split
+#              up job into concatenating 500 at a time.
+# 
+#              We remove all files that we concatenate unless
+#              --keep option is on in %{$opt_HHR}.
+#
+# Arguments: 
+#   $file_AR:          REF to array of all files to concatenate
+#   $outfile:          name of output file to create by concatenating
+#                      all files in @{$file_AR}.
+#   $caller_sub_name:  name of calling subroutine (can be undef)
+#   $opt_HHR:          REF to 2D hash of option values, see top of epn-options.pm for description
+#   $FH_HR:            ref to hash of file handles
+# 
+# Returns:     Nothing.
+# 
+# Dies:        If one of the cat commands fails.
+#              If $outfile is in @{$file_AR}
+#              If @{$file_AR} contains more than 800*800 files
+#              (640K) if so, we may need to call this function
+#              recursively twice (that is, recursive call will
+#              also call itself recursively) and we don't have 
+#              a sophisticated enough temporary file naming
+#              strategy to handle that robustly.
+################################################################# 
+sub ribo_ConcatenateListOfFiles { 
+  my $nargs_expected = 5;
+  my $sub_name = "ribo_ConcatenateListOfFiles()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($file_AR, $outfile, $caller_sub_name, $opt_HHR, $FH_HR) = @_;
+
+  if(ribo_FindNonNumericValueInArray($file_AR, $outfile, $FH_HR) != -1) { 
+    ofile_FAIL(sprintf("ERROR in $sub_name%s, output file name $outfile exists in list of files to concatenate", 
+                       (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), 1, $FH_HR);
+  }
+
+  # first, convert @{$file_AR} array into a 2D array of file names, each of which has 
+  # a max of 800 elements, we'll concatenate each of these lists separately
+  my $max_nfiles = 800;
+  my $nfiles = scalar(@{$file_AR});
+
+  if($nfiles > ($max_nfiles * $max_nfiles)) { 
+    ofile_FAIL(sprintf("ERROR in $sub_name%s, trying to concatenate %d files, our limit is %d", 
+                       (defined $caller_sub_name) ? " called by $caller_sub_name" : "", $nfiles, $max_nfiles * $max_nfiles), 
+               1, $FH_HR);
+  }
+    
+  my ($idx1, $idx2); # indices in @{$file_AR}, and of secondary files
+  my @file_AA = ();
+  $idx2 = -1; # get's incremented to 0 in first loop iteration
+  for($idx1 = 0; $idx1 < $nfiles; $idx1++) { 
+    if(($idx1 % $max_nfiles) == 0) { 
+      $idx2++; 
+      @{$file_AA[$idx2]} = (); # initialize
+    }
+    push(@{$file_AA[$idx2]}, $file_AR->[$idx1]);
+  }
+  
+  my $nconcat = scalar(@file_AA);
+  my @tmp_outfile_A = (); # fill this with names of temporary files we create
+  my $tmp_outfile; # name of an output file we'll create
+  for($idx2 = 0; $idx2 < $nconcat; $idx2++) { 
+    if($nconcat == 1) { # special case, we don't need to create any temporary files
+      $tmp_outfile = $outfile;
+    }
+    else { 
+      $tmp_outfile = $outfile . ".tmp" . ($idx2+1); 
+      # make sure this file does not exist in @{$file_AA[$idx2]} to avoid klobbering
+      # if it does, continue to append .tmp($idx2+1) until it doesn't
+      while(ribo_FindNonNumericValueInArray($file_AA[$idx2], $tmp_outfile, $FH_HR) != -1) { 
+        $tmp_outfile .= ".tmp" . ($idx2+1); 
+      }
+    }
+    # create the concatenate command
+    my $cat_cmd = "cat ";
+    foreach my $tmp_file (@{$file_AA[$idx2]}) {
+      $cat_cmd .= $tmp_file . " ";
+    }
+    $cat_cmd .= "> $tmp_outfile";
+
+    # execute the command
+    ribo_RunCommand($cat_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+
+    # add it to the array of temporary files
+    push(@tmp_outfile_A, $tmp_outfile); 
+  }
+
+  if(scalar(@tmp_outfile_A) > 1) { 
+    # we created more than one temporary output file, concatenate them
+    # by calling this function again
+    ribo_ConcatenateListOfFiles(\@tmp_outfile_A, $outfile, (defined $caller_sub_name) ? $caller_sub_name . ":" . $sub_name : $sub_name, $opt_HHR, $FH_HR);
+  }
+
+  if(! opt_Get("--keep", $opt_HHR)) { 
+    # remove all of the original files, be careful to not remove @tmp_outfile_A
+    # because the recursive call will handle that
+    foreach my $file_to_remove (@{$file_AR}) { 
+      ribo_RemoveFileUsingSystemRm($file_to_remove, 
+                                   (defined $caller_sub_name) ? $caller_sub_name . ":" . $sub_name : $sub_name, 
+                                   $opt_HHR, $FH_HR);
+    }
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine : ribo_FindNonNumericValueInArray()
+# Incept:      EPN, Tue Feb 16 10:40:57 2016
+#
+# Purpose:     Returns (first) index in @{$AR} that has the 
+#              nonnumeric value $value. Returns -1 
+#              if it does not exist.
+#
+# Arguments: 
+#   $AR:       REF to array 
+#   $value:    the value we're checking exists in @{$AR}
+#   $FH_HR:    REF to hash of file handles, including "log" and "cmd"
+# 
+# Returns:     index ($i) '1' if $value exists in @{$AR}, '-1' if not
+#
+# Dies:        if $value is numeric, or @{$AR} is not defined.
+################################################################# 
+sub ribo_FindNonNumericValueInArray { 
+  my $nargs_expected = 3;
+  my $sub_name = "findNonNumericValueInArray()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($AR, $value, $FH_HR) = @_;
+
+  if(verify_real($value)) { 
+    ofile_FAIL("ERROR in $sub_name, value $value seems to be numeric, we can't compare it for equality", 1, $FH_HR);
+  }
+
+  if(! defined $AR) { 
+    ofile_FAIL("ERROR in $sub_name, array reference is not defined", 1, $FH_HR);
+  }
+
+  for(my $i = 0; $i < scalar(@{$AR}); $i++) {
+    if($AR->[$i] eq $value) { 
+      return $i; 
+    }
+  }
+
+  return -1; # did not find it
+}
+
+
+#################################################################
+# Subroutine : ribo_ParseQsubFile()
+# Incept:      EPN, Mon Jul  9 10:30:41 2018
+#
+# Purpose:     Parse a file that specifies the qsub command to use
+#              when submitting jobs to the farm. The file should 
+#              have exactly 2 non-'#' prefixed lines. Chomp each
+#              and return them.
+#              
+# Arguments: 
+#   $qsub_file:  file to parse
+#   $FH_HR:      REF to hash of file handles
+#
+# Returns:     2 values:
+#              $qsub_prefix: string that is the qsub command prior to the 
+#                            actual cmsearch/cmalign command
+#              $qsub_suffix: string that is the qsub command after the 
+#                            actual cmsearch/cmalign command
+# 
+# Dies:        If we can't parse the qsub file because it is not
+#              in the correct format.
+#
+################################################################# 
+sub ribo_ParseQsubFile { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseQsubFile";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($qsub_file, $FH_HR) = @_;
+
+  open(IN, $qsub_file) || ofile_FileOpenFailure($qsub_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $qsub_prefix_line = undef;
+  my $qsub_suffix_line = undef;
+  while(my $line = <IN>) { 
+    if($line !~ m/^\#/) { 
+      chomp $line;
+      if   (! defined $qsub_prefix_line) { $qsub_prefix_line = $line; }
+      elsif(! defined $qsub_suffix_line) { $qsub_suffix_line = $line; }
+      else { # both $qsub_prefix_line and $qsub_suffix_line are defined, this shouldn't happen
+        ofile_FAIL("ERROR in $sub_name, read more than 2 non-# prefixed lines in file $qsub_file:\n$line\n", "RIBO", $?, $FH_HR);
+      }
+    }
+  }
+  close(IN);
+  
+  if(! defined $qsub_prefix_line) { 
+    ofile_FAIL("ERROR in $sub_name, read zero non-# prefixed lines in file $qsub_file, but expected 2", "RIBO", $?, $FH_HR);
+  }
+  if(! defined $qsub_suffix_line) { 
+    ofile_FAIL("ERROR in $sub_name, read only one non-# prefixed lines in file $qsub_file, but expected 2", "RIBO", $?, $FH_HR);
+  }
+
+  return($qsub_prefix_line, $qsub_suffix_line);
+}
+
+#################################################################
+# Subroutine: ribo_RunCmsearchOrCmalign
+# Incept:     EPN, Thu Jul  5 15:05:53 2018
+#
+# Purpose:    Perform a search using cmsearch and store information 
+#             on the output files
+#
+# Arguments:
+#   $executable:     path to cmsearch or cmalign executable
+#   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
+#   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
+#   $model_file:     path to model file to use 
+#   $seq_file:       sequence file to search against
+#   $opts:           options to provide to cmsearch or cmalign
+#   $outfile_HR:     ref to hash, 
+#                    if $executable eq "cmsearch", keys must be "tblout" and "stdout"
+#                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", and "stdout"
+#   $opt_HHR:        ref to 2D hash of cmdline options
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub ribo_RunCmsearchOrCmalign { 
+  my $sub_name = "ribo_RunCmsearchOrCmalign()";
+  my $nargs_expected = 9;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($executable, $qsub_prefix, $qsub_suffix, $model_file, $seq_file, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  # we can only pass $FH_HR to ofile_FAIL if that hash already exists
+  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
+  my @reqd_outfile_keys = (); # array of required outfile_HR keys for this executable program
+  my $outfile_key = undef;    # a single outfile key
+
+  ribo_CheckIfFileExistsAndIsNonEmpty($seq_file,   undef, $sub_name, 1); 
+  ribo_CheckIfFileExistsAndIsNonEmpty($model_file, undef, $sub_name, 1); 
+
+  # determine if we have the appropriate paths defined in %{$outfile_HR} 
+  # depending on if $executable is "cmalign" or "cmsearch"
+  if($executable =~ /cmsearch$/) { 
+    @reqd_outfile_keys = ("cmsearch", "tblout");
+  }
+  elsif($executable =~ /cmalign$/) { 
+    @reqd_outfile_keys = ("cmalign", "stk", "ifile", "elfile");
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
+  }
+  foreach $outfile_key (@reqd_outfile_keys) { 
+    if(! exists $outfile_HR->{$outfile_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $outfile_key file not set", "RIBO", 1, $FH_HR); }
+    # remove this file if it already exists
+    if(-e $outfile_HR->{$outfile_key}) { ribo_RemoveFileUsingSystemRm($outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
+  } 
+
+  # determine if we are running on the farm or locally
+  my $cmd = "";
+  my $do_local = 1;
+  my $cmd_suffix = "";
+  if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
+    $cmd = $qsub_prefix;
+    $cmd_suffix = $qsub_suffix;
+    # replace ![errfile]! with $errfile
+    # replace ![jobname]! with $jobname
+    my $jobname = "j" . ribo_RemoveDirPath($seq_file);
+    my $errfile = $seq_file . ".err";
+    if(-e $errfile) { ribo_RemoveFileUsingSystemRm($errfile, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    $cmd =~ s/\!\[errfile\]\!/$errfile/g;
+    $cmd =~ s/\!\[jobname\]\!/$jobname/g;
+    $do_local = 0;
+  }
+
+  # determine if we have the appropriate paths defined in %{$outfile_HR} 
+  # depending on if $executable is "cmalign" or "cmsearch"
+  # and run the program
+  if($executable =~ /cmsearch$/) { 
+    $cmd .= "$executable $opts --tblout $seq_file.tblout $model_file $seq_file > $seq_file.cmsearch" . $cmd_suffix;
+  }
+  elsif($executable =~ /cmalign$/) { 
+    $cmd .= "$executable $opts --ifile $seq_file.ifile --elfile $seq_file.elfile -o $seq_file.stk $model_file $seq_file > $seq_file.cmalign" . $cmd_suffix;
+  }
+
+  # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
+  # else submit it to the farm and return, caller will deal with monitoring it
+  ribo_RunCommand($cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  ribo_RunCmsearchOrCmalignWrapper()
+# Incept:      EPN, Thu Jul  5 15:24:19 2018
+#
+# Purpose:     Run one or more cmsearch jobs on the farm
+#              or locally, after possibly splitting up the input
+#              sequence file. 
+#              The following must all be valid options in opt_HHR:
+#              -p, --nkb, --wait, --keep, -v, --maxnjobs
+#              See ribotyper.pl for examples of these options.
+#
+# Arguments: 
+#  $executable:      path to cmsearch or cmalign executable
+#  $qsub_prefix:     qsub command prefix to use when submitting to farm, if -p
+#  $qsub_suffix:     qsub command suffix to use when submitting to farm, if -p
+#  $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
+#  $progress_w:      width for outputProgressPrior output
+#  $out_root:        output root for naming sequence files
+#  $model_file:      path to model file to use 
+#  $seq_file:        name of sequence file with all sequences to run against
+#  $tot_nseq:        number of sequences in $seq_file
+#  $tot_len_nt:      total length of all nucleotides in $seq_file
+#  $opts:            string of cmsearch or cmalign options
+#  $outfile_HR:      ref to hash, 
+#                    if $executable eq "cmsearch", keys must be "tblout" and "stdout"
+#                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", and "stdout"
+#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns:     void
+# 
+# Dies: If an executable doesn't exist, or cmsearch command fails if we're running locally
+################################################################# 
+sub ribo_RunCmsearchOrCmalignWrapper { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignWrapper";
+  my $nargs_expected = 14;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($executable, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
+  my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
+  my $start_secs; # timing start
+  my $out_dir = ribo_RemoveFileTail($out_root);
+  my @reqd_outfile_keys = (); # array of required outfile_HR keys for this executable program
+  my $outfile_key = undef;    # a single outfile key
+  my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
+
+  # determine if we have the appropriate paths defined in %{$outfile_HR} 
+  # depending on if $executable is "cmalign" or "cmsearch"
+  if($executable =~ /cmsearch$/) { 
+    @reqd_outfile_keys = ("cmsearch", "tblout");
+    $wait_key = "tblout";
+  }
+  elsif($executable =~ /cmalign$/) { 
+    @reqd_outfile_keys = ("cmalign", "stk", "ifile", "elfile");
+    $wait_key = "cmalign";
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
+  }
+  foreach $outfile_key (@reqd_outfile_keys) { 
+    if(! exists $outfile_HR->{$outfile_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $outfile_key file not set", "RIBO", 1, $FH_HR); }
+  } 
+
+  if(! opt_Get("-p", $opt_HHR)) { 
+    # run job locally
+    ribo_RunCmsearchOrCmalign($executable, undef, undef, $model_file, $seq_file, $opts, $outfile_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+  }
+  else { 
+    my %tmp_outfile_HA = (); # hash of arrays of temporary files for all jobs to concatenate or otherwise combine, and then remove
+    my %tmp_outfile_H  = (); # hash of temporary files for one job
+
+    # we need to split up the sequence file, and submit a separate set of cmsearch/cmalign jobs for each file
+    my $nfasta_created = ribo_FastaFileSplitRandomly($seq_file, $seqlen_HR, $out_dir, $tot_nseq, $tot_len_nt, opt_Get("--nkb", $opt_HHR) * 1000, opt_Get("-s", $opt_HHR), $ofile_info_HHR->{"FH"});
+
+    # submit all jobs to the farm
+    for(my $f = 1; $f <= $nfasta_created; $f++) { 
+      %tmp_outfile_H = ();
+      my $seq_file_tail = ribo_RemoveDirPath($seq_file);
+      my $tmp_seq_file  = $out_dir . "." . $seq_file_tail . "." . $f;
+      foreach $outfile_key ((@reqd_outfile_keys), "err") { 
+        $tmp_outfile_H{$outfile_key} = $tmp_seq_file . "." . $outfile_key;
+        push(@{$tmp_outfile_HA{$outfile_key}}, $tmp_outfile_H{$outfile_key});
+      }
+      ribo_RunCmsearchOrCmalign($executable, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, \%tmp_outfile_H, $opt_HHR, $ofile_info_HHR); 
+    }
+    
+    # wait for the jobs to finish
+    ofile_OutputString($log_FH, 1, sprintf("\n"));
+    $start_secs = ribo_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
+                                           $progress_w, $log_FH, *STDOUT);
+    my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, "[ok]", opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+    if($njobs_finished != $nfasta_created) { 
+      ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
+    }
+    ofile_OutputString($log_FH, 1, "# "); # necessary because waitForFarmJobsToFinish() creates lines that summarize wait time and so we need a '#' before 'done' printed by outputProgressComplete()
+
+    # concatenate/merge files into one 
+    foreach $outfile_key (@reqd_outfile_keys) { 
+      if($outfile_key eq "stk") { # special case
+        ribo_MergeAlignments($tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+      }
+      else { 
+        ribo_ConcatenateListOfFiles($tmp_outfile_HA{$outfile_key}, $outfile_HR->{$outfile_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+      }
+    }
+
+    # remove temporary files if --keep not enabled
+    if(! opt_Get("--keep", $opt_HHR)) { 
+      foreach $outfile_key ((@reqd_outfile_keys), "err") { 
+        foreach my $tmp_file (@{$tmp_outfile_HA{$outfile_key}}) {
+          if(-e $tmp_file) { 
+            ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+          }
+        }
+      }
+    }
+  } # end of 'else' entered if -p used
+
+  return;
+}
+
+#################################################################
+# Subroutine:  ribo_MergeAlignments()
+# Incept:      EPN, Tue Jul 10 09:14:49 2018
+#
+# Purpose:     Given an array of alignment files, merge them into one.
+#
+# Arguments: 
+#  $executable:      path to esl-alimerge executable
+#  $AR:              ref to array of files to merge
+#  $merged_stk_file: path to merged stk file to create
+#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns:     void
+# 
+# Dies: If esl-alimerge fails
+################################################################# 
+sub ribo_MergeAlignments { 
+  my $sub_name = "ribo_MergeAlignments";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($executable, $AR, $merged_stk_file, $opt_HHR, $ofile_info_HHR) = @_;
+
+  my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
+  my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
+
+  # create list file 
+  my $list_file = $merged_stk_file . ".list";
+  ribo_WriteArrayToFile($AR, $list_file, $FH_HR);
+
+  # merge the alignments with esl-alimerge
+  ribo_RunCommand($executable . " --outformat pfam --list $list_file > $merged_stk_file", opt_Get("-v", $opt_HHR), $FH_HR);
+
+  if(opt_Get("--keep", $opt_HHR)) { 
+    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$merged_stk_file.list", $merged_stk_file, 0, "list of alignment files merged to create " . ribo_RemoveDirPath($merged_stk_file));
+  }
+  else { 
+    ribo_RemoveFileUsingSystemRm($list_file, $sub_name, $opt_HHR, $FH_HR);
+  }
+
+  # caller is responsible for adding merged_stk_file to OutputInfo
+
+  return;
+}
+
+#################################################################
+# Subroutine : ribo_WriteArrayToFile()
+# Incept:      EPN, Thu May  4 14:11:03 2017
+#
+# Purpose:     Create a file with each element in an array on 
+#              a different line.
+#              
+# Arguments: 
+#   $AR:    reference to array 
+#   $file:  name of file to create
+#   $FH_HR: ref to hash of file handles, including "cmd"
+#
+# Returns:  Nothing.
+# 
+# Dies:     If $AR is empty.
+#
+################################################################# 
+sub ribo_WriteArrayToFile {
+  my $nargs_expected = 3;
+  my $sub_name = "ribo_WriteArrayToFile";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($AR, $file, $FH_HR) = @_;
+
+  if((! defined $AR) || (scalar(@{$AR}) == 0)) { 
+    ofile_FAIL("ERROR in $sub_name, array is empty or not defined", "RIBO", 1, $FH_HR);
+  }
+
+  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  foreach my $el (@{$AR}) { 
+    print OUT $el . "\n"; 
+  }
+  close(OUT);
+
+  return;
+}
+
+#################################################################
+# Subroutine: ribo_FastaFileSplitRandomly
+# Incept:     EPN, Fri Jul  6 09:56:37 2018
+#
+# Purpose:    Given a fasta file and a hash with sequence lengths
+#             for all sequences in the file, split the file into
+#             <n> files randomly, such that each sequence is randomly
+#             placed in one of the <n> files with the exception that
+#             the first i=1 to <n> sequences are placed in files 
+#             1 to <n> (so that each file gets at least one sequence).
+#
+# Arguments:
+#   $fa_file:     the fasta file
+#   $seqlen_HR:   ref to hash, key is sequence name, value is sequence length
+#   $out_dir:     output directory for placing sequence files
+#   $tot_nseq:    total number of sequences
+#   $tot_nres:    total number of nucleotides in all sequences
+#   $targ_nres:   target number of residues per file
+#   $rng_seed:    seed for srand(), to seed RNG, undef to not seed it
+#   $FH_HR:       ref to hash of file handles, including "cmd"
+# 
+# Returns:  Number of files created.
+# 
+# Dies:     If we trouble parsing/splitting the fasta file
+#################################################################
+sub ribo_FastaFileSplitRandomly { 
+  my $sub_name = "ribo_FastaFileSplitRandomly";
+  my $nargs_expected = 8;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  #my $random_number = int(rand(100));
+  my ($fa_file, $seqlen_HR, $out_dir, $tot_nseq, $tot_nres, $targ_nres, $rng_seed, $FH_HR) = @_;
+
+  my $do_debug = 0;
+
+  my $in_FH = undef;
+  open($in_FH, $fa_file) || ofile_FileOpenFailure($fa_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  
+  if(defined $rng_seed) { srand($rng_seed); }
+
+  printf("fa_file: $fa_file, tot_nseq: $tot_nseq, tot_nres: $tot_nres\n");
+
+  # determine number of files to create
+  my $nfiles = int($tot_nres / $targ_nres);
+  # nfiles must be less than or equal to: $nseq and 300
+  if($nfiles > $tot_nseq) { $nfiles = $tot_nseq; }
+  if($nfiles > 300)       { $nfiles = 300; }
+  $targ_nres = int($tot_nres / $nfiles);
+
+  if($nfiles <= 0) { 
+    ofile_FAIL("ERROR in $sub_name, trying to make $nfiles files", "RIBO", 1, $FH_HR);
+  }
+
+  # We need to open up all output file handles at once, we'll randomly
+  # choose which one to print each sequence to. We need to keep track
+  # of total length of all sequences output to each file so we know
+  # when to close them. Once a file is closed, we won't choose to
+  # write to it anymore, using the @map_A array as follows:
+  #
+  # We define an array @r2f_map_A with an element for each of the $nfiles
+  # output files. For each sequence, we randomly choose a number
+  # between 0 and $nfiles-1 to pick which output file to write the
+  # sequence to. Initially $r2f_map_A[$i] == $i, but when if we close file
+  # $i we set $r2f_map_A[$i] to $r2f_map_A[$nremaining-1], then choose a
+  # random int between 0 and $nremaining-1. This gets us a random
+  # sample without replacement. 
+  #
+  # @f2r_map_A is the inverse of @r2f_mapA, which we need only so that
+  # we can guarantee that each file gets at least 1 sequence.
+  # 
+  my @r2f_map_A = ();  # map of random index to file number, $r2f_map_A[$ridx] = file number that random choice $ridx pertains to
+  my @f2r_map_A = ();  # map of file number to random index, $f2r_map_A[$fidx] = random choice $ridx that file number $fidx pertains to
+  my @nres_per_out_A = ();
+  my $nres_tot_out = 0;  # total number of sequences output thus far
+  my @nseq_per_out_A = ();
+  my @out_filename_A = (); # array of file names
+  my @out_FH_A = (); # [0..$nfiles-1], the actual open file handles
+  my @isopen_A = (); # [0..$i..$nfiles-1], '1' if file $i is open, '0' if it has been closed
+  my $nopen = 0; # number of files that are still open
+  my $checkpoint_fraction_step = 0.05; # if($do_randomize) we will output update each time this fraction of total sequence has been output
+  my $checkpoint_fraction = $checkpoint_fraction_step;
+  my $checkpoint_nres = $checkpoint_fraction * $tot_nres;
+  my $fidx; # file index of current file in @out_filename_A and file handle in @out_FH_A
+  my $nres_this_seq = 0; # number of residues in current file
+  
+  # variables only used if $do_randomize
+  my $ridx; # randomly selected index in @map_A for current sequence
+  my $FH; # pointer to current file handle to print to
+  my $nseq_remaining = $tot_nseq;
+  my $nseq_output    = 0;
+  my $fa_file_tail = ribo_RemoveDirPath($fa_file);
+
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { $r2f_map_A[$fidx] = $fidx; }
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { $f2r_map_A[$fidx] = $fidx; }
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { $nres_per_out_A[$fidx] = 0; }
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { $nseq_per_out_A[$fidx] = 0; }
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { $out_filename_A[$fidx] = $out_dir . "." . $fa_file_tail . "." . ($fidx+1); } 
+
+  # open up all output file handles, else open only the first
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { 
+    open($out_FH_A[$fidx], ">", $out_filename_A[$fidx]) || ofile_FileOpenFailure($out_filename_A[$fidx], "RIBO", $sub_name, $!, "writing", $FH_HR);
+    $isopen_A[$fidx] = 1;
+  }
+  $nopen = $nfiles; # will be decremented as we close files
+
+  # read file until we see the first header line
+  my ($next_header_line, $next_seqname) = ribo_FastaFileReadAndOutputNextSeq($in_FH, undef, $FH_HR); 
+  # this will die if any non-whitespace characters exist before first header line
+
+  while($nseq_remaining > 0) { 
+    if(! defined $next_header_line) { 
+      ofile_FAIL("ERROR in $sub_name, read too few sequences in $fa_file, read expected $tot_nseq", "RIBO", 1, $FH_HR); 
+    }
+    if(! exists $seqlen_HR->{$next_seqname}) { 
+      ofile_FAIL("ERROR in $sub_name, no sequence length information exists for $next_seqname", "RIBO", 1, $FH_HR);
+    }
+    $nres_this_seq = $seqlen_HR->{$next_seqname};
+
+    # first $nfiles sequences go to file $nseq_output so we guarantee we have >= 1 seq per file, 
+    # remaining seqs are randomly placed
+    if($nseq_output < $nfiles) { 
+      $fidx = $nseq_output;
+      $ridx = $f2r_map_A[$fidx];
+    }
+    else { 
+      $ridx = int(rand($nopen)); 
+      $fidx = $r2f_map_A[$ridx];
+    }
+    $FH = $out_FH_A[$fidx];
+
+    # output seq
+    print $FH $next_header_line; 
+    ($next_header_line, $next_seqname) = ribo_FastaFileReadAndOutputNextSeq($in_FH, $FH, $FH_HR);
+    
+    $nseq_remaining--;
+    $nseq_output++;
+    
+    # update counts of sequences and residues for the file we just printed to
+    $nres_per_out_A[$fidx] += $nres_this_seq;
+    $nseq_per_out_A[$fidx]++;
+    $nres_tot_out += $nres_this_seq;
+
+    # if we've reached our checkpoint output update
+    if($do_debug && ($nres_tot_out > $checkpoint_nres)) { 
+      my $nfiles_above_fract = 0;
+      for(my $tmp_fidx = 0; $tmp_fidx < $nfiles; $tmp_fidx++) { 
+        if($nres_per_out_A[$tmp_fidx] > ($checkpoint_fraction * $targ_nres)) { $nfiles_above_fract++; }
+      }
+      $checkpoint_fraction += $checkpoint_fraction_step;
+      $checkpoint_nres = $checkpoint_fraction * $tot_nres;
+    }
+
+    # check if we need to close this file now, if so close it and open a new one (if nec)
+    if(($nres_per_out_A[$fidx] >= $targ_nres) || ($nseq_remaining == 0)) { 
+      if(($nopen > 1) || ($nseq_remaining == 0)) { 
+        # don't close the final file unless we have zero sequences left
+        close($out_FH_A[$fidx]);
+        $isopen_A[$fidx] = 0;
+        if($do_debug) { printf("$out_filename_A[$fidx] finished (%d seqs, %d residues)\n", $nseq_per_out_A[$fidx], $nres_per_out_A[$fidx]); }
+        # update r2f_map_A so we can no longer choose the file handle we just closed 
+        if($ridx != ($nopen-1)) { # edge case
+          $r2f_map_A[$ridx] = $r2f_map_A[($nopen-1)];
+        }
+        $f2r_map_A[$r2f_map_A[($nopen-1)]] = $ridx; 
+        $r2f_map_A[($nopen-1)] = -1; # this random index is now invalid
+        $f2r_map_A[$fidx]      = -1; # this file is now closed
+        $nopen--;
+      }
+    }
+  }
+
+  # go through and close any files that are still open
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { 
+    if($isopen_A[$fidx] == 1) { 
+      # file still open, close it
+      close($out_FH_A[$fidx]);
+      if($do_debug) { printf("$out_filename_A[$fidx] finished (%d seqs, %d residues)\n", $nseq_per_out_A[$fidx], $nres_per_out_A[$fidx]); }
+    }
+  }
+
+  return $nfiles;
+}
+
+#################################################################
+# Subroutine: ribo_FastaFileReadAndOutputNextSeq
+# Incept:     EPN, Fri Jul  6 11:04:52 2018
+#
+# Purpose:    Given an open input file handle for a fasta sequence
+#             and an open output file handle, read the next sequence and
+#             and output it to the output file, by outputting all lines
+#             we read until the next header line. Then return the
+#             header line we stopped reading on.
+#             If $out_FH is undef, do not output, which allows this
+#             function to be called to return the first header line
+#             of the file, but if $out_FH is undef, then require
+#             that all lines read before the header line are empty,
+#             else die.
+#
+# Arguments:
+#   $in_FH:       input file handle
+#   $out_FH:      output file handle, can be undef
+#   $FH_HR:       ref to hash of file handles, for printing errors if we die"
+# 
+# Returns:  2 values:
+#           $next_header_line: next header line in the file, undef 
+#                              if we do not read one before end of the file
+#           $next_seqname:     sequence name on next header line
+#
+# Dies:     If $out_FH is undef and there are non-whitespace characters
+#           prior to the first header line read.
+#           If $next_header_line is defined and we can't parse it to get the
+#           sequence name.
+#################################################################
+sub ribo_FastaFileReadAndOutputNextSeq { 
+  my $sub_name = "ribo_FastaFileReadAndOutputNextSeq";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_FH, $out_FH, $FH_HR) = @_;
+
+  my $line = undef;
+  $line = <$in_FH>;
+  while((defined $line) && ($line !~ m/^\>/)) { 
+    # does this line have any nonwhitespace characters? 
+    if(! defined $out_FH) { 
+      chomp $line;
+      if($line =~ m/\S/) { 
+        ofile_FAIL("ERROR in $sub_name, read line with non-whitespace character when none were expected:\n$line", "RIBO", 1, $FH_HR);
+      }
+    }
+    else { 
+      print $out_FH $line;
+    }
+    $line = <$in_FH>; 
+  }
+  my $seqname = undef;
+  if(defined $line) { 
+    if($line =~ m/^\>(\S+)/) { 
+      $seqname = $1;
+    }
+    else { 
+      ofile_FAIL("ERROR in $sub_name, unable to parse sequence name from header line: $line", "RIBO", 1, $FH_HR);
+    }
+  }
+  
+  return ($line, $seqname);
+}
+
+#################################################################
+# Subroutine: ribo_SumSeqlenGivenArray
+# Incept:     EPN, Fri Jul  6 09:30:43 2018
+#
+# Purpose:    Given an array of sequence names and a hash with 
+#             lengths for each, return total length for all 
+#             sequences.
+#
+# Arguments:
+#   $seqname_AR:  ref to array of sequence names
+#   $seqlen_HR:   ref to hash, key is sequence name, 
+#                 value is length
+#   $FH_HR:       ref to hash of file handles, including "cmd"
+#
+# Returns:  void
+# 
+# Dies:     If sequence listed in @{$seqname_AR} is not in %{$seqlen_HR}
+#
+#################################################################
+sub ribo_SumSeqlenGivenArray { 
+  my $sub_name = "ribo_SumSeqlenGivenArray()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($seqname_AR, $seqlen_HR, $FH_HR) = @_;
+  
+  my $tot_seqlen = 0;
+  foreach my $seqname (@{$seqname_AR}) { 
+    if(! exists $seqlen_HR->{$seqname}) { 
+      ofile_FAIL("ERROR in $sub_name, $seqname does not exist in the seqlen_H hash", "RIBO", 1, $FH_HR);
+    }
+    $tot_seqlen += abs($seqlen_HR->{$seqname}); # ribotyper.pl multiplies lengths by -1 after round 1
+  }
+
+  return $tot_seqlen;
+}
+
 
 ###########################################################################
 # the next line is critical, a perl module must return a true value

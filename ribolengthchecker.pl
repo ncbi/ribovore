@@ -63,6 +63,15 @@ opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,
 opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
 opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a compute farm";
+#     option            type       default                group   requires incompat    preamble-output                                          help-output    
+opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);o
+opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>", "number of KB of sequence for each farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--maxnjobs",   "integer", 2500,                      3,     "-p", undef,      "maximum allowed number of jobs for compute farm",       "set max number of jobs to submit to compute farm to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
+
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>\n";
@@ -77,7 +86,14 @@ my $options_okay =
                 'i=s'          => \$GetOptions_H{"-i"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
-                'nocovfail'    => \$GetOptions_H{"--nocovfail"});
+                'nocovfail'    => \$GetOptions_H{"--nocovfail"}, 
+                # options for parallelization
+                'p'            => \$GetOptions_H{"-p"},
+                'q=s'          => \$GetOptions_H{"-q"},
+                'nkb=s'        => \$GetOptions_H{"--nkb"},
+                'maxnjobs=s'   => \$GetOptions_H{"--maxnjobs"},
+                'wait=s'       => \$GetOptions_H{"--wait"},
+                'errcheck'     => \$GetOptions_H{"--errcheck"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -230,6 +246,8 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
   if($extra_ribotyper_options =~ m/\s*\-f/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--keep/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\-n/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\-p/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\-q/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--scfail/)    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--covfail/)   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--minusfail/) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
@@ -299,17 +317,21 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_ac
 
 # run ribotyper
 my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
-if(! opt_IsUsed("--noscfail", \%opt_HH))  { $ribotyper_options .= " --scfail"; }
+if(! opt_IsUsed("--noscfail",  \%opt_HH)) { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
+if(! opt_IsUsed("-p",          \%opt_HH)) { $ribotyper_options .= " -p"; }
+if(! opt_IsUsed("-q",          \%opt_HH)) { $ribotyper_options .= " -q"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
 ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), $FH_HR);
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # parse ribotyper output and create sfetch input files for sequences to fetch
 my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name
-my %family_sfetch_FH_H = ();        # key: family name, value: output file handle for sfetch input file
+my %family_sfetch_FH_H       = ();  # key: family name, value: output file handle for sfetch input file
+my %family_seqfile_H         = ();  # key: family name, value: fasta file 
 foreach $family (@family_order_A) { 
   $family_sfetch_filename_H{$family} = $out_root . "." . $family . ".sfetch";
+  $family_seqfile_H{$family}         = $out_root . "." . $family . ".fa";
   open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
 }
 
@@ -370,27 +392,40 @@ my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign op
 
 foreach $family (@family_order_A) { 
   if(-s $family_sfetch_filename_H{$family}) { 
-    $cmalign_stk_file    = $out_root . "." . $family . ".cmalign.stk";
-    $cmalign_insert_file = $out_root . "." . $family . ".cmalign.ifile";
-    $cmalign_el_file     = $out_root . "." . $family . ".cmalign.elfile";
-    $cmalign_out_file    = $out_root . "." . $family . ".cmalign.out";
-    #ribo_RunCommand("$cat_cmd | " . $execs_H{"cmalign"} . " --outformat pfam --cpu $ncpu -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
-    ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} | cmalign $cmalign_opts --ifile $cmalign_insert_file --elfile $cmalign_el_file -o $cmalign_stk_file $family_modelfile_H{$family} - > $cmalign_out_file", opt_Get("-v", \%opt_HH), $FH_HR);
+    # fetch the sequences
+    ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} > $family_seqfile_H{$family}", opt_Get("-v", \%opt_HH), $FH_HR);
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " fasta file", $family_seqfile_H{$family}, 0, "sequence file for $family");
+
+    # align the sequences
+    my %outfile_H = (); # for storing output file names
+    $outfile_H{"stk"}     = $out_root . "." . $family . ".cmalign.stk";
+    $outfile_H{"ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
+    $outfile_H{"elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
+    $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
+    ribo_RunCmsearchOrCmalignWrapper($execs_H{"cmalign"}, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $tot_nseq, $tot_len_nt, \$outfile_H, \%opt_HH, \%ofile_info_HH);
+
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},  0, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"}, 0, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},    0, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"} 0, "cmalign output file for $family");
+
     push(@stkfile_str_A,     sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "Alignment of", "all", $family));
     push(@ifile_str_A,       sprintf("# %-18s %6s %-12s sequences saved as $cmalign_insert_file\n", "Insert file of", "all", $family));
     push(@elfile_str_A,      sprintf("# %-18s %6s %-12s sequences saved as $cmalign_el_file\n", "EL file of", "all", $family));
     push(@cmalignfile_str_A, sprintf("# %-18s %6s %-12s sequences saved as $cmalign_stk_file\n", "cmalign output for", "all", $family));
+
     # parse cmalign file
-    parse_cmalign_file($cmalign_out_file, \%out_tbl_HH, $FH_HR);
+    parse_cmalign_file($outfile_H{"cmalign"}, \%out_tbl_HH, $FH_HR);
+
     # parse alignment file
-    parse_stk_file($cmalign_stk_file, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
+    parse_stk_file($outfile_H{"stk"}, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
   }
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
-####################################################
-# Step 5: Realigning all seqs in per-class files
-####################################################
+##########################################################
+# Step 5: Extract class subsets from cmalign output files
+##########################################################
 $start_secs = ofile_OutputProgressPrior("Extracting alignments for each length class", $progress_w, $log_FH, *STDOUT);
 my $length_class_list_file = undef; # file name for list file for this length class and family
 foreach $family (@family_order_A) { 
