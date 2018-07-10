@@ -88,7 +88,7 @@ opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnom
 
 $opt_group_desc_H{++$g} = "options for controlling both ribotyper/ribolengthchecker stages";
 #       option          type       default               group  requires  incompat        preamble-output                                                 help-output    
-opt_Add("--model",      "string",  undef,                   $g,    undef, undef,          "model to use is <s> (e.g. SSU.Eukarya)",                       "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
+opt_Add("--model",      "string",  undef,                   $g,    undef, undef,          "model to use is <s>",                                          "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
 opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, undef,          "do not fail sequences in ribotyper with low scores",           "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
 opt_Add("--lowppossc",  "real",    0.50,                    $g,    undef, undef,          "set --lowppossc <x> option for ribotyper to <x>",               "set --lowppossc <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
 
@@ -253,10 +253,10 @@ if((! $do_ftaxid) && (! $do_fambig) && (! $do_fvecsc) && (! $do_fblast) && (! $d
 my $in_special_file = opt_Get("--special", \%opt_HH); # this will be undefined unless --special used on the command line
 # verify required files exist
 if(defined $in_fasta_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "<input fasta sequence file> command line argument", undef, 1); 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "<input fasta sequence file> command line argument", undef, 1, undef); 
 }
 if(defined $in_special_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1); 
+  ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1, undef); 
 }
 
 # now that we know what steps we are doing, make sure that:
@@ -286,7 +286,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) {
     
     $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
     $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbcreate.txt";
-    ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1); # 1 says: die if it doesn't exist or is empty
+    ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
     if($do_ingrup) { 
       $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
     }
@@ -306,7 +306,7 @@ if($do_fribo1) {
   # make sure the riboopts1 file exists if --riboopts1 used
   if(opt_IsUsed("--riboopts1", \%opt_HH)) {
     $in_riboopts1_file = opt_Get("--riboopts1", \%opt_HH);
-    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts1_file, "riboopts file specified with --riboopts1", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
+    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts1_file, "riboopts file specified with --riboopts1", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
   }
 }
 
@@ -319,18 +319,18 @@ if($do_fribo1 || $do_fribo2) {
   # make sure the riboopts2 file exists if --riboopts2 used
   if(opt_IsUsed("--riboopts2", \%opt_HH)) {
     $in_riboopts2_file = opt_Get("--riboopts2", \%opt_HH);
-    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts2_file, "riboopts file specified with --riboopts2", undef, 1); # last argument as 1 says: die if it doesn't exist or is empty
+    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts2_file, "riboopts file specified with --riboopts2", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
   }
 
   # make sure the ribolengthchecker modelinfo files exists
   if(! opt_IsUsed("--rlcinfo", \%opt_HH)) { 
     $rlc_modelinfo_file = $df_rlc_modelinfo_file;  
-    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1); # 1 says: die if it doesn't exist or is empty
+    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
   else { # --rlcinfo used
     $rlc_modelinfo_file = opt_Get("--rlcinfo", \%opt_HH); }
   if(! opt_IsUsed("--rlcinfo", \%opt_HH)) {
-    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with --rlcinfo", undef, 1); # 1 says: die if it doesn't exist or is empty
+    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with --rlcinfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
 
   $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
@@ -463,7 +463,7 @@ my $local_rlc_modelinfo_file = $out_root . ".rlc.modelinfo"; # model info file f
 
 if($do_fribo1 || $do_fribo2) { 
   # make sure that the model specified with --model exists
-  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelfile_H, \%tmp_family_modellen_H, \%tmp_family_rtname_HA);
+  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelfile_H, \%tmp_family_modellen_H, \%tmp_family_rtname_HA, $ofile_info_HH{"FH"});
   $family = opt_Get("--model", \%opt_HH);
   if(! exists $tmp_family_modelfile_H{$family}) { 
     foreach my $tmp_family (@tmp_family_order_A) { $family_fail_str .= $tmp_family. "\n"; }
@@ -718,6 +718,7 @@ if($do_fribo1) {
 # 'fribo2' stage: stage that filters based on ribolengthchecker.pl
 ###################################################################
 my @rlcpass_seqorder_A = (); # order of sequences that pass rlcpass stage
+my $rlc_outdir = $out_root . "-rlc";
 if($do_fribo2) { 
   $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribolengthchecker.pl", $progress_w, $log_FH, *STDOUT);
@@ -725,9 +726,11 @@ if($do_fribo2) {
   my $rlc_options = " -i $local_rlc_modelinfo_file ";
   if(opt_IsUsed("--noscfail",    \%opt_HH)) { $rlc_options .= " --noscfail "; }
   if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $rlc_options .= " --nocovfail "; }
-  my $rlc_out_file     = $out_root . ".ribolengthchecker";
-  my $rlc_tbl_out_file = $out_root . ".ribolengthchecker.tbl.out";
-  my $rlc_command = $execs_H{"ribolengthchecker"} . " $rlc_options --riboopts $local_rlc_riboopts_file $full_fasta_file $out_root > $rlc_out_file";
+  my $rlc_outdir_tail  = $dir_tail . ".ribodbcreate-rlc";
+  my $rlc_out_file     = $out_root . ".ribolengthchecker.out";
+  my $rlc_tbl_out_file = $rlc_outdir . "/" . $rlc_outdir_tail . ".ribolengthchecker.tbl";
+
+  my $rlc_command = $execs_H{"ribolengthchecker"} . " $rlc_options --riboopts $local_rlc_riboopts_file $full_fasta_file $rlc_outdir > $rlc_out_file";
   if(! $do_prvcmd) { ribo_RunCommand($rlc_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 0, "output of ribolengthchecker");
   
@@ -787,7 +790,7 @@ else {
 
     # merge alignments created by ribolengthchecker with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimerge_cmd       = "ls " . $out_root . "*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - | esl-alimanip --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
+    my $alimerge_cmd       = "ls " . $rlc_outdir . "/*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - | esl-alimanip --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
     my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
     my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
     my $alipid_analyze_cmd = "alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
@@ -1104,6 +1107,7 @@ exit 0;
 # update_and_output_pass_fails
 # fblast_stage
 #
+
 #################################################################
 # Subroutine:  parse_srcchk_and_tax_files_for_specified_species()
 # Incept:      EPN, Tue Jun 12 13:51:51 2018

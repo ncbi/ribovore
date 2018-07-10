@@ -321,7 +321,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ####################################################
 $start_secs = ofile_OutputProgressPrior("Running ribotyper", $progress_w, $log_FH, *STDOUT);
 
-my $ribotyper_accept_file  = $out_root . "ribotyper.accept";
+my $ribotyper_accept_file  = $out_root . ".ribotyper.accept";
 my $ribotyper_outdir       = $out_root . "-rt";
 my $ribotyper_outdir_tail  = $dir_out_tail . ".ribolengthchecker-rt";
 my $ribotyper_outfile      = $out_root . ".ribotyper.out";

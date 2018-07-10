@@ -497,7 +497,7 @@ sub ribo_VerifyEnvVariableIsValidDir
     # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
   }    
 
-  return $envdir
+  return $envdir;
 }
 
 #################################################################
@@ -511,7 +511,7 @@ sub ribo_VerifyEnvVariableIsValidDir
 #   $filedesc:         description of file
 #   $calling_sub_name: name of calling subroutine (can be undef)
 #   $do_die:           '1' if we should die if it does not exist.  
-#   $FH_HR:            ref to hash of file handles
+#   $FH_HR:            ref to hash of file handles, can be undef
 # 
 # Returns:     Return '1' if it does and is non empty, '0' if it does
 #              not exist, or '-1' if it exists but is empty.
@@ -1250,10 +1250,10 @@ sub ribo_RunCmsearchOrCmalign {
   # depending on if $executable is "cmalign" or "cmsearch"
   # and run the program
   if($executable =~ /cmsearch$/) { 
-    $cmd .= "$executable $opts --tblout $seq_file.tblout $model_file $seq_file > $seq_file.cmsearch" . $cmd_suffix;
+    $cmd .= "$executable $opts --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
   }
   elsif($executable =~ /cmalign$/) { 
-    $cmd .= "$executable $opts --ifile $seq_file.ifile --elfile $seq_file.elfile -o $seq_file.stk $model_file $seq_file > $seq_file.cmalign" . $cmd_suffix;
+    $cmd .= "$executable $opts --ifile " . $file_HR->{"ifile"} . " --elfile " . $file_HR->{"elfile"} . " -o " . $file_HR->{"stk"} . " $model_file $seq_file > " . $file_HR->{"cmalign"} . $cmd_suffix;
   }
 
   # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
