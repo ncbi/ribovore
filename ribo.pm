@@ -527,17 +527,19 @@ sub ribo_CheckIfFileExistsAndIsNonEmpty {
 
   if(! -e $filename) { 
     if($do_die) { 
-      ofile_FAIL("ERROR in $sub_name, %sfile $filename%s does not exist.", 
-                 (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                 (defined $filedesc         ? " ($filedesc)" : ""), "RIBO", 1, $FH_HR); 
+      ofile_FAIL(sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
+                         (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
+                         (defined $filedesc         ? " ($filedesc)" : "")),
+                 "RIBO", 1, $FH_HR); 
     }
     return 0;
   }
   elsif(! -s $filename) { 
     if($do_die) { 
-      ofile_FAIL("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
-                  (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                  (defined $filedesc         ? " ($filedesc)" : ""), "RIBO", 1, $FH_HR); 
+      ofile_FAIL(sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
+                         (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
+                         (defined $filedesc         ? " ($filedesc)" : "")),
+                 "RIBO", 1, $FH_HR); 
     }
     return -1;
   }
@@ -1271,7 +1273,7 @@ sub ribo_RunCmsearchOrCmalign {
 #              or locally, after possibly splitting up the input
 #              sequence file. 
 #              The following must all be valid options in opt_HHR:
-#              -p, --nkb, --wait, --keep, -v, --maxnjobs
+#              -p, --nkb, -s, --wait, --errcheck, --keep, -v
 #              See ribotyper.pl for examples of these options.
 #
 # Arguments: 
@@ -1361,7 +1363,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     # wait for the jobs to finish
     ofile_OutputString($log_FH, 0, sprintf("\n"));
     print STDERR "\n";
-    $start_secs = ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
+    $start_secs = ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
                                            $progress_w, $log_FH, *STDERR);
     my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 

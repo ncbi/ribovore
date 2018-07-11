@@ -63,7 +63,7 @@ opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,       
 opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                       "skip stage that filters based on VecScreen",                       \%opt_HH, \@opt_order_A);
 opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",              "skip stage that filters based on BLAST hits to self",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipfribo1", "boolean", 0,                       $g,    undef,                   undef,  "skip 1st stage that filters based on ribotyper",                   "skip 1st stage that filters based on ribotyper",                   \%opt_HH, \@opt_order_A);
-opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipfingrup",undef,  "skip 2nd stage that filters based on ribotyper/ribolengthchecker", "skip 2nd stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup",undef,  "skip 2nd stage that filters based on ribotyper/ribolengthchecker", "skip 2nd stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
 opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",              "skip stage that filters based on model span of hits",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipingrup", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",                "skip stage that performs ingroup analysis",                        \%opt_HH, \@opt_order_A);
 opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                     "skip stage that clusters sequences surviving all filters",         \%opt_HH, \@opt_order_A);
@@ -71,8 +71,12 @@ opt_Add("--skiplistms", "boolean", 0,                       $g,    undef,       
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ambiguous nucleotides";
 #              option   type       default               group  requires incompat                    preamble-output                                            help-output    
-opt_Add("--maxnambig",  "integer", 0,                       $g,    undef,"--skipfambig,--maxfambig", "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
-opt_Add("--maxfambig",  "real",    0,                       $g,    undef,"--skipfambig,--maxnambig", "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
+opt_Add("--famaxn",  "integer", 0,                       $g,    undef,"--skipfambig,--famaxf", "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
+opt_Add("--famaxf",  "real",    0,                       $g,    undef,"--skipfambig,--famaxn", "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters by taxid";
+#              option   type       default               group  requires incompat         preamble-output                                                       help-output    
+opt_Add("--ftstrict",   "boolean", 0,                       $g,    undef,"--skipftaxid",  "require all taxids for sequences exist in input NCBI taxonomy tree", "require all taxids for sequences exist in input NCBI taxonomy tree", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on self-BLAST hits";
 #              option    type        default  group requires     incompat              preamble-output                                                  help-output    
@@ -112,13 +116,25 @@ opt_Add("--pos",         "integer",  60,                    $g,    undef, "--ski
 opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
+#       option           type        default             group  requires  incompat              preamble-output                                               help-output    
+opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
 opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set UCLUST fractional identity to cluster at to <x>", "set UCLUST fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for parallelizing ribotyper/ribolengthchecker's calls to cmsearch and cmalign on a compute farm";
+#     option            type       default                group   requires incompat    preamble-output                                                help-output    
+opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",              "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
+opt_Add("-q",           "string",  undef,                    $g,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 10,                       $g,     "-p", undef,      "number of KB of seq for each farm job is <n>",                "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                      $g,     "-p", undef,      "allow <n> minutes for jobs on farm",                          "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--errcheck",   "boolean", 0,                        $g,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "advanced options for debugging and testing:";
-#       option           type        default             group  requires  incompat              preamble-output                                          help-output    
-opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f",                 "do not execute commands; use output from previous run", "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
+#       option           type        default             group  requires  incompat              preamble-output                                                      help-output    
+opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f,-p",              "do not execute commands; use output from previous run",             "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -145,8 +161,9 @@ my $options_okay =
                 'skipingrup'   => \$GetOptions_H{"--skipingrup"},
                 'skipclustr'   => \$GetOptions_H{"--skipclustr"},
                 'skiplistms'   => \$GetOptions_H{"--skiplistms"},
-                'maxnambig=s'  => \$GetOptions_H{"--maxnambig"},
-                'maxfambig=s'  => \$GetOptions_H{"--maxfambig"},
+                'famaxn=s'     => \$GetOptions_H{"--famaxn"},
+                'famaxf=s'     => \$GetOptions_H{"--famaxf"},
+                'ftstrict'     => \$GetOptions_H{"--ftstrict"},
                 'fbcsize=s'    => \$GetOptions_H{"--fbcsize"},
                 'fbcall'       => \$GetOptions_H{"--fbcall"},
                 'fbword=s'     => \$GetOptions_H{"--fbword"},
@@ -170,7 +187,14 @@ my $options_okay =
                 'pos=s'        => \$GetOptions_H{"--pos"},
                 'lpos=s'       => \$GetOptions_H{"--lpos"},
                 'rpos=s'       => \$GetOptions_H{"--rpos"},
+                'fione'        => \$GetOptions_H{"--fione"},
                 'cfid'         => \$GetOptions_H{"--cfid"},
+# options for parallelization
+                'p'            => \$GetOptions_H{"-p"},
+                'q=s'          => \$GetOptions_H{"-q"},
+                'nkb=s'        => \$GetOptions_H{"--nkb"},
+                'wait=s'       => \$GetOptions_H{"--wait"},
+                'errcheck'     => \$GetOptions_H{"--errcheck"},
                 'prvcmd'       => \$GetOptions_H{"--prvcmd"}); 
 
 
@@ -240,6 +264,11 @@ if((! $do_fribo1) && (! $do_fribo2)) {
   if(opt_IsUsed("--model",      \%opt_HH)) { die "ERROR, --model does not make sense in combination with --skipribo1 and --skipribo2"; }
   if(opt_IsUsed("--noscfail",   \%opt_HH)) { die "ERROR, --noscfail does not make sense in combination with --skipribo1 and --skipribo2"; }
   if(opt_IsUsed("--lowppossc",  \%opt_HH)) { die "ERROR, --lowppossc does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("-p",           \%opt_HH)) { die "ERROR, -p does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("-q",           \%opt_HH)) { die "ERROR, -q does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("--nkb",        \%opt_HH)) { die "ERROR, --nkb does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("--wait",       \%opt_HH)) { die "ERROR, --wait does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("--errcheck",   \%opt_HH)) { die "ERROR, --errcheck does not make sense in combination with --skipribo1 and --skipribo2"; }
 }
 
 # we don't allow user to skip ALL filter stages, they need to do at least one. 
@@ -626,9 +655,9 @@ my $stage_key = undef;
 ########################################################
 # 'fambig' stage: filter based on ambiguous nucleotides
 ########################################################
-my $maxnambig = opt_Get("--maxnambig", \%opt_HH);
-my $do_fract_ambig = opt_IsUsed("--maxfambig", \%opt_HH);
-my $maxfambig = opt_Get("--maxfambig", \%opt_HH);
+my $maxnambig = opt_Get("--famaxn", \%opt_HH);
+my $do_fract_ambig = opt_IsUsed("--famaxf", \%opt_HH);
+my $maxfambig = opt_Get("--famaxf", \%opt_HH);
 if($do_fambig) { 
   $stage_key = "fambig";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering based on ambiguous nucleotides ", $progress_w, $log_FH, *STDOUT);
@@ -726,6 +755,11 @@ if($do_fribo2) {
   my $rlc_options = " -i $local_rlc_modelinfo_file ";
   if(opt_IsUsed("--noscfail",    \%opt_HH)) { $rlc_options .= " --noscfail "; }
   if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $rlc_options .= " --nocovfail "; }
+  if(opt_IsUsed("-p",            \%opt_HH)) { $rlc_options .= " -p"; }
+  if(opt_IsUsed("-q",            \%opt_HH)) { $rlc_options .= " -q " . opt_Get("-q", \%opt_HH); }
+  if(opt_IsUsed("--nkb",         \%opt_HH)) { $rlc_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+  if(opt_IsUsed("--wait",        \%opt_HH)) { $rlc_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+  if(opt_IsUsed("--errcheck",    \%opt_HH)) { $rlc_options .= " --errcheck"; }
   my $rlc_outdir_tail  = $dir_tail . ".ribodbcreate-rlc";
   my $rlc_out_file     = $out_root . ".ribolengthchecker.out";
   my $rlc_tbl_out_file = $rlc_outdir . "/" . $rlc_outdir_tail . ".ribolengthchecker.tbl";
@@ -1000,6 +1034,7 @@ if($do_fambig) {
   push(@column_explanation_A, "# 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed\n");
 }
 if($do_ftaxid) { 
+  push(@column_explanation_A, "# 'not-in-tax-tree':       sequence taxid is not present in the input NCBI taxonomy tree\n");
   push(@column_explanation_A, "# 'not-specified-species': sequence does not belong to a specified sequence according to NCBI taxonomy\n");
 }
 if($do_fvecsc) { 
@@ -1026,8 +1061,14 @@ if($do_fmspan) {
   push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
 }
 if($do_ingrup) { 
-  push(@column_explanation_A, "# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis, classified as type %s\n");
+  push(@column_explanation_A, "# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis\n");
+  push(@column_explanation_A, "#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>\n");
   push(@column_explanation_A, "#                          see $alipid_analyze_out_file for explanation of types\n");
+  if(opt_Get("--fione", \%opt_HH)) { 
+    push(@column_explanation_A, "#                          if <s> includes 'not-max-avg-pid', a different sequence with the\n");
+    push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
+    push(@column_explanation_A, "#                          other sequences in its same $level than this one did\n");
+  }
 }
 
 open(RDB, ">", $out_rdb_tbl) || ofile_FileOpenFailure($out_rdb_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
@@ -1059,8 +1100,8 @@ foreach $seqname (@seqorder_A) {
   $taxid2print  = ($have_taxids) ? $seqtaxid_H{$seqname} : "-";
   $gtaxid2print = ($have_taxids) ? $seqgtaxid_H{$seqname} : "-";
 
-  printf RDB ("# %-*s  %-*s  %-*d  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
-  printf TAB ("#%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+  printf RDB ("%-*s  %-*s  %-*d  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+  printf TAB ("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
 }
 close(RDB);
 close(TAB);
@@ -1107,7 +1148,6 @@ exit 0;
 # update_and_output_pass_fails
 # fblast_stage
 #
-
 #################################################################
 # Subroutine:  parse_srcchk_and_tax_files_for_specified_species()
 # Incept:      EPN, Tue Jun 12 13:51:51 2018
@@ -1144,6 +1184,8 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $seqname;
 
+  my $do_strict = opt_Get("--ftstrict", \%opt_HH);
+
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
 
   foreach $seqname (@{$seqorder_AR}) { 
@@ -1177,7 +1219,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   # go through srrchk_file to determine if each sequence passes or fails
   open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   # first line is header
-  my $diestr = ""; # if we add to this below for >= 1 sequences, we will fail after going through the full file
+  my $diestr = ""; # if $do_strict and we add to this below for >= 1 sequences, we will fail after going through the full file
   $line = <SRCCHK>;
   while($line = <SRCCHK>) { 
     #accessiontaxidorganism
@@ -1190,7 +1232,8 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     }
     my ($accver, $taxid, $organism) = @el_A;
     if($specified_species_H{$taxid} == -1) { 
-      $diestr .= "taxid: $taxid, accession: $accver\n";
+      if($do_strict) { $diestr .= "taxid: $taxid, accession: $accver\n"; }
+      else           { $curfailstr_H{$accver} = "not-in-taxtree;;"; }
     }
     elsif($specified_species_H{$taxid} == 0) { 
       $curfailstr_H{$accver} = "not-specified-species;;";
@@ -1202,7 +1245,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   close(SRCCHK);
 
   if($diestr ne "") { 
-    ofile_FAIL("ERROR in $sub_name, >= 1 taxids for sequences in sequence file had no tax information in $tax_file:\n$diestr", "RIBO", $?, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, >= 1 taxids for sequences in sequence file had no tax information in $tax_file (remove --ftstrict to allow this):\n$diestr", "RIBO", $?, $FH_HR);
   }
 
   # now output pass and fail files
@@ -1366,7 +1409,6 @@ sub parse_ribolengthchecker_tbl_file {
   # for %rlc_curfailstr_H, we only do pass/fail for those that survive ribotyper
   # for %ms_curfailstr_H,  we only do pass/fail for those that survive ribotyper and ribolengthchecker
   # so we can't initialize those yet, we will fill in the FAILs and PASSes as we see them in the output
-
   
   # determine maximum 5' start position and minimum 3' stop position required to be kept
   my $in_pos  = undef;
@@ -1591,7 +1633,6 @@ sub parse_blast_output_for_self_hits {
   return;
 }
 
-
 #################################################################
 # Subroutine:  parse_alipid_analyze_tab_file()
 # Incept:      EPN, Mon Jun 25 15:17:12 2018
@@ -1619,9 +1660,15 @@ sub parse_alipid_analyze_tab_file {
 
   my ($in_file, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
+  # are we only allowing 1 hit per tax id to survive?
+  my $do_one = (opt_Get("--fione", $opt_HHR)) ? 1 : 0;
+  my %max_pid_per_taxid_H    = (); # key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
+  my %argmax_pid_per_taxid_H = (); # key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
+  
   my %curfailstr_H = ();  # will hold fail string 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $seqname;
+  my $seq_taxid; 
 
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
 
@@ -1629,22 +1676,46 @@ sub parse_alipid_analyze_tab_file {
   # first line is header
   my $line = <TAB>;
   while($line = <TAB>) { 
-    #sequence	seq-taxid	species	group-taxid	type	avgpid-in-group	maxpid-in-group	maxpid-seq-in-group	minpid-in-group	minpid-seq-in-group	avgpid-out-group	maxpid-out-group	maxpid-seq-out-group	maxpid-group-out-group	minpid-out-group	minpid-seq-out-group	minpid-    group-out-group	avgdiff-in-minus-out	maxdiff-in-minus-out	mindiff-in-minus-out 
-    #AF252547.1	 164601	Wislouchiella planctonica	   3042	 O4	  87.7	  87.7	EF023293.1	  87.7	EF023293.1	  76.9	  90.9	KF144227.1	  35491	  60.5	KC205991.1	   5653	   10.8	   -3.2	   27.2
-    #AJ318689.1	 107772	Agabus heydeni	   7041	 I2	  93.1	  98.8	AJ318690.1	  89.9	AY745602.1	  77.4	  92.4	KJ523239.1	   7399	  59.1	KC205991.1	   5653	   15.7	    6.4	   30.8
+    #sequence	seq-taxid	species	group-taxid	group-nseq	type	avgpid-in-group	maxpid-in-group	maxpid-seq-in-group	minpid-in-group	minpid-seq-in-group	avgpid-out-group	maxpid-out-group	maxpid-seq-out-group	maxpid-group-out-group	minpid-out-group	minpid-seq-out-group	minpid-group-out-group	avgdiff-in-minus-out	maxdiff-in-minus-out
+    #AJ306437.1	155213	Scutellospora spinosissima	214509	8	I1	93.6	95.1	HF968811.1	91.7	AJ306442.1	84.9	89.0	AB015052.1	1133283	65.9	AB016022.1	78918	8.8	6.2	25.8
+    #JN941634.1	45130	Bipolaris sorokiniana	92860	3	I1	96.2	96.5	DQ898289.1	95.9	AY741066.1	87.0	95.7	AB454202.1	451869	65.7	AB016022.1	78918	9.2	0.8	30.2
     chomp $line;
     my @el_A = split(/\t/, $line);
     if(scalar(@el_A) != 21) { 
       ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
-    my ($accver, $type) = ($el_A[0], $el_A[5]);
-    if(! exists $curfailstr_H{$accver}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $accver", "RIBO", 1, $FH_HR); }
+    my ($seqname, $seq_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[5], $el_A[6]);
+
+    # keep track of max avgpid per taxid
+    if($do_one && ($seq_taxid ne "1")) { 
+      if((! exists $max_pid_per_taxid_H{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_H{$seq_taxid})) { 
+        $max_pid_per_taxid_H{$seq_taxid}    = $avgpid;
+        $argmax_pid_per_taxid_H{$seq_taxid} = $seqname;
+      }
+    }
+
+    if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
     if($type =~ m/^O/) { 
-      $curfailstr_H{$accver} = "ingroup-analysis[$type];;";
+      $curfailstr_H{$seqname} = "type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later after determining 
     }
   }
   close(TAB);
 
+  # add failure strings for all sequences that are not the average max pid for their sequence taxid, if nec
+  if($do_one) { 
+    foreach $seq_taxid (keys %max_pid_per_taxid_H) { 
+      $seqname = $argmax_pid_per_taxid_H{$seq_taxid};
+      $curfailstr_H{$seqname} .= "not-max-avg-pid;";
+    }
+  }
+
+  # now reformat the error string to include the stage name
+  foreach $seqname (keys %curfailstr_H) { 
+    if($curfailstr_H{$seqname} ne "") { 
+      $curfailstr_H{$seqname} = "ingroup-analysis[" . $curfailstr_H{$seqname} . "];;";
+    }
+  }
+    
   # now output pass and fail files
   return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ingrup", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
   
@@ -1706,7 +1777,7 @@ sub parse_srcchk_file {
 }
 
 #################################################################
-# Subroutine:  parse_tax_levels_file()
+# Subroutine:  parse_tax_level_file()
 # Incept:      EPN, Wed Jun 27 12:35:37 2018
 #
 # Purpose:     Parse the 'taxonomy with levels' file created by 
@@ -1741,6 +1812,7 @@ sub parse_tax_level_file {
   open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
+    chomp $line;
     my @el_A = split(/\t+/, $line);
     if(scalar(@el_A) != 4) { 
       ofile_FAIL("ERROR in $sub_name, could not parse taxinfo file $in_file line (%d elements, expected 4)", "RIBO", $?, $FH_HR);
@@ -1989,15 +2061,17 @@ sub fblast_stage {
   my $seqline = undef;
   my $seq = undef;
   my $cur_seqidx = 0;
-  my $chunk_sfetch_file = undef;
-  my $chunk_fasta_file  = undef;
-  my $chunk_blast_file  = undef;
-  my $sfetch_cmd        = undef;
-  my $blast_cmd         = undef; 
-  my %cur_nhit_H        = (); # key is sequence name, value is number of of hits this sequence has in current chunk
-                              # only keys for sequence names in current chunk exist in the hash
-  my %nblasted_H        = (); # key is sequence name, value is number of times this sequence was ever in the current set 
-                              # (e.g. times blasted against itself), should be 1 for all at end of function
+  my $chunk_sfetch_file  = undef;
+  my $chunk_fasta_file   = undef;
+  my $chunk_blast_file   = undef;
+  my @chunk_blast_file_A = (); # array of all $chunk_blast_file names
+  my $concat_blast_file  = $out_root . "." . $stage_key . ".blast";  # name of concatenated blast output file
+  my $sfetch_cmd         = undef;
+  my $blast_cmd          = undef; 
+  my %cur_nhit_H         = (); # key is sequence name, value is number of of hits this sequence has in current chunk
+                               # only keys for sequence names in current chunk exist in the hash
+  my %nblasted_H         = (); # key is sequence name, value is number of times this sequence was ever in the current set 
+                               # (e.g. times blasted against itself), should be 1 for all at end of function
   foreach $seq (@{$seqorder_AR}) { 
     $nblasted_H{$seq} = 0;
   }
@@ -2055,9 +2129,10 @@ sub fblast_stage {
       }
       # parse the blast output, keeping track of failures in curfailstr_H
       parse_blast_output_for_self_hits($chunk_blast_file, \%cur_nhit_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
+
+      push(@chunk_blast_file_A, $chunk_blast_file); # we will concatenate these when we are done
       if((! $do_prvcmd) && (! $do_keep)) { 
         ribo_RunCommand("rm $chunk_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-        ribo_RunCommand("rm $chunk_blast_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
       }
     }
   }
@@ -2073,6 +2148,10 @@ sub fblast_stage {
       ofile_FAIL("ERROR in ribodbcreate.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", "RIBO", $?, $ofile_info_HH{"FH"});
     }
   }
+
+  # concatenate the blast output 
+  ribo_ConcatenateListOfFiles(\@chunk_blast_file_A, $concat_blast_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".blast", "$concat_blast_file", 0, "concatenated blast output for chunked sequence file");
 
   # create pass and fail lists
   return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 0, $out_root, "fblast", $ofile_info_HHR); # 0: do not output description of pass/fail lists to log file

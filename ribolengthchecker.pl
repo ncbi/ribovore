@@ -72,7 +72,6 @@ $opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a co
 opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>", "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
-opt_Add("--maxnjobs",   "integer", 2500,                      3,     "-p", undef,      "maximum allowed number of jobs for compute farm",       "set max number of jobs to submit to compute farm to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
@@ -265,12 +264,16 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
   if($extra_ribotyper_options =~ m/\s*\-f/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--keep/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\-n/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\-p/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\-q/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--scfail/)    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--covfail/)   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--minusfail/) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
   if($extra_ribotyper_options =~ m/\s*\--inaccept/)  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR); }
+  # options related to parallelization
+  if($extra_ribotyper_options =~ m/\s*\-p/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\-q/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--nkb/)       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--wait/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
+  if($extra_ribotyper_options =~ m/\s*\--errcheck/)  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with ribolengthchecker.pl instead", "RIBO", 1, $FH_HR); }
   close(RIBO);
 }
 
@@ -355,6 +358,9 @@ if(! opt_IsUsed("--noscfail",  \%opt_HH)) { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
 if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
 if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
 ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), $FH_HR);
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
