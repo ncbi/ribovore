@@ -1,6 +1,6 @@
-EPN, Tue Mar 20 06:07:48 2018
+EPN, Wed Jul 11 15:46:14 2018
 
-Ribotyper v0.15 README
+Ribotyper v0.16 README
 
 Organization of this file:
 
@@ -48,18 +48,20 @@ directory. To determine what shell you use, type
 If this command returns '/bin/bash', then update your .bashrc file.
 If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
-The 4 lines to add to your .bashrc file:
+The 5 lines to add to your .bashrc file:
 -----------
 export RIBODIR="<full path to directory where you have the ribotyper code>"
 export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
+export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
 export PERL5LIB="$RIBODIR:$PERL5LIB"
 export PATH="$RIBODIR:$PATH"
 -----------
 
-The 4 lines to add to your .cshrc file:
+The 5 lines to add to your .cshrc file:
 -----------
 setenv RIBODIR "<full path to directory in which you have the ribotyper code"
 setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
+setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
 setenv PERL5LIB "$RIBODIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
 -----------
@@ -96,6 +98,7 @@ To check that your environment variables are properly set up, do the
 following four commands:
 > echo $RIBODIR
 > echo $EPNOPTDIR
+> echo $EPNOFILEDIR
 > echo $PERL5LIB
 > echo $PATH
 
@@ -205,21 +208,24 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.15 (Mar 2018)
+# ribotyper 0.16 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Mar 20 06:08:24 2018
+# date:              Wed Jul 11 15:47:56 2018
+# $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
+# $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
+# $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
 #
-# target sequence input file:    example-16.fa
-# output directory name:         test
-# model information input file:  /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p15.modelinfo
+# target sequence input file:   example-16.fa
+# output directory name:        test
+# forcing directory overwrite:  yes [-f]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [0.1 seconds]
+# Validating input files                           ... done. [0.2 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.5 seconds]
+# Classifying sequences                            ... done. [1.3 seconds]
 # Sorting classification results                   ... done. [0.0 seconds]
 # Processing classification results                ... done. [0.0 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.6 seconds]
+# Searching sequences against best-matching models ... done. [1.3 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -254,15 +260,23 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16     10.7     14248.4     14248.4  00:00:01.49  (hh:mm:ss)
-  search                15      9.3     12501.7     12501.7  00:00:01.62  (hh:mm:ss)
-  total                 16      4.5      6006.4      6006.4  00:00:03.54  (hh:mm:ss)
+  classification        16     11.9     15817.6     15817.6  00:00:01.34  (hh:mm:ss)
+  search                15     11.6     15626.7     15626.7  00:00:01.30  (hh:mm:ss)
+  total                 16      2.4      3164.0      3164.0  00:00:06.72  (hh:mm:ss)
 #
 #
-# Short (6 column) output saved to file test/test.ribotyper.short.out
-# Long (25 column) output saved to file test/test.ribotyper.long.out
+# List and description of all output files saved in:   test.ribotyper.list
+# Output printed to screen saved in:                   test.ribotyper.log
+# List of executed commands saved in:                  test.ribotyper.cmd
+# Short (6 column) output saved in:                    test.ribotyper.short.out
+# Long (25 column) output saved in:                    test.ribotyper.long.out
 #
-#[RIBO-SUCCESS]
+# All output files created in directory ./test/
+#
+# CPU time:  00:00:06.72
+#            hh:mm:ss
+# 
+# RIBO-SUCCESS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Output files:
@@ -639,9 +653,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.15 (Mar 2018)
+# ribotyper 0.16 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Mar 20 06:12:55 2018
+# date:    Wed Jul 11 15:49:12 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -651,6 +665,7 @@ basic options:
   -v     : be verbose; output commands to stdout as they're run
   -n <n> : use <n> CPUs [0]
   -i <s> : use model info file <s> instead of default
+  -s <n> : seed for random number generator is <n> [181]
 
 options for controlling the first round search algorithm:
   --1hmm  : run first round in slower HMM mode
@@ -695,6 +710,13 @@ options that modify the behavior of --1slow or --2slow:
   --max         : with --1slow/--2slow use cmsearch --max option instead of --rfam
   --smxsize <x> : with --max also use cmsearch --smxsize <x>
 
+options for parallelizing cmsearch on a compute farm:
+  -p         : parallelize cmsearch on a compute farm
+  -q <s>     : use qsub info file <s> instead of default
+  --nkb <n>  : number of KB of sequence for each cmsearch farm job is <n> [10]
+  --wait <n> : allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time [500]
+  --errcheck : consider any farm stderr output as indicating a job failure
+
 advanced options:
   --evalues    : rank hits by E-values, not bit scores
   --skipsearch : skip search stage, use results from earlier run
@@ -732,76 +754,74 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.15 (Mar 2018)
+# ribotyper 0.16 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Mar 20 06:13:45 2018
+# date:              Wed Jul 11 15:49:27 2018
+# $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
+# $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
+# $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
 #
-# target sequence input file:    /panfs/pan1/infernal/notebook/18_0319_rrna_lsu_enone_models/ribotyper-v1/testfiles/example-rlc-11.fa
-# output file name root:         test-rlc
-# model information input file:  /panfs/pan1/infernal/notebook/18_0319_rrna_lsu_enone_models/ribotyper-v1/models/ribolengthchecker.0p15.modelinfo
+# target sequence input file:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/example-rlc-11.fa
+# output directory name:       test-rlc
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [3.0 seconds]
-# Running cmalign and classifying sequence lengths ... done. [5.3 seconds]
-# Running cmalign again for each length class      ... done. [5.9 seconds]
+# Running ribotyper                                ... done. [3.4 seconds]
+# Running cmalign and classifying sequence lengths ... done. [6.0 seconds]
+# Extracting alignments for each length class      ... done. [0.2 seconds]
 #
-# List of                 8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
-# List of                 1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
-# List of                 1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.list
-# List of                 1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.list
-#
-# Alignment of          all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
-# Alignment of          all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
-# Alignment of            8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.stk
-# Alignment of            1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.stk
-# Alignment of            1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.stk
-# Alignment of            1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.stk
-#
-# Insert file of        all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.ifile
-# Insert file of        all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.ifile
-# Insert file of          8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.ifile
-# Insert file of          1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.ifile
-# Insert file of          1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.ifile
-# Insert file of          1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.ifile
-#
-# EL file of            all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.elfile
-# EL file of            all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.elfile
-# EL file of              8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.elfile
-# EL file of              1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.elfile
-# EL file of              1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.elfile
-# EL file of              1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.elfile
-#
-# cmalign output for    all SSU.Archaea  sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.cmalign.stk
-# cmalign output for    all SSU.Bacteria sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.cmalign.stk
-# cmalign output for      8 SSU.Archaea  full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Archaea.full-exact.cmalign
-# cmalign output for      1 SSU.Bacteria full-exact sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
-# cmalign output for      1 SSU.Bacteria full-extra sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
-# cmalign output for      1 SSU.Bacteria partial-ambig sequences saved as test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.cmalign
-#
-# No sequences failed ribotyper.
+# All sequences failed ribotyper.
 #
 # WARNING: 1 sequence(s) were not aligned because they were not classified by ribotyper into one of: SSU.Archaea SSU.Bacteria
 #  01223::Audouinella_hermannii.::AF026040
 #
 # See details in:
-#  test-rlc-rt/test-rlc-rt.ribotyper.short.out
+#  test-rlc/test-rlc.ribolengthchecker-rt/test-rlc.ribolengthchecker-rt.ribotyper.short.out
 #  and
-#  test-rlc-rt/test-rlc-rt.ribotyper.long.out
+#  test-rlc/test-rlc.ribolengthchecker-rt/test-rlc.ribolengthchecker-rt.ribotyper.long.out
 #
 #
-# ribotyper output saved as test-rlc.ribotyper.out
-# ribotyper output directory saved as test-rlc-rt
+# ribotyper output saved as test-rlc/test-rlc.ribolengthchecker.ribotyper.out
+# ribotyper output directory saved as test-rlc/test-rlc.ribolengthchecker-rt
 #
-# Tabular output saved to file test-rlc.ribolengthchecker.tbl.out
+# Tabular output saved to file test-rlc/test-rlc.ribolengthchecker.tbl
 #
-#[RIBO-SUCCESS]
+# List and description of all output files saved in:                             test-rlc.ribolengthchecker.list
+# Output printed to screen saved in:                                             test-rlc.ribolengthchecker.log
+# List of executed commands saved in:                                            test-rlc.ribolengthchecker.cmd
+# List file          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
+# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.stk
+# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.ifile
+# EL file            for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.elfile
+# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
+# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.stk
+# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.ifile
+# EL file            for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.elfile
+# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.list
+# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.stk
+# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.ifile
+# EL file            for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.elfile
+# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
+# List file          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.list
+# Alignment          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.stk
+# Insert file        for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.ifile
+# EL file            for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.elfile
+# cmalign output     for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.cmalign
+#
+# All output files created in directory ./test-rlc/
+#
+# CPU time:  00:00:09.57
+#            hh:mm:ss
+# 
+# RIBO-SUCCESS
 --------------
 
 The output of the program (above) lists all of the files that were
 created, including a ribotyper output directory (test-rlc-rt) and
 ribotyper standard output file (test-rlc.ribotyper.out). The tabular
 output file created by ribolengthchecker.pl
-(rlc-test.ribolengthchecker.tbl.out) is the same as the 'short' output
+(rlc-test.ribolengthchecker.tbl) is the same as the 'short' output
 format of ribotyper.pl with three additional columns pertaining to the
 length of each sequence including a classification of that length. The
 end of the tabular output file has comments explaining those columns
@@ -816,10 +836,10 @@ resource is the Infernal v1.1.2 user's guide, pages 29 and 30, which
 is available here:
 http://eddylab.org/infernal/Userguide.pdf.
 
-Here, are the relevant lines from the file rlc-test.ribolengthchecker.tbl.out
+Here, are the relevant lines from the file rlc-test.ribolengthchecker.tbl
 created by the above command:
 
-> cat test-rlc.ribolengthchecker.tbl.out 
+> cat test-rlc/test-rlc.ribolengthchecker.tbl
 -----------------------
 # Column 6 [mstart]:              model start position
 # Column 7 [mstop]:               model stop position
@@ -834,6 +854,7 @@ created by the above command:
 #                                 'partial-ambig': spans full model and no 5' or 3' inserts
 #                                                  but has indel(s) in first and/or final 10 model positions
 #                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
+#                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
 -----------------------
 Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
 output file from ribotyper.pl. 
@@ -843,23 +864,33 @@ the -h option, just as with ribotyper.pl:
 
 > ribolengthchecker.pl -h
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.15 (Mar 2018)
+# ribotyper 0.16 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Mar 20 06:17:05 2018
+# date:    Wed Jul 11 15:50:43 2018
 #
 Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
 
 
 basic options:
+  -f     : force; if <output directory> exists, overwrite it
   -b <n> : number of positions <n> to look for indels at the 5' and 3' boundaries [10]
   -v     : be verbose; output commands to stdout as they're run
   -n <n> : use <n> CPUs [1]
   -i <s> : use model info file <s> instead of default
+  -s <n> : seed for random number generator is <n> [181]
+  --keep : keep all intermediate files that are removed by default
 
 options related to the internal call to ribotyper.pl:
   --riboopts <s> : read command line options to supply to ribotyper from file <s>
   --noscfail     : do not fail sequences in ribotyper with low scores
   --nocovfail    : do not fail sequences in ribotyper with low coverage
+
+options for parallelizing cmsearch and cmalign on a compute farm:
+  -p         : parallelize cmsearch on a compute farm
+  -q <s>     : use qsub info file <s> instead of default
+  --nkb <n>  : number of KB of sequence for each farm job is <n> [10]
+  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
+  --errcheck : consider any farm stderr output as indicating a job failure
 
 One important command line option to ribolengthchecker.pl is 
 the -b option. This controls how many model positions are examined at

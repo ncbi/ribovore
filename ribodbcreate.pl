@@ -200,9 +200,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.15";
+my $version           = "0.16";
 my $model_version_str = "0p15"; 
-my $releasedate       = "Mar 2018";
+my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
 my $pkgstr    = "RIBO";
 
