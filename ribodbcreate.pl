@@ -754,13 +754,14 @@ if($do_fribo1) {
   ribo_WriteAcceptFile($tmp_family_rtname_HA{$family}, $ribotyper_accept_file, $ofile_info_HH{"FH"});
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
 
-  $ribotyper_options .= " -f --keep --inaccept $ribotyper_accept_file "; 
+  $ribotyper_options .= " -f --inaccept $ribotyper_accept_file "; 
   if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
   if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
   if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
   if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
   if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
   if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
+  if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
 
   my $ribotyper_command = $execs_H{"ribotyper"} . " $ribotyper_options $full_fasta_file $ribotyper_outdir > $ribotyper_outfile";
   if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
@@ -944,24 +945,35 @@ else {
     close(LIST);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".inlist", "$cluster_in_list_file", 0, "list of sequences that survived to cluster stage");
 
-    # create the .dist file that we'll use as input to esl-cluster
-    parse_alipid_output_to_create_dist_file($merged_rfonly_alipid_file, \%not_centroid_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cluster.dist", "$cluster_dist_file", 0, "distance file to use as input to esl-cluster");
-
-    # cluster the sequences using esl-cluster
-    my $clust_cmd = $execs_H{"esl-cluster"} . " -q 1 -t 2 -v 3 -x $cluster_did $cluster_in_list_file $cluster_dist_file > $cluster_out_file";
-    if(! $do_prvcmd) { 
-      ribo_RunCommand($clust_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+    if($nin_clustr > 1) { # can't cluster with 1 sequence 
+      # create the .dist file that we'll use as input to esl-cluster
+      parse_alipid_output_to_create_dist_file($merged_rfonly_alipid_file, \%not_centroid_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cluster.dist", "$cluster_dist_file", 0, "distance file to use as input to esl-cluster");
+      
+      # cluster the sequences using esl-cluster
+      my $clust_cmd = $execs_H{"esl-cluster"} . " -q 1 -t 2 -v 3 -x $cluster_did $cluster_in_list_file $cluster_dist_file > $cluster_out_file";
+      if(! $do_prvcmd) { 
+        ribo_RunCommand($clust_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+      }
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".esl-cluster", "$cluster_out_file",  0, "esl-cluster output file");
+      
+      # parse the esl-cluster output to get cluster assignments
+      parse_esl_cluster_output($cluster_out_file, \%in_cluster_H, \%cluster_size_H, $ofile_info_HH{"FH"});
+      
+      # determine centroids
+      parse_dist_file_to_choose_centroids($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%is_centroid_H, \%not_centroid_H, $ofile_info_HH{"FH"}); 
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as centroids by esl-cluster");
     }
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".esl-cluster", "$cluster_out_file",  0, "esl-cluster output file");
+    else { # only 1 sequence to cluster, it is its own cluster
+      foreach $seqname (%is_centroid_H) { # only 1 of these guys
+        $is_centroid_H{$seqname} = 1;
+        $not_centroid_H{$seqname} = 0;
+        $in_cluster_H{$seqname} = 1;
+      }
+    }
+      
 
-    # parse the esl-cluster output to get cluster assignments
-    parse_esl_cluster_output($cluster_out_file, \%in_cluster_H, \%cluster_size_H, $ofile_info_HH{"FH"});
 
-    # determine centroids
-    parse_dist_file_to_choose_centroids($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%is_centroid_H, \%not_centroid_H, $ofile_info_HH{"FH"}); 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as centroids by esl-cluster");
-  
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1074,9 +1086,14 @@ if($do_fblast) {
   push(@column_explanation_A, "#                          <f1> = fractional identity of hit alignment\n");
   push(@column_explanation_A, "#                          <d6> = number of gaps in hit alignment\n");
 }
-if($do_fribo2) { 
-  push(@column_explanation_A, "# 'ribotyper[<s>]:         ribotyper failure with unexpected features listed in <s>\n");
+if($do_fribo1) { 
+  push(@column_explanation_A, "# 'ribotyper1[<s>]:        ribotyper (round 1) failure with unexpected features listed in <s>\n");
   push(@column_explanation_A, "#                          see $out_root-rt/$dir_tail-rt.ribotyper.long.out\n");
+  push(@column_explanation_A, "#                          for explanation of unexpected features\n");
+}
+if($do_fribo2) { 
+  push(@column_explanation_A, "# 'ribotyper2[<s>]:        ribotyper (ribolengthchecker) failure with unexpected features listed in <s>\n");
+  push(@column_explanation_A, "#                          see $out_root-rlc/$dir_tail-rlc.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
 }
 if($do_fmspan) { 
