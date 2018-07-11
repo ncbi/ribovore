@@ -827,7 +827,7 @@ sub ribo_FastaFileSplitRandomly {
   for($fidx = 0; $fidx < $nfiles; $fidx++) { $f2r_map_A[$fidx] = $fidx; }
   for($fidx = 0; $fidx < $nfiles; $fidx++) { $nres_per_out_A[$fidx] = 0; }
   for($fidx = 0; $fidx < $nfiles; $fidx++) { $nseq_per_out_A[$fidx] = 0; }
-  for($fidx = 0; $fidx < $nfiles; $fidx++) { $out_filename_A[$fidx] = $out_dir . "/." . $fa_file_tail . "." . ($fidx+1); } 
+  for($fidx = 0; $fidx < $nfiles; $fidx++) { $out_filename_A[$fidx] = $out_dir . "/" . $fa_file_tail . "." . ($fidx+1); } 
 
   # open up all output file handles, else open only the first
   for($fidx = 0; $fidx < $nfiles; $fidx++) { 
@@ -1388,7 +1388,8 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     for(my $f = 1; $f <= $nfasta_created; $f++) { 
       %tmp_outfile_H = ();
       my $seq_file_tail = ribo_RemoveDirPath($seq_file);
-      my $tmp_seq_file  = $out_dir . "/." . $seq_file_tail . "." . $f;
+      my $tmp_seq_file  = $out_dir . "/" . $seq_file_tail . "." . $f;
+      push(@{$tmp_outfile_HA{"fafile"}}, $tmp_seq_file);
       foreach $file_key ((@reqd_file_keys), "err") { 
         $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
         push(@{$tmp_outfile_HA{$file_key}}, $tmp_outfile_H{$file_key});
@@ -1419,7 +1420,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 
     # remove temporary files if --keep not enabled
     if(! opt_Get("--keep", $opt_HHR)) { 
-      foreach $file_key ((@reqd_file_keys), "err") { 
+      foreach $file_key ((@reqd_file_keys), "err", "fafile") { 
         foreach my $tmp_file (@{$tmp_outfile_HA{$file_key}}) {
           if(-e $tmp_file) { 
             ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
