@@ -271,6 +271,11 @@ if((! $do_fribo1) && (! $do_fribo2)) {
   if(opt_IsUsed("--errcheck",   \%opt_HH)) { die "ERROR, --errcheck does not make sense in combination with --skipribo1 and --skipribo2"; }
 }
 
+if(opt_IsUsed("--cfid", \%opt_HH) && 
+   ((opt_Get("--cfid", \%opt_HH) < 0.) || (opt_Get("--cfid", \%opt_HH) > 1.))) { 
+  die "ERROR, with --cfid <f>, <f> must be >= 0. and <= 1"; 
+}
+
 # we don't allow user to skip ALL filter stages, they need to do at least one. 
 # You might think it should be okay to skip all filter stages if they want to 
 # do ingroup analysis or just clustering but both of those require the ribolengthchecker 
@@ -301,8 +306,16 @@ my $rlc_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;
 
-# we always require esl-sfetch 
-$execs_H{"esl-sfetch"} = $env_riboeasel_dir    . "/esl-sfetch";
+# we always require easel miniapps
+$execs_H{"esl-sfetch"}   = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"esl-seqstat"}  = $env_riboeasel_dir    . "/esl-seqstat";
+$execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
+$execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
+$execs_H{"esl-alimask"}  = $env_riboeasel_dir    . "/esl-alimask";
+$execs_H{"esl-alipid"}   = $env_riboeasel_dir    . "/esl-alipid";
+$execs_H{"esl-alistat"}  = $env_riboeasel_dir    . "/esl-alistat";
+$execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
+
 if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
   if($do_fvecsc) { 
@@ -318,6 +331,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) {
     ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
     if($do_ingrup) { 
       $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
+      $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/alipid-taxinfo-analyze.pl";
     }
   }
 }
@@ -367,8 +381,9 @@ if($do_fribo1 || $do_fribo2) {
 }
 
 if($do_clustr) { 
-  my $env_ribouclust_dir = ribo_VerifyEnvVariableIsValidDir("RIBOUCLUSTDIR");
-  $execs_H{"usearch"} = $env_ribouclust_dir  . "/usearch";
+#  my $env_ribouclust_dir = ribo_VerifyEnvVariableIsValidDir("RIBOUCLUSTDIR");
+#  $execs_H{"usearch"} = $env_ribouclust_dir  . "/usearch";
+#  $execs_H{"esl-cluster"} = $env_riboeasel_dir  . "/esl-cluster";
 }
 ribo_ValidateExecutableHash(\%execs_H);
 
@@ -593,21 +608,23 @@ my %seqgtaxid_H  = (); # group taxid at taxonomic level $level for each sequence
 my @seqorder_A   = (); # array of sequence names in order they appeared in the file
 my %is_centroid_H = (); # key is sequence name, value is 1 if sequence is a centroid, 0 if it is not, key does not exist if sequence did not survive to clustering
 my %not_centroid_H = (); # key is sequence name, value is 1 if sequence is NOT a centroid, "" if it is, key does not exist if sequence did not survive to clustering
+my %in_cluster_H   = (); # key is sequence name, value is cluster index this sequence belongs to
+my %cluster_size_H = (); # key is a cluster index (value from %in_cluster_H), value is number of sequences in that cluster
 my %width_H       = (); # hash with max widths of "target", "length", "index"
 my $nseq = 0;
 my $full_list_file = $out_root . ".full.seqlist";
 my $have_taxids = 0;
 
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
-ribo_ProcessSequenceFile("esl-seqstat", $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
+ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $nseq = scalar(keys %seqidx_H);
-ribo_CountAmbiguousNucleotidesInSequenceFile("esl-seqstat", $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH, $ofile_info_HH{"FH"});
+ribo_CountAmbiguousNucleotidesInSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH, $ofile_info_HH{"FH"});
 if(! $do_prvcmd) { ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fulllist", "$full_list_file", 0, "file with list of all $nseq input sequences");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # index the sequence file
-if(! $do_prvcmd) { ribo_RunCommand("esl-sfetch --index $full_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+if(! $do_prvcmd) { ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $full_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullssi", $full_fasta_file . ".ssi", 0, ".ssi index file for full fasta file");
 
 ###########################################################################################
@@ -827,6 +844,7 @@ my $merged_list_file          = $out_root . "." . $stage_key . ".seqlist";
 my $alipid_analyze_out_file   = $out_root . "." . $stage_key . ".alipid_analyze.out";
 my $alipid_analyze_tab_file   = $out_root . "." . $stage_key . ".alipid.sum.tab.txt";
 my $ingrup_lost_list = $out_root . ".ingrup.lost." . $level . ".list";
+my $alipid_cmd = $execs_H{"esl-alipid"} . " $merged_rfonly_stk_file > $merged_rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
 
 # if no sequences remain, we're done, skip remaining stages
 if($npass_filters == 0) { 
@@ -843,18 +861,15 @@ else {
 
     # merge alignments created by ribolengthchecker with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimerge_cmd       = "ls " . $rlc_outdir . "/*.stk | grep cmalign\.stk | esl-alimerge --list - | esl-alimask --rf-is-mask - | esl-alimanip --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
-    my $alipid_cmd         = "esl-alipid $merged_rfonly_stk_file > $merged_rfonly_alipid_file";
-    my $alistat_cmd        = "esl-alistat --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
-    my $alipid_analyze_cmd = "alipid-taxinfo-analyze.pl $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
+    my $alimerge_cmd       = "ls " . $rlc_outdir . "/*.stk | grep cmalign\.stk | " . $execs_H{"esl-alimerge"} . " --list - | esl-alimask --rf-is-mask - | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
+    my $alistat_cmd        = $execs_H{"esl-alistat"} . " --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
+    my $alipid_analyze_cmd = $execs_H{"alipid-taxinfo-analyze.pl"} . " $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
       
     if(! $do_prvcmd) { ribo_RunCommand($alimerge_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "rfonlystk", "$merged_rfonly_stk_file", 0, "merged RF-column-only alignment");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
-    if(! $do_prvcmd) { 
-      ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
-    }
+    if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$merged_rfonly_alipid_file", 0, "esl-alipid output for $merged_rfonly_stk_file");
       
@@ -885,6 +900,7 @@ else {
         if(($full_level_ct_H{$gtaxid} > 0) && 
            ((! exists $surv_ingrup_level_ct_H{$gtaxid}) || $surv_ingrup_level_ct_H{$gtaxid} == 0)) { 
           print LOST $gtaxid . "\n";
+          $nlost++;
         }
       }
     }
@@ -906,59 +922,54 @@ else {
   ######################################################################################
   if($do_clustr) { 
     my $stage_key = "clustr";
-    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Clustering surviving sequences with uclust", $progress_w, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Clustering surviving sequences", $progress_w, $log_FH, *STDOUT);
     my $cluster_fid = opt_Get("--cfid", \%opt_HH);
-    # create the fasta file to use as input to uclust
-    my $uclust_in_list_file   = $out_root . "." . $stage_key . ".in.seqlist";
-    my $uclust_in_fasta_file  = $out_root . "." . $stage_key . ".in.fa";
-    my $uclust_out_fasta_file = $out_root . "." . $stage_key . ".out.fa";
-    my $uclust_out_list_file  = $out_root . "." . $stage_key . ".out.seqlist";
-    my $uclust_summary_file   = $out_root . "." . $stage_key . ".summary";
-    my $uclust_msa_file       = $out_root . "." . $stage_key . ".msa";
-    my $uclust_out_file       = $out_root . "." . $stage_key . ".out";
+    my $cluster_did = 1.0 - $cluster_fid;
+    my $cluster_dist_file     = $out_root . "." . $stage_key . ".dist";
+    my $cluster_out_file      = $out_root . "." . $stage_key . ".esl-cluster";
+    my $cluster_in_list_file  = $out_root . "." . $stage_key . ".in.seqlist";
+    my $cluster_out_list_file = $out_root . "." . $stage_key . ".out.seqlist";
     my $nin_clustr = 0;
-    
-    # create the list of sequences to input to uclust
-    open(LIST, ">", $uclust_in_list_file) || ofile_FileOpenFailure($uclust_in_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+
+    if(! $do_ingrup) { 
+      # we did not yet run esl-alipid, so do that now
+      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
+      if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+      ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$merged_rfonly_alipid_file", 0, "esl-alipid output for $merged_rfonly_stk_file");
+    }
+
+    # determine sequences that will be clustered and create a list file for them for input to esl-cluster
+    open(LIST, ">", $cluster_in_list_file) || ofile_FileOpenFailure($cluster_in_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
     foreach $seqname (@seqorder_A) { 
       if($seqfailstr_H{$seqname} eq "") { # sequence has survived to the clustering step if it has a blank string in %seqfailstr_H
         print LIST $seqname . "\n";
         $is_centroid_H{$seqname}  = 0; #initialize to all seqs not centroids, then set values to 1 for those that are later after clustering
         $not_centroid_H{$seqname} = 1; #initialize to all seqs not centroids, then set values to 0 for those that are later after clustering
+        $in_cluster_H{$seqname}   = -1; #initialize to all seqs not in a cluster, then set values in parse_alipid_to_choose_centroids
         $nin_clustr++;
       }
     }
     close(LIST);
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".inlist", "$uclust_in_list_file", 0, "list of sequences that survived to cluster stage");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".inlist", "$cluster_in_list_file", 0, "list of sequences that survived to cluster stage");
 
-    # fetch the sequences
-    my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $uclust_in_list_file > $uclust_in_fasta_file";
-    if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".fa", "$uclust_in_fasta_file", 0, "fasta file with sequences that survived to cluster stage");
-      
-    # cluster the sequences
-    my $uclust_cmd = $execs_H{"usearch"} . " -cluster_fast $uclust_in_fasta_file -id $cluster_fid -centroids $uclust_out_fasta_file -uc $uclust_summary_file -msaout $uclust_msa_file > $uclust_out_file 2>&1";
-    if(! $do_prvcmd) { ribo_RunCommand($uclust_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".centroid", "$uclust_out_fasta_file",  0, "uclust centroid output fasta file");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".summary",  "$uclust_summary_file",    0, "uclust summary output file");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".msa",      "$uclust_msa_file" . "*",  0, "uclust msa output files");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".out",      "$uclust_out_file",        0, "uclust output");
-      
-    # determine which sequences are centroids by running esl-seqstat -a on uclust fasta output
-    my $seqstat_cmd = "esl-seqstat -a $uclust_out_fasta_file | grep ^\= | awk '{ print \$2 }' > $uclust_out_list_file";
-    if(! $do_prvcmd) { ribo_RunCommand($seqstat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    # create the .dist file that we'll use as input to esl-cluster
+    parse_alipid_output_to_create_dist_file($merged_rfonly_alipid_file, \%not_centroid_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cluster.dist", "$cluster_dist_file", 0, "distance file to use as input to esl-cluster");
 
-    open(LIST, $uclust_out_list_file) || ofile_FileOpenFailure($uclust_out_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-    while($seqname = <LIST>) { 
-      chomp $seqname;
-      if(! exists $seqlen_H{$seqname}) { 
-        ofile_FAIL("ERROR, uclust selected unexpected sequence $seqname as a centroid", $pkgstr, 1, $ofile_info_HH{"FH"});
-      }
-      $is_centroid_H{$seqname} = 1;
-      $not_centroid_H{$seqname} = 0;
+    # cluster the sequences using esl-cluster
+    my $clust_cmd = $execs_H{"esl-cluster"} . " -q 1 -t 2 -v 3 -x $cluster_did $cluster_in_list_file $cluster_dist_file > $cluster_out_file";
+    if(! $do_prvcmd) { 
+      ribo_RunCommand($clust_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
     }
-    close(LIST);
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$uclust_out_list_file", 0, "list of sequences selected as centroids by uclust");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".esl-cluster", "$cluster_out_file",  0, "esl-cluster output file");
+
+    # parse the esl-cluster output to get cluster assignments
+    parse_esl_cluster_output($cluster_out_file, \%in_cluster_H, \%cluster_size_H, $ofile_info_HH{"FH"});
+
+    # determine centroids
+    parse_dist_file_to_choose_centroids($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%is_centroid_H, \%not_centroid_H, $ofile_info_HH{"FH"}); 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as centroids by esl-cluster");
   
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -966,7 +977,7 @@ else {
     # CHECKPOINT: save any sequences that survived the clustering stage
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     $start_secs = ofile_OutputProgressPrior("[***Checkpoint] Creating lists of seqs that survived clustering", $progress_w, $log_FH, *STDOUT);
-    $npass_clustr = update_and_output_pass_fails(\%not_centroid_H, undef, \@seqorder_A, 1, $out_root, "clustr", \%ofile_info_HH); # 1: do output description of pass/fail lists to log file
+    $npass_clustr = update_and_output_pass_fails(\%not_centroid_H, undef, \@seqorder_A, 1, $out_root, "surv_clustr", \%ofile_info_HH); # 1: do output description of pass/fail lists to log file
     $nfail_clustr = $nin_clustr - $npass_clustr; 
     ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass_clustr, $nfail_clustr), $log_FH, *STDOUT);
 
@@ -998,7 +1009,7 @@ my $final_list_file  = $out_root . ".final.pass.seqlist";
 my $final_fasta_file = $out_root . ".final.fa";
 if($npass_final > 0) { 
   # create the fasta file of the final sequences
-  my $sfetch_cmd = "esl-sfetch -f $full_fasta_file $final_list_file > $final_fasta_file";
+  my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $full_fasta_file $final_list_file > $final_fasta_file";
   if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "final.fa", "$final_fasta_file", 1, "fasta file with final set of surviving sequences");
 }
@@ -1158,6 +1169,9 @@ exit 0;
 # parse_ribolengthchecker_tbl_file
 # parse_blast_output_for_self_hits
 # parse_alipid_analyze_tab_file
+# parse_alipid_output_to_create_dist_file
+# parse_dist_file_to_choose_centroids
+# parse_esl_cluster_output
 # parse_srcchk_file
 # parse_tax_level_file
 # 
@@ -1738,6 +1752,232 @@ sub parse_alipid_analyze_tab_file {
   # now output pass and fail files
   return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ingrup", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
   
+}
+
+#################################################################
+# Subroutine:  parse_alipid_output_to_create_dist_file()
+# Incept:      EPN, Wed Jul 11 12:38:46 2018
+#
+# Purpose:     Given an esl-alipid output and a hash of sequences
+#              to use, create a 'distance' file that we can use
+#              as input to esl-cluster.
+#
+# Arguments:
+#   $alipid_file:    name of esl-alipid output file to parse
+#   $useme_HR:       ref to hash, key is sequence name
+#   $dist_file:      name of distance file to create
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies:       if we have trouble opening either file or parsing alipid file
+#################################################################
+sub parse_alipid_output_to_create_dist_file { 
+  my $sub_name = "parse_alipid_output_to_create_dist_file";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($alipid_file, $useme_HR, $dist_file, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+
+  open(ALIPID,    $alipid_file) || ofile_FileOpenFailure($alipid_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(DIST, ">", $dist_file)   || ofile_FileOpenFailure($dist_file,   "RIBO", $sub_name, $!, "writing", $FH_HR);
+
+  while($line = <ALIPID>) { 
+    ## seqname1 seqname2 %id nid denomid %match nmatch denommatch
+    #AB024594.1 AB024593.1  91.36   1576   1725  99.48   1722   1731
+    #AB024594.1 AB024591.1  99.94   1727   1728 100.00   1728   1728
+    chomp $line;
+    if($line !~ m/^\#/) { 
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 8) { 
+        ofile_FAIL("ERROR in $sub_name, unable to parse line that does not have 8 whitespace-delimited tokens in $alipid_file\n$line\n", "RIBO", 1, $FH_HR);
+      }
+      my ($seq1, $seq2, $pid) = ($el_A[0], $el_A[1], $el_A[2]);
+      if((exists($useme_HR->{$seq1})) && (exists($useme_HR->{$seq2}))) { 
+        printf DIST ("$seq1 $seq2 %.4f\n", ((100. - $pid) / 100.));
+      }
+    }
+  }
+  close(DIST);
+  
+  close(ALIPID);
+
+  return;
+}
+
+#################################################################
+# Subroutine:  parse_dist_file_to_choose_centroids()
+# Incept:      EPN, Wed Jul 11 13:48:34 2018
+#
+# Purpose:     Given an esl-alipid output and information
+#              about which cluster those sequences belong
+#              to, choose a centroid for each cluster as
+#              the sequence with maximum similarity with
+#              all other sequences in its cluster. Write
+#              all centroids to a file.
+#
+# Arguments:
+#   $dist_file:       name of esl-alipid output file to parse
+#   $out_list_file:   name of list file to create with centroid seqs
+#   $in_cluster_HR:   ref to hash, key is sequence name, value is cluster index ALREADY FILLED
+#   $cluster_size_HR: ref to hash, key is cluster index, value is size of the cluster ALREADY FILLED
+#   $is_centroid_HR:  ref to hash, key is sequence name, value is '1' if centroid, else '0' FILLED HERE
+#   $not_centroid_HR: ref to hash, key is sequence name, value is '0' if centroid, else '1' FILLED HERE
+#   $ofile_info_HHR:  ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies:       if we have trouble opening either file or parsing alipid file
+#################################################################
+sub parse_dist_file_to_choose_centroids { 
+  my $sub_name = "parse_dist_file_to_choose_centroids";
+  my $nargs_expected = 7;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($dist_file, $out_list_file, $in_cluster_HR, $cluster_size_HR, $is_centroid_HR, $not_centroid_HR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+  my %sumdist_H = (); # key sequence name, value is summed distance between this sequence and all other sequences in its cluster
+
+  open(DIST, $dist_file) || ofile_FileOpenFailure($dist_file, "RIBO", $sub_name, $!, "writing", $FH_HR);
+
+  while($line = <DIST>) { 
+    #AJ306437.1 JN941634.1 0.1474
+    #AJ306437.1 AJ496250.1 0.1375
+    #AJ306437.1 HF968784.1 0.0515
+    chomp $line;
+    if($line !~ m/^\#/) { 
+      my @el_A = split(/\s+/, $line);
+      my ($seq1, $seq2, $dist) = ($el_A[0], $el_A[1], $el_A[2]);
+      if(! exists $in_cluster_HR->{$seq1}) { 
+        ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seq1 in $dist_file\n", "RIBO", 1, $FH_HR);
+      }
+      if(! exists $in_cluster_HR->{$seq2}) { 
+        ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seq2 in $dist_file\n", "RIBO", 1, $FH_HR);
+      }
+      if($in_cluster_HR->{$seq1} eq $in_cluster_HR->{$seq2}) { 
+        $sumdist_H{$seq1} += $dist;
+        $sumdist_H{$seq2} += $dist;
+      }
+    }
+  }
+  close(DIST);
+
+  my %seq_mindist_H = (); # key is cluster index, value is sequence in that cluster with min summed distance to all other seqs in the cluster
+  my %mindist_H     = (); # key is cluster index, value is min summed distance of $seq_mindist_H{} to all other seqs in the cluster
+  my $cluster;
+  my $seqname;
+  # go back through all sequences to determine centroid of all clusters
+  foreach $seqname (sort keys %{$in_cluster_HR}) { 
+    $cluster = $in_cluster_HR->{$seqname};
+    if($cluster_size_HR->{$cluster} == 1) { # a singleton
+      $sumdist_H{$seqname} = 0.;
+    }
+    elsif(! exists $sumdist_H{$seqname}) { 
+      ofile_FAIL("ERROR in $sub_name, did not read any distance info for $seqname", "RIBO", 1, $FH_HR);
+    }
+    if((! exists $mindist_H{$cluster}) || 
+       ($sumdist_H{$seqname} < $mindist_H{$cluster})) { 
+      $seq_mindist_H{$cluster} = $seqname;
+      $mindist_H{$cluster} = $sumdist_H{$seqname};
+    }
+  }
+
+  # record centroid for each cluster
+  foreach $cluster (sort keys %mindist_H) { 
+    my $centroid = $seq_mindist_H{$cluster};
+    if(! exists $is_centroid_H{$centroid}) { 
+      ofile_FAIL("ERROR in $sub_name, $seqname does not exists in input %is_centroid_H", "RIBO", 1, $FH_HR);
+    }
+    if(! exists $not_centroid_H{$centroid}) { 
+      ofile_FAIL("ERROR in $sub_name, $seqname does not exists in input %not_centroid_H", "RIBO", 1, $FH_HR);
+    }
+    $is_centroid_HR->{$centroid}  = 1;
+    $not_centroid_HR->{$centroid} = 0;
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine:  parse_esl_cluster_output()
+# Incept:      EPN, Wed Jul 11 13:21:09 2018
+#
+# Purpose:     Given an esl-cluster output file, fill two hashes
+#              with information from it.
+#
+# Arguments:
+#   $in_file:         name of esl-cluster output file
+#   $in_cluster_HR:   ref to hash, key is sequence from $in_file,
+#                     value is cluster index this sequence is in
+#   $cluster_size_HR: ref to hash, key is cluster index (possible
+#                     value in %{$in_cluster_HR}), value is 
+#                     number of sequences in that cluster
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:    Total number of clusters (max key in %{$cluster_size_HR})
+#
+# Dies:       if we have trouble opening input file
+#             or we read a sequence in the input file that
+#             does not exist as a key in %{$in_cluster_HR}
+#             or $in_file has a line in unexpected format
+#################################################################
+sub parse_esl_cluster_output {
+  my $sub_name = "parse_esl_cluster_output";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $in_cluster_HR, $cluster_size_HR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+
+  open(IN, $in_file) || ofile_FileOpenFailure($in_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $nsingletons   = 0; # number of singleton 'clusters' we've seen so far
+  my $prv_read_cidx = 0; # most recent cluster index from esl-cluster output we've seen (init at 0 is fine) 
+  my $cidx = undef;      # cluster index for our purposes here (differs from index in esl-cluster output because
+                         # singleton clusters are not counted
+  while($line = <IN>) { 
+    #Singleton:
+    #= AB016022.1	-	-
+    #
+    #Cluster 1:  0.099
+    #= MH201387.1 	1	0.099
+    #= HQ682648.1 	1	0.099
+    #= AF157125.1 	1	0.099
+    chomp $line;
+    if($line =~ m/^\=/) { 
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 4) { 
+        ofile_FAIL("ERROR in $sub_name, unable to parse line that does not have 4 whitespace-delimited tokens in $in_file\n$line\n", "RIBO", 1, $FH_HR);
+      }
+      my ($seqname, $read_cidx) = ($el_A[1], $el_A[2]); 
+      if(! exists $in_cluster_HR->{$seqname}) { 
+        ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seqname in esl-cluster output $in_file\n", "RIBO", 1, $FH_HR);
+      }
+      # determine cluster number for our accounting, will likely differ from esl-cluster because it didn't count singletons as clusters
+      if($read_cidx eq "-") { 
+        $nsingletons++;
+        $cidx = $prv_read_cidx + $nsingletons;
+      }
+      else { # part of a esl-cluster cluster
+        $cidx = $read_cidx + $nsingletons;
+        $prv_read_cidx = $read_cidx;
+      }
+      $in_cluster_HR->{$seqname} = $cidx;
+      if(! exists $cluster_size_HR->{$cidx}) { 
+        $cluster_size_HR->{$cidx} = 1;
+      }
+      else { 
+        $cluster_size_HR->{$cidx}++;
+      }
+    }
+  }
+  close(IN);
+
+  return ($nsingletons + $prv_read_cidx); 
 }
 
 #################################################################
