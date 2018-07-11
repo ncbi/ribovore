@@ -574,9 +574,6 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # but if somehow it does then we want to know about it.
 # use esl-seqstat to determine sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
-if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $seqstat_file);
-}
 $tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 $nseq    = scalar(keys %seqlen_H);
