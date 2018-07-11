@@ -1,6 +1,6 @@
-EPN, Wed Jul 11 15:46:14 2018
+EPN, Wed Jul 11 15:58:28 2018
 
-Ribotyper v0.16 README
+Ribotyper v0.17 README
 
 Organization of this file:
 
@@ -208,7 +208,7 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.16 (Jul 2018)
+# ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Wed Jul 11 15:47:56 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
@@ -653,7 +653,7 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.16 (Jul 2018)
+# ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Wed Jul 11 15:49:12 2018
 #
@@ -754,7 +754,7 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 > ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.16 (Jul 2018)
+# ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Wed Jul 11 15:49:27 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
@@ -864,7 +864,7 @@ the -h option, just as with ribotyper.pl:
 
 > ribolengthchecker.pl -h
 # ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.16 (Jul 2018)
+# ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Wed Jul 11 15:50:43 2018
 #
