@@ -1,0 +1,14 @@
+# each line has information on 1 family and has 4 or more tokens:
+# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
+# token 2: CM file name for this family
+# token 3: integer, consensus length for the CM for this family
+# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
+#                corresponding model in the ribotyper modelinfo file to be used
+SSU.Bacteria ribolengthchecker.0p15.RF00177.cm 1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+SSU.Archaea ribolengthchecker.0p15.RF01959.cm 1477 SSU_rRNA_archaea
+SSU.Eukarya ribolengthchecker.0p15.RF01960.cm 1851 SSU_rRNA_eukarya
+LSU.Archaea ribolengthchecker.0p15.RF02540.cm 2990 LSU_rRNA_archaea
+LSU.Bacteria ribolengthchecker.0p15.RF02541.cm 2925 LSU_rRNA_bacteria
+SSU.Microsporidia ribolengthchecker.0p15.RF02542.cm 1312 SSU_rRNA_microsporidia
+LSU.Eukarya ribolengthchecker.0p15.RF02543.cm 3401 LSU_rRNA_eukarya 
+
