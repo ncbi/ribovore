@@ -20,7 +20,7 @@ use warnings;
 # ribo_ParseQsubFile
 # ribo_ProcessSequenceFile 
 #
-# Validating, creating  or removing files
+# Validating, creating or removing files
 # ribo_ValidateExecutableHash
 # ribo_VerifyEnvVariableIsValidDir
 # ribo_CheckIfFileExistsAndIsNonEmpty
@@ -29,6 +29,7 @@ use warnings;
 # ribo_RemoveFileUsingSystemRm
 # ribo_FastaFileSplitRandomly
 # ribo_FastaFileReadAndOutputNextSeq
+# ribo_WriteAcceptFile
 #
 # String manipulation or stats:
 # ribo_GetMonoCharacterString
@@ -673,7 +674,7 @@ sub ribo_ConcatenateListOfFiles {
 #
 # Returns:  Nothing.
 # 
-# Dies:     If $AR is empty.
+# Dies:     If $AR is empty or we can't write to $file.
 #
 ################################################################# 
 sub ribo_WriteArrayToFile {
@@ -976,6 +977,41 @@ sub ribo_FastaFileReadAndOutputNextSeq {
   }
   
   return ($line, $seqname);
+}
+
+#################################################################
+# Subroutine: ribo_WriteAcceptFile
+# Incept:     EPN, Wed Jul 11 11:18:31 2018
+#
+# Purpose:    Given an array of acceptable models, create a ribotyper
+#             input --accept file defining those models as acceptable.
+#              
+# Arguments: 
+#   $AR:    reference to array of acceptable models
+#   $file:  name of file to create
+#   $FH_HR: ref to hash of file handles, including "cmd"
+#
+# Returns:  Nothing.
+# 
+# Dies:     If $AR is empty or we can't write to $file.
+#
+################################################################# 
+sub ribo_WriteAcceptFile { 
+  my $sub_name = "ribo_WriteAcceptFile()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($AR, $file, $FH_HR) = @_;
+  
+  my @accept_A = ();
+
+  foreach my $el (@{$AR}) { 
+    push (@accept_A, $el . " acceptable\n");
+  }
+
+  ribo_WriteArrayToFile(\@accept_A, $file, $FH_HR); # this will die if @accept_A is empty or we can't write to $file
+  
+  return;
 }
 
 #################################################################

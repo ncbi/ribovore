@@ -50,7 +50,7 @@ $opt_group_desc_H{++$g} = "basic options";
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,       undef,                                                       "display this help",                                            \%opt_HH, \@opt_order_A);
 opt_Add("-f",           "boolean", 0,                       $g,    undef, undef,       "forcing directory overwrite",                               "force; if <output directory> exists, overwrite it",            \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,       "be verbose",                                                "be verbose; output commands to stdout as they're run",         \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 1,                       $g,    undef, undef,       "use <n> CPUs",                                              "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 1,                       $g,    undef, "-p",        "use <n> CPUs",                                              "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                       $g,    undef, undef,       "keep all intermediate files",                               "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
 opt_Add("--special",    "string",  undef,                   $g,    undef, undef,       "read list of special species taxids from <s>",              "read list of special species taxids from <s>",                 \%opt_HH, \@opt_order_A);
 opt_Add("--class",      "boolean", 0,                       $g,    undef, "--phylum",  "work at class  level for tax analysis, incl. ingroup test", "work at class  level for tax analysis, incl. ingroup test [default: order]", \%opt_HH, \@opt_order_A);
@@ -486,7 +486,7 @@ my $family           = undef;
 my $family_modelfile = undef;
 my $family_modellen  = undef;
 my $family_fail_str  = "";
-my $rt_opts_str; # string of options for ribotyper 1 stage
+my $ribotyper_options; # string of options for ribotyper 1 stage
 my $local_rlc_riboopts_file = $out_root . ".rlc.riboopts";   # riboopts file for fribo2 step
 my $local_rlc_modelinfo_file = $out_root . ".rlc.modelinfo"; # model info file for fribo2 step
 
@@ -516,12 +516,12 @@ if($do_fribo1 || $do_fribo2) {
   # create the riboopts1 string for ribotyper stage 1, unless --riboopts1 <s> provided in which case we read that
   if(opt_IsUsed("--riboopts1", \%opt_HH)) { 
     open(OPTS1, $in_riboopts1_file) || ofile_FileOpenFailure($in_riboopts1_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-    $rt_opts_str = <OPTS1>;
-    chomp $rt_opts_str;
+    $ribotyper_options = <OPTS1>;
+    chomp $ribotyper_options;
     close(OPTS1);
   }
   else { 
-    $rt_opts_str = sprintf("--scfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
+    $ribotyper_options = sprintf("--scfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
     # --2slow doesn't apply here
   }
 
@@ -732,14 +732,32 @@ if($do_fblast) {
 if($do_fribo1) { 
   $stage_key = "fribo1";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
-  my $rt_out_file       = $out_root . ".ribotyper";
-  my $rt_short_out_file = $out_root . "/" . $dir_tail . ".ribodbcreate.ribotyper.short.out";
-  my $rt_command = $execs_H{"ribotyper"} . " $rt_opts_str $full_fasta_file $out_root > $rt_out_file";
-  if(! $do_prvcmd) { ribo_RunCommand($rt_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$rt_out_file", 0, "output of ribotyper");
+  
+  my $ribotyper_accept_file  = $out_root . ".ribotyper.accept";
+  my $ribotyper_outdir       = $out_root . "-rt";
+  my $ribotyper_outdir_tail  = $dir_tail . ".ribodbcreate-rt";
+  my $ribotyper_outfile      = $out_root . ".ribotyper.out";
+  my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
+  my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+
+  # first we need to create the acceptable models file
+  ribo_WriteAcceptFile($tmp_family_rtname_HA{$family}, $ribotyper_accept_file, $ofile_info_HH{"FH"});
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
+
+  $ribotyper_options .= " -f --keep --inaccept $ribotyper_accept_file "; 
+  if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
+  if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
+  if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+  if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+  if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+  if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
+
+  my $ribotyper_command = $execs_H{"ribotyper"} . " $ribotyper_options $full_fasta_file $ribotyper_outdir > $ribotyper_outfile";
+  if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$ribotyper_outfile", 0, "output of ribotyper");
   
   # parse ribotyper short file
-  $npass = parse_ribotyper_short_file($rt_short_out_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
+  $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
 }
 
@@ -753,6 +771,7 @@ if($do_fribo2) {
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribolengthchecker.pl", $progress_w, $log_FH, *STDOUT);
     
   my $rlc_options = " -i $local_rlc_modelinfo_file ";
+  if(opt_IsUsed("-n",            \%opt_HH)) { $rlc_options .= " -n " . opt_Get("-n", \%opt_HH); }
   if(opt_IsUsed("--noscfail",    \%opt_HH)) { $rlc_options .= " --noscfail "; }
   if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $rlc_options .= " --nocovfail "; }
   if(opt_IsUsed("-p",            \%opt_HH)) { $rlc_options .= " -p"; }
@@ -1000,7 +1019,7 @@ if   ($do_clustr) { $final_level_ct_HR = \%surv_clustr_level_ct_H; }
 elsif($do_ingrup)  { $final_level_ct_HR = \%surv_ingrup_level_ct_H; }
 else               { $final_level_ct_HR = \%surv_filters_level_ct_H; }
 foreach my $taxid (sort {$a <=> $b} keys %full_level_ct_H) { 
-  printf LVL ("%7d\t%7d\t%7d\t%7d\t%7d\n", $taxid, 
+  printf LVL ("%7s\t%7s\t%7s\t%7s\t%7s\n", $taxid, 
               $full_level_ct_H{$taxid}, 
               $surv_filters_level_ct_H{$taxid}, 
               ($do_ingrup) ? $surv_ingrup_level_ct_H{$taxid} : "-", 

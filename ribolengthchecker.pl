@@ -56,7 +56,7 @@ opt_Add("-h",           "boolean", 0,                        0,    undef, undef,
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                      "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
 opt_Add("-b",           "integer", 10,                       1,    undef, undef,      "number of positions <n> to look for indels",       "number of positions <n> to look for indels at the 5' and 3' boundaries",  \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 1,                        1,    undef, undef,      "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 1,                        1,    undef, "-p",       "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                      "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
@@ -343,17 +343,14 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence
 my %width_H  = (); # hash, key is "target", value is maximum length of target
 
 # create the .accept file to supply to ribotyper
-open(ACCEPT, ">", $ribotyper_accept_file) || ofile_FileOpenFailure($ribotyper_accept_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
-foreach $family (@family_order_A) { 
-  foreach my $rtname (@{$family_rtname_HA{$family}}) { 
-    print ACCEPT $rtname . " acceptable\n";
-  }
-}
-close(ACCEPT);
+my @accept_A = ();
+foreach $family (@family_order_A) { push(@accept_A, @{$family_rtname_HA{$family}}); }
+ribo_WriteAcceptFile(\@accept_A, $ribotyper_accept_file, $FH_HR);
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
 
 # run ribotyper
-my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfail -n " . opt_Get("-n", \%opt_HH);
+my $ribotyper_options = " -f --keep --inaccept $ribotyper_accept_file --minusfail "; 
+if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
 if(! opt_IsUsed("--noscfail",  \%opt_HH)) { $ribotyper_options .= " --scfail"; }
 if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; }
 if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
