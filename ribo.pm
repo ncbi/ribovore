@@ -1389,6 +1389,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
       %tmp_outfile_H = ();
       my $seq_file_tail = ribo_RemoveDirPath($seq_file);
       my $tmp_seq_file  = $out_dir . "/" . $seq_file_tail . "." . $f;
+      push(@{$tmp_outfile_HA{"fafile"}}, $tmp_seq_file);
       foreach $file_key ((@reqd_file_keys), "err") { 
         $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
         push(@{$tmp_outfile_HA{$file_key}}, $tmp_outfile_H{$file_key});
@@ -1419,7 +1420,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 
     # remove temporary files if --keep not enabled
     if(! opt_Get("--keep", $opt_HHR)) { 
-      foreach $file_key ((@reqd_file_keys), "err") { 
+      foreach $file_key ((@reqd_file_keys), "err", "fafile") { 
         foreach my $tmp_file (@{$tmp_outfile_HA{$file_key}}) {
           if(-e $tmp_file) { 
             ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
