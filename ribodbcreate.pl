@@ -15,7 +15,6 @@ my $env_riboeasel_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $env_vecplus_dir       = undef;
 my $env_ribotax_dir       = undef;
 my $env_riboblast_dir     = undef;
-my $env_ribouclust_dir    = undef;
 my $df_model_dir          = $env_ribotyper_dir . "/models/";
 
 #########################################################
@@ -122,7 +121,7 @@ opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--ski
 
 $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
-opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set UCLUST fractional identity to cluster at to <x>", "set UCLUST fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for parallelizing ribotyper/ribolengthchecker's calls to cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
@@ -380,11 +379,6 @@ if($do_fribo1 || $do_fribo2) {
   $execs_H{"ribolengthchecker"} = $env_ribotyper_dir  . "/ribolengthchecker.pl";
 }
 
-if($do_clustr) { 
-#  my $env_ribouclust_dir = ribo_VerifyEnvVariableIsValidDir("RIBOUCLUSTDIR");
-#  $execs_H{"usearch"} = $env_ribouclust_dir  . "/usearch";
-#  $execs_H{"esl-cluster"} = $env_riboeasel_dir  . "/esl-cluster";
-}
 ribo_ValidateExecutableHash(\%execs_H);
 
 #############################
@@ -449,7 +443,6 @@ $extra_H{"\$RIBOEASELDIR"} = $env_riboeasel_dir;
 if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
 if(defined $env_ribotax_dir)    { $extra_H{"\$RIBOTAXDIR"}    = $env_ribotax_dir; }
 if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
-if(defined $env_ribouclust_dir) { $extra_H{"\$RIBOUCLUSTDIR"} = $env_ribouclust_dir; }
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -886,9 +879,7 @@ else {
 
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying taxonomic groups lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
     # determine how many sequences at for each taxonomic group at level $level are still left
-    if($do_ftaxid || $do_ingrup || $do_special) { 
-      parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_ingrup_level_ct_H, $ofile_info_HH{"FH"});
-    }
+    parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_ingrup_level_ct_H, $ofile_info_HH{"FH"});
 
     # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
     # than don't survive the ingroup test, output that
@@ -1026,11 +1017,12 @@ my $out_level_ct_file = $out_root . "." . $level . ".ct";
 open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
 print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
 my $final_level_ct_HR = undef;
-if   ($do_clustr) { $final_level_ct_HR = \%surv_clustr_level_ct_H; }
+if   ($do_clustr)  { $final_level_ct_HR = \%surv_clustr_level_ct_H; }
 elsif($do_ingrup)  { $final_level_ct_HR = \%surv_ingrup_level_ct_H; }
 else               { $final_level_ct_HR = \%surv_filters_level_ct_H; }
 foreach my $taxid (sort {$a <=> $b} keys %full_level_ct_H) { 
-  printf LVL ("%7s\t%7s\t%7s\t%7s\t%7s\n", $taxid, 
+  printf LVL ("%s\t%s\t%s\t%s\t%s\t%s\n", 
+              $taxid, 
               $full_level_ct_H{$taxid}, 
               $surv_filters_level_ct_H{$taxid}, 
               ($do_ingrup) ? $surv_ingrup_level_ct_H{$taxid} : "-", 
@@ -2048,8 +2040,9 @@ sub parse_srcchk_file {
 #
 # Arguments:
 #   $in_file:        name of srcchk output file to parse
-#   $useme_HR:       ref to hash, count any seq $seq for which $useme_HR->{$seq} exists 
-#                    and is not 0 or ""
+#   $useme_HR:       ref to hash, 
+#                    if defined: count only seqs $seq for which 
+#                    $useme_HR->{$seq} exists and is equal to "" or "1"
 #                    if undefined, count for all seqs
 #   $gtaxid_HR:      ref to hash to fill, key is sequence name, value is
 #                    group taxid from column 4, can be undef to not fill
@@ -2082,8 +2075,19 @@ sub parse_tax_level_file {
     if(! exists $count_HR->{$group_taxid}) { # initialize
       $count_HR->{$group_taxid} = 0;
     }
-    if((! defined $useme_HR) || 
-       ((exists $useme_HR->{$seq}) && ($useme_HR->{$seq} ne "") && ($useme_HR->{$seq} ne "0"))) { # only count if useme value exists and is not 0 or ""
+    my $useme = undef;
+    if(defined $useme_HR) { 
+      if(exists $useme_HR->{$seq}) { # $seq key exists 
+        $useme = (($useme_HR->{$seq} eq "1") || ($useme_HR->{$seq} eq "")) ? 1 : 0; # count only if value is "1" or ""
+      }
+      else { # $seq key does not exist, do not count
+        $useme = 0;
+      }
+    }
+    else { 
+      $useme = 1; # $useme_HR, not defined count all seqs
+    }
+    if($useme) { 
       $count_HR->{$group_taxid}++;
     }
   }
