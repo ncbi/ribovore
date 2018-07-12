@@ -24,13 +24,13 @@
 #                          <d4>..<d5> = subject coordinates of hit
 #                          <f1> = fractional identity of hit alignment
 #                          <d6> = number of gaps in hit alignment
-# 'ribotyper2[<s>]:        ribotyper (ribolengthchecker) failure with unexpected features listed in <s>
-#                          see db100/db100.ribodbcreate-rlc/db100-rlc.ribotyper.long.out
+# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>
+#                          see db100/db100.ribodbmaker-ra/db100-ra.ribotyper.long.out
 #                          for explanation of unexpected features
 # 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>
 # 'ingroup-analysis[<s>]:  sequence failed ingroup analysis
 #                          if <s> includes 'type=<s1>', sequence was classified as type <s1>
-#                          see db100/db100.ribodbcreate.ingrup.alipid_analyze.out for explanation of types
+#                          see db100/db100.ribodbmaker.ingrup.alipid_analyze.out for explanation of types
 #  idx  seqname     seqlen    taxid   gtaxid   p/f  clust  special  failstr
 1     KC674542.1  1809     175245        1  FAIL      -        -  not-specified-species;;vecscreen-match[None];;ribotyper2[*LowCoverage:(0.972<0.990);];;
 2     EU278606.1  1737     209559     5042  FAIL      -        -  ribotyper2[*LowCoverage:(0.990<0.990);];;
