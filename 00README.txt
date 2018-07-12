@@ -15,7 +15,10 @@ RIBOTYPER'S TWO ROUND SEARCH STRATEGY
 EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
 DEFINING ACCEPTABLE/QUESTIONABLE MODELS
 ALL COMMAND LINE OPTIONS
-ADDITIONAL SCRIPT: ribolengthchecker.pl
+ADDITIONAL SCRIPT: riboaligner.pl
+ADDITIONAL SCRIPT: ribodbmaker.pl
+PARALLELIZING ON A SGE COMPUTE FARM
+TESTING SCRIPTS
 
 ##############################################################################
 INTRO
@@ -48,21 +51,33 @@ directory. To determine what shell you use, type
 If this command returns '/bin/bash', then update your .bashrc file.
 If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
-The 5 lines to add to your .bashrc file:
+The lines to add to your .bashrc file:
 -----------
-export RIBODIR="<full path to directory where you have the ribotyper code>"
+export RIBODIR="<full path to directory in which you have the ribotyper code>"
+export RIBOINFERNALDIR="/usr/local/infernal/1.1.2/bin"
+export RIBOEASELDIR="/usr/local/infernal/1.1.2/bin"
+export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
+export RIBOTAXDIR="/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
+export RIBOBLASTDIR="/usr/bin"
 export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
-export PERL5LIB="$RIBODIR:$PERL5LIB"
+export EPNTESTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-test"
+export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB"
 export PATH="$RIBODIR:$PATH"
 -----------
 
-The 5 lines to add to your .cshrc file:
+The lines to add to your .cshrc file:
 -----------
-setenv RIBODIR "<full path to directory in which you have the ribotyper code"
+setenv RIBODIR "<full path to directory in which you have the ribotyper code>"
+setenv RIBOINFERNALDIR "/usr/local/infernal/bin"
+setenv RIBOEASELDIR "/usr/local/infernal/bin"
+setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
+setenv RIBOTAXDIR "/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
+setenv RIBOBLASTDIR "/usr/bin"
 setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
-setenv PERL5LIB "$RIBODIR":"$PERL5LIB"
+setenv EPNTESTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-test"
+setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
 -----------
 
@@ -78,7 +93,7 @@ respectively.
 However, in some places below that specify a path including $RIBODIR,
 you must instead use a path to which you have write permission,
 
-After adding the 4 lines specified above, execute the command:
+After adding the lines specified above, execute the command:
 > source ~/.bashrc
 or
 > source ~/.cshrc
@@ -95,29 +110,57 @@ or
 again.
 
 To check that your environment variables are properly set up, do the
-following four commands:
+following commands (lines prefixed with '>')
 > echo $RIBODIR
-> echo $EPNOPTDIR
-> echo $EPNOFILEDIR
-> echo $PERL5LIB
-> echo $PATH
 
-The first command should return only one directory,
+This should return only one directory,
 namely the directory where you installed ribotyper,
 or
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
 if you did not install your own copy of ribotyper.
 
-The second command should return only:
+> echo $EPNOPTDIR
+> echo $EPNOFILEDIR
+> echo $EPNTESTDIR
+
+These should return:
 /panfs/pan1/dnaorg/ssudetection/code/epn-options
+/panfs/pan1/dnaorg/ssudetection/code/epn-ofile
+/panfs/pan1/dnaorg/ssudetection/code/epn-test
 
-The third command should return a potentially longer string that
+> echo $PERL5LIB
+This should return a potentially longer string that
 begins with:
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1:/panfs/pan1/dnaorg/ssudetection/code/epn-options
+/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1:/panfs/pan1/dnaorg/ssudetection/code/epn-options:/panfs/pan1/dnaorg/ssudetection/code/epn-ofile:/panfs/pan1/dnaorg/ssudetection/code/epn-test:
 
-The fourth command should return a potentially longer string that
+> echo $PATH
+This should return a potentially longer string that
 begins with:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
+
+> echo $RIBOINFERNALDIR
+> echo $RIBOEASELDIR
+
+Should *each* return:
+/usr/local/infernal/bin
+
+> echo $VECPLUSDIR
+
+Should return:
+/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy
+
+> echo $RIBOTAXDIR
+
+Should return:
+/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
+
+And finally, 
+> echo $RIBOBLASTDIR
+
+Should return:
+
+/usr/bin
+
 
 If any of these commands do not return what they are supposed to,
 please email Eric Nawrocki (nawrocke@ncbi.nlm.nih.gov). If you do see
@@ -128,38 +171,12 @@ explained below, then the sample run below should work.
 PREREQUISITE PROGRAMS
 
 The Infernal v1.1.2 software package must be installed prior to
-running ribotyper.pl, and its executables must be in your $PATH.
-Further, the easel 'miniapps' that are installed with Infernal must be
-in your $PATH. You can download Infernal from
-http://eddylab.org/infernal/.
-
-*****************************************
-Internal NCBI-specific instructions:
-The Infernal v1.1.2 executables and the easel miniapps are already
-installed system-wide at NCBI. You need to login into a node that
-runs CentOS 7. Add 'infernal' to the facilities line of your
-.ncbi_hints file. And add the following line near the botom of  your .ncbi_hints file:
-option infernal_version 1.1.2
-Then logout and log in again, so that the updates to .ncbi_hints take effect.
-*****************************************
-
-To check if you have Infernal and the executables installed and in
-your path, execute the following two commands:
-
-> cmsearch -h 
-> esl-sfetch -h
-
-The first command should return the usage for cmsearch with a line
-such as: INFERNAL 1.1.2 (July 2016).
-And the second command should return the usage for esl-sfetch with a
-line such as: Easel 0.43 (July 2016).
-It is possible that the version numbers and dates will be incremented
-after the values current in October 2017 were copied into this documentation.
-
-If you see the versions listed above or any later versions,
-and you were able to set your environment variables
-as explained above, then the sample run 
-explained below should work.
+running the ribotyper scripts. The $RIBOINFERNALDIR and $RIBOEASELDIR
+environment variables should point to the directories in which the
+binaries are installed. This will be 'infernal-1.1.2/src' and
+'infernal-1.1.2/easel/miniapps" respectively if you build infernal
+1.1.2 from source with just './configure; make'
+You can download Infernal from http://eddylab.org/infernal/.
 
 ##############################################################################
 SAMPLE RUN
@@ -725,9 +742,9 @@ advanced options:
   --keep       : keep all intermediate files that are removed by default
 
 ##############################################################################
-ADDITIONAL SCRIPT: ribolengthchecker.pl
+ADDITIONAL SCRIPT: riboaligner.pl
 
-The script 'ribolengthchecker.pl' is also included in the ribotyper
+The script 'riboaligner.pl' is also included in the ribotyper
 distribution. It is a 'wrapper' script for ribotyper.pl. It runs
 ribotyper.pl and does some additional post-processing. Specifically,
 it aligns all the sequences that ribotyper.pl has defined as belonging
@@ -739,21 +756,21 @@ or partial in your dataset.
 
 Setup: if you followed the instructions above and can
 successfully run ribotyper.pl you should be able to also run
-ribolengthchecker.pl.
+riboaligner.pl.
 
 Following, is an example run using the file example-rlc-11.fa in the
 testfiles/ directory, with output. In the example, the command given is: 
-> ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
+> riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 
 If you did not fully copy or clone the ribotyper files and set $RIBODIR to
 a directory in which you have write permission, then you should run instead
-> ribolengthchecker.pl <user directory>/testfiles/example-rlc-11.fa test-rlc
+> riboaligner.pl <user directory>/testfiles/example-rlc-11.fa test-rlc
 
-where <user directory> is the directory in which ribolengthchecker.pl is installed.
+where <user directory> is the directory in which riboaligner.pl is installed.
 
-> ribolengthchecker.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
+> riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 --------------
-# ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
+# riboaligner.pl :: classify lengths of ribosomal RNA sequences
 # ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Wed Jul 11 15:49:27 2018
@@ -775,39 +792,39 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 #  01223::Audouinella_hermannii.::AF026040
 #
 # See details in:
-#  test-rlc/test-rlc.ribolengthchecker-rt/test-rlc.ribolengthchecker-rt.ribotyper.short.out
+#  test-rlc/test-rlc.riboaligner-rt/test-rlc.riboaligner-rt.ribotyper.short.out
 #  and
-#  test-rlc/test-rlc.ribolengthchecker-rt/test-rlc.ribolengthchecker-rt.ribotyper.long.out
+#  test-rlc/test-rlc.riboaligner-rt/test-rlc.riboaligner-rt.ribotyper.long.out
 #
 #
-# ribotyper output saved as test-rlc/test-rlc.ribolengthchecker.ribotyper.out
-# ribotyper output directory saved as test-rlc/test-rlc.ribolengthchecker-rt
+# ribotyper output saved as test-rlc/test-rlc.riboaligner.ribotyper.out
+# ribotyper output directory saved as test-rlc/test-rlc.riboaligner-rt
 #
-# Tabular output saved to file test-rlc/test-rlc.ribolengthchecker.tbl
+# Tabular output saved to file test-rlc/test-rlc.riboaligner.tbl
 #
-# List and description of all output files saved in:                             test-rlc.ribolengthchecker.list
-# Output printed to screen saved in:                                             test-rlc.ribolengthchecker.log
-# List of executed commands saved in:                                            test-rlc.ribolengthchecker.cmd
-# List file          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.list
-# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.stk
-# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.ifile
-# EL file            for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.elfile
-# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Archaea.full-exact.cmalign
-# List file          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.list
-# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.stk
-# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.ifile
-# EL file            for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.elfile
-# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-exact.cmalign
-# List file          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.list
-# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.stk
-# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.ifile
-# EL file            for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.elfile
-# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.ribolengthchecker.SSU.Bacteria.full-extra.cmalign
-# List file          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.list
-# Alignment          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.stk
-# Insert file        for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.ifile
-# EL file            for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.elfile
-# cmalign output     for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.ribolengthchecker.SSU.Bacteria.partial-ambig.cmalign
+# List and description of all output files saved in:                             test-rlc.riboaligner.list
+# Output printed to screen saved in:                                             test-rlc.riboaligner.log
+# List of executed commands saved in:                                            test-rlc.riboaligner.cmd
+# List file          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.list
+# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.stk
+# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.ifile
+# EL file            for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.elfile
+# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.list
+# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.stk
+# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.ifile
+# EL file            for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.elfile
+# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.list
+# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.stk
+# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.ifile
+# EL file            for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.elfile
+# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.cmalign
+# List file          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.list
+# Alignment          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.stk
+# Insert file        for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.ifile
+# EL file            for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.elfile
+# cmalign output     for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.cmalign
 #
 # All output files created in directory ./test-rlc/
 #
@@ -820,15 +837,15 @@ where <user directory> is the directory in which ribolengthchecker.pl is install
 The output of the program (above) lists all of the files that were
 created, including a ribotyper output directory (test-rlc-rt) and
 ribotyper standard output file (test-rlc.ribotyper.out). The tabular
-output file created by ribolengthchecker.pl
-(rlc-test.ribolengthchecker.tbl) is the same as the 'short' output
+output file created by riboaligner.pl
+(rlc-test.riboaligner.tbl) is the same as the 'short' output
 format of ribotyper.pl with three additional columns pertaining to the
 length of each sequence including a classification of that length. The
 end of the tabular output file has comments explaining those columns
 as well as the definitions of each length classification.
 
 The alignment files
-(e.g. test-rlc.ribolengthchecker.SSU.Bacteria.full-ambig.stk)
+(e.g. test-rlc.riboaligner.SSU.Bacteria.full-ambig.stk)
 are in 'Stockholm' format created by Infernal's cmalign program. There
 is a wiki page describing the Stockholm format:
 https://en.wikipedia.org/wiki/Stockholm_format, but a more helpful
@@ -836,10 +853,10 @@ resource is the Infernal v1.1.2 user's guide, pages 29 and 30, which
 is available here:
 http://eddylab.org/infernal/Userguide.pdf.
 
-Here, are the relevant lines from the file rlc-test.ribolengthchecker.tbl
+Here, are the relevant lines from the file rlc-test.riboaligner.tbl
 created by the above command:
 
-> cat test-rlc/test-rlc.ribolengthchecker.tbl
+> cat test-rlc/test-rlc.riboaligner.tbl
 -----------------------
 # Column 6 [mstart]:              model start position
 # Column 7 [mstop]:               model stop position
@@ -859,16 +876,16 @@ created by the above command:
 Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
 output file from ribotyper.pl. 
 
-You can see the command-line options for ribolengthchecker.pl using
+You can see the command-line options for riboaligner.pl using
 the -h option, just as with ribotyper.pl:
 
-> ribolengthchecker.pl -h
-# ribolengthchecker.pl :: classify lengths of ribosomal RNA sequences
+> riboaligner.pl -h
+# riboaligner.pl :: classify lengths of ribosomal RNA sequences
 # ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Wed Jul 11 15:50:43 2018
 #
-Usage: ribolengthchecker.pl [-options] <fasta file to annotate> <output file name root>
+Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
 
 
 basic options:
@@ -892,7 +909,7 @@ options for parallelizing cmsearch and cmalign on a compute farm:
   --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
   --errcheck : consider any farm stderr output as indicating a job failure
 
-One important command line option to ribolengthchecker.pl is 
+One important command line option to riboaligner.pl is 
 the -b option. This controls how many model positions are examined at
 the 5' and 3' ends when classifying the lengths of sequences,
 especially 'full-ambig' sequences. The default value is 10, but this
@@ -901,13 +918,175 @@ can be changed to <n> with '-b <n>'.
 Another important option is --riboopts <s> which allows you to
 pass options to ribotyper. To use this option, create a file called
 <s>, with a single line with all the options you want passed to
-ribotyper, and use --riboopts <s> when you call ribolengthchecker.pl.
+ribotyper, and use --riboopts <s> when you call riboaligner.pl.
 Not all ribotyper options can appear in this file <s>. The -f and
 --keep options are not allowed (the program will die with an error
 message if you include them) because they are used automatically when
-ribolengthchecker.pl calls ribotyper.pl. Additionally, -n <d> is not
+riboaligner.pl calls ribotyper.pl. Additionally, -n <d> is not
 allowed to control the number of CPUs that ribotyper uses. If you want
-to control the number of CPUs, pass -n <d> to ribolengthchecker.pl
+to control the number of CPUs, pass -n <d> to riboaligner.pl
 instead. 
 
 -----------------------------
+##############################################################################
+ADDITIONAL SCRIPT: ribodbmaker.pl
+
+The script 'ribodbmaker.pl' is also included in the ribotyper
+distribution. This script is designed to start from an input file of
+many candidate ribosomal RNA sequences and to subject them to various
+tests/filters to produce a high quality subset of those sequences.
+
+This script performs the following tests:
+
+ - fail sequences with too many ambiguous nucleotides
+ - fail sequences that do not have a specified species taxid
+ - fail sequences that have non-Weak VecScreen hits
+ - fail sequences that have repetitive sequences revealed by
+   self-BLAST
+ - fail sequences that fail ribotyper
+ - fail sequences that fail riboaligner
+ - fail sequences that do cover a specified span of model positions
+   (are too short)
+ - fail sequences that do not cluster with other sequences in their
+   taxonomic group
+
+Sequences that pass all of these tests are then (optionally)
+clustered and centroids for each cluster are selected.
+
+Setup: if you followed the instructions above and can
+successfully run ribotyper.pl you should be able to also run
+ribodbmaker.pl.
+
+There are two common usage cases for ribodbmaker.pl:
+
+Usage 1: create a representative database of high quality sequences 
+Usage 2: create a subset of high quality sequences
+
+Below is an example of a run for each usage case, using a randomly
+selected set of 100 fungal SSU rRNA sequences - the
+testfiles/fungi-ssu.r100.fa file.
+
+Usage 1: create a representative database of high quality sequences 
+> ribodbmaker.pl -f --model SSU.Eukarya --skipfribo1 --ribo2hmm $RIBODIR/testfiles/fungi-ssu.r100.fa u1-r100
+
+
+Usage 2: create a subset of high quality sequences
+> ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100.
+
+
+
+SHOW OUTPUT
+POINT OUT IMPORTANT OUTPUT FILES
+
+---------
+##############################################################################
+PARALLELIZING ON A SGE COMPUTE FARM
+
+The ribotyper.pl, riboaligner.pl, and ribodbmaker.pl scripts can be
+parallelized using an SGE compute farm using the -p command line
+option.
+
+The options related to parallelization are the same for all of the
+scripts:
+
+options for parallelizing ribotyper/ribolengthchecker's calls to cmsearch and cmalign on a compute farm:
+  -p         : parallelize cmsearch on a compute farm
+  -q <s>     : use qsub info file <s> instead of default
+  --nkb <n>  : number of KB of sequence for each farm job is <n> [10]
+  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
+  --errcheck : consider any farm stderr output as indicating a job failure
+
+By default SGE 'qsub' command line options that will work at NCBI are
+used, but you can change the default qsub 'prefix' and 'suffix' using
+the -q <s> option. The prefix is the string that occurs before the
+command that is being submitted to SGE, and the suffix is the string
+that occurs after it. The file that specifies the default prefix and
+suffix values is $RIBODIR/models/ribo.0p15.qsubinfo:
+
+> cat $RIBODIR/models/ribo.0p15.qsubinfo
+-----------
+# ribo.0p15.qsub.txt this file must have exactly 2 non-'#' prefixed
+# lines. 
+#
+# Line 1: a string that is the qsub command and flags for submitting
+# jobs to the compute farm *prior* to the actual cmsearch/cmalign command.
+#
+# This line may have up to two special values that will be
+# replaced: 
+# (a) "![errfile]!": will be replaced by an error file name
+#     automatically determined by the ribotyper script(s)
+# (b) "![jobname]!": will be replaced by a job name
+#     automatically determined by the ribotyper script(s)
+#
+# Line 2: the remainder of the qsub cmsearch/cmalign command 
+#
+qsub -N ![jobname]! -b y -v SGE_FACILITIES -P unified -S /bin/bash -cwd -V -j n -o /dev/null -e ![errfile]! -m n -l h_rt=288000,h_vmem=16G,mem_free=16G,reserve_mem=16G,m_mem_free=16G "
+"
+-----------
+As explained in the top of that file, the first non-comment (non-#
+prefixed) line is the qsub prefix and second is the qsub suffix.
+
+So with this file a command $COMMAND would be submitted to the farm
+like this:
+
+qsub -N ![jobname]! -b y -v SGE_FACILITIES -P unified -S /bin/bash -cwd -V -j n -o /dev/null -e ![errfile]! -m n -l h_rt=288000,h_vmem=16G,mem_free=16G,reserve_mem=16G,m_mem_free=16G "$COMMAND"
+
+Where ![jobname]! and ![errfile]! will be automatically replaced by
+the ribotyper script being used.
+
+You can create your own file with different qsub prefix and suffix
+lines and use them using the option '-q <PATH-TO-YOUR-FILE>'.
+
+The --nkb option controls how big each job will be. By default, each
+job will contain about 10Kb of sequence. So if the input fasta file is
+1Mb, it will be split into 100 smaller files and each will get its own
+farm job. There will never be more than a maximum of 300 smaller files
+created. You can change this to <n>Kb instead of 10Kb with the --nkb
+<n> option.
+
+The --wait <n> option controls how many minutes the script will wait
+for jobs to finish before giving up and exiting in error. By default
+<n> is 500.
+
+The --errcheck option makes it so that if any job outputs any data to
+an error file then the ribotyper script will exit in error.
+
+##############################################################################
+TESTING SCRIPTS 
+
+The ribodbmaker.pl script is included in the ribotyper package for
+testing scripts and is used during development for regression
+testing. 
+
+The testfiles/do-all-tests.sh shell script will perform all the
+tests. It includes 3 non-parallel and 3 parallel tests.
+
+That file:
+> cat $RIBODIR/testfiles/do-all-tests.sh
+# non-parallel 16 sequence test
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test-16
+# parallel 16 sequence test
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.example-16 test-p-16
+
+# non-parallel 100 sequence test
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.r100 test-100
+# parallel 100 sequence test
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.r100 test-p-100
+
+# non-parallel ribodbmaker.pl test
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test-db 
+# parallel ribodbmaker.pl test
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test-p-db
+
+# optionally remove all test directories
+#for d in test-16 test-p-16 test-100 test-p-100 test-db test-p-db; do 
+# rm -rf $d
+#done
+
+To do all tests and save output to the file 'test.out', do:
+
+> sh $RIBODIR/testfiles/do-all-tests.sh > test.out
+
+The test.out file should inclue 
+
+
