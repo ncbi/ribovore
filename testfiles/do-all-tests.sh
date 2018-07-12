@@ -9,7 +9,7 @@ $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.r100 test3
 $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.r100 test4
 
 # non-parallel ribodbmaker.pl test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test5 
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.db test5 
 # parallel ribodbmaker.pl test
 $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test6
 
