@@ -19,5 +19,18 @@ out: r100/r100.ribotyper.long.out
 exp: testfiles/expected-files/r100.ribotyper.short.out
 exp: testfiles/expected-files/r100.ribotyper.long.out
 rmdir: r100
+command: perl $RIBODIR/ribolengthchecker.pl -i $RIBODIR/models/ribolengthchecker.0p15.ssu.euk.modelinfo -f testfiles/fungi-ssu.r100.fa r100-2 > /dev/null
+desc: ribolengtchecker-2-100
+out: r100-2/r100-2.ribolengthchecker.tbl
+out: r100-2/r100-2.ribolengthchecker.SSU.Eukarya.partial.list
+out: r100-2/r100-2.ribolengthchecker.SSU.Eukarya.partial.ifile
+out: r100-2/r100-2.ribolengthchecker.SSU.Eukarya.partial.elfile
+out: r100-2/r100-2.ribolengthchecker.SSU.Eukarya.partial.stk
+exp: testfiles/expected-files/r100-2.ribolengthchecker.tbl
+exp: testfiles/expected-files/r100-2.ribolengthchecker.SSU.Eukarya.partial.list
+exp: testfiles/expected-files/r100-2.ribolengthchecker.SSU.Eukarya.partial.ifile
+exp: testfiles/expected-files/r100-2.ribolengthchecker.SSU.Eukarya.partial.elfile
+exp: testfiles/expected-files/r100-2.ribolengthchecker.SSU.Eukarya.partial.stk
+rmdir: r100-2
 
 
