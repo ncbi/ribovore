@@ -137,7 +137,7 @@
 #  1.  *NoHits                 No primary hits to any models above the minimum primary score
 #                              threshold of 20 bits (--minpsc) were found.
 #  2.  *UnacceptableModel      Best hit is to a model that is 'unacceptable' as defined in
-#                              input file r100-2/r100-2.ribolengthchecker.ribotyper.accept (--inaccept).
+#                              input file r100-2/r100-2.riboaligner.ribotyper.accept (--inaccept).
 #  3.  *MultipleFamilies       One or more primary hits to two or more "families" (e.g. SSU
 #                              or LSU) exists for the same sequence.
 #  4.  *BothStrands            One or more primary hits above the minimum primary score threshold
@@ -153,7 +153,7 @@
 #                              model (summed length of all hits divided by total length of sequence)
 #                              is below threshold of 0.86 (--tcov).
 # 10.  QuestionableModel       Best hit is to a model that is 'questionable' as defined in
-#                              input file r100-2/r100-2.ribolengthchecker.ribotyper.accept (--inaccept).
+#                              input file r100-2/r100-2.riboaligner.ribotyper.accept (--inaccept).
 # 11.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
 #                              of sequence) is below threshold of 0.5 (--lowppossc).
 # 12.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length

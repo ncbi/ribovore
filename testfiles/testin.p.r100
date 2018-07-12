@@ -12,24 +12,20 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: perl $RIBODIR/ribotyper.pl -f testfiles/fungi-ssu.r100.fa r100 > /dev/null
-desc: ribotyper-2-100
+command: perl $RIBODIR/ribotyper.pl -p -f testfiles/fungi-ssu.r100.fa r100 > /dev/null
+desc: ribotyper-2-p-100
 out: r100/r100.ribotyper.short.out
 out: r100/r100.ribotyper.long.out
 exp: testfiles/expected-files/r100.ribotyper.short.out
 exp: testfiles/expected-files/r100.ribotyper.long.out
 rmdir: r100
-command: perl $RIBODIR/riboaligner.pl -i $RIBODIR/models/riboaligner.0p15.ssu.euk.modelinfo -f testfiles/fungi-ssu.r100.fa r100-2 > /dev/null
-desc: ribolengtchecker-2-100
+command: perl $RIBODIR/riboaligner.pl -p -i $RIBODIR/models/riboaligner.0p15.ssu.euk.modelinfo -f testfiles/fungi-ssu.r100.fa r100-2 > /dev/null
+desc: ribolengtchecker-2-p-100
 out: r100-2/r100-2.riboaligner.tbl
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.list
-out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.ifile
-out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.elfile
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.stk
 exp: testfiles/expected-files/r100-2.riboaligner.tbl
 exp: testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.list
-exp: testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.ifile
-exp: testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.elfile
 exp: testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.stk
 rmdir: r100-2
 

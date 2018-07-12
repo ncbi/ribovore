@@ -19,17 +19,17 @@ out: test-16/test-16.ribotyper.long.out
 exp: testfiles/expected-files/test-16.ribotyper.short.out
 exp: testfiles/expected-files/test-16.ribotyper.long.out
 rmdir: test-16
-command: perl $RIBODIR/ribolengthchecker.pl -p -f testfiles/example-16.fa test-16-2 > /dev/null
-desc: ribolengthchecker-1-p-16
-out: test-16-2/test-16-2.ribolengthchecker.tbl
-out: test-16-2/test-16-2.ribolengthchecker.SSU.Bacteria.partial.stk
-out: test-16-2/test-16-2.ribolengthchecker.SSU.Bacteria.partial.list
-out: test-16-2/test-16-2.ribolengthchecker.SSU.Bacteria.partial.ifile
-out: test-16-2/test-16-2.ribolengthchecker.SSU.Bacteria.partial.elfile
-exp: testfiles/expected-files/test-16-2.ribolengthchecker.tbl
-exp: testfiles/expected-files/test-16-2.ribolengthchecker.SSU.Bacteria.partial.stk
-exp: testfiles/expected-files/test-16-2.ribolengthchecker.SSU.Bacteria.partial.list
-exp: testfiles/expected-files/test-16-2.ribolengthchecker.SSU.Bacteria.partial.ifile
-exp: testfiles/expected-files/test-16-2.ribolengthchecker.SSU.Bacteria.partial.elfile
+command: perl $RIBODIR/riboaligner.pl -p -f testfiles/example-16.fa test-16-2 > /dev/null
+desc: riboaligner-1-p-16
+out: test-16-2/test-16-2.riboaligner.tbl
+out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk
+out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list
+out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
+out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.elfile
+exp: testfiles/expected-files/test-16-2.riboaligner.tbl
+exp: testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.stk
+exp: testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.list
+exp: testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
+exp: testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.elfile
 rmdir: test-16-2
 
