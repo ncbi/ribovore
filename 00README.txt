@@ -1,6 +1,6 @@
-EPN, Wed Jul 11 15:58:28 2018
+EPN, Thu Jul 12 15:22:45 2018
 
-Ribotyper v0.17 README
+Ribotyper v0.18 README
 
 Organization of this file:
 
@@ -225,24 +225,24 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.17 (Jul 2018)
+# ribotyper 0.18 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Wed Jul 11 15:47:56 2018
+# date:              Thu Jul 12 15:24:26 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
-# $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
-# $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
 #
 # target sequence input file:   example-16.fa
-# output directory name:        test
-# forcing directory overwrite:  yes [-f]
+# output directory name:        test         
+# forcing directory overwrite:  yes [-f]     
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.2 seconds]
 # Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [1.3 seconds]
-# Sorting classification results                   ... done. [0.0 seconds]
-# Processing classification results                ... done. [0.0 seconds]
+# Classifying sequences                            ... done. [1.4 seconds]
+# Sorting classification results                   ... done. [0.5 seconds]
+# Processing classification results                ... done. [0.1 seconds]
 # Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.3 seconds]
+# Searching sequences against best-matching models ... done. [1.5 seconds]
 # Concatenating tabular round 2 search results     ... done. [0.0 seconds]
 # Sorting search results                           ... done. [0.0 seconds]
 # Processing tabular round 2 search results        ... done. [0.0 seconds]
@@ -277,9 +277,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16     11.9     15817.6     15817.6  00:00:01.34  (hh:mm:ss)
-  search                15     11.6     15626.7     15626.7  00:00:01.30  (hh:mm:ss)
-  total                 16      2.4      3164.0      3164.0  00:00:06.72  (hh:mm:ss)
+  classification        16     11.0     14679.6     14679.6  00:00:01.45  (hh:mm:ss)
+  search                15      9.9     13329.3     13329.3  00:00:01.52  (hh:mm:ss)
+  total                 16      3.9      5204.7      5204.7  00:00:04.08  (hh:mm:ss)
 #
 #
 # List and description of all output files saved in:   test.ribotyper.list
@@ -290,7 +290,7 @@ Example output of the script from the above command
 #
 # All output files created in directory ./test/
 #
-# CPU time:  00:00:06.72
+# CPU time:  00:00:04.08
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -513,7 +513,7 @@ additional information. That file is:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p02.modelinfo
 
 Here is the modelinfo file:
-$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo0.0p15.modelinfo
+$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p15.modelinfo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Each non-# prefixed line should have 4 white-space delimited tokens: 
 #<modelname> <family> <domain> <CM-file-with-only-this-model>
@@ -672,7 +672,7 @@ $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # ribotyper 0.17 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Jul 11 15:49:12 2018
+# date:    Thu Jul 12 15:33:05 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -768,23 +768,23 @@ a directory in which you have write permission, then you should run instead
 
 where <user directory> is the directory in which riboaligner.pl is installed.
 
-> riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
+> riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.17 (Jul 2018)
+# ribotyper 0.18 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Wed Jul 11 15:49:27 2018
+# date:              Thu Jul 12 15:33:45 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
-# $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
-# $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
 #
 # target sequence input file:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/example-rlc-11.fa
-# output directory name:       test-rlc
+# output directory name:       test-ra                                                                                        
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [3.4 seconds]
-# Running cmalign and classifying sequence lengths ... done. [6.0 seconds]
-# Extracting alignments for each length class      ... done. [0.2 seconds]
+# Running ribotyper                                ... done. [3.6 seconds]
+# Running cmalign and classifying sequence lengths ... done. [7.4 seconds]
+# Extracting alignments for each length class      ... done. [1.0 seconds]
 #
 # All sequences failed ribotyper.
 #
@@ -792,60 +792,60 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 #  01223::Audouinella_hermannii.::AF026040
 #
 # See details in:
-#  test-rlc/test-rlc.riboaligner-rt/test-rlc.riboaligner-rt.ribotyper.short.out
+#  test-ra/test-ra.riboaligner-rt/test-ra.riboaligner-rt.ribotyper.short.out
 #  and
-#  test-rlc/test-rlc.riboaligner-rt/test-rlc.riboaligner-rt.ribotyper.long.out
+#  test-ra/test-ra.riboaligner-rt/test-ra.riboaligner-rt.ribotyper.long.out
 #
 #
-# ribotyper output saved as test-rlc/test-rlc.riboaligner.ribotyper.out
-# ribotyper output directory saved as test-rlc/test-rlc.riboaligner-rt
+# ribotyper output saved as test-ra/test-ra.riboaligner.ribotyper.out
+# ribotyper output directory saved as test-ra/test-ra.riboaligner-rt
 #
-# Tabular output saved to file test-rlc/test-rlc.riboaligner.tbl
+# Tabular output saved to file test-ra/test-ra.riboaligner.tbl
 #
-# List and description of all output files saved in:                             test-rlc.riboaligner.list
-# Output printed to screen saved in:                                             test-rlc.riboaligner.log
-# List of executed commands saved in:                                            test-rlc.riboaligner.cmd
-# List file          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.list
-# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.stk
-# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.ifile
-# EL file            for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.elfile
-# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:      test-rlc.riboaligner.SSU.Archaea.full-exact.cmalign
-# List file          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.list
-# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.stk
-# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.ifile
-# EL file            for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.elfile
-# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-exact.cmalign
-# List file          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.list
-# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.stk
-# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.ifile
-# EL file            for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.elfile
-# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:      test-rlc.riboaligner.SSU.Bacteria.full-extra.cmalign
-# List file          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.list
-# Alignment          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.stk
-# Insert file        for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.ifile
-# EL file            for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.elfile
-# cmalign output     for      1 SSU.Bacteria partial-ambig sequences saved in:   test-rlc.riboaligner.SSU.Bacteria.partial-ambig.cmalign
+# List and description of all output files saved in:                             test-ra.riboaligner.list
+# Output printed to screen saved in:                                             test-ra.riboaligner.log
+# List of executed commands saved in:                                            test-ra.riboaligner.cmd
+# List file          for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.list
+# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.stk
+# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.ifile
+# EL file            for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.elfile
+# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.list
+# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.stk
+# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.ifile
+# EL file            for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.elfile
+# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.list
+# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.stk
+# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.ifile
+# EL file            for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.elfile
+# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.cmalign
+# List file          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.list
+# Alignment          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.stk
+# Insert file        for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.ifile
+# EL file            for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.elfile
+# cmalign output     for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.cmalign
 #
-# All output files created in directory ./test-rlc/
+# All output files created in directory ./test-ra/
 #
-# CPU time:  00:00:09.57
+# CPU time:  00:00:12.03
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
 --------------
 
 The output of the program (above) lists all of the files that were
-created, including a ribotyper output directory (test-rlc-rt) and
-ribotyper standard output file (test-rlc.ribotyper.out). The tabular
+created, including a ribotyper output directory (test-ra-rt) and
+ribotyper standard output file (test-ra.ribotyper.out). The tabular
 output file created by riboaligner.pl
-(rlc-test.riboaligner.tbl) is the same as the 'short' output
+(ra-test.riboaligner.tbl) is the same as the 'short' output
 format of ribotyper.pl with three additional columns pertaining to the
 length of each sequence including a classification of that length. The
 end of the tabular output file has comments explaining those columns
 as well as the definitions of each length classification.
 
 The alignment files
-(e.g. test-rlc.riboaligner.SSU.Bacteria.full-ambig.stk)
+(e.g. test-ra.riboaligner.SSU.Bacteria.full-ambig.stk)
 are in 'Stockholm' format created by Infernal's cmalign program. There
 is a wiki page describing the Stockholm format:
 https://en.wikipedia.org/wiki/Stockholm_format, but a more helpful
@@ -853,10 +853,10 @@ resource is the Infernal v1.1.2 user's guide, pages 29 and 30, which
 is available here:
 http://eddylab.org/infernal/Userguide.pdf.
 
-Here, are the relevant lines from the file rlc-test.riboaligner.tbl
+Here, are the relevant lines from the file ra-test.riboaligner.tbl
 created by the above command:
 
-> cat test-rlc/test-rlc.riboaligner.tbl
+> cat test-ra/test-ra.riboaligner.tbl
 -----------------------
 # Column 6 [mstart]:              model start position
 # Column 7 [mstop]:               model stop position
@@ -871,7 +871,6 @@ created by the above command:
 #                                 'partial-ambig': spans full model and no 5' or 3' inserts
 #                                                  but has indel(s) in first and/or final 10 model positions
 #                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
-#                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
 -----------------------
 Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
 output file from ribotyper.pl. 
@@ -881,9 +880,9 @@ the -h option, just as with ribotyper.pl:
 
 > riboaligner.pl -h
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.17 (Jul 2018)
+# ribotyper 0.18 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Jul 11 15:50:43 2018
+# date:    Thu Jul 12 15:34:34 2018
 #
 Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
 
@@ -973,7 +972,7 @@ Usage 1: create a representative database of high quality sequences
 
 -------------
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.17 (Jul 2018)
+# ribotyper 0.18 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:           Thu Jul 12 15:01:58 2018
 # $RIBOBLASTDIR:  /usr/bin
@@ -1096,7 +1095,7 @@ file. The beginning of the file explains the information in each column:
 Usage 2: create a subset of high quality sequences
 > ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.17 (Jul 2018)
+# ribotyper 0.18 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:           Thu Jul 12 15:03:59 2018
 # $RIBOBLASTDIR:  /usr/bin
@@ -1273,7 +1272,7 @@ Here is the output for the first test performed by that script
 ($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test-16):
 
 # ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
-# ribotyper 0.17 (Jul 2018)
+# ribotyper 0.18 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:      Thu Jul 12 14:31:51 2018
 # $RIBODIR:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/test3/ribotyper-v1
