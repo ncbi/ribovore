@@ -1087,6 +1087,53 @@ To do all tests and save output to the file 'test.out', do:
 
 > sh $RIBODIR/testfiles/do-all-tests.sh > test.out
 
-The test.out file should inclue 
+Here is the output for the first test performed by that script
+($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test-16):
+
+# ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
+# ribotyper 0.17 (Jul 2018)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:      Thu Jul 12 14:31:51 2018
+# $RIBODIR:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/test3/ribotyper-v1
+#
+# test file:                    /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/test3/ribotyper-v1/testfiles/testin.example-16
+# output directory name:        test1
+# forcing directory overwrite:  yes [-f]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Running command  1 [      ribotyper-1-16]          ... done. [4.5 seconds]
+#	checking test-16/test-16.ribotyper.short.out                 ... pass
+#	checking test-16/test-16.ribotyper.long.out                  ... pass
+#	removing directory test-16                                   ... done
+# Running command  2 [    riboaligner-1-16]          ... done. [10.5 seconds]
+#	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.ifile ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.elfile ... pass
+#	removing directory test-16-2                                 ... done
+#
+#
+# PASS: all 7 files were created correctly.
+#
+#
+# List and description of all output files saved in:   test1.ribotest.list
+# Output printed to screen saved in:                   test1.ribotest.log
+# List of executed commands saved in:                  test1.ribotest.cmd
+#
+# All output files created in directory ./test1/
+#
+# CPU time:  00:00:15.23
+#            hh:mm:ss
+# 
+# RIBO-SUCCESS
+
+The most important line is the line that begins with "# PASS"
+
+# PASS: all 7 files were created correctly.
+
+This means that the test has passed. If all tests run succesfully,
+then there will 6 such lines in the test.out output file when the
+tests finish. If any tests fail, it will have a line that begins with
+'# FAIL' instead of this line.
 
 
