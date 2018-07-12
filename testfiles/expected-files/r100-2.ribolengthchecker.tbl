@@ -1,0 +1,162 @@
+#idx  target                        classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
+#---  ----------------------------  ---------------------  -----  ----  ------  ------  ------------  -------------------
+1     gi|507142949|gb|KC674542.1|   SSU.Eukarya            plus   PASS       1    1844       partial  -
+2     gi|161702933|gb|EU278606.1|   SSU.Eukarya            plus   PASS      29    1818       partial  -
+3     gi|12697565|dbj|AB034910.1|   SSU.Eukarya            plus   PASS      22    1827       partial  -
+4     gi|507138649|gb|KC670242.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+5     gi|1365616637|gb|MG520986.1|  SSU.Eukarya            plus   FAIL       -       -             -  *LowCoverage:(0.678<0.860);MultipleHits:(2);
+6     gi|109289543|gb|DQ677995.1|   SSU.Eukarya            plus   PASS      86    1781       partial  -
+7     gi|1110855225|gb|KX352732.1|  SSU.Euk-Microsporidia  plus   FAIL       -       -             -  *UnacceptableModel:(SSU_rRNA_microsporidia);
+8     gi|153608867|dbj|AB220232.1|  SSU.Eukarya            plus   PASS      40    1817       partial  -
+9     gi|507143250|gb|KC674843.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+10    gi|528321033|gb|JX644478.1|   SSU.Eukarya            plus   PASS      68    1117       partial  -
+11    gi|507139827|gb|KC671420.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+12    gi|658131729|emb|HF968783.1|  SSU.Eukarya            plus   PASS      39    1797       partial  -
+13    gi|149786789|gb|EF638685.1|   SSU.Eukarya            plus   PASS     353    1729       partial  -
+14    gi|507140550|gb|KC672143.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+15    gi|1127929924|gb|KX092113.1|  SSU.Eukarya            plus   PASS     347    1821       partial  -
+16    gi|149786652|gb|EF638553.1|   SSU.Eukarya            plus   PASS     322    1729       partial  -
+17    gi|301178232|gb|HM799815.1|   SSU.Eukarya            plus   PASS      30    1822       partial  MultipleHits:(2);
+18    gi|507140499|gb|KC672092.1|   SSU.Eukarya            plus   PASS       1    1848       partial  -
+19    gi|109639323|gb|DQ646548.1|   SSU.Eukarya            plus   PASS      19    1842       partial  -
+20    gi|54306487|gb|AY640212.1|    SSU.Eukarya            plus   PASS      39    1827       partial  -
+21    gi|158937723|gb|EU107180.1|   SSU.Eukarya            plus   PASS      22    1841       partial  -
+22    gi|533735238|dbj|AB758270.1|  SSU.Eukarya            plus   PASS      35    1160       partial  -
+23    gi|262091486|gb|FJ824759.1|   SSU.Eukarya            plus   PASS      20    1173       partial  -
+24    gi|507139765|gb|KC671358.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+25    gi|507143513|gb|KC675106.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+26    gi|15865223|emb|AJ232952.1|   SSU.Eukarya            plus   PASS      47    1851       partial  -
+27    gi|13661083|dbj|AB048279.1|   SSU.Eukarya            plus   PASS       8    1844       partial  -
+28    gi|15592876|gb|AF242261.1|    SSU.Eukarya            plus   PASS      51    1820       partial  MultipleHits:(2);
+29    gi|51038289|gb|AY657012.1|    SSU.Eukarya            plus   PASS       9    1832       partial  -
+30    gi|92090868|gb|DQ457647.1|    SSU.Eukarya            plus   PASS      10    1842       partial  -
+31    gi|300394446|gb|GU187642.1|   SSU.Eukarya            plus   PASS      60    1832       partial  -
+32    gi|507138348|gb|KC669941.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+33    gi|30519711|emb|AJ560302.1|   SSU.Eukarya            plus   PASS      22    1752       partial  -
+34    gi|12862440|dbj|AB002062.1|   SSU.Eukarya            plus   PASS      20    1842       partial  -
+35    gi|927272540|gb|KT259197.1|   SSU.Eukarya            plus   PASS      21    1115       partial  -
+36    gi|507138630|gb|KC670223.1|   SSU.Eukarya            plus   PASS       1    1819       partial  -
+37    gi|307556847|gb|GU004234.1|   SSU.Eukarya            plus   PASS     216    1779       partial  -
+38    gi|1139492822|gb|KX822287.1|  SSU.Eukarya            plus   PASS     146    1794       partial  -
+39    gi|694198308|gb|KM067414.1|   SSU.Eukarya            plus   PASS     196    1800       partial  -
+40    gi|321173709|gb|HQ888690.1|   SSU.Eukarya            plus   PASS      40    1779       partial  -
+41    gi|299562053|gb|HM134241.1|   SSU.Eukarya            plus   PASS      74    1126       partial  -
+42    gi|360040292|gb|JN940342.1|   SSU.Eukarya            plus   PASS      59    1131       partial  -
+43    gi|219812851|gb|FJ553065.1|   SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.42<0.50);*LowCoverage:(0.360<0.860);
+44    gi|507143285|gb|KC674878.1|   SSU.Eukarya            plus   PASS       1    1850       partial  -
+45    gi|799667172|gb|KM492859.1|   SSU.Eukarya            plus   PASS     134    1324       partial  MultipleHits:(2);
+46    gi|37933356|gb|AY242195.1|    SSU.Eukarya            plus   PASS      39    1803       partial  -
+47    gi|545264644|gb|KF188426.1|   SSU.Eukarya            plus   PASS      39    1153       partial  -
+48    gi|10442595|gb|AF277017.1|    SSU.Eukarya            plus   PASS      38    1817       partial  -
+49    gi|158819385|gb|EU011680.1|   SSU.Eukarya            plus   PASS      57    1835       partial  -
+50    gi|732564156|gb|KP125031.1|   SSU.Eukarya            plus   PASS      75    1115       partial  -
+51    gi|507140597|gb|KC672190.1|   SSU.Eukarya            plus   PASS       1    1845       partial  -
+52    gi|957540434|dbj|AB797249.1|  SSU.Eukarya            plus   PASS      68    1115       partial  -
+53    gi|222352663|emb|AM494997.1|  SSU.Eukarya            plus   PASS     104    1767       partial  MultipleHits:(2);
+54    gi|156099914|gb|EF550439.1|   SSU.Eukarya            plus   PASS      72    1791       partial  -
+55    gi|571256789|emb|HG796132.1|  SSU.Eukarya            plus   PASS     579    1657       partial  -
+56    gi|4586702|dbj|AB013514.1|    SSU.Eukarya            plus   PASS      19    1851       partial  -
+57    gi|961589939|gb|KT356200.1|   SSU.Eukarya            plus   PASS      49    1774       partial  -
+58    gi|1139492845|gb|KX822310.1|  SSU.Eukarya            plus   PASS     259    1813       partial  -
+59    gi|1205803570|gb|MF318998.1|  SSU.Eukarya            plus   PASS      52    1171       partial  -
+60    gi|99122353|gb|DQ519026.1|    SSU.Eukarya            plus   PASS      76    1816       partial  -
+61    gi|219813948|gb|FJ554162.1|   SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.36<0.50);*LowCoverage:(0.332<0.860);MultipleHits:(2);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:21.0/267-1107:+);
+62    gi|283827997|gb|AY251104.2|   SSU.Eukarya            plus   PASS      57    1850       partial  -
+63    gi|226534219|gb|FJ763542.1|   SSU.Eukarya            plus   PASS      22    1824       partial  -
+64    gi|301153788|gb|HM486991.1|   SSU.Eukarya            plus   PASS     322    1726       partial  -
+65    gi|979839298|gb|KP322969.1|   SSU.Eukarya            plus   FAIL       -       -             -  *LowCoverage:(0.628<0.860);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:491.6/1374-2758:+);
+66    gi|507142378|gb|KC673971.1|   SSU.Eukarya            plus   PASS       1    1850       partial  -
+67    gi|57864442|dbj|AB053234.2|   SSU.Eukarya            plus   PASS      22    1840       partial  -
+68    gi|324497190|gb|HQ263224.1|   SSU.Eukarya            plus   PASS      20    1800       partial  -
+69    gi|397529699|gb|JQ302884.1|   SSU.Eukarya            plus   PASS      66    1779       partial  -
+70    gi|683405304|dbj|AB746210.1|  SSU.Eukarya            plus   PASS      66    1794       partial  -
+71    gi|126349122|emb|AM268196.1|  SSU.Eukarya            plus   PASS      17    1820       partial  MultipleHits:(2);
+72    gi|3298450|dbj|AB011052.1|    SSU.Eukarya            plus   PASS      39    1489       partial  MultipleHits:(2);
+73    gi|45594602|gb|AY489697.1|    SSU.Eukarya            plus   PASS      30    1092       partial  -
+74    gi|576864192|gb|KJ137258.1|   SSU.Eukarya            plus   FAIL       -       -             -  *LowCoverage:(0.789<0.860);MultipleHits:(2);
+75    gi|1007378419|gb|KT921996.1|  SSU.Eukarya            plus   PASS      70    1146       partial  -
+76    gi|510795394|gb|KC680652.1|   SSU.Euk-Microsporidia  plus   FAIL       -       -             -  *UnacceptableModel:(SSU_rRNA_microsporidia);
+77    gi|129594288|gb|EF109869.1|   SSU.Eukarya            plus   PASS     409    1670       partial  -
+78    gi|529274138|gb|KF061201.1|   SSU.Eukarya            plus   PASS      75    1829       partial  -
+79    gi|1129625238|gb|KX354828.1|  SSU.Eukarya            plus   PASS     476    1710       partial  -
+80    gi|1000832827|gb|DQ354565.3|  SSU.Eukarya            plus   PASS      42    1821       partial  -
+81    gi|83272161|gb|DQ248951.1|    SSU.Eukarya            plus   PASS      53    1819       partial  -
+82    gi|18181906|dbj|AB069703.1|   SSU.Eukarya            plus   PASS     102    1813       partial  -
+83    gi|42541807|gb|AY497756.1|    SSU.Eukarya            plus   PASS     160    1275       partial  -
+84    gi|507142572|gb|KC674165.1|   SSU.Eukarya            plus   PASS       1    1819       partial  -
+85    gi|208879599|gb|EU754054.1|   SSU.Eukarya            plus   PASS      75    1116       partial  -
+86    gi|507140677|gb|KC672270.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+87    gi|507140525|gb|KC672118.1|   SSU.Eukarya            plus   PASS       1    1846       partial  -
+88    gi|365776122|gb|JQ260820.1|   SSU.Eukarya            plus   PASS      39    1801       partial  -
+89    gi|957540475|dbj|AB797290.1|  SSU.Eukarya            plus   PASS      75    1118       partial  -
+90    gi|267850668|gb|GU126739.1|   SSU.Eukarya            plus   PASS      64    1172       partial  -
+91    gi|23395288|gb|AF542179.1|    SSU.Eukarya            plus   PASS      94    1774       partial  -
+92    gi|1273271400|gb|MF410242.1|  SSU.Eukarya            plus   PASS      64    1126       partial  -
+93    gi|507141111|gb|KC672704.1|   SSU.Eukarya            plus   PASS       1    1819       partial  -
+94    gi|507139274|gb|KC670867.1|   SSU.Eukarya            plus   PASS       1    1816       partial  -
+95    gi|57864407|dbj|AB018129.2|   SSU.Eukarya            plus   PASS      22    1840       partial  -
+96    gi|1370741070|gb|MG829134.1|  SSU.Eukarya            plus   PASS      46    1123       partial  -
+97    gi|40715962|gb|AY426952.1|    SSU.Eukarya            plus   PASS      39    1770       partial  -
+98    gi|472178195|gb|JX403626.1|   SSU.Eukarya            plus   PASS     251    1704       partial  -
+99    gi|196968056|gb|EU909435.1|   -                      -      FAIL       -       -             -  *NoHits;
+100   gi|156099958|gb|EF550483.1|   SSU.Eukarya            plus   PASS      72    1793       partial  -
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Explanation of columns:
+#
+# Column 1 [idx]:                 index of sequence in input sequence file
+# Column 2 [target]:              name of target sequence
+# Column 3 [classification]:      classification of sequence
+# Column 4 [strnd]:               strand ('plus' or 'minus') of best-scoring hit
+# Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)
+# Column 6 [mstart]:              model start position
+# Column 7 [mstop]:               model stop position
+# Column 8 [length_class]:        classification of length, one of:
+#                                 'partial:'       does not span full model
+#                                 'full-exact':    spans full model and no 5' or 3' inserts
+#                                                  and no indels in first or final 10 model positions
+#                                 'full-extra':    spans full model but has 5' and/or 3' inserts
+#                                 'full-ambig':    spans full model and no 5' or 3' inserts
+#                                                  but has indel(s) in first and/or final 10 model positions
+#                                                  and insertions outnumber deletions at 5' and/or 3' end
+#                                 'partial-ambig': spans full model and no 5' or 3' inserts
+#                                                  but has indel(s) in first and/or final 10 model positions
+#                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
+# Column 9 [unexpected_features]: unexpected/unusual features of sequence (see below)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#
+# Explanation of possible values in unexpected_features column:
+#
+# This column will include a '-' if none of the features listed below are detected.
+# Or it will contain one or more of the following types of messages. There are no
+# whitespaces in this field, to make parsing easier.
+#
+# Values that begin with "*" automatically cause a sequence to FAIL.
+# Values that do not begin with "*" do not cause a sequence to FAIL.
+#
+#  1.  *NoHits                 No primary hits to any models above the minimum primary score
+#                              threshold of 20 bits (--minpsc) were found.
+#  2.  *UnacceptableModel      Best hit is to a model that is 'unacceptable' as defined in
+#                              input file r100-2/r100-2.ribolengthchecker.ribotyper.accept (--inaccept).
+#  3.  *MultipleFamilies       One or more primary hits to two or more "families" (e.g. SSU
+#                              or LSU) exists for the same sequence.
+#  4.  *BothStrands            One or more primary hits above the minimum primary score threshold
+#                              of 20 bits (--minpsc) were found on each strand.
+#  5.  *DuplicateRegion        At least two hits (primary or secondary) on the same strand overlap
+#                              in model coordinates by 10 (--maxoverlap) positions or more
+#  6.  *InconsistentHits       Not all hits (primary or secondary) are in the same order in the
+#                              sequence and in the model.
+#  7.  *MinusStrand            Best hit is on the minus strand.
+#  8.  *LowScore               The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+#  9.  *LowCoverage            The total coverage of all hits (primary and secondary) to the best
+#                              model (summed length of all hits divided by total length of sequence)
+#                              is below threshold of 0.86 (--tcov).
+# 10.  QuestionableModel       Best hit is to a model that is 'questionable' as defined in
+#                              input file r100-2/r100-2.ribolengthchecker.ribotyper.accept (--inaccept).
+# 11.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 12.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
+#                              of sequence) is below threshold of 0.5 (--lowppossc).
+# 13.  MultipleHits            There is more than one hit to the best scoring model on the same strand.
+#

@@ -124,7 +124,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter ribolengthchecker.pl -h\n\n";
+  print "\nTo see more help on available options, enter 'ribolengthchecker.pl -h'\n\n";
   exit(1);
 }
 my ($seq_file, $dir_out) = (@ARGV);
