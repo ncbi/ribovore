@@ -4,4 +4,4 @@
 # token 3: integer, consensus length for the CM for this family
 # tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
 #                corresponding model in the ribotyper modelinfo file to be used
-LSU.Eukarya ribolengthchecker.0p15.RF02543.cm 3401 LSU_rRNA_eukarya
+LSU.Eukarya riboaligner.0p15.RF02543.cm 3401 LSU_rRNA_eukarya
