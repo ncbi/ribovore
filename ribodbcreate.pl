@@ -222,7 +222,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter ribolengthchcker.pl -h\n\n";
+  print "\nTo see more help on available options, enter 'ribodbcreate.pl -h'\n\n";
   exit(1);
 }
 my ($in_fasta_file, $dir) = (@ARGV);
@@ -435,8 +435,8 @@ my $nfail_clustr = 0; # number of seqs that pass clustering
 # output program banner and open output files
 #############################################
 # output preamble
-my @arg_desc_A = ("reference accession");
-my @arg_A      = ($dir);
+my @arg_desc_A = ("input sequence file", "output directory name");
+my @arg_A      = ($in_fasta_file, $dir);
 my %extra_H    = ();
 $extra_H{"\$RIBODIR"}      = $env_ribotyper_dir;
 $extra_H{"\$RIBOEASELDIR"} = $env_riboeasel_dir;
