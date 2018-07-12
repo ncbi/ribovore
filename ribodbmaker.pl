@@ -137,9 +137,9 @@ opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f,-p
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribodbcreate.pl [-options] <input fasta sequence file> <output directory>\n";
+my $usage    = "Usage: ribodbmaker.pl [-options] <input fasta sequence file> <output directory>\n";
 $usage      .= "\n";
-my $synopsis = "ribodbcreate.pl :: create representative database of ribosomal RNA sequences";
+my $synopsis = "ribodbmaker.pl :: create representative database of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
@@ -222,7 +222,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter 'ribodbcreate.pl -h'\n\n";
+  print "\nTo see more help on available options, enter 'ribodbmaker.pl -h'\n\n";
   exit(1);
 }
 my ($in_fasta_file, $dir) = (@ARGV);
@@ -326,7 +326,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) {
     $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
     
     $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
-    $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbcreate.txt";
+    $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbmaker.txt";
     ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
     if($do_ingrup) { 
       $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
@@ -418,7 +418,7 @@ if(! $do_prvcmd) {
 
 my $dir_tail = $dir;
 $dir_tail =~ s/^.+\///; # remove all but last dir
-my $out_root = $dir . "/" . $dir_tail . ".ribodbcreate";
+my $out_root = $dir . "/" . $dir_tail . ".ribodbmaker";
 
 # checkpoint related variables:
 # 'filters' (filters) checkpoint, after fribo2 stage
@@ -512,7 +512,7 @@ if($do_fribo1 || $do_fribo2) {
     ofile_FAIL("ERROR, model file $family_modelfile specified in $ra_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
   }
   # create the riboaligner info file for $family
-  open(RAINFO, ">", $local_ra_modelinfo_file) || ofile_FileOpenFailure($local_ra_modelinfo_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+  open(RAINFO, ">", $local_ra_modelinfo_file) || ofile_FileOpenFailure($local_ra_modelinfo_file,  "RIBO", "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
   my $local_family_modelfile = ribo_RemoveDirPath($family_modelfile);
   printf RAINFO ("%s %s %s", $family, $local_family_modelfile, $family_modellen);
   foreach my $rtname (@{$tmp_family_rtname_HA{$family}}) { 
@@ -523,7 +523,7 @@ if($do_fribo1 || $do_fribo2) {
 
   # create the riboopts1 string for ribotyper stage 1, unless --riboopts1 <s> provided in which case we read that
   if(opt_IsUsed("--riboopts1", \%opt_HH)) { 
-    open(OPTS1, $in_riboopts1_file) || ofile_FileOpenFailure($in_riboopts1_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(OPTS1, $in_riboopts1_file) || ofile_FileOpenFailure($in_riboopts1_file,  "RIBO", "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
     $ribotyper_options = <OPTS1>;
     chomp $ribotyper_options;
     close(OPTS1);
@@ -539,7 +539,7 @@ if($do_fribo1 || $do_fribo2) {
     ribo_RunCommand($cp_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
   else { 
-    open(RIBOOPTS2, ">", $local_ra_riboopts_file) || ofile_FileOpenFailure($local_ra_riboopts_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(RIBOOPTS2, ">", $local_ra_riboopts_file) || ofile_FileOpenFailure($local_ra_riboopts_file,  "RIBO", "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
     my $riboopts_str = sprintf("--lowppossc %s --tcov %s", opt_Get("--lowppossc", \%opt_HH), opt_Get("--tcov", \%opt_HH));
     if(! opt_IsUsed("--nodifffail", \%opt_HH)) { $riboopts_str .= " --difffail"; }
     if(! opt_IsUsed("--nomultfail", \%opt_HH)) { $riboopts_str .= " --multfail"; }
@@ -552,7 +552,7 @@ if($do_fribo1 || $do_fribo2) {
 my %taxid_is_special_H = (); # key is taxid (species level), value is '1' if listed in $in_special_file, does not exist otherwise
 my $line;
 if($do_special) { 
-  open(IN, $in_special_file)  || ofile_FileOpenFailure($in_special_file,  "RIBO", "ribodbcreate.pl::main()", $!, "reading", $ofile_info_HH{"FH"});
+  open(IN, $in_special_file)  || ofile_FileOpenFailure($in_special_file,  "RIBO", "ribodbmaker.pl::main()", $!, "reading", $ofile_info_HH{"FH"});
   while($line = <IN>) { 
     chomp $line;
     $line =~ s/^\s+//;
@@ -745,7 +745,7 @@ if($do_fribo1) {
   
   my $ribotyper_accept_file  = $out_root . ".ribotyper.accept";
   my $ribotyper_outdir       = $out_root . "-rt";
-  my $ribotyper_outdir_tail  = $dir_tail . ".ribodbcreate-rt";
+  my $ribotyper_outdir_tail  = $dir_tail . ".ribodbmaker-rt";
   my $ribotyper_outfile      = $out_root . ".ribotyper.out";
   my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
   my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
@@ -790,7 +790,7 @@ if($do_fribo2) {
   if(opt_IsUsed("--nkb",         \%opt_HH)) { $ra_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
   if(opt_IsUsed("--wait",        \%opt_HH)) { $ra_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
   if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }
-  my $ra_outdir_tail  = $dir_tail . ".ribodbcreate-ra";
+  my $ra_outdir_tail  = $dir_tail . ".ribodbmaker-ra";
   my $ra_out_file     = $out_root . ".riboaligner.out";
   my $ra_tbl_out_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
 
@@ -886,7 +886,7 @@ else {
     # than don't survive the ingroup test, output that
     my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
     my $nlost = 0;
-    open(LOST, ">", $ingrup_lost_list) || ofile_FileOpenFailure($ingrup_lost_list, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(LOST, ">", $ingrup_lost_list) || ofile_FileOpenFailure($ingrup_lost_list, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
     foreach my $gtaxid (sort {$a <=> $b} keys (%full_level_ct_H)) { 
       if($gtaxid != 0) { 
         if(($full_level_ct_H{$gtaxid} > 0) && 
@@ -932,7 +932,7 @@ else {
     }
 
     # determine sequences that will be clustered and create a list file for them for input to esl-cluster
-    open(LIST, ">", $cluster_in_list_file) || ofile_FileOpenFailure($cluster_in_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(LIST, ">", $cluster_in_list_file) || ofile_FileOpenFailure($cluster_in_list_file, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
     foreach $seqname (@seqorder_A) { 
       if($seqfailstr_H{$seqname} eq "") { # sequence has survived to the clustering step if it has a blank string in %seqfailstr_H
         print LIST $seqname . "\n";
@@ -1026,7 +1026,7 @@ if($npass_final > 0) {
 #####################################################################
 # output taxonomy level count file
 my $out_level_ct_file = $out_root . "." . $level . ".ct";
-open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
 print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
 my $final_level_ct_HR = undef;
 if   ($do_clustr)  { $final_level_ct_HR = \%surv_clustr_level_ct_H; }
@@ -1110,8 +1110,8 @@ if($do_ingrup) {
   }
 }
 
-open(RDB, ">", $out_rdb_tbl) || ofile_FileOpenFailure($out_rdb_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-open(TAB, ">", $out_tab_tbl) || ofile_FileOpenFailure($out_tab_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+open(RDB, ">", $out_rdb_tbl) || ofile_FileOpenFailure($out_rdb_tbl,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+open(TAB, ">", $out_tab_tbl) || ofile_FileOpenFailure($out_tab_tbl,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
 foreach my $column_explanation_line (@column_explanation_A) { 
   print RDB $column_explanation_line;
   print TAB $column_explanation_line;
@@ -2191,8 +2191,8 @@ sub filter_list_file {
 
   my ($in_file, $out_file, $maxvalue, $value_HR, $FH_HR) = (@_);
 
-  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $FH_HR);
-  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbcreate.pl:main()", $!, "writing", $FH_HR);
+  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbmaker.pl:main()", $!, "reading", $FH_HR);
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbmaker.pl:main()", $!, "writing", $FH_HR);
 
   my $nkept    = 0;
   my $nremoved = 0;
@@ -2360,7 +2360,7 @@ sub fblast_stage {
   # when we reach $chunksize (50) seqs in our current temp file, stop and run blast
   # this avoids the N^2 runtime of running blast all v all
   # 50 was good tradeoff between overhead of starting up blast and speed of execution on 18S
-  open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+  open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbmaker.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
   my $keep_going   = 1; 
   my $cidx         = 0; # chunk counter
   my $do_blast     = 0; # flag for whether we need to run blast on current set
@@ -2371,7 +2371,7 @@ sub fblast_stage {
       $chunk_sfetch_file = $out_root . "." . $stage_key . "." . $cidx . ".sfetch"; # name of our temporary sfetch file
       $chunk_fasta_file  = $out_root . "." . $stage_key . "." . $cidx . ".fa";     # name of our temporary fasta file
       $chunk_blast_file  = $out_root . "." . $stage_key . "." . $cidx  .".blast";  # name of our temporary blast file
-      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
       $cur_seqidx   = 0;
       %cur_nhit_H   = ();
       $do_open_next = 0;
@@ -2425,7 +2425,7 @@ sub fblast_stage {
   # make sure all seqs were blasted against each other exactly once
   foreach $seq (@{$seqorder_AR}) { 
     if($nblasted_H{$seq} != 1) { 
-      ofile_FAIL("ERROR in ribodbcreate.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", "RIBO", $?, $ofile_info_HH{"FH"});
+      ofile_FAIL("ERROR in ribodbmaker.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", "RIBO", $?, $ofile_info_HH{"FH"});
     }
   }
 

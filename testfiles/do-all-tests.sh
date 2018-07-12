@@ -8,9 +8,9 @@ $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.r100 test3
 # parallel 100 sequence test
 $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.r100 test4
 
-# non-parallel ribodbcreate.pl test
+# non-parallel ribodbmaker.pl test
 $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test5 
-# parallel ribodbcreate.pl test
+# parallel ribodbmaker.pl test
 $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test6
 
 # optionally remove all test directories
