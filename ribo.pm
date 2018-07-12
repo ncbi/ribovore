@@ -6,7 +6,7 @@ use warnings;
 # Eric Nawrocki
 # EPN, Fri May 12 09:48:21 2017
 # 
-# Perl module used by ribotyper.pl, ribolengthchecker.pl and 
+# Perl module used by ribotyper.pl, riboaligner.pl and 
 # ribodbcreate.pl which contains subroutines called by 
 # those scripts.
 #
@@ -16,7 +16,7 @@ use warnings;
 # ribo_CountAmbiguousNucleotidesInSequenceFile
 # ribo_ParseSeqstatFile 
 # ribo_ParseSeqstatCompTblFile
-# ribo_ParseRLCModelinfoFile
+# ribo_ParseRAModelinfoFile
 # ribo_ParseQsubFile
 # ribo_ProcessSequenceFile 
 #
@@ -249,10 +249,10 @@ sub ribo_ParseSeqstatCompTblFile {
 }
 
 #################################################################
-# Subroutine : ribo_ParseRLCModelinfoFile()
+# Subroutine : ribo_ParseRAModelinfoFile()
 # Incept:      EPN, Fri Oct 20 14:17:53 2017
 #
-# Purpose:     Parse a ribolengthchecker.pl modelinfo file, and 
+# Purpose:     Parse a riboaligner.pl modelinfo file, and 
 #              fill information in @{$family_order_AR}, %{$family_modelname_HR}.
 # 
 #              
@@ -269,9 +269,9 @@ sub ribo_ParseSeqstatCompTblFile {
 # Returns:     void; 
 #
 ################################################################# 
-sub ribo_ParseRLCModelinfoFile { 
+sub ribo_ParseRAModelinfoFile { 
   my $nargs_expected = 7;
-  my $sub_name = "ribo_ParseRLCModelinfoFile";
+  my $sub_name = "ribo_ParseRAModelinfoFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR, $FH_HR) = @_;

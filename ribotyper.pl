@@ -7,6 +7,7 @@ use Time::HiRes qw(gettimeofday);
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
+require "epn-test.pm";
 require "epn-options.pm";
 require "epn-ofile.pm";
 require "ribo.pm";
@@ -189,7 +190,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.17";
+my $version           = "0.18";
 my $model_version_str = "0p15"; # models are unchanged since version 0.15
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
@@ -210,7 +211,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, do ribotyper.pl -h\n\n";
+  print "\nTo see more help on available options, enter 'ribotyper.pl -h'\n\n";
   exit(1);
 }
 my ($seq_file, $dir_out) = (@ARGV);

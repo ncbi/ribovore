@@ -62,7 +62,7 @@ opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,       
 opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                       "skip stage that filters based on VecScreen",                       \%opt_HH, \@opt_order_A);
 opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",              "skip stage that filters based on BLAST hits to self",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipfribo1", "boolean", 0,                       $g,    undef,                   undef,  "skip 1st stage that filters based on ribotyper",                   "skip 1st stage that filters based on ribotyper",                   \%opt_HH, \@opt_order_A);
-opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup",undef,  "skip 2nd stage that filters based on ribotyper/ribolengthchecker", "skip 2nd stage that filters based on ribotyper/ribolengthchecker", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup",undef,  "skip 2nd stage that filters based on ribotyper/riboaligner", "skip 2nd stage that filters based on ribotyper/riboaligner", \%opt_HH, \@opt_order_A);
 opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",              "skip stage that filters based on model span of hits",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipingrup", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",                "skip stage that performs ingroup analysis",                        \%opt_HH, \@opt_order_A);
 opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                     "skip stage that clusters sequences surviving all filters",         \%opt_HH, \@opt_order_A);
@@ -89,7 +89,7 @@ opt_Add("--fbmdiagok",  "boolean",   0,         $g, undef, "--skipfblast,--fbnom
 opt_Add("--fbminuslen", "integer",   50,        $g, undef, "--skipfblast,--fbnominus", "minimum length of BLAST self hit to minus strand is <n>",     "minimum length of BLAST self hit to minus strand is <n>",         \%opt_HH, \@opt_order_A);
 opt_Add("--fbminuspid", "real",      95.0,      $g, undef, "--skipfblast,--fbnominus", "minimum percent id of BLAST self hit to minus strand is <x>", "minimum percent id of BLAST self hit to minus strand is <x>",     \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling both ribotyper/ribolengthchecker stages";
+$opt_group_desc_H{++$g} = "options for controlling both ribotyper/riboaligner stages";
 #       option          type       default               group  requires  incompat        preamble-output                                                 help-output    
 opt_Add("--model",      "string",  undef,                   $g,    undef, undef,          "model to use is <s>",                                          "model to use is <s> (e.g. SSU.Eukarya)",                       \%opt_HH, \@opt_order_A);
 opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, undef,          "do not fail sequences in ribotyper with low scores",           "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
@@ -99,9 +99,9 @@ $opt_group_desc_H{++$g} = "options for controlling the first stage that filters 
 #       option          type       default               group  requires  incompat        preamble-output                                                 help-output    
 opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--skipfribo1", "use ribotyper options listed in <s> for round 1",              "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/ribolengthchecker";
+$opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/riboaligner";
 #       option          type       default        group       requires incompat        preamble-output                                                 help-output    
-opt_Add("--rlcinfo",    "string",  undef,            $g,        undef, "--skipfribo2", "use rlc model info file <s> instead of default",               "use ribolengthchecker.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--rainfo",    "string",  undef,            $g,        undef, "--skipfribo2", "use ra model info file <s> instead of default",               "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
 opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
@@ -123,7 +123,7 @@ $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
 opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for parallelizing ribotyper/ribolengthchecker's calls to cmsearch and cmalign on a compute farm";
+$opt_group_desc_H{++$g} = "options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
 opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",              "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                    $g,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
@@ -137,9 +137,9 @@ opt_Add("--prvcmd",      "boolean",  0,                     $g,    undef, "-f,-p
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribodbcreate.pl [-options] <input fasta sequence file> <output directory>\n";
+my $usage    = "Usage: ribodbmaker.pl [-options] <input fasta sequence file> <output directory>\n";
 $usage      .= "\n";
-my $synopsis = "ribodbcreate.pl :: create representative database of ribosomal RNA sequences";
+my $synopsis = "ribodbmaker.pl :: create representative database of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
@@ -180,7 +180,7 @@ my $options_okay =
                 'lowpposs=s'   => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"},
                 'riboopts1=s'  => \$GetOptions_H{"--riboopts1"},
-                'rlcinfo=s'    => \$GetOptions_H{"--rlcinfo"},
+                'rainfo=s'    => \$GetOptions_H{"--rainfo"},
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
                 'pos=s'        => \$GetOptions_H{"--pos"},
@@ -200,7 +200,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.17";
+my $version           = "0.18";
 my $model_version_str = "0p15"; 
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
@@ -222,7 +222,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter ribolengthchcker.pl -h\n\n";
+  print "\nTo see more help on available options, enter 'ribodbmaker.pl -h'\n\n";
   exit(1);
 }
 my ($in_fasta_file, $dir) = (@ARGV);
@@ -277,7 +277,7 @@ if(opt_IsUsed("--cfid", \%opt_HH) &&
 
 # we don't allow user to skip ALL filter stages, they need to do at least one. 
 # You might think it should be okay to skip all filter stages if they want to 
-# do ingroup analysis or just clustering but both of those require the ribolengthchecker 
+# do ingroup analysis or just clustering but both of those require the riboaligner 
 # step because they require an alignment
 if((! $do_ftaxid) && (! $do_fambig) && (! $do_fvecsc) && (! $do_fblast) && (! $do_fribo1) && (! $do_fribo2) && (! $do_fmspan)) { 
   die "ERROR, at least one of the following filter stages *must* not be skipped: ftaxid, fambig, fvecsc, fblast, fribo2"; 
@@ -300,8 +300,8 @@ if(defined $in_special_file) {
 
 my $in_riboopts1_file = undef;
 my $in_riboopts2_file = undef;
-my $df_rlc_modelinfo_file = $df_model_dir . "ribolengthchecker." . $model_version_str . ".all.modelinfo";
-my $rlc_modelinfo_file = undef;
+my $df_ra_modelinfo_file = $df_model_dir . "riboaligner." . $model_version_str . ".all.modelinfo";
+my $ra_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;
 
@@ -326,7 +326,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) {
     $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
     
     $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
-    $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbcreate.txt";
+    $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbmaker.txt";
     ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
     if($do_ingrup) { 
       $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
@@ -364,19 +364,19 @@ if($do_fribo1 || $do_fribo2) {
     ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts2_file, "riboopts file specified with --riboopts2", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
   }
 
-  # make sure the ribolengthchecker modelinfo files exists
-  if(! opt_IsUsed("--rlcinfo", \%opt_HH)) { 
-    $rlc_modelinfo_file = $df_rlc_modelinfo_file;  
-    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "default ribolengthchecker model info file", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
+  # make sure the riboaligner modelinfo files exists
+  if(! opt_IsUsed("--rainfo", \%opt_HH)) { 
+    $ra_modelinfo_file = $df_ra_modelinfo_file;  
+    ribo_CheckIfFileExistsAndIsNonEmpty($ra_modelinfo_file, "default riboaligner model info file", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
-  else { # --rlcinfo used
-    $rlc_modelinfo_file = opt_Get("--rlcinfo", \%opt_HH); }
-  if(! opt_IsUsed("--rlcinfo", \%opt_HH)) {
-    ribo_CheckIfFileExistsAndIsNonEmpty($rlc_modelinfo_file, "ribolengthchecker model info file specified with --rlcinfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
+  else { # --rainfo used
+    $ra_modelinfo_file = opt_Get("--rainfo", \%opt_HH); }
+  if(! opt_IsUsed("--rainfo", \%opt_HH)) {
+    ribo_CheckIfFileExistsAndIsNonEmpty($ra_modelinfo_file, "riboaligner model info file specified with --rainfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
 
   $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
-  $execs_H{"ribolengthchecker"} = $env_ribotyper_dir  . "/ribolengthchecker.pl";
+  $execs_H{"riboaligner"} = $env_ribotyper_dir  . "/riboaligner.pl";
 }
 
 ribo_ValidateExecutableHash(\%execs_H);
@@ -418,7 +418,7 @@ if(! $do_prvcmd) {
 
 my $dir_tail = $dir;
 $dir_tail =~ s/^.+\///; # remove all but last dir
-my $out_root = $dir . "/" . $dir_tail . ".ribodbcreate";
+my $out_root = $dir . "/" . $dir_tail . ".ribodbmaker";
 
 # checkpoint related variables:
 # 'filters' (filters) checkpoint, after fribo2 stage
@@ -435,8 +435,8 @@ my $nfail_clustr = 0; # number of seqs that pass clustering
 # output program banner and open output files
 #############################################
 # output preamble
-my @arg_desc_A = ("reference accession");
-my @arg_A      = ($dir);
+my @arg_desc_A = ("input sequence file", "output directory name");
+my @arg_A      = ($in_fasta_file, $dir);
 my %extra_H    = ();
 $extra_H{"\$RIBODIR"}      = $env_ribotyper_dir;
 $extra_H{"\$RIBOEASELDIR"} = $env_riboeasel_dir;
@@ -495,35 +495,35 @@ my $family_modelfile = undef;
 my $family_modellen  = undef;
 my $family_fail_str  = "";
 my $ribotyper_options; # string of options for ribotyper 1 stage
-my $local_rlc_riboopts_file = $out_root . ".rlc.riboopts";   # riboopts file for fribo2 step
-my $local_rlc_modelinfo_file = $out_root . ".rlc.modelinfo"; # model info file for fribo2 step
+my $local_ra_riboopts_file = $out_root . ".ra.riboopts";   # riboopts file for fribo2 step
+my $local_ra_modelinfo_file = $out_root . ".ra.modelinfo"; # model info file for fribo2 step
 
 if($do_fribo1 || $do_fribo2) { 
   # make sure that the model specified with --model exists
-  ribo_ParseRLCModelinfoFile($rlc_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelfile_H, \%tmp_family_modellen_H, \%tmp_family_rtname_HA, $ofile_info_HH{"FH"});
+  ribo_ParseRAModelinfoFile($ra_modelinfo_file, $df_model_dir, \@tmp_family_order_A, \%tmp_family_modelfile_H, \%tmp_family_modellen_H, \%tmp_family_rtname_HA, $ofile_info_HH{"FH"});
   $family = opt_Get("--model", \%opt_HH);
   if(! exists $tmp_family_modelfile_H{$family}) { 
     foreach my $tmp_family (@tmp_family_order_A) { $family_fail_str .= $tmp_family. "\n"; }
-    ofile_FAIL("ERROR, model $family specified with --model not listed in $rlc_modelinfo_file.\nValid options are:\n$family_fail_str", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+    ofile_FAIL("ERROR, model $family specified with --model not listed in $ra_modelinfo_file.\nValid options are:\n$family_fail_str", $pkgstr, $!, $ofile_info_HH{"FH"}); 
   }
   $family_modelfile = $tmp_family_modelfile_H{$family};
   $family_modellen  = $tmp_family_modellen_H{$family};
   if(! -s $family_modelfile) { 
-    ofile_FAIL("ERROR, model file $family_modelfile specified in $rlc_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
+    ofile_FAIL("ERROR, model file $family_modelfile specified in $ra_modelinfo_file does not exist or is empty", $pkgstr, $!, $ofile_info_HH{"FH"});
   }
-  # create the ribolengthchecker info file for $family
-  open(RLCINFO, ">", $local_rlc_modelinfo_file) || ofile_FileOpenFailure($local_rlc_modelinfo_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+  # create the riboaligner info file for $family
+  open(RAINFO, ">", $local_ra_modelinfo_file) || ofile_FileOpenFailure($local_ra_modelinfo_file,  "RIBO", "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
   my $local_family_modelfile = ribo_RemoveDirPath($family_modelfile);
-  printf RLCINFO ("%s %s %s", $family, $local_family_modelfile, $family_modellen);
+  printf RAINFO ("%s %s %s", $family, $local_family_modelfile, $family_modellen);
   foreach my $rtname (@{$tmp_family_rtname_HA{$family}}) { 
-    printf RLCINFO (" %s", $rtname);
+    printf RAINFO (" %s", $rtname);
   }
-  print RLCINFO ("\n");
-  close(RLCINFO);
+  print RAINFO ("\n");
+  close(RAINFO);
 
   # create the riboopts1 string for ribotyper stage 1, unless --riboopts1 <s> provided in which case we read that
   if(opt_IsUsed("--riboopts1", \%opt_HH)) { 
-    open(OPTS1, $in_riboopts1_file) || ofile_FileOpenFailure($in_riboopts1_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(OPTS1, $in_riboopts1_file) || ofile_FileOpenFailure($in_riboopts1_file,  "RIBO", "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
     $ribotyper_options = <OPTS1>;
     chomp $ribotyper_options;
     close(OPTS1);
@@ -533,13 +533,13 @@ if($do_fribo1 || $do_fribo2) {
     # --2slow doesn't apply here
   }
 
-  # create the riboopts2 file to supply to ribolengthchecker, unless --riboopts2 <s> provided in which case use <s>
+  # create the riboopts2 file to supply to riboaligner, unless --riboopts2 <s> provided in which case use <s>
   if(opt_IsUsed("--riboopts2", \%opt_HH)) { 
-    my $cp_command = sprintf("cp %s $local_rlc_riboopts_file", opt_Get("--riboopts2", \%opt_HH));
+    my $cp_command = sprintf("cp %s $local_ra_riboopts_file", opt_Get("--riboopts2", \%opt_HH));
     ribo_RunCommand($cp_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
   else { 
-    open(RIBOOPTS2, ">", $local_rlc_riboopts_file) || ofile_FileOpenFailure($local_rlc_riboopts_file,  "RIBO", "ribodbcreate.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(RIBOOPTS2, ">", $local_ra_riboopts_file) || ofile_FileOpenFailure($local_ra_riboopts_file,  "RIBO", "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
     my $riboopts_str = sprintf("--lowppossc %s --tcov %s", opt_Get("--lowppossc", \%opt_HH), opt_Get("--tcov", \%opt_HH));
     if(! opt_IsUsed("--nodifffail", \%opt_HH)) { $riboopts_str .= " --difffail"; }
     if(! opt_IsUsed("--nomultfail", \%opt_HH)) { $riboopts_str .= " --multfail"; }
@@ -552,7 +552,7 @@ if($do_fribo1 || $do_fribo2) {
 my %taxid_is_special_H = (); # key is taxid (species level), value is '1' if listed in $in_special_file, does not exist otherwise
 my $line;
 if($do_special) { 
-  open(IN, $in_special_file)  || ofile_FileOpenFailure($in_special_file,  "RIBO", "ribodbcreate.pl::main()", $!, "reading", $ofile_info_HH{"FH"});
+  open(IN, $in_special_file)  || ofile_FileOpenFailure($in_special_file,  "RIBO", "ribodbmaker.pl::main()", $!, "reading", $ofile_info_HH{"FH"});
   while($line = <IN>) { 
     chomp $line;
     $line =~ s/^\s+//;
@@ -745,7 +745,7 @@ if($do_fribo1) {
   
   my $ribotyper_accept_file  = $out_root . ".ribotyper.accept";
   my $ribotyper_outdir       = $out_root . "-rt";
-  my $ribotyper_outdir_tail  = $dir_tail . ".ribodbcreate-rt";
+  my $ribotyper_outdir_tail  = $dir_tail . ".ribodbmaker-rt";
   my $ribotyper_outfile      = $out_root . ".ribotyper.out";
   my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
   my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
@@ -773,46 +773,46 @@ if($do_fribo1) {
 }
 
 ###################################################################
-# 'fribo2' stage: stage that filters based on ribolengthchecker.pl
+# 'fribo2' stage: stage that filters based on riboaligner.pl
 ###################################################################
-my @rlcpass_seqorder_A = (); # order of sequences that pass rlcpass stage
-my $rlc_outdir = $out_root . "-rlc";
+my @rapass_seqorder_A = (); # order of sequences that pass rapass stage
+my $ra_outdir = $out_root . "-ra";
 if($do_fribo2) { 
   $stage_key = "fribo2";
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribolengthchecker.pl", $progress_w, $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
     
-  my $rlc_options = " -i $local_rlc_modelinfo_file ";
-  if(opt_IsUsed("-n",            \%opt_HH)) { $rlc_options .= " -n " . opt_Get("-n", \%opt_HH); }
-  if(opt_IsUsed("--noscfail",    \%opt_HH)) { $rlc_options .= " --noscfail "; }
-  if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $rlc_options .= " --nocovfail "; }
-  if(opt_IsUsed("-p",            \%opt_HH)) { $rlc_options .= " -p"; }
-  if(opt_IsUsed("-q",            \%opt_HH)) { $rlc_options .= " -q " . opt_Get("-q", \%opt_HH); }
-  if(opt_IsUsed("--nkb",         \%opt_HH)) { $rlc_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
-  if(opt_IsUsed("--wait",        \%opt_HH)) { $rlc_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
-  if(opt_IsUsed("--errcheck",    \%opt_HH)) { $rlc_options .= " --errcheck"; }
-  my $rlc_outdir_tail  = $dir_tail . ".ribodbcreate-rlc";
-  my $rlc_out_file     = $out_root . ".ribolengthchecker.out";
-  my $rlc_tbl_out_file = $rlc_outdir . "/" . $rlc_outdir_tail . ".ribolengthchecker.tbl";
+  my $ra_options = " -i $local_ra_modelinfo_file ";
+  if(opt_IsUsed("-n",            \%opt_HH)) { $ra_options .= " -n " . opt_Get("-n", \%opt_HH); }
+  if(opt_IsUsed("--noscfail",    \%opt_HH)) { $ra_options .= " --noscfail "; }
+  if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $ra_options .= " --nocovfail "; }
+  if(opt_IsUsed("-p",            \%opt_HH)) { $ra_options .= " -p"; }
+  if(opt_IsUsed("-q",            \%opt_HH)) { $ra_options .= " -q " . opt_Get("-q", \%opt_HH); }
+  if(opt_IsUsed("--nkb",         \%opt_HH)) { $ra_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+  if(opt_IsUsed("--wait",        \%opt_HH)) { $ra_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+  if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }
+  my $ra_outdir_tail  = $dir_tail . ".ribodbmaker-ra";
+  my $ra_out_file     = $out_root . ".riboaligner.out";
+  my $ra_tbl_out_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
 
-  my $rlc_command = $execs_H{"ribolengthchecker"} . " $rlc_options --riboopts $local_rlc_riboopts_file $full_fasta_file $rlc_outdir > $rlc_out_file";
-  if(! $do_prvcmd) { ribo_RunCommand($rlc_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rlcout", "$rlc_out_file", 0, "output of ribolengthchecker");
+  my $ra_command = $execs_H{"riboaligner"} . " $ra_options --riboopts $local_ra_riboopts_file $full_fasta_file $ra_outdir > $ra_out_file";
+  if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "raout", "$ra_out_file", 0, "output of riboaligner");
   
-  # parse ribolengthchecker tbl file
-  my ($rt2_npass, $rlc_npass, $ms_npass) = parse_ribolengthchecker_tbl_file($rlc_tbl_out_file, $do_fmspan, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rlcpass_seqorder_A, \%opt_HH, \%ofile_info_HH);
+  # parse riboaligner tbl file
+  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_file($ra_tbl_out_file, $do_fmspan, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass), $log_FH, *STDOUT);
 
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs ribolengthchecker identified as too long", $progress_w, $log_FH, *STDOUT);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rlc_npass, $rt2_npass-$rlc_npass), $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs riboaligner identified as too long", $progress_w, $log_FH, *STDOUT);
+  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ra_npass, $rt2_npass-$ra_npass), $log_FH, *STDOUT);
 
   $stage_key = "fmspan";
   if($do_fmspan) { 
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs based on model span", $progress_w, $log_FH, *STDOUT);
-    ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ms_npass, $rlc_npass-$ms_npass), $log_FH, *STDOUT);
+    ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ms_npass, $ra_npass-$ms_npass), $log_FH, *STDOUT);
   }
 }
-else { # skipping ribolengthchecker stage
-  @rlcpass_seqorder_A = @seqorder_A; # since ribolengthchecker stage was skipped, all sequences 'survive' it
+else { # skipping riboaligner stage
+  @rapass_seqorder_A = @seqorder_A; # since riboaligner stage was skipped, all sequences 'survive' it
 }
 
 # determine how many sequences at for each taxonomic group at level $level are still left
@@ -853,9 +853,9 @@ else {
     $stage_key = "ingrup";
     my $create_list_cmd = undef;
 
-    # merge alignments created by ribolengthchecker with esl-alimerge and remove any seqs that have not
+    # merge alignments created by riboaligner with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimerge_cmd       = "ls " . $rlc_outdir . "/*.stk | grep cmalign\.stk | " . $execs_H{"esl-alimerge"} . " --list - | esl-alimask --rf-is-mask - | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
+    my $alimerge_cmd       = "ls " . $ra_outdir . "/*.stk | grep cmalign\.stk | " . $execs_H{"esl-alimerge"} . " --list - | esl-alimask --rf-is-mask - | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
     my $alistat_cmd        = $execs_H{"esl-alistat"} . " --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
     my $alipid_analyze_cmd = $execs_H{"alipid-taxinfo-analyze.pl"} . " $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
       
@@ -886,7 +886,7 @@ else {
     # than don't survive the ingroup test, output that
     my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
     my $nlost = 0;
-    open(LOST, ">", $ingrup_lost_list) || ofile_FileOpenFailure($ingrup_lost_list, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(LOST, ">", $ingrup_lost_list) || ofile_FileOpenFailure($ingrup_lost_list, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
     foreach my $gtaxid (sort {$a <=> $b} keys (%full_level_ct_H)) { 
       if($gtaxid != 0) { 
         if(($full_level_ct_H{$gtaxid} > 0) && 
@@ -932,7 +932,7 @@ else {
     }
 
     # determine sequences that will be clustered and create a list file for them for input to esl-cluster
-    open(LIST, ">", $cluster_in_list_file) || ofile_FileOpenFailure($cluster_in_list_file, $pkgstr, "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+    open(LIST, ">", $cluster_in_list_file) || ofile_FileOpenFailure($cluster_in_list_file, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
     foreach $seqname (@seqorder_A) { 
       if($seqfailstr_H{$seqname} eq "") { # sequence has survived to the clustering step if it has a blank string in %seqfailstr_H
         print LIST $seqname . "\n";
@@ -1026,7 +1026,7 @@ if($npass_final > 0) {
 #####################################################################
 # output taxonomy level count file
 my $out_level_ct_file = $out_root . "." . $level . ".ct";
-open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
 print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
 my $final_level_ct_HR = undef;
 if   ($do_clustr)  { $final_level_ct_HR = \%surv_clustr_level_ct_H; }
@@ -1092,8 +1092,8 @@ if($do_fribo1) {
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
 }
 if($do_fribo2) { 
-  push(@column_explanation_A, "# 'ribotyper2[<s>]:        ribotyper (ribolengthchecker) failure with unexpected features listed in <s>\n");
-  push(@column_explanation_A, "#                          see $out_root-rlc/$dir_tail-rlc.ribotyper.long.out\n");
+  push(@column_explanation_A, "# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>\n");
+  push(@column_explanation_A, "#                          see $out_root-ra/$dir_tail-ra.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
 }
 if($do_fmspan) { 
@@ -1110,8 +1110,8 @@ if($do_ingrup) {
   }
 }
 
-open(RDB, ">", $out_rdb_tbl) || ofile_FileOpenFailure($out_rdb_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-open(TAB, ">", $out_tab_tbl) || ofile_FileOpenFailure($out_tab_tbl,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+open(RDB, ">", $out_rdb_tbl) || ofile_FileOpenFailure($out_rdb_tbl,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+open(TAB, ">", $out_tab_tbl) || ofile_FileOpenFailure($out_tab_tbl,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
 foreach my $column_explanation_line (@column_explanation_A) { 
   print RDB $column_explanation_line;
   print TAB $column_explanation_line;
@@ -1175,7 +1175,7 @@ exit 0;
 # parse_srcchk_and_tax_files_for_specified_species
 # parse_parse_vecscreen_combined_file
 # parse_ribotyper_short_file
-# parse_ribolengthchecker_tbl_file
+# parse_riboaligner_tbl_file
 # parse_blast_output_for_self_hits
 # parse_alipid_analyze_tab_file
 # parse_alipid_output_to_create_dist_file
@@ -1409,10 +1409,10 @@ sub parse_ribotyper_short_file {
 }
 
 #################################################################
-# Subroutine:  parse_ribolengthchecker_tbl_file()
+# Subroutine:  parse_riboaligner_tbl_file()
 # Incept:      EPN, Wed May 30 14:11:47 2018
 #
-# Purpose:     Parse a tbl output file from ribolengthchecker.pl
+# Purpose:     Parse a tbl output file from riboaligner.pl
 #
 # Arguments:
 #   $in_file:             name of input tbl file to parse
@@ -1420,13 +1420,13 @@ sub parse_ribotyper_short_file {
 #   $mlen:                model length 
 #   $seqfailstr_HR:       ref to hash of failure string to add to here
 #   $seqorder_AR:         ref to array of sequences in order
-#   $rlcpass_seqorder_AR: ref to array of sequences in order
+#   $rapass_seqorder_AR: ref to array of sequences in order
 #   $opt_HHR:             ref to 2D hash of cmdline options
 #   $ofile_info_HHR:      ref to the ofile info 2D hash
 #
 # Returns:    3 values:
 #             $rt_npass:  number of sequences that pass ribotyper stage
-#             $rlc_npass: number of sequences that pass ribolengthchecker stage
+#             $ra_npass: number of sequences that pass riboaligner stage
 #             $ms_npass:  number of sequences that pass model span stage
 #
 # Dies:       if options are unexpected
@@ -1434,22 +1434,22 @@ sub parse_ribotyper_short_file {
 #             in there's no model length for an observed classification
 # 
 #################################################################
-sub parse_ribolengthchecker_tbl_file { 
-  my $sub_name = "parse_ribolengthchecker_tbl_file()";
+sub parse_riboaligner_tbl_file { 
+  my $sub_name = "parse_riboaligner_tbl_file()";
   my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $do_fmspan, $mlen, $seqfailstr_HR, $seqorder_AR, $rlcpass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file, $do_fmspan, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %rt_curfailstr_H  = (); # holds fail strings for ribotyper
-  my %rlc_curfailstr_H = (); # holds fail strings for ribolengthchecker
+  my %ra_curfailstr_H = (); # holds fail strings for riboaligner
   my %ms_curfailstr_H  = (); # holds fail strings for model span stage
   my @rtpass_seqorder_A = (); # array of sequences that pass ribotyper stage, in order
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
   ribo_InitializeHashToEmptyString(\%rt_curfailstr_H,  $seqorder_AR);
-  # for %rlc_curfailstr_H, we only do pass/fail for those that survive ribotyper
-  # for %ms_curfailstr_H,  we only do pass/fail for those that survive ribotyper and ribolengthchecker
+  # for %ra_curfailstr_H, we only do pass/fail for those that survive ribotyper
+  # for %ms_curfailstr_H,  we only do pass/fail for those that survive ribotyper and riboaligner
   # so we can't initialize those yet, we will fill in the FAILs and PASSes as we see them in the output
   
   # determine maximum 5' start position and minimum 3' stop position required to be kept
@@ -1489,7 +1489,7 @@ sub parse_ribolengthchecker_tbl_file {
       chomp $line;
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 9) { 
-        ofile_FAIL("ERROR in $sub_name, rlc tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
       }
       my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
       $nlines++;
@@ -1499,12 +1499,12 @@ sub parse_ribolengthchecker_tbl_file {
         $rt_curfailstr_H{$target} = "ribotyper2[" . $ufeatures . "];;";
       }
       else { # $passfail eq "PASS"
-        # check for ribolengthchecker fail
+        # check for riboaligner fail
         if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
-          $rlc_curfailstr_H{$target} = "ribolengthchecker[" . $lclass . "];;";
+          $ra_curfailstr_H{$target} = "riboaligner[" . $lclass . "];;";
         }
         else { 
-          $rlc_curfailstr_H{$target} = "";
+          $ra_curfailstr_H{$target} = "";
           
           # check for model span fail
           if($do_fmspan) { 
@@ -1521,30 +1521,30 @@ sub parse_ribolengthchecker_tbl_file {
   }
   close(IN);
   
-  # fill @rtpass_seqorder_A and @{$rlcpass_seqorder_AR}
+  # fill @rtpass_seqorder_A and @{$rapass_seqorder_AR}
   @rtpass_seqorder_A     = ();
-  @{$rlcpass_seqorder_AR} = ();
+  @{$rapass_seqorder_AR} = ();
   my $seqname;
   foreach $seqname (@{$seqorder_AR}) { 
-    if(exists $rlc_curfailstr_H{$seqname}) { 
+    if(exists $ra_curfailstr_H{$seqname}) { 
       push(@rtpass_seqorder_A, $seqname); 
       if((! $do_fmspan) || (exists $ms_curfailstr_H{$seqname})) { 
-        push(@{$rlcpass_seqorder_AR}, $seqname);
+        push(@{$rapass_seqorder_AR}, $seqname);
       }
     }
   }
 
   my $rt_npass  = update_and_output_pass_fails(\%rt_curfailstr_H,  $seqfailstr_HR, $seqorder_AR,         0, $out_root, "fribty", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
-  my $rlc_npass = update_and_output_pass_fails(\%rlc_curfailstr_H, $seqfailstr_HR, \@rtpass_seqorder_A,  0, $out_root, "friblc", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
+  my $ra_npass = update_and_output_pass_fails(\%ra_curfailstr_H, $seqfailstr_HR, \@rtpass_seqorder_A,  0, $out_root, "friblc", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
   my $ms_npass  = undef;
   if($do_fmspan) { 
-    $ms_npass = update_and_output_pass_fails(\%ms_curfailstr_H,  $seqfailstr_HR, $rlcpass_seqorder_AR, 0, $out_root, "fmspan", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
+    $ms_npass = update_and_output_pass_fails(\%ms_curfailstr_H,  $seqfailstr_HR, $rapass_seqorder_AR, 0, $out_root, "fmspan", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
   }
   else { 
-    $ms_npass = $rlc_npass;
+    $ms_npass = $ra_npass;
   }
 
-  return ($rt_npass, $rlc_npass, $ms_npass);
+  return ($rt_npass, $ra_npass, $ms_npass);
 }
 
 #################################################################
@@ -2191,8 +2191,8 @@ sub filter_list_file {
 
   my ($in_file, $out_file, $maxvalue, $value_HR, $FH_HR) = (@_);
 
-  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $FH_HR);
-  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbcreate.pl:main()", $!, "writing", $FH_HR);
+  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbmaker.pl:main()", $!, "reading", $FH_HR);
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbmaker.pl:main()", $!, "writing", $FH_HR);
 
   my $nkept    = 0;
   my $nremoved = 0;
@@ -2360,7 +2360,7 @@ sub fblast_stage {
   # when we reach $chunksize (50) seqs in our current temp file, stop and run blast
   # this avoids the N^2 runtime of running blast all v all
   # 50 was good tradeoff between overhead of starting up blast and speed of execution on 18S
-  open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbcreate.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+  open(LIST, $full_list_file) || ofile_FileOpenFailure($full_list_file,  "RIBO", "ribodbmaker.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
   my $keep_going   = 1; 
   my $cidx         = 0; # chunk counter
   my $do_blast     = 0; # flag for whether we need to run blast on current set
@@ -2371,7 +2371,7 @@ sub fblast_stage {
       $chunk_sfetch_file = $out_root . "." . $stage_key . "." . $cidx . ".sfetch"; # name of our temporary sfetch file
       $chunk_fasta_file  = $out_root . "." . $stage_key . "." . $cidx . ".fa";     # name of our temporary fasta file
       $chunk_blast_file  = $out_root . "." . $stage_key . "." . $cidx  .".blast";  # name of our temporary blast file
-      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbcreate.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      open(SFETCH, ">", $chunk_sfetch_file) || ofile_FileOpenFailure($chunk_sfetch_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
       $cur_seqidx   = 0;
       %cur_nhit_H   = ();
       $do_open_next = 0;
@@ -2425,7 +2425,7 @@ sub fblast_stage {
   # make sure all seqs were blasted against each other exactly once
   foreach $seq (@{$seqorder_AR}) { 
     if($nblasted_H{$seq} != 1) { 
-      ofile_FAIL("ERROR in ribodbcreate.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", "RIBO", $?, $ofile_info_HH{"FH"});
+      ofile_FAIL("ERROR in ribodbmaker.pl::main, sequence $seq was BLASTed against itself $nblasted_H{$seq} times (should be 1)", "RIBO", $?, $ofile_info_HH{"FH"});
     }
   }
 
