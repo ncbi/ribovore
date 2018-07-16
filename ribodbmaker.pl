@@ -230,7 +230,7 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
 # define taxonomic level we will work at for output file that lists levels lost, including for the ingroup analysis, if we do that step, default is order
-my @level_A = "phylum", "class", "order");
+my @level_A = ("phylum", "class", "order");
 my $level;
 my %full_level_ct_HH = ();         # key 1 is $level, key 2 is $level taxid, value is number of sequences in full set (input) for that taxid
 my %surv_filters_level_ct_HH = (); # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive all filters for that taxid
@@ -644,9 +644,9 @@ if($do_ftaxid || $do_ingrup || $do_special) {
   foreach $level (@level_A) { 
     my $find_tax_cmd = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile " . $taxinfo_wlevel_file_H{$level};
     if(! $do_prvcmd) { ribo_RunCommand($find_tax_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "taxinfo-level", "$taxinfo_wlevel_file", 0, "taxinfo file with level");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "taxinfo-level", $taxinfo_wlevel_file_H{$level}, 0, "taxinfo file with level");
     # parse tax_level file to fill %full_level_ct_HH
-    parse_tax_level_file($taxinfo_wlevel_file_H{$level}, undef, $seqgtaxid_HH{$level}, $full_level_ct_H{$level}, $ofile_info_HH{"FH"});
+    parse_tax_level_file($taxinfo_wlevel_file_H{$level}, undef, $seqgtaxid_HH{$level}, $full_level_ct_HH{$level}, $ofile_info_HH{"FH"});
   }
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
@@ -889,7 +889,7 @@ else {
     foreach $level (@level_A) {
       if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     }
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid-analyze", "$alipid_analyze_out_file", 0, "output file from alipid-taxinfo-analyze.pl");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid-analyze", $alipid_analyze_out_file_H{$level}, 0, "output file from alipid-taxinfo-analyze.pl");
 
     $npass = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
 
@@ -898,17 +898,17 @@ else {
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying taxonomic groups lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
     # determine how many sequences at for each taxonomic group at each level $level are still left
     foreach $level (@level_A) { 
-      parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%seqfailstr_H, undef, \%surv_ingrup_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+      parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%seqfailstr_H, undef, $surv_ingrup_level_ct_HH{$level}, $ofile_info_HH{"FH"});
       
       # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
       # than don't survive the ingroup test, output that
       my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
       my $nlost = 0;
       open(LOST, ">", $ingrup_lost_list_H{$level}) || ofile_FileOpenFailure($ingrup_lost_list_H{$level}, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-      foreach my $gtaxid (sort {$a <=> $b} keys (%full_level_ct_HH{$level})) { 
+      foreach my $gtaxid (sort {$a <=> $b} keys (%{$full_level_ct_HH{$level}})) { 
         if($gtaxid != 0) { 
           if(($full_level_ct_HH{$level}{$gtaxid} > 0) && 
-             ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || $surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0)) { 
+             ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || ($surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0)) { 
             print LOST $gtaxid . "\n";
             $nlost++;
           }
