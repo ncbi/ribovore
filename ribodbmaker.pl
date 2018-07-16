@@ -895,9 +895,9 @@ else {
 
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
-    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying taxonomic groups lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
     # determine how many sequences at for each taxonomic group at each level $level are still left
     foreach $level (@level_A) { 
+      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying " . $level . "s lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
       parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%seqfailstr_H, undef, $surv_ingrup_level_ct_HH{$level}, $ofile_info_HH{"FH"});
       
       # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
@@ -908,16 +908,16 @@ else {
       foreach my $gtaxid (sort {$a <=> $b} keys (%{$full_level_ct_HH{$level}})) { 
         if($gtaxid != 0) { 
           if(($full_level_ct_HH{$level}{$gtaxid} > 0) && 
-             ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || ($surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0)) { 
+             ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || ($surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0))) { 
             print LOST $gtaxid . "\n";
             $nlost++;
           }
         }
       }
       close LOST;
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", "$ingrup_lost_list", 1, sprintf("list of %d %ss lost in the ingroup analysis", $nlost, $level));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", $ingrup_lost_list_H{$level}, 1, sprintf("list of %d %ss lost in the ingroup analysis", $nlost, $level));
+      ofile_OutputProgressComplete($start_secs, sprintf("%d %ss lost", $nlost, $level), $log_FH, *STDOUT);
     }
-    ofile_OutputProgressComplete($start_secs, sprintf("%d %ss lost", $nlost, $level), $log_FH, *STDOUT);
 
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # CHECKPOINT: save any sequences that survived to this point as the 'ingrup' set
@@ -1054,7 +1054,7 @@ foreach $level (@level_A) {
   if   ($do_clustr)  { $final_level_ct_HR = \%surv_clustr_level_ct_HH{$level};  }
   elsif($do_ingrup)  { $final_level_ct_HR = \%surv_ingrup_level_ct_HH{$level};  }
   else               { $final_level_ct_HR = \%surv_filters_level_ct_HH{$level}; }
-  foreach my $taxid (sort {$a <=> $b} keys %full_level_ct_H) { 
+  foreach my $taxid (sort {$a <=> $b} keys %{$full_level_ct_HH{$level}}) { 
     printf LVL ("%s\t%s\t%s\t%s\t%s\t%s\n", 
                 $taxid, 
                 $full_level_ct_HH{$level}{$taxid}, 
@@ -1127,7 +1127,7 @@ if($do_fmspan) {
 if($do_ingrup) { 
   push(@column_explanation_A, "# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis\n");
   push(@column_explanation_A, "#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>\n");
-  push(@column_explanation_A, "#                          see $alipid_analyze_out_file for explanation of types\n");
+  push(@column_explanation_A, "#                          see " . $alipid_analyze_out_file_H{"order"} . " for explanation of types\n");
   if(opt_Get("--fione", \%opt_HH)) { 
     push(@column_explanation_A, "#                          if <s> includes 'not-max-avg-pid', a different sequence with the\n");
     push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
@@ -1144,7 +1144,9 @@ foreach my $column_explanation_line (@column_explanation_A) {
 printf RDB ("# %*s  %-*s  %*s  %7s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, "idx", $width_H{"target"}, "seqname", $width_H{"length"}, "seqlen", "staxid", "otaxid", "ctaxid", "ptaxid", "p/f", "clust", "special", "failstr");
 printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", "idx", "seqname", "seqlen", "staxid", "otaxid", "ctaxid", "ptaxid", "p/f", "clust", "special", "failstr");
 my $taxid2print = undef;
-my $gtaxid2print = undef;
+my $otaxid2print = undef;
+my $ctaxid2print = undef;
+my $ptaxid2print = undef;
 foreach $seqname (@seqorder_A) { 
   if($seqfailstr_H{$seqname} eq "") { 
     $pass_fail  = "PASS";
@@ -1791,7 +1793,7 @@ sub parse_alipid_analyze_tab_file {
 }
 
 #################################################################
-# Subroutine:  parse_alipid_analyze_tab_file()
+# Subroutine:  parse_alipid_analyze_tab_files()
 # Incept:      EPN, Mon Jun 25 15:17:12 2018
 #
 # Purpose:     Parse a tab delimited file output from alipid-taxinfo-analyze.pl
@@ -1812,8 +1814,8 @@ sub parse_alipid_analyze_tab_file {
 #
 # Dies:       if a sequence read in the alipid file is not in %{$seqfailstr_HR}
 #################################################################
-sub parse_alipid_analyze_tab_file { 
-  my $sub_name = "parse_alipid_analyze_tab_file";
+sub parse_alipid_analyze_tab_files { 
+  my $sub_name = "parse_alipid_analyze_tab_files";
   my $nargs_expected = 6;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
