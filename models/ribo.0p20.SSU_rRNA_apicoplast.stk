@@ -1,0 +1,74 @@
+# STOCKHOLM 1.0
+
+00025::Babesia_bovis.::U06105                         ----------GAGUUUGAUCCUGGCUCAGAAUGAACGCUUAAGACGUACUUUUAACACAUGCUAAUUAAAUUUAAAAUAUUAAAAUUUU--------UAAUAUUAUUUAAAUUAGUGUAGAGGUGAGUAAUGAAUAGAACUAAAAUUGUAAAUCGAGGAUAA--CUAUAAGUGUGC-AUUUUAUGUGUGUUUAUACUAAU
+#=GR 00025::Babesia_bovis.::U06105                 SS ..........<<<<<.......>>>>>.<<<<.<<<<<<.<<<<<<<<<......<<<.<<<..<<<<<.<<<<<<<<<<<<<<...>>........>>>>>>>..>>>>>>>>>>......<<<......<<<<<<<<.<<....<<<<<<.<<<<....<..<<<....>>.>>.....>>>><<<............
+00023::Plasmodium_falciparum::X57167_X95275           U-UAUAUUGCGAGUUUGAUCCUAGCUCAGAAUUAACGCUAGAAAUAUACAU--UACACAUGCAAAUUA-AUGA-----------------U-AAUA-------------UCAUAGUGUAUAGGUGAG-GAUAUAUAAAUUUUUAAUUUUAAAUAGAUUAUAA-AUUUUAUUAAAU-AAUAAUCUAUAAGC----------
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS ..........<<<<<.......>>>>>.<<<<.<<<<<<.<<<<<<<<<......<<<.<<<..<<<..<<<<.................<....>.............>>>>>>>......<<<......<<<<<<<<.<<...<<<<<<<.<<<<......<<<<....>>>>.....>>>>....<<..........
+00020::Chloroplast_Toxoplasma_gondii.::U87145         AAAUUAUUACGAGUUUGAUCCUGGCUCCGGAAGAACGCAAGAGAUGUGCUU--AACACAUGCUAAUUGAAUGGU---------------AUUAAUAU-----------AUCAUAGUGUAAUAGUGAGUAAUGUAUGAGAAUUUAUUUUUAGAA-UAUAAUAAAAAUUUAAUAAUUU-AUAAUAAACGC------------
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS ..........<<<<<.......>>>>>.<<<<.<<<<<<.<<<<<<<<<......<<<.<<<..<<<..<<<<<...............<<....>>...........>>>>>>>>......<<<......<<<<<<<<.<<...<<<<<<<..<<<<....<<<<<....>>>>>.....>>>>...............
+#=GC SS_cons                                          ::::::::::<<<<<_______>>>>>:{{{{-{{{{{{,{{{{{{{{{------{{{-{{{,,<<<--<<<<-----------------<____>------------->>>>>>>,,,,,,[[[,,,,,,((((((((-((---(((((((,,,,,,,,,,,<<<<____>>>>,,,,,,,,,,,,,,,,,,,,,,,,,
+
+00025::Babesia_bovis.::U06105                         UCUCUUUA-------------AGUGCUAAAAA--CGUACAAUUAAAA--UUUUUAUUUACAAAUUAAUUCUAUUUUUGAUUAGCUAUUUAAUAUUAAAAAAU-AAUAUUAAGGUGAAGAUCAAUAACUGGCCUGAGAGGGUUUACAGUCACAUCAGAAUUGAGAUAAAAUCUGAAUUUCUAUAGAGAGAGCAGCAGUGGG
+#=GR 00025::Babesia_bovis.::U06105                 SS ......................>>>.<<<<<<.................>>>>>>.>>.>>>>..>>>>>>>>>><<<..<.<<<..<<<<<<<<........>>>>>>>>>>>.....>>>>..<<<<<<<<....>>>>...>>>>>>>.<<<<<<..........>>>>>>.<<<<<....>>>>>...>>>>>>.>
+00023::Plasmodium_falciparum::X57167_X95275           -----GCAAAAAUAUAUGUAC-----UAUAUUAA----------AAAUUAAUAUUAUUUAAAAUAAAAUUUAUAUUUGAUUAACUAGUUGGUAAUUUAAAAG-ACUACCAAGGUUAUUAUCAAAAAUUGGUUUGAAAGAAUGUACAAUCACAUUAGGAUUGAAAUAAAGCCUAAAUUUUUA-UAAAAAAUCAGCAGUGAG
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS .....<<<......>>>>>........<<<<<<<.............>>>>>>>..>>>>>>>..>>>>>>>>>><<<..<.<<<..<<<<<<<<........>>>>>>>>>>>.....>>>>..<<<<<<<<....>>>>...>>>>>>>.<<<<<<..........>>>>>>.<<<<......>>>>...>>>>>>.>
+00020::Chloroplast_Toxoplasma_gondii.::U87145         --------AAUAGUGUUUUAAA---A-----GAU---------AAUUAUU-----GUCUAAAAAAAAGCUCAUAUCUAAUUAGCUAGUUGGUGAAGUAAUAGUUUUACCAAGGCGAAGAUUAGUAGCUGCCUUGAGAGGGGAAACAGCCACAUAGAGAUUGAAAUACAGCUCUAACUCCUA--AGGGGGGCAGCAGUGGG
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS ........<<<...>>>..............<<<.............>>>......>>>>>>>..>>>>>>>>>><<<..<.<<<..<<<<<<<<........>>>>>>>>>>>.....>>>>..<<<<<<<<....>>>>...>>>>>>>.<<<<<<..........>>>>>>.<<<<......>>>>...>>>>>>.>
+#=GC SS_cons                                          ,,,,,,,,,,,,,,,,,,,,,,,,,,,<<<<<<<_____________>>>>>>>,,)))))))--))))))))))<<<--<-<<<--<<<<<<<<________>>>>>>>>>>>----->>>>,,<<<<<<<<____>>>>--->>>>]]],<<<<<<__________>>>>>>,<<<<______>>>>,,,}}}}}}-}
+
+00025::Babesia_bovis.::U06105                         GAAUAUUCUA-CAAUUAGUGAAAACUAGAUAGAGUGACGUCGUGUGAAAAAGAUGAAAUAAAAUGUAAAUUUCUGUAAA-UAAUUCUAAAACAUG---------UGAUC-GAAUUAUAAGAAAAUAUCGGCAAACUCUGUGCCAGCAGCCGC-GUAAUACAGAGGAUAUAAGCGUUAUUCGCAUUUAUUGGGCAUAAAGC
+#=GR 00025::Babesia_bovis.::U06105                 SS .....<.<<<....<<<<<....>>>>>.>>>>.>>.>>>>>>..<<<.......<<<<.........>>>>........>>>.<.<<<<<...<.............>....>>>>>.>...<<<<<......<<<<<.....<<....>>.......>>>>>>>>>>.>>>>>>>>>>..........<<<.....<.
+00023::Plasmodium_falciparum::X57167_X95275           GAAUAUUUUA-CAAUAAGUGUAAGCUUGAUAAAGUAAUAUUUCUUUUAGGAAGACAGUAUUAUUAAAAUAUU--GUAAACUUUUUAUUUUAUUUUUAAAU--AUUGAUA-AAAAUAAAAAAUAGUAUUUGCUAUUUCUGUGCCAGCAGCAGCGGUAAUACAGAAAAUGCAAGCGUUAUUCAUUUUAUU-AGGCGUAAAGC
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS .....<.<<<....<<<<<....>>>>>.>>>>.>>.>>>>>>..<<<<......<<<<<<.....>>>>>>.......>>>>.<..<<.<<<...<..........>....>>>>>..>...<<<<<......<<<<<.....<<....>>.......>>>>>>>>>>.>>>>>>>>>>..........<<<.......
+00020::Chloroplast_Toxoplasma_gondii.::U87145         GAAUUUUCUGCCAAUAAGCGCAAGCUUGACAGAGCGUCAUCACAUGAAGGAGGAAGGCCU--AU-AAAGGUU--GUAAACUUCUUUUGCUUAAAAAAAUAAUACUGACGUUUAAGUUUAAAAAGUAUCGGCUAACUCCGUGCCAGCAGCCGCGGUCAUACGGGGGAUACAAGCGUUUUCCAAAAUUACUGGGCGUAAAGU
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS .....<.<<<....<<<<<....>>>>>.>>>>.>>.>>>>>>..<<<<......<<<<.........>>>>.......>>>>.<..<<<<<....<..........>...>>>>>...>...<<<<<......<<<<<.....<<....>>.......>>>>>>>>>>.>>>>>>>>>>..........<<<.....<.
+#=GC SS_cons                                          ,,,,,<-<<<----<<<<<____>>>>>->>>>,}}-}}}}}},,<<<<------<<<<_________>>>>------->>>>,<--<<-------<__________>------->>-->,,,<<<<<------<<<<<-----<<____>>------->>>>>>>>>>,}}}}}}}}}}::::::::::{{{-----{,
+
+00025::Babesia_bovis.::U06105                         AUCCUUAGAUGGUUUAUUAUAUUAUUUUAAAAAU-UUAAAAAUAAUAUUUUUAAACAUUAAUAUUAAGAUUAAUAAACUUAGAGGGUAAAAUAAGUUUAAGGAAUUUUUUGAGUAAUGGUGAAAUAUGAUUUCUAUACAUUAAAGAAGGCCAAAAAUGAAAGUAUUAAACUGGUUUAUUUCUGACAUUGGAGGAUGAAAG
+#=GR 00025::Babesia_bovis.::U06105                 SS <<<<.<.<<<.<<<<<<<.<<<<<<<<<<<.....<<<<<<.......>>>>>>...>>>>>>.>>>..>>>>>>>>>....<<<<<<<<<..<<<<<<<<<..<<<<<<<<...<<<......>>>.........>>>>>>>>..>>....<..<<....>>>>>>>>>>.>>>>>>.>>>...>>>>..>>>>....<
+00023::Plasmodium_falciparum::X57167_X95275           GUUUUAAGGUUUUAUAUUAAUUUUAUGUUUAAAUAUUUAAAU-UAAAUUUAAAAUAAAUUAAU-AAAUAAUAAUAUA-AUAGAGUAUUAUAAAAGUAUUAAGAAUUUUUUGAGAAGUAGUGAAAUACAAUGAUA---CAAAAAAGAAUAUCAAAGGCGGAAGCAUAAUACUAUAUAAUUACUGACACUUAAAAACGAAAG
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS <<<<..<<<<.<<<<<<<.<<<<<<<<<<<....<<<<<<<.......>>>>>>>..>>>>>>.>>>..>>>>>>>>.>...<<<<<<<<<..<<<<<<<<<..<<<<<<<<...<<<......>>>......>...>>>>>>>..>>....<..<<....>>>>>>>>>>.>>>>>>.>>>...>>>>..>>>>....<
+00020::Chloroplast_Toxoplasma_gondii.::U87145         GUAUGUAGGUGGAUUGGUAUGUUCUUCCUUAAAUACUAUUUG--AUAAAUUUAGAAAAAGGAA-GAAAACUAUUAAU-CUUGAGUUCGAUAAGGGUAAGAGGAAUUUUUUGAGGAGUAGUGAAAUGCGAAGAUA---CAAAAAAGAAGAUCAACAGCGAAAGCAUCUUACUGGGUCGAUACUGACACUGAGAUACGAAAG
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS <<<<.<.<<<.<<<<<<<.<<<<<<<<<<<....<<<<<<<.......>>>>>>>..>>>>>>.>>>..>>>>>>>>.>...<<<<<<<<<..<<<<<<<<<..<<<<<<<<...<<<......>>>......>...>>>>>>>..>>....<..<<....>>>>>>>>>>.>>>>>>.>>>...>>>>..>>>>....<
+#=GC SS_cons                                          [[[[-[-[[[,<<<<<<<-<<<<<<<<<<<----<<<<<<<_______>>>>>>>-->>>>>>->>>-->>>>>>>>->,,,(((((((((--(((((((<<--<<<<<<<<---<<<______>>>------>--->>>>>>>-->>,,,,<--<<____>>>)))))))-))))))-))),,,]]]]--]]]],,,,<
+
+00025::Babesia_bovis.::U06105                         CUAAAGUAGCGAAUGGGAUUAGAUACCCCAGUAGUUUUAGCCGUAAAUUAUGAAUAUUAAAAUUUAGAA------AU--AAUA----UUUUUAAAUUUAAAGUUAAUACGUUAAAUAUUCCGCCUGAAGAGUACACUCGCAAGAGUCAAAUUCAAAGGAACUGACGGGAACUUAUACAAGUGAUGAGCUAUGUUGUUUAA
+#=GR 00025::Babesia_bovis.::U06105                 SS <<<<<...<<...<<<<.........>>>>...>>>>>>>>..........<<<<<<<.<<<<<<<<<<......<...........>>>>>>>>>>>...<<....>>....>>>>>>>>>>>.<<<......<<<<....>>>>....>>>........<<<<<.<<<<<<<.<<..<<<<<<<<<<<<<<<<<....
+00023::Plasmodium_falciparum::X57167_X95275           CUAAGGUAGCAAAUAGGAUUAGAUACCCUAGUAGUCUUAGCUGUAAACUAUGAAUAUUUUAUAUUUAU---------AUUUU-------AUAAAUAUAAUAACUAACGUGAUAAAUAUUCCGCCUGAGUAGUAUAUUCGCAAGAAUGAAAUUCAAAGGAAUUGACGGGAGCUUAUACAAGUGGUGGAACAUGUGGCUUAA
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS <<<<<...<<...<<<<.........>>>>...>>>>>>>>..........<<<<<<..<<<<<<<<<.........<...>.......>>>>>>>>>...<<....>>.....>>>>>>.>>>.<<<......<<<<....>>>>....>>>........<<<<<.<<<<<<<.<<..<<<<<<<<<<<<<<<<<....
+00020::Chloroplast_Toxoplasma_gondii.::U87145         UUAAGGUAGCAAAUGGGAUUAGAUACCCCAGUAGUCUUAACUGUAAACAAUGGAUACUCGGUACUGGAGACAUUAAA----UAUAUAAAUUCAGUACCCUAGCUAACGCGUUAAGUAUUCCGCCUGAGUAGUACGCUCGCAAGGGUGAAACUCAAAGGAAUUGACGGGGGCUCGUACAAGCGGUGGAGCACGUAAUUUAA
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS <<<<<...<<...<<<<.........>>>>...>>>>>>>>..........<<<<<<..<<<<<<<<<...<<...........>>...>>>>>>>>>...<<....>>.....>>>>>>>>>>.<<<......<<<<....>>>>....>>>........<<<<<.<<<<<<<.<<..<<<<<<<<<<<<<<<<<....
+#=GC SS_cons                                          <<<<<---<<---<<<<_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<<<<<<_____________________>>>>>>>>>,,,<<____>>,,,,,))))))}}}}:<<<------<<<<____>>>>---->>>::::::::{{{{{-{{{{{{{-{{,,{{{{{{{{{{{{{{{{{,,,,
+
+00025::Babesia_bovis.::U06105                         UUUGAUGCAGCCCAAAAAAUCUUACCAAUAUUUAACAUAAUUUAAAAUAAAUUUUUAUUAAAAUAAAAAUGUUAAUUAAUCUUAAGGUGGUGCAUGGUUGUCGUCAGCUAGUGCUGUGAAGUAAAUCAUAAAAUAUAA-AACUAGCGGAACCCUUAU-------------------------------------------
+#=GR 00025::Babesia_bovis.::U06105                 SS <<<<........>>>>........<<<<<<<.....<<<<<<<<......<<<<<<<<....>>>>>>>>.....>>>>>.>>>.<<.<<<<..<<<<<<<<<...<<<<<<<<<....>>>...<<<<.....>>>>..>>>>>>.....<<<<.............................................
+00023::Plasmodium_falciparum::X57167_X95275           UUCGAUGCAACACGAUAAACCUUACCAAAAUUUAACAAUAUUUUUA-----AUAUUAAGAAAUUAAUAUUUUAAUAAAAUAUAUAGGUAGUGCAUGGCUGUCGUCAGUUCGUGCUGUGAAGUGUUAAUUUUAGUAUUAUAACGAACGUAACCUUUUAUAAAAAAAA---------------------------------U
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS <<<<........>>>>........<<<<<<<.....<<<<<<<<.......<<<<<<<....>>>>>>>......>>>>>>>.>.<<.<<<<..<<<<<<<<<...<<<<<<<<<....>>>..<<<<......>>>>..>>>>>>.....<<<<.<<<<<<<....................................>
+00020::Chloroplast_Toxoplasma_gondii.::U87145         UUCGAUGUAACGCGAUAAACCUUACCAGAACUAGAC-UAAAUUUAUUUUAAAUUAUUAAUAUUAAUUAAU--AAAAAAUU-UACAGGAGGUGCAUGGCUGUCGUCAGCUCGUGUCGUGAGAUGUUGGGUUAAGUCCCGCUACGAGCGCUACCCUUAUUUAA----AGUUUUUUAUAUCUUUAAAAACAGACUAUAUAAAU
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS <<<<........>>>>........<<<<<<<......<<<<<<<.<<<...<<<<<<<....>>>>.>>>..>>>>>>>>.>>..<<.<<<<..<<<<<<<<<...<<<<<<<<<....>>>..<<<<......>>>>..>>>>>>.....<<<<.<<<<.....<<<<<<<<<<<....>>>>>>.>>>>>...>>>><
+#=GC SS_cons                                          <<<<________>>>>,,,,,,,,{{{{{{{,,,,,<<<<<<<<-------<<<<<<<____>>>>>>>------>>>>>->>>,[[-[[[[--[[[[[[[[[,,,((((((<<<____>>>,,<<<<______>>>>,,)))))),,,,,<<<<_____________________________________________
+
+00025::Babesia_bovis.::U06105                         ---CUAUGUCUAUAUAUAGUAUAAAUAAGGACGAUGUCAAAUCUUUAUGCCCCUUAUGUAUUGGGCUAUUAGCGUGGCGCAAUGAUGAAUACAAGUGUAGAAAAUAUU---UAUUAAACUUU---UUAAAAAGUUUAUAAA-------UAU---GAUUCAAAUGU-AAAUUUCAUCUCAGUACGAUAUAUAAAUUGAAAU
+#=GR 00025::Babesia_bovis.::U06105                 SS ....<<<<<....>>>>><<....>>>>>>....>>>>.>>>...>>>>>>>>....>>>>>>>...>>.>>>>>>>>>>...<<<<<<.....<<<<.<<<.<<<<<...<<.<<<<<<<<.......>>>>>>>>>>>>.......>>>.....>>>..>>>>.....>>>>>>......<...<<<<<<<<......
+00023::Plasmodium_falciparum::X57167_X95275           UUUUAUAAUAAAU--AAU-----AAUAAAGAUUACGUCAAGUCAUUAUGCUCCUUAUAUUUUGGGCUGCUCACGUGUUACAUAAAAUAUUACAAUAUUUU-----AUU--------------AUAUGUUA------------------AAU-----AUAAUAAUUAAAAUAUAUUUAUAGUUCAGAUUAUAAAUUGAAAC
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS >>>>>>.<<.......>>........>>>>....>>>>.>>>...>>>>>>>>....>>>>>>>...>>.>>>>>>>>>>...<<<<<<<.....<<<.......<<<........................................>>>..........>>>.....>>>>>>>......<...<<<<<<<<......
+00020::Chloroplast_Toxoplasma_gondii.::U87145         UUUUGUACUAAAUU-AGUAGGAAGGAGAGGAAAACGUCAAGUCUUUAUGCCCUUUAUGUUCUGGGCUACAUACGUGCUACAAUAGAUGGUACAAUAAUUUUUAAAAAUAAAUACAAUAUCAAUUUAUUUUUAAUUUAUUUGUGAAAAU---AAAUGUAAUAAUUG-AAAACCAUUUUUAGUUCGGAACAUAAACUGCAAU
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS <<<<<<<<<<...>.>>>>>>>>>>.>>>>....>>>>.>>>...>>>>>>>>....>>>>>>>...>>.>>>>>>>>>>...<<<<<<<.<<<<....<<<<...<<<<<<<.<<<...............>>>>>>>>>>.....>...>>>.......>>>>....>>>>>>>......<...<<<<<<<<......
+#=GC SS_cons                                          __________________________>>>>,,,,]]]]-]]]---]]]]]]]],,,,}}}}}}},,,}}-}}}}}}}}}},,,<<<<<<<-----<<<_______________________________________________________________>>>----->>>>>>>,,,,,,<---<<<<<<<<______
+
+00025::Babesia_bovis.::U06105                         UUAUUUAUAUAGAGUAGUAACCACUAGUAAUCGUUAGUCAUAUAUAUAACGGUGAAUGAAUAAUUAAGUUUUGUACACACCGCCCGUCGCAUCCUGAAAAUGGAGUGAAUUUAAAUUAUUU-AAAU--AAUAAUAAAUAUUCAAUUCGUGAUUAGGAUGAAGUCGUAACAAGGUAACCCU--------------------
+#=GR 00025::Babesia_bovis.::U06105                 SS ..>>>>>>>>...>.....>>>>>.....<<<<<<<<........>>>>>>>>......>>...>>>>>>>>>>.>>....<<.<<.<.<<<<<<<<..<<<<<<<<<<<<<..<<<<<<........>>>>>>..>>>>>>>>>>>>>..>>>>>>>>..>.>>..>>...............................
+00023::Plasmodium_falciparum::X57167_X95275           UCAUUUAUAUAAAGAUGGAAUCACUAGUAAUCGCUAAUCAGAAUUAUAGCGGUGAAUAAGUUCUUAAGCUUUGUACACACCGCCCGUCACAUCUAAAAAGUAUCAUAUUAUAUAAAAAUUAUUGUU-AAAUAAUAAUAUAUAAUUAUAUAAUUUAGAUGAAGUCGUAACAAGGUAGCCGUACUGGAAGGUGCGGCUGGAU
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS ..>>>>>>>>...>.....>>>>>.....<<<<<<<<........>>>>>>>>......>>...>>>>>>>>>>.>>....<<.<<...<<<<<<<<..<<<<<<<<<<<<<<....<<<<<<.....>>>>>>.>>>>>>>>>>>>>>..>>>>>>>>....>>..>>....<<<<<<<<<<....>>>>>>>>>>...
+00020::Chloroplast_Toxoplasma_gondii.::U87145         UUGUUUAUGUAAAGUUGGAAUCGCUAGUAAUCGCCGGUCAGCAUUACGGCGGUGAAUAAGUCUUCGAGCCUUGUACACACCGCCCGUCACGCCACGGAAAUUGAUUAUUUUUUAAAACUUU-UGAUAAAAGGAU-AAAUAAUAAUAAAUAACUGGGGUGAAGUCGUAACAAGGUAGCUGUACUGGAAGGUGCUGCUGGAU
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS ..>>>>>>>>...>.....>>>>>.....<<<<<<<<........>>>>>>>>......>>...>>>>>>>>>>.>>....<<.<<.<.<<<<<<<<..<<<<<<<<<<<<...<<<<<<<.<...>>>>>>>>...>>>>>>>>>>>>..>>>>>>>>..>.>>..>>....<<<<<<<<<<....>>>>>>>>>>...
+#=GC SS_cons                                          __>>>>>>>>--->,,,,,}}}}},,,,,<<<<<<<<________>>>>>>>>,,,,,,}}---}}}}}}}}}}-}}::::<<-<<-<-<<<<<<<<--<<<<<<<<<<<<<--<<<<<<________>>>>>>-->>>>>>>>>>>>>-->>>>>>>>-->->>-->>::::<<<<<<<<<<____>>>>>>>>>>:::
+
+00025::Babesia_bovis.::U06105                         --------------
+#=GR 00025::Babesia_bovis.::U06105                 SS ..............
+00023::Plasmodium_falciparum::X57167_X95275           AAUAAAAUAAAUU-
+#=GR 00023::Plasmodium_falciparum::X57167_X95275   SS ..............
+00020::Chloroplast_Toxoplasma_gondii.::U87145         AA---------UUU
+#=GR 00020::Chloroplast_Toxoplasma_gondii.::U87145 SS ..............
+#=GC SS_cons                                          ::::::::::::::
+//
