@@ -610,7 +610,7 @@ my $full_list_file = $out_root . ".full.seqlist";
 my $have_taxids = 0;
 
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
-ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
+ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $seqstat_file, \@seqorder_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $nseq = scalar(keys %seqidx_H);
 ribo_CountAmbiguousNucleotidesInSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH, $ofile_info_HH{"FH"});
 if(! $do_prvcmd) { ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
@@ -660,10 +660,6 @@ my %seqfailstr_H = (); # hash that keeps track of failure strings for each seque
 my %curfailstr_H = (); # hash that keeps track of failure string for current stage only, will be "" for a passing sequence
 my $seqname;
 my $npass = 0;
-# fill the seqorder array
-foreach $seqname (keys %seqidx_H) { 
-  $seqorder_A[($seqidx_H{$seqname} - 1)] = $seqname;
-}  
 ribo_InitializeHashToEmptyString(\%curfailstr_H, \@seqorder_A);
 ribo_InitializeHashToEmptyString(\%seqfailstr_H, \@seqorder_A);
 my $stage_key = undef;

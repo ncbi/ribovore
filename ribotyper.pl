@@ -567,22 +567,25 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # Step 2: Use esl-seqstat to determine sequence lengths of all target seqs
 ###########################################################################
 $start_secs = ofile_OutputProgressPrior("Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
-my $tot_nnt = 0;   # total number of nucleotides in target sequence file (summed length of all seqs)
-my $nseq    = 0;   # total number of sequences in target sequence file
-my $Z_value = 0;   # total number of Mb of search space in target sequence file, 
-                   # this is (2*$tot_nnt)/1000000 (the 2 is because we search both strands)
-my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
-my %seqlen_H = (); # key: sequence name, value: length of sequence, 
-                   # value multiplied by -1 after we output info for this sequence
-                   # in round 1. Multiplied by -1 again after we output info 
-                   # for this sequence in round 2. We do this so that we know
-                   # that 'we output this sequence already', so if we 
-                   # see it again before the next round, then we know the 
-                   # tbl file was not sorted properly. That shouldn't happen,
-                   # but if somehow it does then we want to know about it.
+my $tot_nnt = 0;     # total number of nucleotides in target sequence file (summed length of all seqs)
+my $nseq    = 0;     # total number of sequences in target sequence file
+my $Z_value = 0;     # total number of Mb of search space in target sequence file, 
+                     # this is (2*$tot_nnt)/1000000 (the 2 is because we search both strands)
+my @seqorder_A = (); # array of sequences in order they appear in input file
+my %seqidx_H   = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
+my %seqlen_H   = (); # key: sequence name, value: length of sequence, 
+                     # value multiplied by -1 after we output info for this sequence
+                     # in round 1. Multiplied by -1 again after we output info 
+                     # for this sequence in round 2. We do this so that we know
+                     # that 'we output this sequence already', so if we 
+                     # see it again before the next round, then we know the 
+                     # tbl file was not sorted properly. That shouldn't happen,
+                     # but if somehow it does then we want to know about it.
+my %seqgap_HA = ();  # hash of arrays, key is sequence name, value is array of sequence start/stop regions 
+                     # of gaps to sfetch for researching with intron models
 # use esl-seqstat to determine sequence lengths
 my $seqstat_file = $out_root . ".seqstat";
-$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
+$tot_nnt = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \@seqorder_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $Z_value = sprintf("%.6f", (2 * $tot_nnt) / 1000000.);
 $nseq    = scalar(keys %seqlen_H);
 
@@ -659,7 +662,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ###########################################################################
 $start_secs = ofile_OutputProgressPrior("Processing classification results", $progress_w, $log_FH, *STDOUT);
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
-                      \%family_H, \%domain_H, \%accept_H, \%question_H, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, $ofile_info_HH{"FH"});
+                      \%family_H, \%domain_H, \%accept_H, \%question_H, undef, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, $ofile_info_HH{"FH"});
 
 # add data for sequences with 0 hits and then sort the output files 
 # based on sequence index from original input file.
@@ -860,7 +863,7 @@ if(defined $alg2) {
   $start_secs = ofile_OutputProgressPrior("Processing tabular round 2 search results", $progress_w, $log_FH, *STDOUT);
   if($nr2 > 0) { 
     parse_sorted_tbl_file($r2_all_sorted_tblout_file, $alg2, 2, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H,
-                          \%family_H, \%domain_H, \%accept_H, \%question_H, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, $ofile_info_HH{"FH"});
+                          \%family_H, \%domain_H, \%accept_H, \%question_H, \%seqgap_HA, $r2_unsrt_long_out_FH, $r2_unsrt_short_out_FH, $ofile_info_HH{"FH"});
   }
   # add data for sequences with 0 hits and then sort the output files 
   # based on sequence index from original input file.
@@ -905,7 +908,33 @@ if(defined $alg2) {
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 ###########################################################################
-# Step 10: Combine the round 1 and round 2 output files to create the 
+# Step 10: Fetch the gap sequences, if any, and search them with the intron
+#          models
+###########################################################################
+my $gap_sfetch_file = $out_root . ".gaps.sfetch";
+my $gap_fasta_file = $out_root . ".gaps.fa";
+$start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
+if(scalar(keys %seqgap_HA)) {
+  open(SFETCH, ">", $gap_sfetch_file) || ofile_FileOpenFailure($gap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  foreach my $target (@seqorder_A) {
+    if(exists $seqgap_HA{$target}) { 
+      foreach my $region (@{$seqgap_HA{$target}}) { 
+        my ($start, $stop, undef) = decompose_region_str($region, $ofile_info_HH{"FH"});
+        printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+      }
+    }
+  }
+  close(SFETCH);
+  # fetch the sequences
+  ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $gap_sfetch_file > $gap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch",  $gap_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta",  $gap_fasta_file, 1, "fasta file with gap sequences between multiple hits");
+}
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+###########################################################################
+# Step 11: Combine the round 1 and round 2 output files to create the 
 #          final output file.
 ###########################################################################
 my %class_stats_HH = (); # hash of hashes with summary statistics 
@@ -1344,6 +1373,8 @@ sub parse_and_validate_model_files {
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $accept_HR:       ref to hash of acceptable models, key is model name, value is '1' if acceptable
 #   $question_HR:     ref to hash of questionable models, key is model name, value is '1' if questionable
+#   $seqgap_HAR:      ref to hash of arrays, key is sequence name, value is array of sequence start/stop regions 
+#                     of gaps to sfetch for researching with intron models, FILLED HERE, can be undef
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
 #   $FH_HR:           ref to hash of file handles, including "cmd"
@@ -1359,11 +1390,11 @@ sub parse_and_validate_model_files {
 #
 ################################################################# 
 sub parse_sorted_tbl_file { 
-  my $nargs_expected = 14;
+  my $nargs_expected = 15;
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
+  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $seqgap_HAR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
 
   # validate search method (sanity check) 
   if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
@@ -1413,10 +1444,6 @@ sub parse_sorted_tbl_file {
                                  # where <d1> is the 5' sequence position boundary of the hit and 
                                  # <d2> is the 3' sequence position boundary of the hit
                                  # if strand is '+', <d1> <= <d2> and if strand is '-', <d1> >= <d2>
-
-  my %seqgap_HA = ();            # hash of arrays that stores sequence regions that are gaps between hits
-                                 # which we will fetch and search for introns
-                                 # key is sequence name, value is array of gap region strings ("<start>.<stop>")
   
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
@@ -1504,7 +1531,7 @@ sub parse_sorted_tbl_file {
                           $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                           \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
                           \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                          \%best_model_HH, \%second_model_HH, \%seqgap_HA, $FH_HR);
+                          \%best_model_HH, \%second_model_HH, $seqgap_HAR, $FH_HR);
         $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
       }
       # re-initialize
@@ -1812,7 +1839,7 @@ sub output_one_hitless_target {
 #   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   $best_model_HHR:         hit stats for best model (best model)
 #   $second_model_HHR:       hit stats for second model (second-best model)
-#   $gapseq_HAR:             ref to hash of arrays, key is sequence name, value is array of sequence start/stop regions 
+#   $seqgap_HAR:             ref to hash of arrays, key is sequence name, value is array of sequence start/stop regions 
 #                            of gaps to sfetch for researching with intron models, FILLED HERE, can be undef
 #   $FH_HR:                  ref to hash of file handles, including "cmd"
 #
@@ -1830,7 +1857,7 @@ sub output_one_target {
   my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
       $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nhits_at_HHR, $nnts_HHR, $nnts_at_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
-      $best_model_HHR, $second_model_HHR, $gapseq_HAR, $FH_HR) = @_;
+      $best_model_HHR, $second_model_HHR, $seqgap_HAR, $FH_HR) = @_;
 
   if((! defined $short_FH) && (! defined $long_FH)) { 
     ofile_FAIL("ERROR in $sub_name, neither short nor long file handles are defined", "RIBO", 1, $FH_HR); 
@@ -1989,18 +2016,19 @@ sub output_one_target {
           my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_nxt_idx], $FH_HR);
           
           if($gap_types_str ne "") { $gap_types_str .= ","; }
-          my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_start + 1 : $seq_cur_start - 1;
-          my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_cur_stop  - 1 : $seq_cur_stop  + 1;
-          my $mdl_gap_start = $mdl_cur_start + 1;
-          my $mdl_gap_stop  = $mdl_cur_stop  - 1;
+          my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_stop  + 1 : $seq_cur_stop - 1;
+          my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_nxt_start - 1 : $seq_nxt_stop + 1;
+          my $mdl_gap_start = $mdl_cur_stop  + 1;
+          my $mdl_gap_stop  = $mdl_nxt_start - 1;
           $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
 
-          if($seq_gap_stop > $seq_gap_start) { 
-            if(defined $gapseq_HAR) {
-              if(! exists $gapseq_HAR->{$target}) {
-                @{$gapseq_HAR->{$target}} = ();
+          if((($seq_gap_stop >= $seq_gap_start) && ($seq_cur_strand eq "+")) ||
+             (($seq_gap_stop <= $seq_gap_start) && ($seq_cur_strand eq "-"))) { 
+            if(defined $seqgap_HAR) {
+              if(! exists $seqgap_HAR->{$target}) {
+                @{$seqgap_HAR->{$target}} = ();
               }
-              push(@{$gapseq_HAR->{$target}}, $seq_cur_start . "." . $seq_cur_stop);
+              push(@{$seqgap_HAR->{$target}}, $seq_gap_start . "." . $seq_gap_stop);
             }
           }
         }
