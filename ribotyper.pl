@@ -1414,6 +1414,10 @@ sub parse_sorted_tbl_file {
                                  # <d2> is the 3' sequence position boundary of the hit
                                  # if strand is '+', <d1> <= <d2> and if strand is '-', <d1> >= <d2>
 
+  my %seqgap_HA = ();            # hash of arrays that stores sequence regions that are gaps between hits
+                                 # which we will fetch and search for introns
+                                 # key is sequence name, value is array of gap region strings ("<start>.<stop>")
+  
   my $prv_target = undef; # target name of previous line
   my $family     = undef; # family of current model
 
@@ -1500,7 +1504,7 @@ sub parse_sorted_tbl_file {
                           $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                           \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
                           \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                          \%best_model_HH, \%second_model_HH, $FH_HR);
+                          \%best_model_HH, \%second_model_HH, \%seqgap_HA, $FH_HR);
         $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
       }
       # re-initialize
@@ -1569,7 +1573,7 @@ sub parse_sorted_tbl_file {
                       $prv_target, $seqidx_HR->{$prv_target}, abs($seqlen_HR->{$prv_target}), 
                       \%nhits_per_model_HH, \%nhits_at_per_model_HH, \%nnts_per_model_HH, \%nnts_at_per_model_HH, 
                       \%tbits_per_model_HH, \%mdl_bd_per_model_HHA, \%seq_bd_per_model_HHA, 
-                      \%best_model_HH, \%second_model_HH, $FH_HR);
+                      \%best_model_HH, \%second_model_HH, \%seqgap_HA, $FH_HR);
     $seqlen_HR->{$prv_target} *= -1; # serves as a flag that we output info for this sequence
   }
   $nhits_above_thresh   = 0;
@@ -1809,7 +1813,7 @@ sub output_one_hitless_target {
 #   $best_model_HHR:         hit stats for best model (best model)
 #   $second_model_HHR:       hit stats for second model (second-best model)
 #   $gapseq_HAR:             ref to hash of arrays, key is sequence name, value is array of sequence start/stop regions 
-#                            of gaps to sfetch for researching with intron models, can be undef
+#                            of gaps to sfetch for researching with intron models, FILLED HERE, can be undef
 #   $FH_HR:                  ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
@@ -1819,14 +1823,14 @@ sub output_one_hitless_target {
 #
 ################################################################# 
 sub output_one_target { 
-  my $nargs_expected = 25;
+  my $nargs_expected = 26;
   my $sub_name = "output_one_target";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
       $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
       $seqidx, $seqlen, $nhits_HHR, $nhits_at_HHR, $nnts_HHR, $nnts_at_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
-      $best_model_HHR, $second_model_HHR, $FH_HR) = @_;
+      $best_model_HHR, $second_model_HHR, $gapseq_HAR, $FH_HR) = @_;
 
   if((! defined $short_FH) && (! defined $long_FH)) { 
     ofile_FAIL("ERROR in $sub_name, neither short nor long file handles are defined", "RIBO", 1, $FH_HR); 
@@ -1973,16 +1977,32 @@ sub output_one_target {
         for($i = 0; $i < ($nhits-1); $i++) {
           my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
           my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
-          my ($seq_cur_start, $seq_cur_stop) = split(/\./, $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_cur_idx]);
-          my ($seq_nxt_start, $seq_nxt_stop) = split(/\./, $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_nxt_idx]);
+          my ($seq_cur_start, $seq_cur_stop, $seq_cur_strand) = decompose_region_str($seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_cur_idx], $FH_HR);
+          my ($seq_nxt_start, $seq_nxt_stop, $seq_nxt_strand) = decompose_region_str($seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_nxt_idx], $FH_HR);
+          if($seq_cur_strand ne $seq_nxt_strand) {
+            ofile_FAIL("ERROR in $sub_name, hits on different strand on second pass", "RIBO", 1, $FH_HR);
+          }
 
           my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
           my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
-          my ($mdl_cur_start, $mdl_cur_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx]);
-          my ($mdl_nxt_start, $mdl_nxt_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_nxt_idx]);
+          my ($mdl_cur_start, $mdl_cur_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx], $FH_HR);
+          my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_nxt_idx], $FH_HR);
           
           if($gap_types_str ne "") { $gap_types_str .= ","; }
-          $gap_types_str .= classify_gap($seq_cur_stop+1, $seq_nxt_start-1, $mdl_cur_stop+1, $mdl_nxt_start-1, $small_sgap_size, $small_mgap_size, $FH_HR);
+          my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_start + 1 : $seq_cur_start - 1;
+          my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_cur_stop  - 1 : $seq_cur_stop  + 1;
+          my $mdl_gap_start = $mdl_cur_start + 1;
+          my $mdl_gap_stop  = $mdl_cur_stop  - 1;
+          $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
+
+          if($seq_gap_stop > $seq_gap_start) { 
+            if(defined $gapseq_HAR) {
+              if(! exists $gapseq_HAR->{$target}) {
+                @{$gapseq_HAR->{$target}} = ();
+              }
+              push(@{$gapseq_HAR->{$target}}, $seq_cur_start . "." . $seq_cur_stop);
+            }
+          }
         }
       }
     }
@@ -4486,6 +4506,7 @@ sub decompose_region_str {
 # Args:
 #  $seq_gap_start: start position of gap in the sequence
 #  $seq_gap_stop:  stop position of gap in the sequence
+#  $strand:        strand for sequence gap
 #  $mdl_gap_start: start position of gap in the model
 #  $mdl_gap_stop:  stop position of gap in the model
 #  $seq_gap_max:   maximum size of a 'small' gap in sequence
@@ -4513,13 +4534,13 @@ sub decompose_region_str {
 #
 sub classify_gap {
   my $sub_name = "classify_gap";
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($seq_gap_start, $seq_gap_stop, $mdl_gap_start, $mdl_gap_stop, $seq_gap_max, $mdl_gap_max, $FH_HR) = @_;
+  my ($seq_gap_start, $seq_gap_stop, $strand, $mdl_gap_start, $mdl_gap_stop, $seq_gap_max, $mdl_gap_max, $FH_HR) = @_;
 
   my $mdl_gap_len = ($mdl_gap_stop - $mdl_gap_start) + 1;
-  my $seq_gap_len = ($seq_gap_stop - $seq_gap_start) + 1;
+  my $seq_gap_len = ($strand eq "+") ? ($seq_gap_stop - $seq_gap_start) + 1 : ($seq_gap_start - $seq_gap_stop) + 1;
 
   my $mdl_str = "";
   my $seq_str = "";
@@ -4540,7 +4561,9 @@ sub classify_gap {
   }
   elsif($seq_gap_len == 0) { 
     # special case, 0 length sequencel gap, we report overlap the stop position of previous hit .. start of next hit
-    $seq_str = sprintf("S:%d(%d..%d)", $seq_gap_len, $seq_gap_start-1, $seq_gap_stop+1); 
+    $seq_str = sprintf("S:%d(%d..%d)", $seq_gap_len, 
+                       ($strand eq "+") ? $seq_gap_start - 1 : $seq_gap_start + 1, 
+                       ($strand eq "+") ? $seq_gap_stop  + 1  : $seq_gap_stop - 1); 
   }
   else {
     $seq_str = sprintf("S:%d(%d..%d)", $seq_gap_len, $seq_gap_start, $seq_gap_stop); 
