@@ -1894,9 +1894,11 @@ sub output_one_target {
     my $noverlap_allowed = opt_Get("--maxoverlap", $opt_HHR);
     for(my $i = 0; $i < $nhits; $i++) { 
       for(my $j = $i+1; $j < $nhits; $j++) { 
-        my $bd1 = $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i];
-        my $bd2 = $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$j];
-        my ($noverlap, $overlap_str) = get_overlap($bd1, $bd2, $FH_HR);
+        my $mdl_bd1 = $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i];
+        my $mdl_bd2 = $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$j];
+        my $seq_bd1 = $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i];
+        my $seq_bd2 = $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$j];
+        my ($noverlap, $overlap_str) = get_overlap($mdl_bd1, $mdl_bd2, $FH_HR);
         if($noverlap > $noverlap_allowed) { 
           if($duplicate_model_region_str eq "") { 
             $duplicate_model_region_str .= "DuplicateRegion:"; 
@@ -1904,7 +1906,7 @@ sub output_one_target {
           else { 
             $duplicate_model_region_str .= ",";
           }
-          $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "($bd1,$bd2)";
+          $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "(M:$mdl_bd1,$mdl_bd2,S:$seq_bd1,$seq_bd2)";
         }
       }
     }
@@ -1959,13 +1961,11 @@ sub output_one_target {
         $out_of_order_str .= "])";
       }
       else { # hits are in order, determine gaps in between hits
-        # TEMP DEBUGGING print statements
         #for($i = 0; $i < $nhits; $i++) { 
-        #  printf("HEYA\n");
-        #  printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
-        #  printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
-        #  printf("HEYA seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
-        #  printf("HEYA mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
+        #  printf("seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
+        #  printf("mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
+        #  printf("seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
+        #  printf("mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
         #}
         # determine gaps between all hits
         for($i = 0; $i < ($nhits-1); $i++) {
@@ -1979,18 +1979,8 @@ sub output_one_target {
           my ($mdl_cur_start, $mdl_cur_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx]);
           my ($mdl_nxt_start, $mdl_nxt_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_nxt_idx]);
           
-          # HAVE TO DEAL WITH RARE CASE THAT THERES A DUPLICATE HIT IN MODEL COORDS HERE
-          #my $seq_gap = $seq_nxt_start - $seq_cur_stop - 1;
-          #my $mdl_gap = $mdl_nxt_start - $mdl_cur_stop - 1;
-          # classify the gap
           if($gap_types_str ne "") { $gap_types_str .= ","; }
           $gap_types_str .= classify_gap($seq_cur_stop+1, $seq_nxt_start-1, $mdl_cur_stop+1, $mdl_nxt_start-1, $small_sgap_size, $small_mgap_size, $FH_HR);
-          
-#          printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$seq_cur_idx]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_cur_idx] . "\n");
-#          printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$mdl_cur_idx]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx] . "\n");
-
-          #printf("HEYA seq_gap $seq_gap\n");
-          #printf("HEYA mdl_gap $mdl_gap\n");
         }
       }
     }
