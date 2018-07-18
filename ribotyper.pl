@@ -118,13 +118,17 @@ opt_Add("--nkb",        "integer", 10,                        9,     "-p", undef
 opt_Add("--wait",       "integer", 500,                       9,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         9,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"10"} = "advanced options";
+$opt_group_desc_H{"10"} = "options for controlling gap type definitions";
+opt_Add("--mgap",       "integer", 10,                        9,    undef, undef,      "maximum size of a 'small' gap in model coordinates is <n>",    "maximum size of a 'small' gap in model coordinates is <n>",    \%opt_HH, \@opt_order_A);
+opt_Add("--sgap",       "integer", 10,                        9,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"11"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                      10,  undef,   undef,               "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                      10,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                      10,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                      10,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
-opt_Add("--keep",         "boolean", 0,                      10,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+opt_Add("--evalues",      "boolean", 0,                      11,  undef,   undef,               "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                      11,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                      11,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                      11,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",         "boolean", 0,                      11,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -180,6 +184,9 @@ my $options_okay =
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"},
+# options related to gap types
+                'mgap=s'       => \$GetOptions_H{"--mgap"},
+                'sgap=s'       => \$GetOptions_H{"--sgap"},
 # advanced options
                 'evalues'      => \$GetOptions_H{"--evalues"},
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"},
@@ -1906,6 +1913,9 @@ sub output_one_target {
   # determine if hits are out of order between model and sequence
   # and types of gaps in between hits
   my $out_of_order_str = "";
+  my $gap_types_str = "";
+  my $small_mgap_size = opt_Get("--mgap", $opt_HHR);
+  my $small_sgap_size = opt_Get("--sgap", $opt_HHR);
   if($have_model_coords) { # we can only do this if search output included model coords
     if($nhits > 1) { 
       my $i;
@@ -1950,13 +1960,13 @@ sub output_one_target {
       }
       else { # hits are in order, determine gaps in between hits
         # TEMP DEBUGGING print statements
-        for($i = 0; $i < $nhits; $i++) { 
-          printf("HEYA\n");
-          printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
-          printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
-          printf("HEYA seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
-          printf("HEYA mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
-        }
+        #for($i = 0; $i < $nhits; $i++) { 
+        #  printf("HEYA\n");
+        #  printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
+        #  printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$i]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$i] . "\n");
+        #  printf("HEYA seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
+        #  printf("HEYA mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
+        #}
         # determine gaps between all hits
         for($i = 0; $i < ($nhits-1); $i++) {
           my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
@@ -1970,15 +1980,17 @@ sub output_one_target {
           my ($mdl_nxt_start, $mdl_nxt_stop) = split(/\./, $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_nxt_idx]);
           
           # HAVE TO DEAL WITH RARE CASE THAT THERES A DUPLICATE HIT IN MODEL COORDS HERE
-          my $seq_gap = $seq_nxt_start - $seq_cur_stop - 1;
-          my $mdl_gap = $mdl_nxt_start - $mdl_cur_stop - 1;
-
-          printf("HEYA\n");
+          #my $seq_gap = $seq_nxt_start - $seq_cur_stop - 1;
+          #my $mdl_gap = $mdl_nxt_start - $mdl_cur_stop - 1;
+          # classify the gap
+          if($gap_types_str ne "") { $gap_types_str .= ","; }
+          $gap_types_str .= classify_gap($seq_cur_stop+1, $seq_nxt_start-1, $mdl_cur_stop+1, $mdl_nxt_start-1, $small_sgap_size, $small_mgap_size, $FH_HR);
+          
 #          printf("HEYA seq_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$seq_cur_idx]: " . $seq_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$seq_cur_idx] . "\n");
 #          printf("HEYA mdl_bd_HHAR->{" . $best_model_HHR->{$wfamily}{"model"} . "}{" . $best_model_HHR->{$wfamily}{"strand"} . "}[$mdl_cur_idx]: " . $mdl_bd_HHAR->{$best_model_HHR->{$wfamily}{"model"}}{$best_model_HHR->{$wfamily}{"strand"}}[$mdl_cur_idx] . "\n");
 
-          printf("HEYA seq_gap $seq_gap\n");
-          printf("HEYA mdl_gap $mdl_gap\n");
+          #printf("HEYA seq_gap $seq_gap\n");
+          #printf("HEYA mdl_gap $mdl_gap\n");
         }
       }
     }
@@ -2213,7 +2225,7 @@ sub output_one_target {
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= "MultipleHits:($nhits);";
+    $unusual_features .= sprintf("MultipleHits:($nhits%s);", ($gap_types_str eq "") ? "" : ":" . $gap_types_str);
   }
   # if $sort_by_evalues: 
   # determine if the second best hit has a higher bit score than the best sequence
@@ -4469,6 +4481,90 @@ sub decompose_region_str {
   $strand = ($d1 <= $d2) ? "+" : "-";
 
   return($d1, $d2, $strand);
+}
+
+#################################################################
+# Subroutine: classify_gap()
+# Incept:     EPN, Wed Jul 18 11:12:53 2018
+#
+# Purpose:    Determine the class of a gap and return a
+#             string describing it for appending to a unexpected
+#             feature string.
+#
+# Args:
+#  $seq_gap_start: start position of gap in the sequence
+#  $seq_gap_stop:  stop position of gap in the sequence
+#  $mdl_gap_start: start position of gap in the model
+#  $mdl_gap_stop:  stop position of gap in the model
+#  $seq_gap_max:   maximum size of a 'small' gap in sequence
+#  $mdl_gap_max:   maximum size of a 'small' gap in model
+#  $FH_HR:         ref to hash of file handles, needed in case we call ofile_FAIL
+#
+# Returns:  String describing the gap:
+#           "Insert[<s>]              if $mdl_gap_len <= $mdl_gap_max
+#           "ModelDeletion[<s>]       if $mdl_gap_len <= $mdl_gap_max && $seq_gap_len <= $seq_gap_max
+#           "NonHomologousRegion[<s>] if $mdl_gap_len <= $mdl_gap_max && $seq_gap_len >  $seq_gap_max
+#
+#           where:
+#           $mdl_gap_len = $mdl_gap_stop - $mdl_gap_start + 1;
+#           $seq_gap_len = $seq_gap_stop - $seq_gap_start + 1;
+#
+#           and <s> is "S:<d1>(<d2>..<d3>),M:<d4>(<d5>..<d6>)", where
+#           <d1> is sequence gap length
+#           <d2> is sequence gap start position
+#           <d3> is sequence gap stop position
+#           <d4> is model gap length
+#           <d5> is model gap start position
+#           <d6> is model gap stop position
+#
+# Dies:     If sequence gap length is negative, which should be impossible
+#
+sub classify_gap {
+  my $sub_name = "classify_gap";
+  my $nargs_expected = 7;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($seq_gap_start, $seq_gap_stop, $mdl_gap_start, $mdl_gap_stop, $seq_gap_max, $mdl_gap_max, $FH_HR) = @_;
+
+  my $mdl_gap_len = ($mdl_gap_stop - $mdl_gap_start) + 1;
+  my $seq_gap_len = ($seq_gap_stop - $seq_gap_start) + 1;
+
+  my $mdl_str = "";
+  my $seq_str = "";
+  if($mdl_gap_len < 0) { 
+    # special case, negative length model gap, we report overlap of model coords
+    $mdl_str = sprintf("M:%d(%d..%d)", $mdl_gap_len, $mdl_gap_stop+1, $mdl_gap_start-1); 
+  }
+  elsif($mdl_gap_len == 0) { 
+    # special case, 0 length model gap, we report overlap the stop position of previous hit .. start of next hit
+    $mdl_str = sprintf("M:%d(%d..%d)", $mdl_gap_len, $mdl_gap_start-1, $mdl_gap_stop+1); 
+  }
+  else {
+    $mdl_str = sprintf("M:%d(%d..%d)", $mdl_gap_len, $mdl_gap_start, $mdl_gap_stop); 
+  }
+
+  if($seq_gap_len < 0) { 
+    ofile_FAIL("ERROR in $sub_name, two hits overlap in sequence, seq_gap_start: $seq_gap_start, seq_gap_stop: $seq_gap_stop", "RIBO", 1, $FH_HR); 
+  }
+  elsif($seq_gap_len == 0) { 
+    # special case, 0 length sequencel gap, we report overlap the stop position of previous hit .. start of next hit
+    $seq_str = sprintf("S:%d(%d..%d)", $seq_gap_len, $seq_gap_start-1, $seq_gap_stop+1); 
+  }
+  else {
+    $seq_str = sprintf("S:%d(%d..%d)", $seq_gap_len, $seq_gap_start, $seq_gap_stop); 
+  }
+  my $desc_str = $mdl_str . "," . $seq_str;
+
+  if($mdl_gap_len <= $mdl_gap_max) {
+    return "MHInsert[" . $desc_str . "]";
+  }
+  if(($mdl_gap_len > $mdl_gap_max) && ($seq_gap_len <= $seq_gap_max)) {
+    return "MHModelDeletion[" . $desc_str . "]";
+  }
+  if(($mdl_gap_len > $mdl_gap_max) && ($seq_gap_len > $seq_gap_max)) {
+    return "MHNonHomologousRegion[" . $desc_str . "]";
+  }
+  return ""; # if we get here gap does not belong to any of our special classes, return the empty string ""
 }
 
 
