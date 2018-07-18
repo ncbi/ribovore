@@ -119,8 +119,8 @@ opt_Add("--wait",       "integer", 500,                       9,     "-p", undef
 opt_Add("--errcheck",   "boolean", 0,                         9,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"10"} = "options for controlling gap type definitions";
-opt_Add("--mgap",       "integer", 10,                        9,    undef, undef,      "maximum size of a 'small' gap in model coordinates is <n>",    "maximum size of a 'small' gap in model coordinates is <n>",    \%opt_HH, \@opt_order_A);
-opt_Add("--sgap",       "integer", 10,                        9,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--mgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in model coordinates is <n>",    "maximum size of a 'small' gap in model coordinates is <n>",    \%opt_HH, \@opt_order_A);
+opt_Add("--sgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"11"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                               help-output    
@@ -1808,6 +1808,8 @@ sub output_one_hitless_target {
 #   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
 #   $best_model_HHR:         hit stats for best model (best model)
 #   $second_model_HHR:       hit stats for second model (second-best model)
+#   $gapseq_HAR:             ref to hash of arrays, key is sequence name, value is array of sequence start/stop regions 
+#                            of gaps to sfetch for researching with intron models, can be undef
 #   $FH_HR:                  ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
