@@ -197,7 +197,7 @@ my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, w
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.19";
-my $model_version_str = "0p15"; 
+my $riboaligner_model_version_str = "0p15"; 
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
 my $pkgstr    = "RIBO";
@@ -301,7 +301,7 @@ if(defined $in_special_file) {
 
 my $in_riboopts1_file = undef;
 my $in_riboopts2_file = undef;
-my $df_ra_modelinfo_file = $df_model_dir . "riboaligner." . $model_version_str . ".all.modelinfo";
+my $df_ra_modelinfo_file = $df_model_dir . "riboaligner." . $riboaligner_model_version_str . ".all.modelinfo";
 my $ra_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;

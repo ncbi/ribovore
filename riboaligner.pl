@@ -104,9 +104,10 @@ my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, w
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.19";
-my $model_version_str = "0p15"; 
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
+my $ribotyper_model_version_str   = "0p20"; 
+my $riboaligner_model_version_str = "0p15";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -215,7 +216,7 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence,qsubinfo and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "riboaligner." . $model_version_str . ".modelinfo";
+my $df_modelinfo_file = $df_model_dir . "riboaligner." . $riboaligner_model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
   $modelinfo_file = $df_modelinfo_file;
@@ -223,7 +224,7 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { 
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $model_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $ribotyper_model_version_str . ".qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }

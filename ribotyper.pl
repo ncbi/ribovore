@@ -200,7 +200,7 @@ my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, w
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.19";
-my $model_version_str = "0p15"; # models are unchanged since version 0.15
+my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
 
