@@ -10,6 +10,7 @@ CONS     yes
 MAP      yes
 DATE     Mon Mar 13 14:39:45 2017
 COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml apicoplast.enone.final.cm apicoplast.final.stk
+COM      [2] /usr/local/infernal/1.1.2/bin/cmcalibrate --cpu 8 ribo.0p20.SSU_rRNA_apicoplast.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -23,10 +24,10 @@ EFFN     3.000000
 CKSUM    203701799
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -356.7660 0.69451
-ECMLC    0.63054   -10.40005    -0.75696     1600000      524641  0.002287
-ECMGC    0.04883  -1021.43059  -1005.73199     1600000         861  0.464576
-ECMLI    0.63365   -10.23892    -0.67906     1600000      512813  0.002340
-ECMGI    0.05269  -920.80085  -906.29504     1600000         859  0.465658
+ECMLC    0.50943    -8.79505     2.63307     1600000      405118  0.002962
+ECMGC    0.05950  -456.86121  -442.37607     1600000         947  0.422386
+ECMLI    0.46485    -8.85219     3.55588     1600000      383845  0.003126
+ECMGI    0.06223  -349.58106  -335.56207     1600000         957  0.417973
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     0     1  1685  1994  -7.331  -7.538  -0.417  -2.062                 

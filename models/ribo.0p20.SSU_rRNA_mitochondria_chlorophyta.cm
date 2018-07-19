@@ -10,6 +10,7 @@ CONS     yes
 MAP      yes
 DATE     Mon Mar 13 14:41:09 2017
 COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml mito-chlorophyta.enone.final.cm mito-chlorophyta.final.stk
+COM      [2] /usr/local/infernal/1.1.2/bin/cmcalibrate --cpu 8 ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -23,10 +24,10 @@ EFFN     2.000000
 CKSUM    1066599773
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -140.4068 0.69550
-ECMLC    0.63054   -10.40005    -0.75696     1600000      524641  0.002287
-ECMGC    0.04883  -1021.43059  -1005.73199     1600000         861  0.464576
-ECMLI    0.63365   -10.23892    -0.67906     1600000      512813  0.002340
-ECMGI    0.05269  -920.80085  -906.29504     1600000         859  0.465658
+ECMLC    0.65255    -8.24594     0.35717     1600000      329073  0.003647
+ECMGC    0.08648  -249.17230  -236.11806     1600000        1237  0.323363
+ECMLI    0.60771    -8.26567     0.85620     1600000      306682  0.003913
+ECMGI    0.11079  -167.41284  -157.22220     1600000        1237  0.323363
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     0     1  1549  1980  -6.977  -7.184  -0.540  -1.750                 

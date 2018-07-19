@@ -10,6 +10,7 @@ CONS     yes
 MAP      yes
 DATE     Mon Mar 13 14:40:08 2017
 COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml chlor-pilostyles.enone.final.cm chlor-pilostyles.final.stk
+COM      [2] /usr/local/infernal/1.1.2/bin/cmcalibrate --cpu 8 ribo.0p20.SSU_rRNA_chloroplast_pilostyles.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -23,10 +24,10 @@ EFFN     1.000000
 CKSUM    2373845796
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -152.3688 0.69550
-ECMLC    0.63054   -10.40005    -0.75696     1600000      524641  0.002287
-ECMGC    0.04883  -1021.43059  -1005.73199     1600000         861  0.464576
-ECMLI    0.63365   -10.23892    -0.67906     1600000      512813  0.002340
-ECMGI    0.05269  -920.80085  -906.29504     1600000         859  0.465658
+ECMLC    0.63007    -8.05899     0.78960     1600000      316566  0.003791
+ECMGC    0.05632  -355.12437  -340.45233     1600000         914  0.437637
+ECMLI    0.61051    -7.94795     1.10765     1600000      302123  0.003972
+ECMGI    0.05803  -248.97526  -234.75343     1600000         913  0.438116
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     0     1  1557  1599  -6.506  -6.713  -0.073  -5.127                 
