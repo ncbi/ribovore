@@ -59,6 +59,7 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("-g",           "boolean", 0,                        1,    undef, undef,      "save gap sequences between hits to a file",      "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
@@ -142,6 +143,7 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 's=s'          => \$GetOptions_H{"-s"},
+                'g'            => \$GetOptions_H{"-g"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
@@ -913,25 +915,27 @@ if(defined $alg2) {
 ###########################################################################
 my $gap_sfetch_file = $out_root . ".gaps.sfetch";
 my $gap_fasta_file = $out_root . ".gaps.fa";
-$start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
-if(scalar(keys %seqgap_HA)) {
-  open(SFETCH, ">", $gap_sfetch_file) || ofile_FileOpenFailure($gap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
-  foreach my $target (@seqorder_A) {
-    if(exists $seqgap_HA{$target}) { 
-      foreach my $region (@{$seqgap_HA{$target}}) { 
-        my ($start, $stop, undef) = decompose_region_str($region, $ofile_info_HH{"FH"});
-        printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+if(opt_Get("-g", \%opt_HH)) { 
+  $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
+  if(scalar(keys %seqgap_HA)) {
+    open(SFETCH, ">", $gap_sfetch_file) || ofile_FileOpenFailure($gap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+    foreach my $target (@seqorder_A) {
+      if(exists $seqgap_HA{$target}) { 
+        foreach my $region (@{$seqgap_HA{$target}}) { 
+          my ($start, $stop, undef) = decompose_region_str($region, $ofile_info_HH{"FH"});
+          printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+        }
       }
     }
+    close(SFETCH);
+    # fetch the sequences
+    ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $gap_sfetch_file > $gap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch",  $gap_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta",  $gap_fasta_file, 1, "fasta file with gap sequences between multiple hits");
   }
-  close(SFETCH);
-  # fetch the sequences
-  ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $gap_sfetch_file > $gap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch",  $gap_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta",  $gap_fasta_file, 1, "fasta file with gap sequences between multiple hits");
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 ###########################################################################
 # Step 11: Combine the round 1 and round 2 output files to create the 
@@ -4609,10 +4613,3 @@ sub classify_gap {
   }
   return ""; # if we get here gap does not belong to any of our special classes, return the empty string ""
 }
-
-
-
-
-
-
-
