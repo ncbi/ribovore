@@ -1079,10 +1079,8 @@ sub parse_modelinfo_file {
         $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
         $in_nondf = ribo_CheckIfFileExistsAndIsNonEmpty($non_df_model_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
         $in_df    = ribo_CheckIfFileExistsAndIsNonEmpty($df_model_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-        if(($in_nondf != 0) && ($in_df != 0)) { # exists in two places
-          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, found it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\nIt can only exist in one of these places, so either\nrename it or remove of the copies (do NOT remove the copy from the default model directory unless you put it there).\n", "RIBO", 1, $ofile_info_HH{"FH"});
-        }
-        elsif(($in_nondf == 0) && ($in_df == 0)) { 
+        # if it exists in both places, use the -i specified version
+        if(($in_nondf == 0) && ($in_df == 0)) { 
           ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n", "RIBO", 1, $ofile_info_HH{"FH"});
         }
         elsif(($in_nondf == -1) && ($in_df == 0)) { 

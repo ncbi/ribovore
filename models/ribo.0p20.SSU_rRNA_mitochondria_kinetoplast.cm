@@ -10,6 +10,7 @@ CONS     yes
 MAP      yes
 DATE     Mon Mar 13 14:41:50 2017
 COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml mito-kinetoplast.enone.final.cm mito-kinetoplast.final.stk
+COM      [2] /usr/local/infernal/1.1.2/bin/cmcalibrate --cpu 8 ribo.0p20.SSU_rRNA_mitochondria_kinetoplast.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -23,10 +24,10 @@ EFFN     3.000000
 CKSUM    2975374802
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -200.1312 0.69568
-ECMLC    0.63054   -10.40005    -0.75696     1600000      524641  0.002287
-ECMGC    0.04883  -1021.43059  -1005.73199     1600000         861  0.464576
-ECMLI    0.63365   -10.23892    -0.67906     1600000      512813  0.002340
-ECMGI    0.05269  -920.80085  -906.29504     1600000         859  0.465658
+ECMLC    0.59886   -10.06517     0.71050     1600000      761585  0.001576
+ECMGC    0.09018  -209.53253  -188.95587     1600000        2558  0.156372
+ECMLI    0.57065   -10.28023     0.98376     1600000      742568  0.001616
+ECMGI    0.09641  -161.41311  -142.12257     1600000        2569  0.155703
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     1     1   652   685  -7.331  -7.538  -0.391  -2.147                 
