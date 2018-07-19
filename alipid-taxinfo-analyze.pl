@@ -17,12 +17,15 @@ my $out_seq;
 open(IN, $list_file) || die "ERROR unable to open $list_file for reading";
 my $line;
 my %list_H      = (); # hash, key is sequence name read in list file, value is always 1
+my $nseq = 0; # total number of sequences
 my @seq_order_A = (); # array, sequence names in order
 while($line = <IN>) { 
   chomp $line;
   $list_H{$line} = 1;
   push(@seq_order_A, $line);
+  $nseq++;
 }
+close(IN);
 
 # open the output files
 my $tabdelimited_out = $out_root . ".alipid.sum.tab.txt";
@@ -265,7 +268,7 @@ my @column_explanation_A = (); # array of strings that explain columns to write 
 
 push(@column_explanation_A, "Explanation of tab-delimited column headings:\n");
 push(@column_explanation_A, "1. sequence: sequence accession.version\n");
-push(@column_explanation_A, "2. seq-taxid: sequence taxid (as of 03.02.18)) read from input file: $taxinfo_file\n");
+push(@column_explanation_A, "2. seq-taxid: sequence taxid read from input file: $taxinfo_file\n");
 push(@column_explanation_A, "3. species: sequence genus and species\n");
 push(@column_explanation_A, "4. group-taxid: taxid of group this sequence belongs to, read from input file: $taxinfo_file\n");
 push(@column_explanation_A, "5. group-nseq: number of sequences in group group-taxid\n");
@@ -293,7 +296,8 @@ push(@column_explanation_A, "18. minpid-group-out-group: taxid of group that out
 push(@column_explanation_A, "19. avgdiff-in-minus-out: avgpid-in-group - avgpid-out-group\n");
 push(@column_explanation_A, "20. maxdiff-in-minus-out: maxpid-in-group - maxpid-out-group\n");
 push(@column_explanation_A, "21. mindiff-in-minus-out: minpid-in-group - minpid-out-group\n");
-push(@column_explanation_A, "Columns 6-22 will be '-' for sequences that have group-taxid (column 4) of '1' OR group-neq (column 5) of '1'\n");
+push(@column_explanation_A, "Columns 6-21 will be '-' for sequences that have group-taxid (column 4) of '1' OR group-neq (column 5) of '1'\n");
+push(@column_explanation_A, "Columns 6 and 12-21 will be '-' for sequences that have group-nseq equal to total number of sequences (no sequences outside of group)\n");
 
 my $column_explanation_line = "";
 foreach $column_explanation_line (@column_explanation_A) { 
@@ -316,7 +320,7 @@ printf RDB ("%-*s  %7s  %-*s  %7s  %7s  %3s  %s    %s\n",
 printf RDB ("%-*s  %7s  %-*s  %7s  %7s  %3s  %6s  %6s  %-*s  %6s  %-*s    %6s  %6s  %-*s  %7s  %6s  %-*s  %7s    %7s  %7s  %7s\n", 
             $max_seqname_length, "#sequence", "taxid", $max_spec_length, "species", "taxid", "nseq", "typ", 
             "avgpid", "maxpid", $max_seqname_length, "max-seq", "minpid", $max_seqname_length, "min-seq", 
-           "avgpid", "maxpid", $max_seqname_length, "max-seq", "max-grp", "minpid",$max_seqname_length, "min-seq", "min-grp",
+            "avgpid", "maxpid", $max_seqname_length, "max-seq", "max-grp", "minpid",$max_seqname_length, "min-seq", "min-grp",
             "avgdiff", "maxdiff", "mindiff");
 
 my $seqname_uline        = "";  for(my $i = 0; $i < $max_seqname_length;     $i++) { $seqname_uline .= "-"; }
@@ -363,17 +367,42 @@ foreach my $seq (@seq_order_A) {
                 "-",
                 "-");
   }
-  else { # $group != 1 && $group_ct_H{$group} > 1
+  elsif($in_pid_denom_HH{$group}{$seq} == ($nseq-1)) { # all sequences are in group
+    $in_pid_avg_HH{$group}{$seq} /= $in_pid_denom_HH{$group}{$seq};
+    printf RDB ("%-*s  %7d  %-*s  %7d  %7d  %3s  %6.3f  %6.3f  %-*s  %6.3f  %-*s    %6s  %6s  %-*s  %7s  %6s  %-*s  %7s    %7s  %7s  %7s \n", 
+                $max_seqname_length, $seq, $seq_taxid_H{$seq}, $max_spec_length, $seq_spec_H{$seq}, $group, $group_ct_H{$group}, "-", 
+                $in_pid_avg_HH{$group}{$seq}, 
+                $in_pid_max_HH{$group}{$seq}, $max_seqname_length, $in_pid_sargmax_HH{$group}{$seq}, 
+                $in_pid_min_HH{$group}{$seq}, $max_seqname_length, $in_pid_sargmin_HH{$group}{$seq}, 
+                "-",
+                "-", $max_seqname_length, "-", "-",
+                "-", $max_seqname_length, "-", "-", 
+                "-", 
+                "-",
+                "-");
+    printf TAB ("%s\t%d\t%s\t%d\t%s\t%s\t%.3f\t%.3f\t%s\t%.3f\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                $seq, $seq_taxid_H{$seq}, $seq_spec_H{$seq}, $group, $group_ct_H{$group}, "-",
+                $in_pid_avg_HH{$group}{$seq}, 
+                $in_pid_max_HH{$group}{$seq}, $in_pid_sargmax_HH{$group}{$seq}, 
+                $in_pid_min_HH{$group}{$seq}, $in_pid_sargmin_HH{$group}{$seq}, 
+                "-",
+                "-", "-", "-",
+                "-", "-", "-",
+                "-",
+                "-",
+                "-");
+  }
+  else { # group != 1 && group_ct_H{$group} != 1 && in_pid_denom_HH{$group}{$seq} < ($nseq-1)
     if($in_pid_denom_HH{$group}{$seq} == 0) { 
       die "ERROR in_pid_denom_HH{$group}{$seq} is 0\n";
     }
-    if($out_pid_denom_HH{$group}{$seq} == 0) { 
-      die "ERROR out_pid_denom_HH{$group}{$seq} is 0\n";
+    if(($out_pid_denom_HH{$group}{$seq} == 0) && ($in_pid_denom_HH{$group}{$seq} != ($nseq-1))) { 
+      die "ERROR out_pid_denom_HH{$group}{$seq} is 0 and in_pid_denom_HH{$group}{$seq} is not " . ($nseq-1) . " but $in_pid_denom_HH{$group}{$seq}\n";
     }
 
     $in_pid_avg_HH{$group}{$seq} /= $in_pid_denom_HH{$group}{$seq};
     $out_pid_avg_HH{$group}{$seq} /= $out_pid_denom_HH{$group}{$seq};
-    
+
     my $nn_within_group = ($in_pid_max_HH{$group}{$seq} >= $out_pid_max_HH{$group}{$seq}) ? 1 : 0;
     
     # determine type
@@ -416,7 +445,7 @@ foreach my $seq (@seq_order_A) {
         $type = "O4";
       }
     }
-    printf RDB ("%-*s  %7d  %-*s  %7d  %7d  %3s  %6.1f  %6.1f  %-*s  %6.1f  %-*s    %6.1f  %6.1f  %-*s  %7d  %6.1f  %-*s  %7d    %7.1f  %7.1f  %7.1f \n", 
+    printf RDB ("%-*s  %7d  %-*s  %7d  %7d  %3s  %6.3f  %6.3f  %-*s  %6.3f  %-*s    %6.3f  %6.3f  %-*s  %7d  %6.3f  %-*s  %7d    %7.3f  %7.3f  %7.3f \n", 
                 $max_seqname_length, $seq, $seq_taxid_H{$seq}, $max_spec_length, $seq_spec_H{$seq}, $group, $group_ct_H{$group}, $type, 
                 $in_pid_avg_HH{$group}{$seq}, 
                 $in_pid_max_HH{$group}{$seq}, $max_seqname_length, $in_pid_sargmax_HH{$group}{$seq}, 
@@ -427,7 +456,7 @@ foreach my $seq (@seq_order_A) {
                 ($in_pid_avg_HH{$group}{$seq} - $out_pid_avg_HH{$group}{$seq}),
                 ($in_pid_max_HH{$group}{$seq} - $out_pid_max_HH{$group}{$seq}),
                 ($in_pid_min_HH{$group}{$seq} - $out_pid_min_HH{$group}{$seq}));
-    printf TAB ("%s\t%d\t%s\t%d\t%s\t%s\t%.1f\t%.1f\t%s\t%.1f\t%s\t%.1f\t%.1f\t%s\t%d\t%.1f\t%s\t%d\t%.1f\t%.1f\t%.1f\n",
+    printf TAB ("%s\t%d\t%s\t%d\t%s\t%s\t%.3f\t%.3f\t%s\t%.3f\t%s\t%.3f\t%.3f\t%s\t%d\t%.3f\t%s\t%d\t%.3f\t%.3f\t%.3f\n",
                 $seq, $seq_taxid_H{$seq}, $seq_spec_H{$seq}, $group, $group_ct_H{$group}, $type, 
                 $in_pid_avg_HH{$group}{$seq}, 
                 $in_pid_max_HH{$group}{$seq}, $in_pid_sargmax_HH{$group}{$seq}, 

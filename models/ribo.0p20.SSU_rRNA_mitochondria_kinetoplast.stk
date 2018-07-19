@@ -1,0 +1,34 @@
+# STOCKHOLM 1.0
+
+00019::Mitochondrion_Crithidia_fasciculata::X02548         ---UUUUUAUGUCAAUUGUUAUUAUUCAUAUUAAUUUUUUUUAAAGUUUUUAAUUUUUAUAUUAGUUUAUUGAC---AAACUUGCUUAAAUCUAUG----UUUAGGAAUAGUUAAUAAUAUUUUAUAAUUCUGAUUAGAUUACAUUGUUAGUGCUAUAUAAAGGGGUGUGGAAAUUGUAGUCAAAUAUAAUAAAUAAUUA
+#=GR 00019::Mitochondrion_Crithidia_fasciculata::X02548 SS ...<<<<<.......>>>>>.<<<<.<<<<<<........................................................................................................................................................................
+00024::Mitochondrion_Leishmania_tarentolae::M10126         AUUAUACGUAGUCAAUUGUUAUUAUUCAUAUUAAUUUUUUUAAAAGUUUUUUAAUUUUAUAUUAGUUUAUUUGUUUACAAAUUUAAAUUAUAUUUCAUUAUUUAGGAAUAGUUAAUAAUAAUUUAUAAUUCUGAUUAGAUUUAUUUGUUAAUGCUAUUAA-AGGGGUGUGGAAAAAGU-GUUAAAUUAUUUAUAUAUUUA
+#=GR 00024::Mitochondrion_Leishmania_tarentolae::M10126 SS ...<<<<<.......>>>>>.<<<<.<<<<<<........................................................................................................................................................................
+00026::Mitochondrion_Trypanosoma_brucei::X02547            -UAAAUUAUGGUCAAUUGUUAGUAUUCAUAUUAAUUUUUUUAAAUGUUUUAUCAUUUUAUAAAGGUUUAUUUUU---GAAAGAUUUUUUGUAUAAAAU--UUUAGGAAUAGUUAAUAAUAAUUUAUAAUUUUGAUUAGAUUGUUUUGUUAAUGCUAUUAG-AUGGGUGUGGAAAAAUAAAAAAAAUAAUUAAUAUAUAUC
+#=GR 00026::Mitochondrion_Trypanosoma_brucei::X02547    SS ...<<<<<.......>>>>>.<<<<.<<<<<<........................................................................................................................................................................
+#=GC SS_cons                                               :::<<<<<_______>>>>>:<<<<-<<<<<<------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+00019::Mitochondrion_Crithidia_fasciculata::X02548         UAUAAUAAAUU-ACAUUAUUUACUAACCAGUCAGAAAUGGAUGCCAGCCGUUGCGGUAAUAUCUAUGCUUUUAAAUAUUAUACAUUUAUUUUAUAAUUUUGUUACUUAAUAUAUUUUAGUCAAUUAAAACAUAUGUUUUUGUUAUUUGUUUUUAAACACCGAUUGGUAUAUGCAAAUUUAAAAUGACAUUAAUUAUUAAU
+#=GR 00019::Mitochondrion_Crithidia_fasciculata::X02548 SS ..........................<<<<<.....<<<<<....................>>>>>>>>>>..>>>>>>>>>>.....................................................................................................................
+00024::Mitochondrion_Leishmania_tarentolae::M10126         AAUAAUAAAUA---AAAUAUAACUUAUUAGUCAGAAAUGGAUGCCAGCCGUUGCGGUAAUUUCUAUGCUUUUAAAUAUUAUACAUUUAUUUUAUUAAUUUGUUACUAU-UUAAUUUUAGUCAAUAAAAAAUAUUAAUAUUUUUAUUUGUUUUUAAACACCGUCCGGUAUAUGCAAAUAAAAAAUGACAUUAAUUAUUAAU
+#=GR 00024::Mitochondrion_Leishmania_tarentolae::M10126 SS ..........................<<<<<.....<<<<<....................>>>>>>>>>>..>>>>>>>>>>.....................................................................................................................
+00026::Mitochondrion_Trypanosoma_brucei::X02547            AAUAAUAAAUUAAAUUA----AUCUAUUAGUCAGAAAUGGAUGCCAGCCGUUGCGGUAAUUUCUAUGCUUUUAAAUAUUAUACAAUUAUCAUAUUAAAUUGUUAAGU--GCUGAUUUAACCAAUAAAAAUAUAAAUAAUUUUUAUUUGUUUUUAAACACCAUUAGGUAUAUGCAAAUAUAAAAUUAUAGUAAUUAUAAAU
+#=GR 00026::Mitochondrion_Trypanosoma_brucei::X02547    SS ..........................<<<<<.....<<<<<....................>>>>>>>>>>..>>>>>>>>>>.....................................................................................................................
+#=GC SS_cons                                               --------------------------<<<<<-----<<<<<____________________>>>>>>>>>>-->>>>>>>>>>:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+00019::Mitochondrion_Crithidia_fasciculata::X02548         UAUAUUAUUUUAUAUUUAUUCAAAUUGUUAAAAAAUAAAAAUUUAUGUAAUUUGACACCAUGAAAAGGACUAUGAAU-GAUAUUGUAAAUUUUAUAAUCAAAAUUAACUUAUUAUAUCAAAAAAGCAAUAUUAGAUAAAAAAGUAGAUUUAAAAGGUAUUGUUGCCCACCAAUUUUUAUAAUAAAAAUAACGUGCAGUAA
+#=GR 00019::Mitochondrion_Crithidia_fasciculata::X02548 SS ...........................................................<<<<<...<...<<<<.......>>>>...>>>>>>.<<<<<.<<<<<<<.....................................>>>>>>>>>>.>>....<<.<<<..<<<<<<<...>>>>>>>...>>>..>>..
+00024::Mitochondrion_Leishmania_tarentolae::M10126         UAUAUUAUAUUAUAUUUAUUCACAUAAGUCAACAAUAUCUAUUUACUGUUUUUGACAACAUGAUAAGGAUUAUAAAU-GGAAUUAUAAAUUUUAUAAUCAAAACUAAUUUAUUAUAUUAAAUUAGCAUGUUUAGAUAAAACAAUAAAUUUAGAAGGUAUUGUUGCCCACCAUUCUUUGUAAUAAAGACAACGUGCAGUAA
+#=GR 00024::Mitochondrion_Leishmania_tarentolae::M10126 SS ...........................................................<<<<<...<...<<<<.......>>>>...>>>>>>.<<<<<.<<<<<<<.....................................>>>>>>>>>>.>>....<<.<<<..<<<<<<<...>>>>>>>...>>>..>>..
+00026::Mitochondrion_Trypanosoma_brucei::X02547            UAUAUUAUAUUAUAUUUAUUCAUAUAAUUAAUAGGAUAAUAUUUGUAGUUUUUGAUACCAUGAUAAGGAUUAUAAAUUGAAAGUGUUAAUAUCAUAAUCAAAAUUUAUUAUUUAUAUUAAAUAUGUAUGUGUAGAUAAAAUAAGAAAUUAAAAAGGUAUUGUUGCCCACCAAUUUUUAUAAUAAAAAUAACGUGCAGUAA
+#=GR 00026::Mitochondrion_Trypanosoma_brucei::X02547    SS ...........................................................<<<<<...<...<<<<.......>>>>...>>>>>>.<<<<<.<<<<<<<.....................................>>>>>>>>>>.>>....<<.<<<..<<<<<<<...>>>>>>>...>>>..>>..
+#=GC SS_cons                                               :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::<<<<<---<---<<<<_______>>>>--->>>>>>:<<<<<-<<<<<<<_____________________________________>>>>>>>>>>->>::::<<-<<<--<<<<<<<___>>>>>>>--->>>-->>::
+
+00019::Mitochondrion_Crithidia_fasciculata::X02548         UUAAUGAACUUAUAAAAGUACAUU-----------------------------------------------------
+#=GR 00019::Mitochondrion_Crithidia_fasciculata::X02548 SS ..<<<<<<<<<....>>>>>>>>>.....................................................
+00024::Mitochondrion_Leishmania_tarentolae::M10126         UUAAUAUAUUUAUAAAAAUAUAUUUUCUCAUGUUAAACCUUUGUUACUUUUUUUAUUAUUUAGAAAAGAUGUAAGUG
+#=GR 00024::Mitochondrion_Leishmania_tarentolae::M10126 SS ..<<<<<<<<<....>>>>>>>>>.....................................................
+00026::Mitochondrion_Trypanosoma_brucei::X02547            UUAAUAUAUUUAUAAAAAUAUAUUUUAGCUAAAU-------------------------------------------
+#=GR 00026::Mitochondrion_Trypanosoma_brucei::X02547    SS ..<<<<<<<<<....>>>>>>>>>.....................................................
+#=GC SS_cons                                               ::<<<<<<<<<____>>>>>>>>>:::::::::::::::::::::::::::::::::::::::::::::::::::::
+//

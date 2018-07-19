@@ -97,6 +97,7 @@ sub ribo_CountAmbiguousNucleotidesInSequenceFile {
 #   $max_targetname_length_R: REF to the maximum length of any target name, updated here, can be undef
 #   $max_length_length_R:     REF to the maximum length of string-ized length of any target seq, updated here, can be undef
 #   $nseq_R:                  REF to the number of sequences read, updated here
+#   $seqorder_AR:             REF to array of sequences in order to fill here
 #   $seqidx_HR:               REF to hash of sequence indices to fill here
 #   $seqlen_HR:               REF to hash of sequence lengths to fill here
 #   $FH_HR:                   REF to hash of file handles, including "cmd"
@@ -111,11 +112,11 @@ sub ribo_CountAmbiguousNucleotidesInSequenceFile {
 #
 ################################################################# 
 sub ribo_ParseSeqstatFile { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "ribo_ParseSeqstatFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqidx_HR, $seqlen_HR, $FH_HR) = @_;
+  my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqorder_AR, $seqidx_HR, $seqlen_HR, $FH_HR) = @_;
 
   open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
 
@@ -150,6 +151,7 @@ sub ribo_ParseSeqstatFile {
         $at_least_one_dup = 1;
       }
         
+      push(@{$seqorder_AR}, $targetname);
       $seqidx_HR->{$targetname} = $nread;
       $seqlen_HR->{$targetname} = $length;
       $tot_length += $length;
@@ -384,6 +386,7 @@ sub ribo_ParseQsubFile {
 #   $seqstat_exec:   path to esl-seqstat executable
 #   $seq_file:       sequence file to process
 #   $seqstat_file:   path to esl-seqstat output to create
+#   $seqorder_AR:    ref to array of sequences in order to fill here
 #   $seqidx_HR:      ref to hash of sequence indices to fill here
 #   $seqlen_HR:      ref to hash of sequence lengths to fill here
 #   $width_HR:       ref to hash to fill with max widths (see Purpose), can be undef
@@ -400,10 +403,10 @@ sub ribo_ParseQsubFile {
 #
 ################################################################# 
 sub ribo_ProcessSequenceFile { 
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   my $sub_name = "ribo_ProcessSequenceFile()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($seqstat_exec, $seq_file, $seqstat_file, $seqidx_HR, $seqlen_HR, $width_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($seqstat_exec, $seq_file, $seqstat_file, $seqorder_AR, $seqidx_HR, $seqlen_HR, $width_HR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
@@ -414,7 +417,7 @@ sub ribo_ProcessSequenceFile {
   my $max_targetname_length = length("target"); # maximum length of any target name
   my $max_length_length     = length("length"); # maximum length of the string-ized length of any target
   my $nseq                  = 0; # number of sequences read
-  my $tot_length = ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqidx_HR, $seqlen_HR, $FH_HR); 
+  my $tot_length = ribo_ParseSeqstatFile($seqstat_file, \$max_targetname_length, \$max_length_length, \$nseq, $seqorder_AR, $seqidx_HR, $seqlen_HR, $FH_HR); 
 
   if(defined $width_HR) { 
     $width_HR->{"target"} = $max_targetname_length;
@@ -1829,6 +1832,7 @@ sub ribo_InitializeHashToZero {
 
   return;
 }
+
 
 ###########################################################################
 # the next line is critical, a perl module must return a true value

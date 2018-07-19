@@ -52,8 +52,6 @@ opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,
 opt_Add("-n",           "integer", 1,                       $g,    undef, "-p",        "use <n> CPUs",                                              "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                       $g,    undef, undef,       "keep all intermediate files",                               "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
 opt_Add("--special",    "string",  undef,                   $g,    undef, undef,       "read list of special species taxids from <s>",              "read list of special species taxids from <s>",                 \%opt_HH, \@opt_order_A);
-opt_Add("--class",      "boolean", 0,                       $g,    undef, "--phylum",  "work at class  level for tax analysis, incl. ingroup test", "work at class  level for tax analysis, incl. ingroup test [default: order]", \%opt_HH, \@opt_order_A);
-opt_Add("--phylum",     "boolean", 0,                       $g,    undef, "--class",   "work at phylum level for tax analyais, incl. ingroup test", "work at phylum level for tax analysis, incl. ingroup test [default: order]", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for skipping stages";
 #               option  type       default               group   requires                incompat   preamble-output                                                     help-output    
@@ -115,7 +113,7 @@ opt_Add("--pos",         "integer",  60,                    $g,    undef, "--ski
 opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
+$opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
 
@@ -128,7 +126,7 @@ $opt_group_desc_H{++$g} = "options for parallelizing ribotyper/riboaligner's cal
 opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",              "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                    $g,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("--nkb",        "integer", 10,                       $g,     "-p", undef,      "number of KB of seq for each farm job is <n>",                "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
-opt_Add("--wait",       "integer", 500,                      $g,     "-p", undef,      "allow <n> minutes for jobs on farm",                          "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 1440,                     $g,     "-p", undef,      "allow <n> minutes for jobs on farm",                          "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                        $g,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "advanced options for debugging and testing:";
@@ -148,8 +146,6 @@ my $options_okay =
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
                 'keep'         => \$GetOptions_H{"--keep"},
                 'special=s'    => \$GetOptions_H{"--special"},
-                'class'        => \$GetOptions_H{"--class"},
-                'phylum'       => \$GetOptions_H{"--phylum"},
                 'skipftaxid'   => \$GetOptions_H{"--skipftaxid"},
                 'skipfambig'   => \$GetOptions_H{"--skipfambig"},
                 'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
@@ -200,8 +196,8 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.19";
-my $model_version_str = "0p15"; 
+my $version           = "0.20";
+my $riboaligner_model_version_str = "0p15"; 
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
 my $pkgstr    = "RIBO";
@@ -233,14 +229,19 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-# define taxonomic level we will work at, including for the ingroup analysis, if we do that step, default is order
-my $level = "order";
-if(opt_Get("--class",  \%opt_HH)) { $level = "class";  }
-if(opt_Get("--phylum", \%opt_HH)) { $level = "phylum"; }
-my %full_level_ct_H   = (); # key is $level taxid, value is number of sequences in full set (input) for that taxid
-my %surv_filters_level_ct_H = (); # key is $level taxid, value is number of sequences that survive all filters for that taxid
-my %surv_ingrup_level_ct_H = (); # key is $level taxid, value is number of sequences that survive ingrup analysis for that taxid
-my %surv_clustr_level_ct_H = (); # key is $level taxid, value is number of sequences that survive clustering for that taxid
+# define taxonomic level we will work at for output file that lists levels lost, including for the ingroup analysis, if we do that step, default is order
+my @level_A = ("phylum", "class", "order");
+my $level;
+my %full_level_ct_HH = ();         # key 1 is $level, key 2 is $level taxid, value is number of sequences in full set (input) for that taxid
+my %surv_filters_level_ct_HH = (); # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive all filters for that taxid
+my %surv_ingrup_level_ct_HH = ();  # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive ingrup analysis for that taxid
+my %surv_clustr_level_ct_HH = ();  # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive clustering for that taxid
+foreach $level (@level_A) {
+  %{$full_level_ct_HH{$level}} = ();          
+  %{$surv_filters_level_ct_HH{$level}} = ();  
+  %{$surv_ingrup_level_ct_HH{$level}}  = ();  
+  %{$surv_clustr_level_ct_HH{$level}}  = ();  
+}
 
 # determine what stages we are going to do:
 my $do_ftaxid = opt_Get("--skipftaxid", \%opt_HH) ? 0 : 1;
@@ -300,7 +301,7 @@ if(defined $in_special_file) {
 
 my $in_riboopts1_file = undef;
 my $in_riboopts2_file = undef;
-my $df_ra_modelinfo_file = $df_model_dir . "riboaligner." . $model_version_str . ".all.modelinfo";
+my $df_ra_modelinfo_file = $df_model_dir . "riboaligner." . $riboaligner_model_version_str . ".all.modelinfo";
 my $ra_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;
@@ -597,7 +598,7 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # but if somehow it does then we want to know about it.
 my %seqnambig_H  = (); # number of ambiguous nucleotides per sequence
 my %seqtaxid_H   = (); # taxid, from srcchk of each sequence, remains empty if srcchk does not need to be run
-my %seqgtaxid_H  = (); # group taxid at taxonomic level $level for each sequence, remains empty if srcchk does not need to be run
+my %seqgtaxid_HH = (); # %seqtaxid_HH{$level}: group taxid at taxonomic level $level for each sequence, remains empty if srcchk does not need to be run
 my @seqorder_A   = (); # array of sequence names in order they appeared in the file
 my %is_centroid_H = (); # key is sequence name, value is 1 if sequence is a centroid, 0 if it is not, key does not exist if sequence did not survive to clustering
 my %not_centroid_H = (); # key is sequence name, value is 1 if sequence is NOT a centroid, "" if it is, key does not exist if sequence did not survive to clustering
@@ -609,7 +610,7 @@ my $full_list_file = $out_root . ".full.seqlist";
 my $have_taxids = 0;
 
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequence lengths", $progress_w, $log_FH, *STDOUT);
-ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
+ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $seqstat_file, \@seqorder_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $nseq = scalar(keys %seqidx_H);
 ribo_CountAmbiguousNucleotidesInSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH, $ofile_info_HH{"FH"});
 if(! $do_prvcmd) { ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
@@ -624,7 +625,11 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullssi", $full_fasta
 # Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_ingrup || $do_special)
 ###########################################################################################
 my $full_srcchk_file = undef;
-my $taxinfo_wlevel_file = $out_root . ".taxinfo_wlevel.txt";
+my %taxinfo_wlevel_file_H = ();
+foreach $level (@level_A) { 
+  $taxinfo_wlevel_file_H{$level} = $out_root . ".taxinfo_w" . $level. ".txt";
+  %{$seqgtaxid_HH{$level}} = ();
+}
 
 if($do_ftaxid || $do_ingrup || $do_special) { 
   $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
@@ -637,12 +642,13 @@ if($do_ftaxid || $do_ingrup || $do_special) {
   $have_taxids = 1;
 
   # get taxonomy file with taxonomic levels
-  my $find_tax_cmd = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile $taxinfo_wlevel_file";
-  if(! $do_prvcmd) { ribo_RunCommand($find_tax_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "taxinfo-level", "$taxinfo_wlevel_file", 0, "taxinfo file with level");
-  # parse tax_level file to fill %full_level_ct_H
-  parse_tax_level_file($taxinfo_wlevel_file, undef, \%seqgtaxid_H, \%full_level_ct_H, $ofile_info_HH{"FH"});
-
+  foreach $level (@level_A) { 
+    my $find_tax_cmd = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile " . $taxinfo_wlevel_file_H{$level};
+    if(! $do_prvcmd) { ribo_RunCommand($find_tax_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "taxinfo.$level", $taxinfo_wlevel_file_H{$level}, 0, "taxinfo file with level");
+    # parse tax_level file to fill %full_level_ct_HH
+    parse_tax_level_file($taxinfo_wlevel_file_H{$level}, undef, $seqgtaxid_HH{$level}, $full_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+  }
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 
@@ -654,10 +660,6 @@ my %seqfailstr_H = (); # hash that keeps track of failure strings for each seque
 my %curfailstr_H = (); # hash that keeps track of failure string for current stage only, will be "" for a passing sequence
 my $seqname;
 my $npass = 0;
-# fill the seqorder array
-foreach $seqname (keys %seqidx_H) { 
-  $seqorder_A[($seqidx_H{$seqname} - 1)] = $seqname;
-}  
 ribo_InitializeHashToEmptyString(\%curfailstr_H, \@seqorder_A);
 ribo_InitializeHashToEmptyString(\%seqfailstr_H, \@seqorder_A);
 my $stage_key = undef;
@@ -817,7 +819,9 @@ else { # skipping riboaligner stage
 
 # determine how many sequences at for each taxonomic group at level $level are still left
 if($do_ftaxid || $do_ingrup || $do_special) { 
-  parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_filters_level_ct_H, $ofile_info_HH{"FH"});
+  foreach $level (@level_A) {
+    parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%seqfailstr_H, undef, $surv_filters_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+  }
 }
 # end of filter stages
 
@@ -835,10 +839,15 @@ $stage_key = "ingrup";
 my $merged_rfonly_stk_file    = $out_root . "." . $stage_key . ".rfonly.stk";
 my $merged_rfonly_alipid_file = $out_root . "." . $stage_key . ".rfonly.alipid";
 my $merged_list_file          = $out_root . "." . $stage_key . ".seqlist";
-my $alipid_analyze_out_file   = $out_root . "." . $stage_key . ".alipid_analyze.out";
-my $alipid_analyze_tab_file   = $out_root . "." . $stage_key . ".alipid.sum.tab.txt";
-my $ingrup_lost_list = $out_root . ".ingrup.lost." . $level . ".list";
 my $alipid_cmd = $execs_H{"esl-alipid"} . " $merged_rfonly_stk_file > $merged_rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
+my %ingrup_lost_list_H        = (); # key is phylogenetic level $level, value is list of $level groups lost
+my %alipid_analyze_out_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output file
+my %alipid_analyze_tab_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output tab file
+foreach $level (@level_A) {
+  $ingrup_lost_list_H{$level}        = $out_root . "." . $stage_key . "." . $level . ".lost.list";
+  $alipid_analyze_out_file_H{$level} = $out_root . "." . $stage_key . "." . $level . ".alipid_analyze.out";
+  $alipid_analyze_tab_file_H{$level} = $out_root . "." . $stage_key . "." . $level . ".alipid.sum.tab.txt";
+}
 
 # if no sequences remain, we're done, skip remaining stages
 if($npass_filters == 0) { 
@@ -855,9 +864,12 @@ else {
 
     # merge alignments created by riboaligner with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimerge_cmd       = "ls " . $ra_outdir . "/*.stk | grep cmalign\.stk | " . $execs_H{"esl-alimerge"} . " --list - | esl-alimask --rf-is-mask - | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
-    my $alistat_cmd        = $execs_H{"esl-alistat"} . " --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
-    my $alipid_analyze_cmd = $execs_H{"alipid-taxinfo-analyze.pl"} . " $merged_rfonly_alipid_file $merged_list_file $taxinfo_wlevel_file $out_root.$stage_key > $alipid_analyze_out_file";
+    my $alimerge_cmd = "ls " . $ra_outdir . "/*.stk | grep cmalign\.stk | " . $execs_H{"esl-alimerge"} . " --list - | esl-alimask --rf-is-mask - | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $merged_rfonly_stk_file";
+    my $alistat_cmd  = $execs_H{"esl-alistat"} . " --list $merged_list_file $merged_rfonly_stk_file > /dev/null";
+    my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
+    foreach $level (@level_A) { 
+      $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $merged_rfonly_alipid_file $merged_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
+    }
       
     if(! $do_prvcmd) { ribo_RunCommand($alimerge_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "rfonlystk", "$merged_rfonly_stk_file", 0, "merged RF-column-only alignment");
@@ -871,34 +883,41 @@ else {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "list", "$merged_list_file", 0, "list of sequences in $merged_rfonly_stk_file");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Performing ingroup analysis", $progress_w, $log_FH, *STDOUT);
-    if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid-analyze", "$alipid_analyze_out_file", 0, "output file from alipid-taxinfo-analyze.pl");
+    foreach $level (@level_A) {
+      if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid.analyze.$level", $alipid_analyze_out_file_H{$level}, 0, "$level output file from alipid-taxinfo-analyze.pl");
+    }
 
-    $npass = parse_alipid_analyze_tab_file($alipid_analyze_tab_file, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+    $npass = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
 
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
-    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying taxonomic groups lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
-    # determine how many sequences at for each taxonomic group at level $level are still left
-    parse_tax_level_file($taxinfo_wlevel_file, \%seqfailstr_H, undef, \%surv_ingrup_level_ct_H, $ofile_info_HH{"FH"});
-
-    # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
-    # than don't survive the ingroup test, output that
-    my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
-    my $nlost = 0;
-    open(LOST, ">", $ingrup_lost_list) || ofile_FileOpenFailure($ingrup_lost_list, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-    foreach my $gtaxid (sort {$a <=> $b} keys (%full_level_ct_H)) { 
-      if($gtaxid != 0) { 
-        if(($full_level_ct_H{$gtaxid} > 0) && 
-           ((! exists $surv_ingrup_level_ct_H{$gtaxid}) || $surv_ingrup_level_ct_H{$gtaxid} == 0)) { 
-          print LOST $gtaxid . "\n";
-          $nlost++;
+    # determine how many sequences at for each taxonomic group at each level $level are still left
+    foreach $level (@level_A) { 
+      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying " . $level . "s lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
+      parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%seqfailstr_H, undef, $surv_ingrup_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+      
+      # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
+      # than don't survive the ingroup test, output that
+      my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
+      my $nlost = 0;
+      open(LOST, ">", $ingrup_lost_list_H{$level}) || ofile_FileOpenFailure($ingrup_lost_list_H{$level}, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+      foreach my $gtaxid (sort {$a <=> $b} keys (%{$full_level_ct_HH{$level}})) { 
+        if($gtaxid != 0) { 
+          if(($full_level_ct_HH{$level}{$gtaxid} > 0) && 
+             ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || ($surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0))) { 
+            print LOST $gtaxid . "\n";
+            $nlost++;
+          }
         }
       }
+      close LOST;
+      my $level2print = $level . "s";
+      if($level2print eq "phylums") { $level2print = "phyla"; }
+      if($level2print eq "classs")  { $level2print = "classes"; }
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", $ingrup_lost_list_H{$level}, 1, sprintf("list of %d $level2print lost in the ingroup analysis", $nlost, $level));
+      ofile_OutputProgressComplete($start_secs, sprintf("%d %ss lost", $nlost, $level), $log_FH, *STDOUT);
     }
-    close LOST;
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", "$ingrup_lost_list", 1, sprintf("list of %d %ss lost in the ingroup analysis", $nlost, $level));
-    ofile_OutputProgressComplete($start_secs, sprintf("%d %ss lost", $nlost, $level), $log_FH, *STDOUT);
 
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # CHECKPOINT: save any sequences that survived to this point as the 'ingrup' set
@@ -986,7 +1005,9 @@ else {
 
     # determine how many sequences at for each taxonomic group are still left
     if($do_ftaxid || $do_ingrup || $do_special) { 
-      parse_tax_level_file($taxinfo_wlevel_file, \%is_centroid_H, undef, \%surv_clustr_level_ct_H, $ofile_info_HH{"FH"});
+      foreach $level (@level_A) { 
+        parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%is_centroid_H, undef, $surv_clustr_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+      }
     }
   } # end of # if ($do_clustr)
 } # end of else entered if $npass_filters > 0
@@ -1019,30 +1040,32 @@ if($npass_final > 0) {
 
 #####################################################################
 # Create final output files:
-# 1. taxonomy group count file at level $level (order, by default)
-# 2. output file with failure strings per sequence, tabular version
-# 3. output file with failure strings per sequence, readable version 
-#    (whitepsace delimited) 
+# - taxonomy group count files, one per level
+# - output file with failure strings per sequence, tabular version
+# - output file with failure strings per sequence, readable version 
+#   (whitepsace delimited) 
 #####################################################################
-# output taxonomy level count file
-my $out_level_ct_file = $out_root . "." . $level . ".ct";
-open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
-my $final_level_ct_HR = undef;
-if   ($do_clustr)  { $final_level_ct_HR = \%surv_clustr_level_ct_H; }
-elsif($do_ingrup)  { $final_level_ct_HR = \%surv_ingrup_level_ct_H; }
-else               { $final_level_ct_HR = \%surv_filters_level_ct_H; }
-foreach my $taxid (sort {$a <=> $b} keys %full_level_ct_H) { 
-  printf LVL ("%s\t%s\t%s\t%s\t%s\t%s\n", 
-              $taxid, 
-              $full_level_ct_H{$taxid}, 
-              $surv_filters_level_ct_H{$taxid}, 
-              ($do_ingrup) ? $surv_ingrup_level_ct_H{$taxid} : "-", 
-              ($do_clustr) ? $surv_clustr_level_ct_H{$taxid} : "-", 
-              $final_level_ct_HR->{$taxid});
-} 
-close(LVL);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "outlevel", "$out_level_ct_file", 1, "tab-delimited file listing number of sequences per $level taxid");
+# output taxonomy level count files
+foreach $level (@level_A) { 
+  my $out_level_ct_file = $out_root . "." . $level . ".ct";
+  open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+  print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
+  my $final_level_ct_HR = undef;
+  if   ($do_clustr)  { $final_level_ct_HR = $surv_clustr_level_ct_HH{$level};  }
+  elsif($do_ingrup)  { $final_level_ct_HR = $surv_ingrup_level_ct_HH{$level};  }
+  else               { $final_level_ct_HR = $surv_filters_level_ct_HH{$level}; }
+  foreach my $taxid (sort {$a <=> $b} keys %{$full_level_ct_HH{$level}}) { 
+    printf LVL ("%s\t%s\t%s\t%s\t%s\t%s\n", 
+                $taxid, 
+                $full_level_ct_HH{$level}{$taxid}, 
+                $surv_filters_level_ct_HH{$level}{$taxid}, 
+                ($do_ingrup) ? $surv_ingrup_level_ct_HH{$level}{$taxid} : "-", 
+                ($do_clustr) ? $surv_clustr_level_ct_HH{$level}{$taxid} : "-", 
+                $final_level_ct_HR->{$taxid});
+  } 
+  close(LVL);
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "out.$level", "$out_level_ct_file", 1, "tab-delimited file listing number of sequences per $level taxid");
+}
 
 # output tabular output file
 my $out_rdb_tbl = $out_root . ".rdb.tbl"; # name of tabular file
@@ -1053,15 +1076,17 @@ my $cluststr    = undef; # string for cluster column
 my $specialstr  = undef; # string for special column
 my @column_explanation_A = (); 
 push(@column_explanation_A, "# Explanation of columns:\n");
-push(@column_explanation_A, "# Column 1: 'idx':     index of sequence in input file\n");
-push(@column_explanation_A, "# Column 2: 'seqname': name of sequence\n");
-push(@column_explanation_A, "# Column 3: 'seqlen':  length of sequence\n");
-push(@column_explanation_A, "# Column 4: 'taxid':   taxid of sequence (species level), '-' if all taxid related steps were skipped\n");
-push(@column_explanation_A, "# Column 5: 'gtaxid':  taxid of sequence ($level level), '-' if all taxid related steps were skipped\n");
-push(@column_explanation_A, sprintf("# Column 6: 'p/f':     PASS if sequence passed all filters%s else FAIL\n", ($do_ingrup) ? " and ingroup analysis" : ""));
-push(@column_explanation_A, sprintf("# Column 7: 'clust':   %s\n", ($do_clustr) ? "'C' if sequence selected as centroid of a cluster, 'NC' if not" : "'-' for all sequences due to --skipclustr"));
-push(@column_explanation_A, sprintf("# Column 8: 'special': %s\n", ($do_special) ? "*yes* if sequence belongs to special species taxid listed in --special input file, else '*no*'" : "'-' for all sequences because --special not used"));
-push(@column_explanation_A, sprintf("# Column 9: 'failstr': %s\n", "'-' for PASSing sequences, else list of reasons for FAILure, see below"));
+push(@column_explanation_A, "# Column  1: 'idx':     index of sequence in input file\n");
+push(@column_explanation_A, "# Column  2: 'seqname': name of sequence\n");
+push(@column_explanation_A, "# Column  3: 'seqlen':  length of sequence\n");
+push(@column_explanation_A, "# Column  4: 'staxid':  taxid of sequence (species level), '-' if all taxid related steps were skipped\n");
+push(@column_explanation_A, "# Column  6: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped\n");
+push(@column_explanation_A, "# Column  7: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped\n");
+push(@column_explanation_A, "# Column  8: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped\n");
+push(@column_explanation_A, sprintf("# Column  9: 'p/f':     PASS if sequence passed all filters%s else FAIL\n", ($do_ingrup) ? " and ingroup analysis" : ""));
+push(@column_explanation_A, sprintf("# Column 10: 'clust':   %s\n", ($do_clustr) ? "'C' if sequence selected as centroid of a cluster, 'NC' if not" : "'-' for all sequences due to --skipclustr"));
+push(@column_explanation_A, sprintf("# Column 11: 'special': %s\n", ($do_special) ? "*yes* if sequence belongs to special species taxid listed in --special input file, else '*no*'" : "'-' for all sequences because --special not used"));
+push(@column_explanation_A, sprintf("# Column 12: 'failstr': %s\n", "'-' for PASSing sequences, else list of reasons for FAILure, see below"));
 push(@column_explanation_A, "#\n");
 push(@column_explanation_A, "# Possible substrings in 'failstr' column 9, each substring separated by ';;':\n");
 if($do_fambig) { 
@@ -1102,11 +1127,12 @@ if($do_fmspan) {
 if($do_ingrup) { 
   push(@column_explanation_A, "# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis\n");
   push(@column_explanation_A, "#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>\n");
-  push(@column_explanation_A, "#                          see $alipid_analyze_out_file for explanation of types\n");
+  push(@column_explanation_A, "#                          see " . $alipid_analyze_out_file_H{"order"} . " for explanation of types\n");
   if(opt_Get("--fione", \%opt_HH)) { 
     push(@column_explanation_A, "#                          if <s> includes 'not-max-avg-pid', a different sequence with the\n");
     push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
-    push(@column_explanation_A, "#                          other sequences in its same $level than this one did\n");
+    push(@column_explanation_A, "#                          other sequences in its taxonomic group than this one did\n");
+    push(@column_explanation_A, "#                          at the most specific level that is defined out of order/class/phylum\n");
   }
 }
 
@@ -1116,10 +1142,13 @@ foreach my $column_explanation_line (@column_explanation_A) {
   print RDB $column_explanation_line;
   print TAB $column_explanation_line;
 }  
-printf RDB ("# %*s  %-*s  %*s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, "idx", $width_H{"target"}, "seqname", $width_H{"length"}, "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
-printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", "idx", "seqname", "seqlen", "taxid", "gtaxid", "p/f", "clust", "special", "failstr");
+if($width_H{"index"} < 4) { $width_H{"index"} = 4; }
+printf RDB ("#%*s  %-*s  %*s  %7s  %7s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}-1, "idx", $width_H{"target"}, "seqname", $width_H{"length"}, "seqlen", "staxid", "otaxid", "ctaxid", "ptaxid", "p/f", "clust", "special", "failstr");
+printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", "idx", "seqname", "seqlen", "staxid", "otaxid", "ctaxid", "ptaxid", "p/f", "clust", "special", "failstr");
 my $taxid2print = undef;
-my $gtaxid2print = undef;
+my $otaxid2print = undef;
+my $ctaxid2print = undef;
+my $ptaxid2print = undef;
 foreach $seqname (@seqorder_A) { 
   if($seqfailstr_H{$seqname} eq "") { 
     $pass_fail  = "PASS";
@@ -1137,10 +1166,12 @@ foreach $seqname (@seqorder_A) {
   else            { $specialstr = "-"; }
 
   $taxid2print  = ($have_taxids) ? $seqtaxid_H{$seqname} : "-";
-  $gtaxid2print = ($have_taxids) ? $seqgtaxid_H{$seqname} : "-";
+  $otaxid2print = ($have_taxids) ? $seqgtaxid_HH{"order"}{$seqname} : "-";
+  $ctaxid2print = ($have_taxids) ? $seqgtaxid_HH{"class"}{$seqname} : "-";
+  $ptaxid2print = ($have_taxids) ? $seqgtaxid_HH{"phylum"}{$seqname} : "-";
 
-  printf RDB ("%-*s  %-*s  %-*d  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
-  printf TAB ("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $taxid2print, $gtaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+  printf RDB ("%-*s  %-*s  %-*d  %7s  %7s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $otaxid2print, $ctaxid2print, $ptaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+  printf TAB ("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $taxid2print, $otaxid2print, $ctaxid2print, $ptaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
 }
 close(RDB);
 close(TAB);
@@ -1177,7 +1208,7 @@ exit 0;
 # parse_ribotyper_short_file
 # parse_riboaligner_tbl_file
 # parse_blast_output_for_self_hits
-# parse_alipid_analyze_tab_file
+# parse_alipid_analyze_tab_files
 # parse_alipid_output_to_create_dist_file
 # parse_dist_file_to_choose_centroids
 # parse_esl_cluster_output
@@ -1676,7 +1707,7 @@ sub parse_blast_output_for_self_hits {
 }
 
 #################################################################
-# Subroutine:  parse_alipid_analyze_tab_file()
+# Subroutine:  parse_alipid_analyze_tab_files()
 # Incept:      EPN, Mon Jun 25 15:17:12 2018
 #
 # Purpose:     Parse a tab delimited file output from alipid-taxinfo-analyze.pl
@@ -1684,7 +1715,9 @@ sub parse_blast_output_for_self_hits {
 #              fail.
 #
 # Arguments:
-#   $in_file:        name of srcchk output file to parse
+#   $in_file_HR:     key is $level from @level_A, value is name of alipid
+#                    file for that level to parse
+#   $level_AR:       ref to array of level keys in %{$in_file_HR}
 #   $seqfailstr_HR:  ref to hash of failure string to add to here
 #   $seqorder_AR:    ref to array of sequences in order
 #   $out_root:       for naming output files
@@ -1695,18 +1728,18 @@ sub parse_blast_output_for_self_hits {
 #
 # Dies:       if a sequence read in the alipid file is not in %{$seqfailstr_HR}
 #################################################################
-sub parse_alipid_analyze_tab_file { 
-  my $sub_name = "parse_alipid_analyze_tab_file";
-  my $nargs_expected = 6;
+sub parse_alipid_analyze_tab_files { 
+  my $sub_name = "parse_alipid_analyze_tab_files";
+  my $nargs_expected = 7;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
   my $do_one = (opt_Get("--fione", $opt_HHR)) ? 1 : 0;
   my %max_pid_per_taxid_H    = (); # key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
   my %argmax_pid_per_taxid_H = (); # key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
-  
+                                   # lowest level in @{$level_AR}
   my %curfailstr_H = ();  # will hold fail string 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $seqname;
@@ -1714,34 +1747,36 @@ sub parse_alipid_analyze_tab_file {
 
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
 
-  open(TAB, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  # first line is header
-  my $line = <TAB>;
-  while($line = <TAB>) { 
-    #sequence	seq-taxid	species	group-taxid	group-nseq	type	avgpid-in-group	maxpid-in-group	maxpid-seq-in-group	minpid-in-group	minpid-seq-in-group	avgpid-out-group	maxpid-out-group	maxpid-seq-out-group	maxpid-group-out-group	minpid-out-group	minpid-seq-out-group	minpid-group-out-group	avgdiff-in-minus-out	maxdiff-in-minus-out
-    #AJ306437.1	155213	Scutellospora spinosissima	214509	8	I1	93.6	95.1	HF968811.1	91.7	AJ306442.1	84.9	89.0	AB015052.1	1133283	65.9	AB016022.1	78918	8.8	6.2	25.8
-    #JN941634.1	45130	Bipolaris sorokiniana	92860	3	I1	96.2	96.5	DQ898289.1	95.9	AY741066.1	87.0	95.7	AB454202.1	451869	65.7	AB016022.1	78918	9.2	0.8	30.2
-    chomp $line;
-    my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 21) { 
-      ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
-    }
-    my ($seqname, $seq_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[5], $el_A[6]);
+  foreach my $level (@{$level_AR}) { 
+    open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
+    # first line is header
+    my $line = <TAB>;
+    while($line = <TAB>) { 
+      #sequence	seq-taxid	species	group-taxid	group-nseq	type	avgpid-in-group	maxpid-in-group	maxpid-seq-in-group	minpid-in-group	minpid-seq-in-group	avgpid-out-group	maxpid-out-group	maxpid-seq-out-group	maxpid-group-out-group	minpid-out-group	minpid-seq-out-group	minpid-group-out-group	avgdiff-in-minus-out	maxdiff-in-minus-out
+      #AJ306437.1	155213	Scutellospora spinosissima	214509	8	I1	93.6	95.1	HF968811.1	91.7	AJ306442.1	84.9	89.0	AB015052.1	1133283	65.9	AB016022.1	78918	8.8	6.2	25.8
+      #JN941634.1	45130	Bipolaris sorokiniana	92860	3	I1	96.2	96.5	DQ898289.1	95.9	AY741066.1	87.0	95.7	AB454202.1	451869	65.7	AB016022.1	78918	9.2	0.8	30.2
+      chomp $line;
+      my @el_A = split(/\t/, $line);
+      if(scalar(@el_A) != 21) { 
+        ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      }
+      my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
 
-    # keep track of max avgpid per taxid
-    if($do_one && ($seq_taxid ne "1")) { 
-      if((! exists $max_pid_per_taxid_H{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_H{$seq_taxid})) { 
-        $max_pid_per_taxid_H{$seq_taxid}    = $avgpid;
-        $argmax_pid_per_taxid_H{$seq_taxid} = $seqname;
+      # keep track of max avgpid per taxid
+      if($do_one && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
+        if((! exists $max_pid_per_taxid_H{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_H{$seq_taxid})) { 
+          $max_pid_per_taxid_H{$seq_taxid}    = $avgpid;
+          $argmax_pid_per_taxid_H{$seq_taxid} = $seqname;
+        }
+      }
+      
+      if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+      if($type =~ m/^O/) { 
+        $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later after determining 
       }
     }
-
-    if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-    if($type =~ m/^O/) { 
-      $curfailstr_H{$seqname} = "type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later after determining 
-    }
+    close(TAB);
   }
-  close(TAB);
 
   # add failure strings for all sequences that are not the average max pid for their sequence taxid, if nec
   if($do_one) { 
