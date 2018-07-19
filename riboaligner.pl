@@ -336,11 +336,12 @@ my @fail_str_A    = (); # array of strings of FAIL sequences to output
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
 
 # information about the sequences, which we get by processing the ribotyper seqstat file
-my $tot_nnt  = 0;  # total number of nucleotides in target sequence file (summed length of all seqs)
-my $nseq     = 0;  # total number of sequences in target sequence file
-my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
-my %seqlen_H = (); # key: sequence name, value: length of sequence
-my %width_H  = (); # hash, key is "target", value is maximum length of target
+my $tot_nnt    = 0;  # total number of nucleotides in target sequence file (summed length of all seqs)
+my $nseq       = 0;  # total number of sequences in target sequence file
+my @seqorder_A = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
+my %seqidx_H   = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
+my %seqlen_H   = (); # key: sequence name, value: length of sequence
+my %width_H    = (); # hash, key is "target", value is maximum length of target
 
 # create the .accept file to supply to ribotyper
 my @accept_A = ();
@@ -364,7 +365,7 @@ ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # parse the ribotyper seqstat file
-$tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \%seqidx_H, \%seqlen_H, $FH_HR);
+$tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \@seqorder_A, \%seqidx_H, \%seqlen_H, $FH_HR);
 
 # parse ribotyper output and create sfetch input files for sequences to fetch
 my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name
