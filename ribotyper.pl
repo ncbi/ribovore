@@ -4599,13 +4599,13 @@ sub classify_gap {
   my $desc_str = $mdl_str . "," . $seq_str;
 
   if($mdl_gap_len <= $mdl_gap_max) {
-    return "MHInsert[" . $desc_str . "]";
+    return "SI[" . $desc_str . "]";
   }
   if(($mdl_gap_len > $mdl_gap_max) && ($seq_gap_len <= $seq_gap_max)) {
-    return "MHModelDeletion[" . $desc_str . "]";
+    return "MD[" . $desc_str . "]";
   }
   if(($mdl_gap_len > $mdl_gap_max) && ($seq_gap_len > $seq_gap_max)) {
-    return "MHNonHomologousRegion[" . $desc_str . "]";
+    return "NH[" . $desc_str . "]";
   }
   return ""; # if we get here gap does not belong to any of our special classes, return the empty string ""
 }
