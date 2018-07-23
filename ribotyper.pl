@@ -59,7 +59,6 @@ opt_Add("-v",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
-opt_Add("-g",           "boolean", 0,                        1,    undef, undef,      "save gap sequences between hits to a file",      "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
@@ -124,12 +123,14 @@ opt_Add("--mgap",       "integer", 10,                       10,    undef, undef
 opt_Add("--sgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"11"} = "advanced options";
-#       option               type   default                group  requires incompat             preamble-output                               help-output    
-opt_Add("--evalues",      "boolean", 0,                      11,  undef,   undef,               "rank by E-values, not bit scores",           "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                      11,  undef,   "-f",                "skip search stage",                          "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                      11,  undef,   "--skipsearch",      "no alignments in output",                    "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                      11,  undef,   undef,               "top two hits can be same domain",            "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
-opt_Add("--keep",         "boolean", 0,                      11,  undef,   undef,               "keep all intermediate files",                "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat             preamble-output                                      help-output    
+opt_Add("--evalues",      "boolean", 0,                      11,  undef,   undef,               "rank by E-values, not bit scores",                  "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                      11,  undef,   "-f",                "skip search stage",                                 "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                      11,  undef,   "--skipsearch",      "no alignments in output",                           "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                      11,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--gapseqs",      "boolean", 0,                      11,  undef,   undef,               "save gap sequences between hits to a file",         "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
+opt_Add("--xgapseqs",     "integer", 20,                     11,  undef,   undef,               "save gap sequence file with <n> added nts",         "save gap sequence file with <n> added nts", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",         "boolean", 0,                      11,  undef,   undef,               "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -143,7 +144,6 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 's=s'          => \$GetOptions_H{"-s"},
-                'g'            => \$GetOptions_H{"-g"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
@@ -194,6 +194,8 @@ my $options_okay =
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"},
                 'noali'        => \$GetOptions_H{"--noali"},
                 'keep'         => \$GetOptions_H{"--keep"},
+                'gapseqs'      => \$GetOptions_H{"--gapseqs"},
+                'xgapseqs=s'   => \$GetOptions_H{"--xgapseqs"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
@@ -276,7 +278,12 @@ if((opt_IsUsed("--shortfail",\%opt_HH) && opt_IsUsed("--longfail",\%opt_HH)) &&
   die sprintf("ERROR, with --shortfail <n1> and --longfail <n2>, <n1> must be less than <n2> (got <n1>: %f, <n2>: %f)\n", 
                 opt_Get("--shortfail",\%opt_HH), opt_Get("--longfail",\%opt_HH)); 
 }
-
+if(opt_IsUsed("--xgapseqs", \%opt_HH)) {
+  if(opt_Get("--xgapseqs", \%opt_HH) < 1) {
+    die "ERROR with --xgapseqs <n>, <n> must be >= 1";
+  }
+}
+   
 my $min_primary_sc   = opt_Get("--minpsc", \%opt_HH);
 my $min_secondary_sc = opt_Get("--minssc", \%opt_HH);
 if($min_secondary_sc > $min_primary_sc) { 
@@ -909,13 +916,14 @@ if(defined $alg2) {
   
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
-###########################################################################
-# Step 10: Fetch the gap sequences, if any, and search them with the intron
-#          models
-###########################################################################
-my $gap_sfetch_file = $out_root . ".gaps.sfetch";
-my $gap_fasta_file = $out_root . ".gaps.fa";
-if(opt_Get("-g", \%opt_HH)) { 
+###################################################
+# Step 10: Fetch the gap sequences, if necessary.
+###################################################
+my $gap_sfetch_file  = $out_root . ".gaps.sfetch";
+my $gap_fasta_file   = $out_root . ".gaps.fa";
+my $xgap_sfetch_file = $out_root . ".xgaps.sfetch";
+my $xgap_fasta_file  = $out_root . ".xgaps.fa";
+if(opt_Get("--gapseqs", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
   if(scalar(keys %seqgap_HA)) {
     open(SFETCH, ">", $gap_sfetch_file) || ofile_FileOpenFailure($gap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
@@ -933,6 +941,41 @@ if(opt_Get("-g", \%opt_HH)) {
     
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch",  $gap_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta",  $gap_fasta_file, 1, "fasta file with gap sequences between multiple hits");
+  }
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+}
+if(opt_IsUsed("--xgapseqs", \%opt_HH)) { 
+  my $nextra = opt_Get("--xgapseqs", \%opt_HH);
+  $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits plus $nextra nucleotides in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
+  if(scalar(keys %seqgap_HA)) {
+    open(SFETCH, ">", $xgap_sfetch_file) || ofile_FileOpenFailure($xgap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+    foreach my $target (@seqorder_A) {
+      if(exists $seqgap_HA{$target}) { 
+        my $seqlen = $seqlen_H{$target};
+        foreach my $region (@{$seqgap_HA{$target}}) { 
+          my ($start, $stop, $strand) = decompose_region_str($region, $ofile_info_HH{"FH"});
+          if($strand eq "+") {
+            $start -= $nextra;
+            $stop  += $nextra;
+            if($start < 1)       { $start = 1;       }
+            if($stop  > $seqlen) { $stop  = $seqlen; }
+          }
+          else {
+            $start += $nextra;
+            $stop  -= $nextra;
+            if($start > $seqlen) { $start = $seqlen; }
+            if($stop  < 1)       { $stop  = 1;       }
+          }
+          printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+        }
+      }
+    }
+    close(SFETCH);
+    # fetch the sequences
+    ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $xgap_sfetch_file > $xgap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "xgapsfetch",  $xgap_sfetch_file, 1, "sfetch file for fetching gap sequences plus $nextra nt between multiple hits");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "xgapsfasta",  $xgap_fasta_file, 1,  "fasta file with gap sequences plus $nextra nt between multiple hits");
   }
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
