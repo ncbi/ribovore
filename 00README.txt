@@ -678,9 +678,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu Jul 19 13:49:00 2018
+# date:    Mon Jul 23 20:11:25 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -691,7 +691,6 @@ basic options:
   -n <n> : use <n> CPUs [0]
   -i <s> : use model info file <s> instead of default
   -s <n> : seed for random number generator is <n> [181]
-  -g     : save gap sequences between hits to a file
 
 options for controlling the first round search algorithm:
   --1hmm  : run first round in slower HMM mode
@@ -748,11 +747,13 @@ options for controlling gap type definitions:
   --sgap <n> : maximum size of a 'small' gap in sequence coordinates is <n> [10]
 
 advanced options:
-  --evalues    : rank hits by E-values, not bit scores
-  --skipsearch : skip search stage, use results from earlier run
-  --noali      : no alignments in output with --1hmm, --1slow, or --2slow
-  --samedomain : top two hits can be to models in the same domain
-  --keep       : keep all intermediate files that are removed by default
+  --evalues      : rank hits by E-values, not bit scores
+  --skipsearch   : skip search stage, use results from earlier run
+  --noali        : no alignments in output with --1hmm, --1slow, or --2slow
+  --samedomain   : top two hits can be to models in the same domain
+  --gapseqs      : save gap sequences between hits to a file
+  --xgapseqs <n> : save gap sequence file with <n> added nts [20]
+  --keep         : keep all intermediate files that are removed by default
 
 ##############################################################################
 ADDITIONAL SCRIPT: riboaligner.pl
@@ -784,22 +785,20 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 > riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Thu Jul 19 13:49:44 2018
-# $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
-# $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
-# $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
+# date:              Mon Jul 23 20:15:21 2018
+# $RIBODIR:          /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1
+# $RIBOEASELDIR:     /Users/nawrockie/src/infernal-1.1.2/easel/miniapps
+# $RIBOINFERNALDIR:  /Users/nawrockie/src/infernal-1.1.2/src
 #
-# target sequence input file:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/example-rlc-11.fa
-# output directory name:       test-ra                                                                                        
+# target sequence input file:  /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1/testfiles/example-rlc-11.fa
+# output directory name:       test-ra
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [4.5 seconds]
-# Running cmalign and classifying sequence lengths ... done. [5.5 seconds]
-# Extracting alignments for each length class      ... done. [0.2 seconds]
-#
-# All sequences failed ribotyper.
+# Running ribotyper                                ... done. [3.4 seconds]
+# Running cmalign and classifying sequence lengths ... done. [4.7 seconds]
+# Extracting alignments for each length class      ... done. [0.0 seconds]
 #
 # WARNING: 1 sequence(s) were not aligned because they were not classified by ribotyper into one of: SSU.Archaea SSU.Bacteria
 #  01223::Audouinella_hermannii.::AF026040
@@ -841,7 +840,7 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 #
 # All output files created in directory ./test-ra/
 #
-# CPU time:  00:00:10.32
+# CPU time:  00:00:08.20
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
