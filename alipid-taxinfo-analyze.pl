@@ -16,9 +16,10 @@ my $out_seq;
 
 open(IN, $list_file) || die "ERROR unable to open $list_file for reading";
 my $line;
-my %list_H      = (); # hash, key is sequence name read in list file, value is always 1
-my $nseq = 0; # total number of sequences
-my @seq_order_A = (); # array, sequence names in order
+my %list_H       = (); # hash, key is sequence name read in list file, value is always 1
+my $nseq         = 0; # total number of sequences
+my $nseq_wgroup  = 0; # total number of sequences where group taxid is not 1
+my @seq_order_A  = (); # array, sequence names in order
 while($line = <IN>) { 
   chomp $line;
   $list_H{$line} = 1;
@@ -97,6 +98,7 @@ my %out_pid_min_HH     = (); # minimum percent id for this seq to any other seq 
 my %out_pid_sargmin_HH = (); # sequence in this sequence's group that has pid in out_pid_min_HH
 my %out_pid_gargmin_HH = (); # group that $out_pid_sargmin_HH belongs to 
 
+my %seq_counted_H = (); # so we don't overcount sequences that have group in $nseq_wgroup;
 my $group;
 foreach $group (sort keys (%group_ct_H)) { 
   if($group ne "1") { 
@@ -138,6 +140,15 @@ while($line = <ALIPID>) {
 
     $group1 = $seq_group_H{$seq1};
     $group2 = $seq_group_H{$seq2};
+
+    if((! exists $seq_counted_H{$seq1}) && ($group1 eq "1")) { 
+      $nseq_wgroup++;
+      $seq_counted_H{$seq1} = 1;
+    }
+    if((! exists $seq_counted_H{$seq2}) && ($group2 eq "1")) { 
+      $nseq_wgroup++;
+      $seq_counted_H{$seq2} = 1;
+    }
 
     # only continue if both seqs have taxonomic groups
     if(($group1 != 1) &&
@@ -367,7 +378,7 @@ foreach my $seq (@seq_order_A) {
                 "-",
                 "-");
   }
-  elsif($in_pid_denom_HH{$group}{$seq} == ($nseq-1)) { # all sequences are in group
+  elsif($out_pid_denom_HH{$group}{$seq} == 0) { # no sequences are outside the group (some may have group of 1)
     $in_pid_avg_HH{$group}{$seq} /= $in_pid_denom_HH{$group}{$seq};
     printf RDB ("%-*s  %7d  %-*s  %7d  %7d  %3s  %6.3f  %6.3f  %-*s  %6.3f  %-*s    %6s  %6s  %-*s  %7s  %6s  %-*s  %7s    %7s  %7s  %7s \n", 
                 $max_seqname_length, $seq, $seq_taxid_H{$seq}, $max_spec_length, $seq_spec_H{$seq}, $group, $group_ct_H{$group}, "-", 
@@ -392,12 +403,12 @@ foreach my $seq (@seq_order_A) {
                 "-",
                 "-");
   }
-  else { # group != 1 && group_ct_H{$group} != 1 && in_pid_denom_HH{$group}{$seq} < ($nseq-1)
+  else { # group != 1 && group_ct_H{$group} != 1 && out_pid_denom_HH{$group}{$seq} > 0
     if($in_pid_denom_HH{$group}{$seq} == 0) { 
       die "ERROR in_pid_denom_HH{$group}{$seq} is 0\n";
     }
-    if(($out_pid_denom_HH{$group}{$seq} == 0) && ($in_pid_denom_HH{$group}{$seq} != ($nseq-1))) { 
-      die "ERROR out_pid_denom_HH{$group}{$seq} is 0 and in_pid_denom_HH{$group}{$seq} is not " . ($nseq-1) . " but $in_pid_denom_HH{$group}{$seq}\n";
+    if(($out_pid_denom_HH{$group}{$seq} == 0) && ($in_pid_denom_HH{$group}{$seq} != ($nseq_wgroup-1))) { 
+      die "ERROR out_pid_denom_HH{$group}{$seq} is 0 and in_pid_denom_HH{$group}{$seq} is not " . ($nseq_wgroup-1) . " but $in_pid_denom_HH{$group}{$seq}\n";
     }
 
     $in_pid_avg_HH{$group}{$seq} /= $in_pid_denom_HH{$group}{$seq};
