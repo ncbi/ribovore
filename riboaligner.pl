@@ -103,7 +103,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.20";
+my $version           = "0.21";
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
 my $ribotyper_model_version_str   = "0p20"; 
@@ -526,9 +526,6 @@ else {
     foreach my $str (@fail_str_A) { 
       ofile_OutputString($log_FH, 1, "#  " . $str);
     }
-  }
-  else { 
-    ofile_OutputString($log_FH, 1, "#\n# All sequences failed ribotyper.\n");
   }
   if(scalar(@nomatch_str_A) > 0) {
     ofile_OutputString($log_FH, 1, sprintf("#\n# WARNING: %d sequence(s) were not aligned because they were not classified by ribotyper into one of:", scalar(@nomatch_str_A))); 

@@ -110,8 +110,8 @@ opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfr
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
 opt_Add("--pos",         "integer",  60,                    $g,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must begin at or 5' of position <n>",  "aligned sequences must begin at or 5' of position <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must end at or 3' of position <n>",    "aligned sequences must end at or 3' of position <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
@@ -196,7 +196,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.20";
+my $version           = "0.21";
 my $riboaligner_model_version_str = "0p15"; 
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
@@ -894,7 +894,7 @@ else {
 
     # determine how many sequences at for each taxonomic group at each level $level are still left
     foreach $level (@level_A) { 
-      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying " . $level . "s lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
+      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying " . pluralize_level($level) . " lost in ingroup analysis", $progress_w, $log_FH, *STDOUT);
       parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%seqfailstr_H, undef, $surv_ingrup_level_ct_HH{$level}, $ofile_info_HH{"FH"});
       
       # if there are any taxonomic groups at level $level that exist in the set of sequences that survived all filters but
@@ -912,11 +912,8 @@ else {
         }
       }
       close LOST;
-      my $level2print = $level . "s";
-      if($level2print eq "phylums") { $level2print = "phyla"; }
-      if($level2print eq "classs")  { $level2print = "classes"; }
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", $ingrup_lost_list_H{$level}, 1, sprintf("list of %d $level2print lost in the ingroup analysis", $nlost, $level));
-      ofile_OutputProgressComplete($start_secs, sprintf("%d %ss lost", $nlost, $level), $log_FH, *STDOUT);
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ingrup.lost.$level", $ingrup_lost_list_H{$level}, 1, sprintf("list of %d %s lost in the ingroup analysis", $nlost, pluralize_level($level)));
+      ofile_OutputProgressComplete($start_secs, sprintf("%d %s lost", $nlost, pluralize_level($level)), $log_FH, *STDOUT);
     }
 
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2471,4 +2468,34 @@ sub fblast_stage {
   # create pass and fail lists
   return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 0, $out_root, "fblast", $ofile_info_HHR); # 0: do not output description of pass/fail lists to log file
 
+}
+
+#################################################################
+# Subroutine:  pluralize_level
+# Incept:      EPN, Mon Jul 23 20:36:08 2018
+#
+# Purpose:     Return the plural of 'class', 'order' or 'phylum'
+#
+# Arguments:
+#   $level:   the level
+#
+# Returns:    string that is plural of $level
+#
+# Dies: Never
+# 
+#################################################################
+sub pluralize_level { 
+  my $sub_name = "pluralize_level";
+  my $nargs_expected = 1;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($level) = (@_);
+
+  if($level eq "class") {
+    return "classes";
+  }
+  if($level eq "phylum") {
+    return "phyla";
+  }
+  return $level . "s";
 }
