@@ -1,6 +1,6 @@
-EPN, Thu Jul 19 13:42:22 2018
+EPN, Mon Jul 23 14:45:40 2018
 
-Ribotyper v0.20 README
+Ribotyper v0.21 README
 
 Organization of this file:
 
@@ -226,9 +226,9 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Thu Jul 19 13:45:25 2018
+# date:              Mon Jul 23 14:46:05 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
 # $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
@@ -787,7 +787,7 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
 # ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Mon Jul 23 20:15:21 2018
+# date:              Mon Jul 23 14:47:14 2018
 # $RIBODIR:          /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1
 # $RIBOEASELDIR:     /Users/nawrockie/src/infernal-1.1.2/easel/miniapps
 # $RIBOINFERNALDIR:  /Users/nawrockie/src/infernal-1.1.2/src
@@ -892,9 +892,9 @@ the -h option, just as with ribotyper.pl:
 
 > riboaligner.pl -h
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Thu Jul 19 13:51:08 2018
+# date:    Mon Jul 23 14:47:44 2018
 #
 Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
 
@@ -984,9 +984,9 @@ Usage 1: create a representative database of high quality sequences
 
 -------------
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Thu Jul 19 13:51:56 2018
+# date:           Mon Jul 23 14:48:07 2018
 # $RIBOBLASTDIR:  /usr/bin
 # $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
@@ -1015,8 +1015,8 @@ Usage 1: create a representative database of high quality sequences
 # [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     16 pass;     84 fail; ONLY PASSES ADVANCE]
 # [Stage: ingrup] Determining percent identities in alignments                     ... done. [0.0 seconds]
 # [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.2 seconds]
-# [Stage: ingrup] Identifying phylums lost in ingroup analysis                     ... done. [0.0 seconds, 5 phylums lost]
-# [Stage: ingrup] Identifying classs lost in ingroup analysis                      ... done. [0.0 seconds, 7 classs lost]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 5 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 7 classes lost]
 # [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 20 orders lost]
 # [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     15 pass;      1 fail; ONLY PASSES ADVANCE]
 # [Stage: clustr] Clustering surviving sequences                                   ... done. [0.0 seconds]
@@ -1115,9 +1115,9 @@ file. The beginning of the file explains the information in each column:
 Usage 2: create a subset of high quality sequences
 > ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.21 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Thu Jul 19 13:56:40 2018
+# date:           Mon Jul 23 14:50:39 2018
 # $RIBOBLASTDIR:  /usr/bin
 # $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
@@ -1134,19 +1134,21 @@ Usage 2: create a subset of high quality sequences
 # [Stage: prelim] Copying input fasta file                                         ... done. [0.0 seconds]
 # [Stage: prelim] Reformatting names of sequences                                  ... done. [0.0 seconds]
 # [Stage: prelim] Determining target sequence lengths                              ... done. [0.1 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [28.8 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                 ... done. [25.2 seconds]
 # [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     84 pass;     16 fail;]
-# [Stage: ftaxid] Filtering for specified species                                  ... done. [3.5 seconds,     60 pass;     40 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [2.8 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [1.8 seconds,    100 pass;      0 fail;]
-# [Stage: fribo1] Running ribotyper.pl                                             ... done. [21.9 seconds,     94 pass;      6 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [414.2 seconds,     92 pass;      8 fail;]
+# [Stage: ftaxid] Filtering for specified species                                  ... done. [4.2 seconds,     60 pass;     40 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [3.2 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [2.1 seconds,    100 pass;      0 fail;]
+# [Stage: fribo1] Running ribotyper.pl                                             ... done. [21.8 seconds,     94 pass;      6 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                           ... done. [332.1 seconds,     92 pass;      8 fail;]
 # [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [0.0 seconds,     92 pass;      0 fail;]
 # [Stage: fmspan] Filtering out seqs based on model span                           ... done. [0.0 seconds,     44 pass;     48 fail;]
 # [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     17 pass;     83 fail; ONLY PASSES ADVANCE]
 # [Stage: ingrup] Determining percent identities in alignments                     ... done. [0.0 seconds]
-# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.1 seconds]
-# [Stage: ingrup] Identifying taxonomic groups lost in ingroup analysis            ... done. [0.0 seconds, 20 orders lost]
+# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.3 seconds]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 5 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 7 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 20 orders lost]
 # [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     16 pass;      1 fail; ONLY PASSES ADVANCE]
 #
 # Number of input sequences:                                 100  [listed in u2-r100/u2-r100.ribodbmaker.full.seqlist]
@@ -1154,18 +1156,22 @@ Usage 2: create a subset of high quality sequences
 # Number surviving ingroup analysis:                          16  [listed in u2-r100/u2-r100.ribodbmaker.surv_ingrup.pass.seqlist]
 # Number in final set of surviving sequences:                 16  [listed in u2-r100/u2-r100.ribodbmaker.final.pass.seqlist]
 #
-# Output printed to screen saved in:                                         u2-r100.ribodbmaker.log
-# List of executed commands saved in:                                        u2-r100.ribodbmaker.cmd
-# List and description of all output files saved in:                         u2-r100.ribodbmaker.list
-# list of 20 orders lost in the ingroup analysis saved in:                   u2-r100.ribodbmaker.ingrup.lost.order.list
-# fasta file with final set of surviving sequences saved in:                 u2-r100.ribodbmaker.final.fa
-# tab-delimited file listing number of sequences per order taxid saved in:   u2-r100.ribodbmaker.order.ct
-# tab-delimited tabular output summary file saved in:                        u2-r100.ribodbmaker.tab.tbl
-# whitespace-delimited, more readable output summary file saved in:          u2-r100.ribodbmaker.rdb.tbl
+# Output printed to screen saved in:                                          u2-r100.ribodbmaker.log
+# List of executed commands saved in:                                         u2-r100.ribodbmaker.cmd
+# List and description of all output files saved in:                          u2-r100.ribodbmaker.list
+# list of 5 phyla lost in the ingroup analysis saved in:                      u2-r100.ribodbmaker.ingrup.phylum.lost.list
+# list of 7 classes lost in the ingroup analysis saved in:                    u2-r100.ribodbmaker.ingrup.class.lost.list
+# list of 20 orders lost in the ingroup analysis saved in:                    u2-r100.ribodbmaker.ingrup.order.lost.list
+# fasta file with final set of surviving sequences saved in:                  u2-r100.ribodbmaker.final.fa
+# tab-delimited file listing number of sequences per phylum taxid saved in:   u2-r100.ribodbmaker.phylum.ct
+# tab-delimited file listing number of sequences per class taxid saved in:    u2-r100.ribodbmaker.class.ct
+# tab-delimited file listing number of sequences per order taxid saved in:    u2-r100.ribodbmaker.order.ct
+# tab-delimited tabular output summary file saved in:                         u2-r100.ribodbmaker.tab.tbl
+# whitespace-delimited, more readable output summary file saved in:           u2-r100.ribodbmaker.rdb.tbl
 #
 # All output files created in directory ./u2-r100/
 #
-# CPU time:  00:07:33.46
+# CPU time:  00:06:29.28
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
