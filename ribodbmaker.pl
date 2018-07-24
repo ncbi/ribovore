@@ -110,8 +110,8 @@ opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfr
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
 #       option           type        default             group  requires  incompat              preamble-output                                          help-output    
 opt_Add("--pos",         "integer",  60,                    $g,    undef, "--skipfmspan",       "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must extend from position <n>",       "aligned sequences must extend from position <n> for model of length L", \%opt_HH, \@opt_order_A);
-opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must extend to position L - <n> + 1", "aligned sequences must extend to <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
+opt_Add("--lpos",        "integer",  undef,                 $g,  "--rpos","--skipfmspan,--pos", "aligned sequences must begin at or 5' of position <n>",  "aligned sequences must begin at or 5' of position <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--rpos",        "integer",  undef,                 $g,  "--lpos","--skipfmspan,--pos", "aligned sequences must end at or 3' of position <n>",    "aligned sequences must end at or 3' of position <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
