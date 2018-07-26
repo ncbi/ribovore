@@ -60,16 +60,18 @@ opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,       
 opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                       "skip stage that filters based on VecScreen",                       \%opt_HH, \@opt_order_A);
 opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",              "skip stage that filters based on BLAST hits to self",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipfribo1", "boolean", 0,                       $g,    undef,                   undef,  "skip 1st stage that filters based on ribotyper",                   "skip 1st stage that filters based on ribotyper",                   \%opt_HH, \@opt_order_A);
-opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup",undef,  "skip 2nd stage that filters based on ribotyper/riboaligner", "skip 2nd stage that filters based on ribotyper/riboaligner", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup,--skipclustr", undef,  "skip 2nd stage that filters based on ribotyper/riboaligner", "skip 2nd stage that filters based on ribotyper/riboaligner", \%opt_HH, \@opt_order_A);
 opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",              "skip stage that filters based on model span of hits",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipingrup", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",                "skip stage that performs ingroup analysis",                        \%opt_HH, \@opt_order_A);
 opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                     "skip stage that clusters sequences surviving all filters",         \%opt_HH, \@opt_order_A);
 opt_Add("--skiplistms", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that lists missing taxids",                             "skip stage that lists missing taxids",                             \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ambiguous nucleotides";
-#              option   type       default               group  requires incompat                    preamble-output                                            help-output    
-opt_Add("--famaxn",  "integer", 0,                       $g,    undef,"--skipfambig,--famaxf", "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
-opt_Add("--famaxf",  "real",    0,                       $g,    undef,"--skipfambig,--famaxn", "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
+#              option   type       default               group  requires incompat      preamble-output                                            help-output    
+opt_Add("--famaxn",  "integer", 5,                       $g,    undef,"--skipfambig",  "set maximum number of allowed ambiguous nts to <n>",      "set maximum number of allowed ambiguous nts to <n>",           \%opt_HH, \@opt_order_A);
+opt_Add("--famaxf",  "real",    0.005,                   $g,    undef,"--skipfambig",  "set maximum fraction of of allowed ambiguous nts to <x>", "set maximum fraction of allowed ambiguous nts to <x>",         \%opt_HH, \@opt_order_A);
+opt_Add("--faonlyn", "boolean",    0,                    $g,    undef,"--skipfambig,--famaxf,--faonlyf", "enforce only max number of ambiguous nts",        "enforce only max number of ambiguous nts",        \%opt_HH, \@opt_order_A);
+opt_Add("--faonlyf", "boolean",    0,                    $g,    undef,"--skipfambig,--famaxn,--faonlyn", "enforce only max fraction of ambiguous nts",      "enforce only max fraction of ambiguous nts",        \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters by taxid";
 #              option   type       default               group  requires incompat         preamble-output                                                       help-output    
@@ -158,6 +160,8 @@ my $options_okay =
                 'skiplistms'   => \$GetOptions_H{"--skiplistms"},
                 'famaxn=s'     => \$GetOptions_H{"--famaxn"},
                 'famaxf=s'     => \$GetOptions_H{"--famaxf"},
+                'faonlyn'      => \$GetOptions_H{"--faonlyn"},
+                'faonlyf'      => \$GetOptions_H{"--faonlyf"},
                 'ftstrict'     => \$GetOptions_H{"--ftstrict"},
                 'fbcsize=s'    => \$GetOptions_H{"--fbcsize"},
                 'fbcall'       => \$GetOptions_H{"--fbcall"},
@@ -261,14 +265,14 @@ my $do_special= opt_IsUsed("--special", \%opt_HH) ? 1 : 0;
 # do checks that are too sophisticated for epn-options.pm
 # if we are skipping both ribotyper stages, make sure none of the ribotyper options related to both were used
 if((! $do_fribo1) && (! $do_fribo2)) { 
-  if(opt_IsUsed("--model",      \%opt_HH)) { die "ERROR, --model does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("--noscfail",   \%opt_HH)) { die "ERROR, --noscfail does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("--lowppossc",  \%opt_HH)) { die "ERROR, --lowppossc does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("-p",           \%opt_HH)) { die "ERROR, -p does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("-q",           \%opt_HH)) { die "ERROR, -q does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("--nkb",        \%opt_HH)) { die "ERROR, --nkb does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("--wait",       \%opt_HH)) { die "ERROR, --wait does not make sense in combination with --skipribo1 and --skipribo2"; }
-  if(opt_IsUsed("--errcheck",   \%opt_HH)) { die "ERROR, --errcheck does not make sense in combination with --skipribo1 and --skipribo2"; }
+  if(opt_IsUsed("--model",      \%opt_HH)) { die "ERROR, --model does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("--noscfail",   \%opt_HH)) { die "ERROR, --noscfail does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("--lowppossc",  \%opt_HH)) { die "ERROR, --lowppossc does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("-p",           \%opt_HH)) { die "ERROR, -p does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("-q",           \%opt_HH)) { die "ERROR, -q does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("--nkb",        \%opt_HH)) { die "ERROR, --nkb does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("--wait",       \%opt_HH)) { die "ERROR, --wait does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("--errcheck",   \%opt_HH)) { die "ERROR, --errcheck does not make sense in combination with --skipfribo1 and --skipfribo2"; }
 }
 
 if(opt_IsUsed("--cfid", \%opt_HH) && 
@@ -344,7 +348,7 @@ if($do_fblast) {
 if($do_fribo1) { 
   # make sure model exists
   if(! opt_IsUsed("--model", \%opt_HH)) { 
-    die "ERROR, --model is a required option, unless --skipfribo1 and --skipribo2 are both used";
+    die "ERROR, --model is a required option, unless --skipfribo1 and --skipfribo2 are both used";
   }
   # make sure the riboopts1 file exists if --riboopts1 used
   if(opt_IsUsed("--riboopts1", \%opt_HH)) {
@@ -356,7 +360,7 @@ if($do_fribo1) {
 if($do_fribo1 || $do_fribo2) { 
   # make sure model exists
   if(! opt_IsUsed("--model", \%opt_HH)) { 
-    die "ERROR, --model is a required option, unless --skipfribo1 and --skipribo2 are both used";
+    die "ERROR, --model is a required option, unless --skipfribo1 and --skipfribo2 are both used";
   }
 
   # make sure the riboopts2 file exists if --riboopts2 used
@@ -667,18 +671,27 @@ my $stage_key = undef;
 ########################################################
 # 'fambig' stage: filter based on ambiguous nucleotides
 ########################################################
-my $maxnambig = opt_Get("--famaxn", \%opt_HH);
-my $do_fract_ambig = opt_IsUsed("--famaxf", \%opt_HH);
-my $maxfambig = opt_Get("--famaxf", \%opt_HH);
 if($do_fambig) { 
   $stage_key = "fambig";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering based on ambiguous nucleotides ", $progress_w, $log_FH, *STDOUT);
+  my $do_num_ambig   = opt_Get("--faonlyf", \%opt_HH) ? 0 : 1;
+  my $do_fract_ambig = opt_Get("--faonlyn", \%opt_HH) ? 0 : 1;
+  my $maxnambig      = opt_Get("--famaxn", \%opt_HH);
+  my $maxfambig      = opt_Get("--famaxf", \%opt_HH);
+  my $cur_maxnambig  = 0; # maximum number of ambiguous nucleotides for current sequence
   foreach $seqname (keys %seqnambig_H) { 
+    # determine maximum number of ambiguous nucleotides for this sequence
+    $cur_maxnambig = undef;
     if($do_fract_ambig) { 
-      $maxnambig = $maxfambig * $seqlen_H{$seqname}; 
+      $cur_maxnambig = $maxfambig * $seqlen_H{$seqname}; 
     }
-    if($seqnambig_H{$seqname} > $maxnambig) { 
-      $curfailstr_H{$seqname} = "ambig[" . $seqnambig_H{$seqname} . "];;"; 
+    if($do_num_ambig) {
+      if((! defined $cur_maxnambig) || ($maxnambig < $cur_maxnambig)) {
+        $cur_maxnambig = $maxnambig;
+      }
+    }
+    if($seqnambig_H{$seqname} > $cur_maxnambig) { 
+      $curfailstr_H{$seqname} = "ambig[" . $seqnambig_H{$seqname} . ">" . $cur_maxnambig . "];;"; 
     }
     else { 
       $curfailstr_H{$seqname} = "";
@@ -848,7 +861,6 @@ foreach $level (@level_A) {
   $alipid_analyze_out_file_H{$level} = $out_root . "." . $stage_key . "." . $level . ".alipid_analyze.out";
   $alipid_analyze_tab_file_H{$level} = $out_root . "." . $stage_key . "." . $level . ".alipid.sum.tab.txt";
 }
-
 # if no sequences remain, we're done, skip remaining stages
 if($npass_filters == 0) { 
   ofile_OutputString($log_FH, 1, "# Zero sequences survived all filters. Skipping remaining stages.\n");
@@ -1167,7 +1179,7 @@ foreach $seqname (@seqorder_A) {
   $ctaxid2print = ($have_taxids) ? $seqgtaxid_HH{"class"}{$seqname} : "-";
   $ptaxid2print = ($have_taxids) ? $seqgtaxid_HH{"phylum"}{$seqname} : "-";
 
-  printf RDB ("%-*s  %-*s  %-*d  %7s  %7s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $otaxid2print, $ctaxid2print, $ptaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
+  printf RDB ("%-*s  %-*s  %*d  %7s  %7s  %7s  %7s  %4s  %5s  %7s  %s\n", $width_H{"index"}, $seqidx_H{$seqname}, $width_H{"target"}, $seqname, $width_H{"length"}, $seqlen_H{$seqname}, $taxid2print, $otaxid2print, $ctaxid2print, $ptaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
   printf TAB ("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $seqidx_H{$seqname}, $seqname, $seqlen_H{$seqname}, $taxid2print, $otaxid2print, $ctaxid2print, $ptaxid2print, $pass_fail, $cluststr, $specialstr, $seqfailstr);
 }
 close(RDB);

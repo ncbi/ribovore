@@ -2089,11 +2089,13 @@ sub output_one_target {
             if(defined $seqgap_HHAR) {
               if(! exists $seqgap_HHAR->{$wmodel}) {
                 %{$seqgap_HHAR->{$wmodel}} = ();
-                if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
-                  @{$seqgap_HHAR->{$wmodel}{$target}} = ();
-                }
-                push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
+                printf("HEYA initializing seqgap_HHAR->{$wmodel}\n");
               }
+              if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
+                @{$seqgap_HHAR->{$wmodel}{$target}} = ();
+                printf("\tHEYA initializing seqgap_HHAR->{$wmodel}{$target}\n");
+              }
+              push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
             }
           }
         }
