@@ -804,6 +804,7 @@ if($do_fribo1) {
 my @rapass_seqorder_A = (); # order of sequences that pass rapass stage
 my $ra_outdir = $out_root . "-ra";
 my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($family_modellen, \%opt_HH);
+my $ra_full_stk_file = undef;
 if($do_fribo2) { 
   $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
@@ -819,9 +820,9 @@ if($do_fribo2) {
   if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }
   my $ra_outdir_tail   = $dir_tail . ".ribodbmaker-ra";
   my $ra_out_file      = $out_root . ".riboaligner.out";
+  $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
   my $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
-  my $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
-  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
+  $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
   my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
   my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
   my $uapos_lpos_cmd  = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir $ra_full_stk_file $max_lpos > $ra_uapos_lpos_tbl_file";
@@ -901,7 +902,7 @@ else {
 
     # merge alignments created by riboaligner with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $rfonly_stk_file";
+    my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $rfonly_stk_file";
     my $alistat_cmd = $execs_H{"esl-alistat"} . " --list $rfonly_list_file $rfonly_stk_file > /dev/null";
     my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
     foreach $level (@level_A) { 
@@ -1121,8 +1122,8 @@ push(@column_explanation_A, "# Column  4: 'staxid':  taxid of sequence (species 
 push(@column_explanation_A, "# Column  5: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped\n");
 push(@column_explanation_A, "# Column  6: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped\n");
 push(@column_explanation_A, "# Column  7: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped\n");
-push(@column_explanation_A, sprintf("# Column  8: 'p/f':     PASS if sequence passed all filters%s else FAIL\n", ($do_ingrup) ? " and ingroup analysis" : ""));
-push(@column_explanation_A, sprintf("# Column  9: 'clust':   %s\n", ($do_clustr) ? "'C' if sequence selected as centroid of a cluster, 'NC' if not" : "'-' for all sequences due to --skipclustr"));
+push(@column_explanation_A, sprintf("# Column  8: 'p/f':     PASS if sequence passed all filters%s else FAIL\n", ($did_ingrup) ? " and ingroup analysis" : ""));
+push(@column_explanation_A, sprintf("# Column  9: 'clust':   %s\n", ($did_clustr) ? "'C' if sequence selected as centroid of a cluster, 'NC' if not" : "'-' for all sequences due to --skipclustr or because 0 seqs survived clustering"));
 push(@column_explanation_A, sprintf("# Column 10: 'special': %s\n", ($do_special) ? "*yes* if sequence belongs to special species taxid listed in --special input file, else '*no*'" : "'-' for all sequences because --special not used"));
 push(@column_explanation_A, sprintf("# Column 11: 'failstr': %s\n", "'-' for PASSing sequences, else list of reasons for FAILure, see below"));
 push(@column_explanation_A, "#\n");
