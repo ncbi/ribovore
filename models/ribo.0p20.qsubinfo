@@ -1,4 +1,5 @@
-# ribo.0p15.qsub.txt this file must have exactly 2 non-'#' prefixed
+# ribo.0p20.qsubinfo
+# This file must have exactly 2 non-'#' prefixed
 # lines. 
 #
 # Line 1: a string that is the qsub command and flags for submitting
