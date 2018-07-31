@@ -3,15 +3,15 @@
 # Column  2: 'seqname': name of sequence
 # Column  3: 'seqlen':  length of sequence
 # Column  4: 'staxid':  taxid of sequence (species level), '-' if all taxid related steps were skipped
-# Column  6: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped
-# Column  7: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped
-# Column  8: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped
-# Column  9: 'p/f':     PASS if sequence passed all filters and ingroup analysis else FAIL
-# Column 10: 'clust':   'C' if sequence selected as centroid of a cluster, 'NC' if not
-# Column 11: 'special': '-' for all sequences because --special not used
-# Column 12: 'failstr': '-' for PASSing sequences, else list of reasons for FAILure, see below
+# Column  5: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped
+# Column  6: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped
+# Column  7: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped
+# Column  8: 'p/f':     PASS if sequence passed all filters and ingroup analysis else FAIL
+# Column  9: 'clust':   'C' if sequence selected as centroid of a cluster, 'NC' if not
+# Column 10: 'special': '-' for all sequences because --special not used
+# Column 11: 'failstr': '-' for PASSing sequences, else list of reasons for FAILure, see below
 #
-# Possible substrings in 'failstr' column 9, each substring separated by ';;':
+# Possible substrings in 'failstr' column 11, each substring separated by ';;':
 # 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed
 # 'not-in-tax-tree':       sequence taxid is not present in the input NCBI taxonomy tree
 # 'not-specified-species': sequence does not belong to a specified sequence according to NCBI taxonomy
