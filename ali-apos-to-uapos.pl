@@ -28,7 +28,7 @@ my $easeldir   = "";
 if(scalar(@ARGV) != 2) { die $usage; }
 
 if(($easeldir ne "") && 
-   ($easeldir !~ m/\//)) { 
+   ($easeldir !~ m/\/$/)) { 
   $easeldir .= "/";
 }
 
