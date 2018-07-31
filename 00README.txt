@@ -1,6 +1,6 @@
-EPN, Mon Jul 23 14:45:40 2018
+EPN, Tue Jul 31 13:44:09 2018
 
-Ribotyper v0.21 README
+Ribotyper v0.22 README
 
 Organization of this file:
 
@@ -226,7 +226,7 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.21 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Mon Jul 23 14:46:05 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
@@ -678,9 +678,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.21 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Jul 23 20:11:25 2018
+# date:    Tue Jul 31 13:48:12 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -785,7 +785,7 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 > riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.21 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Mon Jul 23 14:47:14 2018
 # $RIBODIR:          /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1
@@ -892,9 +892,9 @@ the -h option, just as with ribotyper.pl:
 
 > riboaligner.pl -h
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.21 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Mon Jul 23 14:47:44 2018
+# date:    Tue Jul 31 13:48:58 2018
 #
 Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
 
@@ -984,9 +984,9 @@ Usage 1: create a representative database of high quality sequences
 
 -------------
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.21 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Mon Jul 23 14:48:07 2018
+# date:           Tue Jul 31 13:49:29 2018
 # $RIBOBLASTDIR:  /usr/bin
 # $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
@@ -1004,27 +1004,27 @@ Usage 1: create a representative database of high quality sequences
 # [Stage: prelim] Copying input fasta file                                         ... done. [0.1 seconds]
 # [Stage: prelim] Reformatting names of sequences                                  ... done. [0.0 seconds]
 # [Stage: prelim] Determining target sequence lengths                              ... done. [0.1 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [25.2 seconds]
-# [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     84 pass;     16 fail;]
+# [Stage: prelim] Running srcchk for all sequences                                 ... done. [26.7 seconds]
+# [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     95 pass;      5 fail;]
 # [Stage: ftaxid] Filtering for specified species                                  ... done. [3.4 seconds,     60 pass;     40 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [2.1 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [1.6 seconds,    100 pass;      0 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [66.8 seconds,     70 pass;     30 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [3.7 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [1.8 seconds,    100 pass;      0 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                           ... done. [64.7 seconds,     70 pass;     30 fail;]
 # [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [0.0 seconds,     70 pass;      0 fail;]
 # [Stage: fmspan] Filtering out seqs based on model span                           ... done. [0.0 seconds,     32 pass;     38 fail;]
-# [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     16 pass;     84 fail; ONLY PASSES ADVANCE]
+# [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     18 pass;     82 fail; ONLY PASSES ADVANCE]
 # [Stage: ingrup] Determining percent identities in alignments                     ... done. [0.0 seconds]
 # [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.2 seconds]
 # [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 5 phyla lost]
 # [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 7 classes lost]
 # [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 20 orders lost]
-# [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     15 pass;      1 fail; ONLY PASSES ADVANCE]
+# [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     18 pass;      0 fail; ONLY PASSES ADVANCE]
 # [Stage: clustr] Clustering surviving sequences                                   ... done. [0.0 seconds]
-# [***Checkpoint] Creating lists of seqs that survived clustering                  ... done. [0.0 seconds,      5 pass;     10 fail;]
+# [***Checkpoint] Creating lists of seqs that survived clustering                  ... done. [0.0 seconds,      5 pass;     13 fail;]
 #
 # Number of input sequences:                                 100  [listed in u1-r100/u1-r100.ribodbmaker.full.seqlist]
-# Number surviving all filter stages:                         16  [listed in u1-r100/u1-r100.ribodbmaker.surv_filters.pass.seqlist]
-# Number surviving ingroup analysis:                          15  [listed in u1-r100/u1-r100.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number surviving all filter stages:                         18  [listed in u1-r100/u1-r100.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                          18  [listed in u1-r100/u1-r100.ribodbmaker.surv_ingrup.pass.seqlist]
 # Number surviving clustering (number of clusters):            5  [listed in u1-r100/u1-r100.ribodbmaker.surv_clustr.pass.seqlist]
 # Number in final set of surviving sequences:                  5  [listed in u1-r100/u1-r100.ribodbmaker.final.pass.seqlist]
 #
@@ -1043,7 +1043,7 @@ Usage 1: create a representative database of high quality sequences
 #
 # All output files created in directory ./u1-r100/
 #
-# CPU time:  00:01:39.82
+# CPU time:  00:01:41.00
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -1069,18 +1069,18 @@ file. The beginning of the file explains the information in each column:
 # Column  2: 'seqname': name of sequence
 # Column  3: 'seqlen':  length of sequence
 # Column  4: 'staxid':  taxid of sequence (species level), '-' if all taxid related steps were skipped
-# Column  6: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped
-# Column  7: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped
-# Column  8: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped
-# Column  9: 'p/f':     PASS if sequence passed all filters and ingroup analysis else FAIL
-# Column 10: 'clust':   'C' if sequence selected as centroid of a cluster, 'NC' if not
-# Column 11: 'special': '-' for all sequences because --special not used
-# Column 12: 'failstr': '-' for PASSing sequences, else list of reasons for FAILure, see below
+# Column  5: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped
+# Column  6: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped
+# Column  7: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped
+# Column  8: 'p/f':     PASS if sequence passed all filters and ingroup analysis else FAIL
+# Column  9: 'clust':   'C' if sequence selected as centroid of a cluster, 'NC' if not
+# Column 10: 'special': '-' for all sequences because --special not used
+# Column 11: 'failstr': '-' for PASSing sequences, else list of reasons for FAILure, see below
 #
-# Possible substrings in 'failstr' column 9, each substring separated by ';;':
+# Possible substrings in 'failstr' column 11, each substring separated by ';;':
 # 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed
 # 'not-in-tax-tree':       sequence taxid is not present in the input NCBI taxonomy tree
-# 'not-specified-species': sequence does not belong to a specified sequence according to NCBI taxonomy
+# 'not-specified-species': sequence does not belong to a specified species according to NCBI taxonomy
 # 'vecscreen-match[<s>]':  vecscreen reported match to vector of strength <s>
 # 'blastrepeat[<s>]':      repetitive sequence identified by blastn
 #                          <s> = <s1>,<s2>,...<sI>...<sN> for N >= 1, where
@@ -1100,24 +1100,24 @@ file. The beginning of the file explains the information in each column:
 #                          if <s> includes 'type=<s1>', sequence was classified as type <s1>
 #                          see u1-r100/u1-r100.ribodbmaker.ingrup.order.alipid_analyze.out for explanation of types
 #idx  seqname     seqlen   staxid   otaxid   ctaxid   ptaxid   p/f  clust  special  failstr
-1     KC674542.1  1809     175245        1        1        1  FAIL      -        -  not-specified-species;;vecscreen-match[None];;ribotyper2[*LowCoverage:(0.972<0.990);];;
-2     EU278606.1  1737     209559     5042   147545     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.990<0.990);];;
-3     AB034910.1  1763      36909     4892     4891     4890  FAIL      -        -  ambig[1];;
-4     KC670242.1  1741     175245        1        1        1  FAIL      -        -  ambig[2];;not-specified-species;;
-5     MG520986.1  1063    1821266    92860   147541     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.678<0.990);*MultipleHits:(2:SI[M:-1(568..568),S:338(510..847)]);];;
-6     DQ677995.1  1644      45130    92860   147541     4890  FAIL      -        -  mdlspan[86-1781];;
-7     KX352732.1  1280     586133        1        1     6029  FAIL      -        -  ribotyper2[*UnacceptableModel:(SSU_rRNA_microsporidia);*LowCoverage:(0.981<0.990);];;
-8     AB220232.1  1723     112178    37989   147550     4890  PASS     NC        -  -
-9     KC674843.1  1736     175245        1        1        1  FAIL      -        -  ambig[3];;not-specified-species;;
-10    JX644478.1  1042     443158     4827  2212703  1913637  FAIL      -        -  mdlspan[68-1117];;
+1     KC674542.1    1809   175245        1        1        1  FAIL      -        -  not-specified-species;;vecscreen-match[None];;ribotyper2[*LowCoverage:(0.972<0.990);];;
+2     EU278606.1    1737   209559     5042   147545     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.990<0.990);];;
+3     AB034910.1    1763    36909     4892     4891     4890  PASS     NC        -  -
+4     KC670242.1    1741   175245        1        1        1  FAIL      -        -  not-specified-species;;
+5     MG520986.1    1063  1821266    92860   147541     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.678<0.990);*MultipleHits:(2:SI[M:-1(568..568),S:338(510..847)]);];;
+6     DQ677995.1    1644    45130    92860   147541     4890  FAIL      -        -  mdlspan[86-1781];;
+7     KX352732.1    1280   586133        1        1     6029  FAIL      -        -  ribotyper2[*UnacceptableModel:(SSU_rRNA_microsporidia);*LowCoverage:(0.981<0.990);];;
+8     AB220232.1    1723   112178    37989   147550     4890  PASS     NC        -  -
+9     KC674843.1    1736   175245        1        1        1  FAIL      -        -  not-specified-species;;
+10    JX644478.1    1042   443158     4827  2212703  1913637  FAIL      -        -  mdlspan[68-1117];;
 
 -------------------------------
 Usage 2: create a subset of high quality sequences
 > ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.21 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Mon Jul 23 14:50:39 2018
+# date:           Tue Jul 31 13:52:49 2018
 # $RIBOBLASTDIR:  /usr/bin
 # $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
@@ -1133,28 +1133,28 @@ Usage 2: create a subset of high quality sequences
 # [Stage: prelim] Validating input files                                           ... done. [0.0 seconds]
 # [Stage: prelim] Copying input fasta file                                         ... done. [0.0 seconds]
 # [Stage: prelim] Reformatting names of sequences                                  ... done. [0.0 seconds]
-# [Stage: prelim] Determining target sequence lengths                              ... done. [0.1 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [25.2 seconds]
-# [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     84 pass;     16 fail;]
-# [Stage: ftaxid] Filtering for specified species                                  ... done. [4.2 seconds,     60 pass;     40 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [3.2 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [2.1 seconds,    100 pass;      0 fail;]
-# [Stage: fribo1] Running ribotyper.pl                                             ... done. [21.8 seconds,     94 pass;      6 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [332.1 seconds,     92 pass;      8 fail;]
+# [Stage: prelim] Determining target sequence lengths                              ... done. [0.0 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                 ... done. [24.4 seconds]
+# [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     95 pass;      5 fail;]
+# [Stage: ftaxid] Filtering for specified species                                  ... done. [3.5 seconds,     60 pass;     40 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [3.5 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [2.8 seconds,    100 pass;      0 fail;]
+# [Stage: fribo1] Running ribotyper.pl                                             ... done. [20.4 seconds,     94 pass;      6 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                           ... done. [325.0 seconds,     92 pass;      8 fail;]
 # [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [0.0 seconds,     92 pass;      0 fail;]
 # [Stage: fmspan] Filtering out seqs based on model span                           ... done. [0.0 seconds,     44 pass;     48 fail;]
-# [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     17 pass;     83 fail; ONLY PASSES ADVANCE]
+# [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     19 pass;     81 fail; ONLY PASSES ADVANCE]
 # [Stage: ingrup] Determining percent identities in alignments                     ... done. [0.0 seconds]
-# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.3 seconds]
+# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.2 seconds]
 # [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 5 phyla lost]
 # [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 7 classes lost]
 # [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 20 orders lost]
-# [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     16 pass;      1 fail; ONLY PASSES ADVANCE]
+# [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     19 pass;      0 fail; ONLY PASSES ADVANCE]
 #
 # Number of input sequences:                                 100  [listed in u2-r100/u2-r100.ribodbmaker.full.seqlist]
-# Number surviving all filter stages:                         17  [listed in u2-r100/u2-r100.ribodbmaker.surv_filters.pass.seqlist]
-# Number surviving ingroup analysis:                          16  [listed in u2-r100/u2-r100.ribodbmaker.surv_ingrup.pass.seqlist]
-# Number in final set of surviving sequences:                 16  [listed in u2-r100/u2-r100.ribodbmaker.final.pass.seqlist]
+# Number surviving all filter stages:                         19  [listed in u2-r100/u2-r100.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                          19  [listed in u2-r100/u2-r100.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number in final set of surviving sequences:                 19  [listed in u2-r100/u2-r100.ribodbmaker.final.pass.seqlist]
 #
 # Output printed to screen saved in:                                          u2-r100.ribodbmaker.log
 # List of executed commands saved in:                                         u2-r100.ribodbmaker.cmd
@@ -1171,7 +1171,7 @@ Usage 2: create a subset of high quality sequences
 #
 # All output files created in directory ./u2-r100/
 #
-# CPU time:  00:06:29.28
+# CPU time:  00:06:20.19
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -1212,7 +1212,8 @@ suffix values is $RIBODIR/models/ribo.0p20.qsubinfo:
 
 > cat $RIBODIR/models/ribo.0p20.qsubinfo
 -----------
-# ribo.0p15.qsub.txt this file must have exactly 2 non-'#' prefixed
+# ribo.0p20.qsubinfo
+# This file must have exactly 2 non-'#' prefixed
 # lines. 
 #
 # Line 1: a string that is the qsub command and flags for submitting
@@ -1297,20 +1298,20 @@ To do all tests and save output to the file 'test.out', do:
 Here is the output for the first test performed by that script
 ($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1)
 # ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
-# ribotyper 0.20 (Jul 2018)
+# ribotyper 0.22 (Jul 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:      Thu Jul 19 14:03:53 2018
+# date:      Tue Jul 31 10:58:14 2018
 # $RIBODIR:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 #
 # test file:                    /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/testin.example-16
 # output directory name:        test1                                                                                          
 # forcing directory overwrite:  yes [-f]                                                                                       
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [      ribotyper-1-16]          ... done. [5.2 seconds]
+# Running command  1 [      ribotyper-1-16]          ... done. [7.8 seconds]
 #	checking test-16/test-16.ribotyper.short.out                 ... pass
 #	checking test-16/test-16.ribotyper.long.out                  ... pass
 #	removing directory test-16                                   ... done
-# Running command  2 [    riboaligner-1-16]          ... done. [10.4 seconds]
+# Running command  2 [    riboaligner-1-16]          ... done. [16.1 seconds]
 #	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
@@ -1328,7 +1329,7 @@ Here is the output for the first test performed by that script
 #
 # All output files created in directory ./test1/
 #
-# CPU time:  00:00:15.87
+# CPU time:  00:00:24.35
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS

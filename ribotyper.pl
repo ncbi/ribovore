@@ -201,7 +201,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.21";
+my $version           = "0.22";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
 my $releasedate       = "Jul 2018";
 my $package_name      = "ribotyper";
@@ -2089,11 +2089,13 @@ sub output_one_target {
             if(defined $seqgap_HHAR) {
               if(! exists $seqgap_HHAR->{$wmodel}) {
                 %{$seqgap_HHAR->{$wmodel}} = ();
-                if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
-                  @{$seqgap_HHAR->{$wmodel}{$target}} = ();
-                }
-                push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
+                printf("HEYA initializing seqgap_HHAR->{$wmodel}\n");
               }
+              if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
+                @{$seqgap_HHAR->{$wmodel}{$target}} = ();
+                printf("\tHEYA initializing seqgap_HHAR->{$wmodel}{$target}\n");
+              }
+              push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
             }
           }
         }
