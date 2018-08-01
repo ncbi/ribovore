@@ -1,6 +1,6 @@
-EPN, Tue Jul 31 13:44:09 2018
+EPN, Wed Aug  1 09:47:53 2018
 
-Ribotyper v0.22 README
+Ribotyper v0.23 README
 
 Organization of this file:
 
@@ -226,9 +226,9 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Mon Jul 23 14:46:05 2018
+# date:              Wed Aug  1 09:46:19 2018
 # $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
 # $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
@@ -678,9 +678,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Jul 31 13:48:12 2018
+# date:    Wed Aug  1 09:46:19 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -785,9 +785,9 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 > riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Mon Jul 23 14:47:14 2018
+# date:              Wed Aug  1 09:46:19 2018
 # $RIBODIR:          /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1
 # $RIBOEASELDIR:     /Users/nawrockie/src/infernal-1.1.2/easel/miniapps
 # $RIBOINFERNALDIR:  /Users/nawrockie/src/infernal-1.1.2/src
@@ -892,9 +892,9 @@ the -h option, just as with ribotyper.pl:
 
 > riboaligner.pl -h
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Jul 31 13:48:58 2018
+# date:    Wed Aug  1 09:46:19 2018
 #
 Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
 
@@ -984,9 +984,9 @@ Usage 1: create a representative database of high quality sequences
 
 -------------
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Tue Jul 31 13:49:29 2018
+# date:           Wed Aug  1 09:46:19 2018
 # $RIBOBLASTDIR:  /usr/bin
 # $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
@@ -1115,9 +1115,9 @@ file. The beginning of the file explains the information in each column:
 Usage 2: create a subset of high quality sequences
 > ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Tue Jul 31 13:52:49 2018
+# date:           Wed Aug  1 09:46:19 2018
 # $RIBOBLASTDIR:  /usr/bin
 # $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 # $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
@@ -1298,9 +1298,9 @@ To do all tests and save output to the file 'test.out', do:
 Here is the output for the first test performed by that script
 ($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1)
 # ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
-# ribotyper 0.22 (Jul 2018)
+# ribotyper 0.23 (Aug 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:      Tue Jul 31 10:58:14 2018
+# date:      Wed Aug  1 09:46:19 2018
 # $RIBODIR:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
 #
 # test file:                    /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/testin.example-16

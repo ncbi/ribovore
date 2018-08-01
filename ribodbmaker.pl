@@ -202,9 +202,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.22";
+my $version           = "0.23";
 my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "Jul 2018";
+my $releasedate       = "Aug 2018";
 my $package_name      = "ribotyper";
 my $pkgstr    = "RIBO";
 
@@ -1878,12 +1878,16 @@ sub parse_blast_output_for_self_hits {
   }
   close(IN);
 
-  # final sanity check, each seq should have had at least 1 hit
-  # and also fill $failstr_HR:
+  # fill $failstr_HR
+  # previously (prior to v0.23) we did a final sanity check here to ensure 
+  # each seq should have had at least 1 hit, but then realized that this is not
+  # not necessarily true (example is KM853238.1 which has a bunch of ambiguous
+  # nucleotides spread across the sequence) 
   foreach my $key (keys %{$nhit_HR}) { 
-    if($nhit_HR->{$key} == 0) { 
-      ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
-    }
+    # this is the pre-v0.23 sanity check:
+    #if($nhit_HR->{$key} == 0) { 
+    #ofile_FAIL("ERROR in $sub_name, found zero hits to query $key", "RIBO", 1, $FH_HR); 
+    #}
     if(exists $local_failstr_H{$key}) { 
       $failstr_HR->{$key} .= "blastrepeat[$local_failstr_H{$key}];;";
     }
