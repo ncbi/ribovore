@@ -1932,10 +1932,10 @@ sub parse_alipid_analyze_tab_files {
                                     # lowest level in @{$level_AR}
   my %do_one_taxid_H   = (); # 1D key is $seqname, value is species taxid if seqname is candidate for failing b/c not max avg id in species
   my %do_one_avgpid_HH = (); # 1D key is taxonomic level, 2D key is $seqname, value is average pid at order level for seqname
+  my %do_one_lowest_level_H = (); # 1D key is a species taxid, value is lowest taxonomic level $level for which that seq_taxid has a valid $level
   # note: it is wasteful for us to compute and store these for all 3 levels since we only need 
   # it for the lowest level (phylum, class, order) it is available, but we do it anyway because
   # the following implementation (see 'if($do_one)') is simple
-
 
   my %curfailstr_H = ();  # will hold fail string 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
@@ -1943,10 +1943,6 @@ sub parse_alipid_analyze_tab_files {
   my $seq_taxid; 
 
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
-
-  # NEED TO REIMPLEMENT THIS SO THAT MAX AVG ID SEQ AT ORDER LEVEL IS SELECTED FOR ALL SEQUENCES THAT PASS INGROUP TEST WITHOUT O TYPE
-  # WILL REQUIRE TWO PASSES THROUGH TAB FILES, FIRST PASS IDENTIFIES SEQS THAT ARE O CLASS, SECOND PASS CALCULATES AVG MAX ID
-  # AT ORDER LEVEL AMONGST ONLY SEQS THAT ARE NOT TYPE O, THEN I NEED TO FAIL ALL SEQS THAT ARE NOT MAX ID AT ORDER LEVEL
 
   # go through each alipid file and determine which sequences should 
   # fail due to their type (any type that begins with O at any level fails)
@@ -1992,7 +1988,7 @@ sub parse_alipid_analyze_tab_files {
           $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
           $do_one_taxid_H{$seqname}           = $seq_taxid;
           $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
-          if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}$seq_taxid})) { 
+          if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
             $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
             $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
           }
