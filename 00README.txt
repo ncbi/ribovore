@@ -1,6 +1,6 @@
-EPN, Wed Aug  1 09:47:53 2018
+EPN, Tue Aug  7 09:40:29 2018
 
-Ribotyper v0.23 README
+Ribotyper v0.24 README
 
 Organization of this file:
 

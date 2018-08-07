@@ -202,7 +202,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.23";
+my $version           = "0.24";
 my $riboaligner_model_version_str = "0p15"; 
 my $releasedate       = "Aug 2018";
 my $package_name      = "ribotyper";
@@ -1927,9 +1927,16 @@ sub parse_alipid_analyze_tab_files {
 
   # are we only allowing 1 hit per tax id to survive?
   my $do_one = (opt_Get("--fione", $opt_HHR)) ? 1 : 0;
-  my %max_pid_per_taxid_H    = (); # key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
-  my %argmax_pid_per_taxid_H = (); # key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
-                                   # lowest level in @{$level_AR}
+  my %max_pid_per_taxid_HH    = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
+  my %argmax_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
+                                    # lowest level in @{$level_AR}
+  my %do_one_taxid_H   = (); # 1D key is $seqname, value is species taxid if seqname is candidate for failing b/c not max avg id in species
+  my %do_one_avgpid_HH = (); # 1D key is taxonomic level, 2D key is $seqname, value is average pid at order level for seqname
+  my %do_one_lowest_level_H = (); # 1D key is a species taxid, value is lowest taxonomic level $level for which that seq_taxid has a valid $level
+  # note: it is wasteful for us to compute and store these for all 3 levels since we only need 
+  # it for the lowest level (phylum, class, order) it is available, but we do it anyway because
+  # the following implementation (see 'if($do_one)') is simple
+
   my %curfailstr_H = ();  # will hold fail string 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $seqname;
@@ -1937,6 +1944,8 @@ sub parse_alipid_analyze_tab_files {
 
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
 
+  # go through each alipid file and determine which sequences should 
+  # fail due to their type (any type that begins with O at any level fails)
   foreach my $level (@{$level_AR}) { 
     open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
     # first line is header
@@ -1947,19 +1956,8 @@ sub parse_alipid_analyze_tab_files {
       #JN941634.1	45130	Bipolaris sorokiniana	92860	3	I1	96.2	96.5	DQ898289.1	95.9	AY741066.1	87.0	95.7	AB454202.1	451869	65.7	AB016022.1	78918	9.2	0.8	30.2
       chomp $line;
       my @el_A = split(/\t/, $line);
-      if(scalar(@el_A) != 21) { 
-        ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
-      }
+      if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
       my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
-
-      # keep track of max avgpid per taxid
-      if($do_one && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
-        if((! exists $max_pid_per_taxid_H{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_H{$seq_taxid})) { 
-          $max_pid_per_taxid_H{$seq_taxid}    = $avgpid;
-          $argmax_pid_per_taxid_H{$seq_taxid} = $seqname;
-        }
-      }
-      
       if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
       if($type =~ m/^O/) { 
         $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later after determining 
@@ -1968,11 +1966,45 @@ sub parse_alipid_analyze_tab_files {
     close(TAB);
   }
 
-  # add failure strings for all sequences that are not the average max pid for their sequence taxid, if nec
+  # if $do_one: 
+  # go back through the order alipid file a second time to determine
+  # for all seqs with a species taxid that are not in an O type, the
+  # average pid to all other seqs in the same species taxid
   if($do_one) { 
-    foreach $seq_taxid (keys %max_pid_per_taxid_H) { 
-      $seqname = $argmax_pid_per_taxid_H{$seq_taxid};
-      $curfailstr_H{$seqname} .= "not-max-avg-pid;";
+    foreach my $level (@{$level_AR}) { 
+      open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
+      # first line is header
+      my $line = <TAB>;
+      while($line = <TAB>) { 
+        chomp $line;
+        my @el_A = split(/\t/, $line);
+        if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
+        my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
+        if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+        if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
+          # sequence is not an O type, and has a non-1 species taxid and valid group_taxid at this level
+          # so it is a candidate for being the max avg pid for its species taxid
+          # and also a candidate for failing if it is not max avg pid for its species
+          $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
+          $do_one_taxid_H{$seqname}           = $seq_taxid;
+          $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
+          if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
+            $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
+            $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
+          }
+        }
+      }
+      close(TAB);      
+    } # end of foreach $level
+    # $do_one is TRUE, so ffor all sequences that could be max avg pid for their species, 
+    # determine those that are not and fail them
+    foreach $seqname (sort keys %do_one_taxid_H) { 
+      my $seq_taxid   = $do_one_taxid_H{$seqname};
+      my $level       = $do_one_lowest_level_H{$seq_taxid};
+      my $max_seqname = $argmax_pid_per_taxid_HH{$level}{$seq_taxid};
+      if($seqname ne $max_seqname) { 
+        $curfailstr_H{$seqname} .= sprintf("not-max-avg-pid(%.3f<%.3f);", $do_one_avgpid_HH{$level}{$seqname}, $max_pid_per_taxid_HH{$level}{$seq_taxid});
+      }
     }
   }
 
