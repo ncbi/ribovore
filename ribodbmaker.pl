@@ -2003,7 +2003,7 @@ sub parse_alipid_analyze_tab_files {
       my $level       = $do_one_lowest_level_H{$seq_taxid};
       my $max_seqname = $argmax_pid_per_taxid_HH{$level}{$seq_taxid};
       if($seqname ne $max_seqname) { 
-        $curfailstr_H{$seqname} .= sprintf("not-max-avg-pid(%f<%f);", $do_one_avgpid_HH{$level}{$seq_taxid}, $max_pid_per_taxid_HH{$level}{$seq_taxid});
+        $curfailstr_H{$seqname} .= sprintf("not-max-avg-pid(%.3f<%.3f);", $do_one_avgpid_HH{$level}{$seqname}, $max_pid_per_taxid_HH{$level}{$seq_taxid});
       }
     }
   }
