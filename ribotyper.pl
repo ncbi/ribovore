@@ -2941,7 +2941,7 @@ sub determine_unexpected_feature_explanation {
     }
   }
   elsif($ufeature =~ m/VeryLowScoreDifference/) { # important to put this before LowScoreDifference in elsif
-    if(opt_Get("--absdiff")) { 
+    if(opt_Get("--absdiff", $opt_HHR)) { 
       push(@{$exp_AR}, "The difference between the top two " . (opt_Get("--samedomain", $opt_HHR) ? "models" : "domains") . " is below the \'very low\'");
       push(@{$exp_AR}, "threshold of " . opt_Get("--vlowadiff", $opt_HHR) . " (--vlowadiff) bits.");
     }
