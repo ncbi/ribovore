@@ -543,7 +543,8 @@ if($do_fribo1 || $do_fribo2) {
     close(OPTS1);
   }
   else { 
-    $ribotyper_options = sprintf("--scfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
+    $ribotyper_options = sprintf("--minusfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
+    if(! opt_IsUsed("--noscfail",    \%opt_HH)) { $ribotyper_options .= "--scfail "; }
     # --2slow doesn't apply here
   }
 

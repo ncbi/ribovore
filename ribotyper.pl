@@ -2927,10 +2927,6 @@ sub determine_unexpected_feature_explanation {
   elsif($ufeature =~ m/MinusStrand/) { 
     push(@{$exp_AR}, "Best hit is on the minus strand.");
   }
-  elsif($ufeature =~ m/LowScore/) { 
-    push(@{$exp_AR}, "The bits per nucleotide (total bit score divided by total length");
-    push(@{$exp_AR}, "of sequence) is below threshold of " . opt_Get("--lowppossc", $opt_HHR) . " (--lowppossc).");
-  }
   elsif($ufeature =~ m/LowCoverage/) { 
     push(@{$exp_AR}, "The total coverage of all hits (primary and secondary) to the best");
     push(@{$exp_AR}, "model (summed length of all hits divided by total length of sequence)");
@@ -2965,6 +2961,10 @@ sub determine_unexpected_feature_explanation {
       push(@{$exp_AR}, "threshold of " . opt_Get("--lowpdiff", $opt_HHR) . " (--lowpdiff) bits per position (total bit score");
       push(@{$exp_AR}, "divided by summed length of all hits).");
     }
+  }
+  elsif($ufeature =~ m/LowScore/) { # this needs to come after VeryLowScoreDifference and LowScoreDifference because it is a substring
+    push(@{$exp_AR}, "The bits per nucleotide (total bit score divided by total length");
+    push(@{$exp_AR}, "of sequence) is below threshold of " . opt_Get("--lowppossc", $opt_HHR) . " (--lowppossc).");
   }
   elsif($ufeature =~ m/MultipleHits/) { 
     push(@{$exp_AR}, "There is more than one hit to the best scoring model on the same strand.");
