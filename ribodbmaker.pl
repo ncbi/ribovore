@@ -1160,6 +1160,11 @@ if($do_fribo2) {
   push(@column_explanation_A, "# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>\n");
   push(@column_explanation_A, "#                          see $out_root-ra/$dir_tail-ra.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
+  push(@column_explanation_A, "# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long\n");
+  push(@column_explanation_A, "#                          <s>=full-extra: alignment spans full model with >= 1 nt extra on 5' or 3' end\n");
+  push(@column_explanation_A, "#                          <s>=full-ambig: alignment spans full model with 0 nt extra on 5' or 3' end but\n");
+  push(@column_explanation_A, "#                                          has indels in first and/or final 10 model positions and\n");
+  push(@column_explanation_A, "#                                          insertions outnumber deletions at 5' and/or 3' end\n");
 }
 if($do_fmspan) { 
   push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
