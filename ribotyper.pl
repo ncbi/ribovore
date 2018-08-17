@@ -97,7 +97,7 @@ opt_Add("--vlowpdiff",     "real",   "0.04",                   6,  undef,   "--a
 opt_Add("--absdiff",    "boolean",   0,                        6,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
 opt_Add("--lowadiff",      "real",   "100.",                   6,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--maxoverlap", "integer",   "10",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--maxoverlap", "integer",   "20",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--esdmaxsc",   "real",      "0.001",                  6,"--evalues",undef,     "set max allowed bit sc diff for Evalue/score discrepancies to <x>", "set maximum allowed bit score difference for E-value/score discrepancies to <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"7"} = "optional input files";
@@ -122,15 +122,19 @@ $opt_group_desc_H{"10"} = "options for controlling gap type definitions";
 opt_Add("--mgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in model coordinates is <n>",    "maximum size of a 'small' gap in model coordinates is <n>",    \%opt_HH, \@opt_order_A);
 opt_Add("--sgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"11"} = "advanced options";
-#       option               type   default                group  requires incompat             preamble-output                                      help-output    
-opt_Add("--evalues",      "boolean", 0,                      11,  undef,   undef,               "rank by E-values, not bit scores",                  "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
-opt_Add("--skipsearch",   "boolean", 0,                      11,  undef,   "-f",                "skip search stage",                                 "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                      11,  undef,   "--skipsearch",      "no alignments in output",                           "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
-opt_Add("--samedomain",   "boolean", 0,                      11,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
-opt_Add("--gapseqs",      "boolean", 0,                      11,  undef,   undef,               "save gap sequences between hits to a file",         "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
-opt_Add("--xgapseqs",     "integer", 20,                     11,  undef,   undef,               "save gap sequence file with <n> added nts",         "save gap sequence file with <n> added nts", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"11"} = "options for creating additional output files";
+opt_Add("--outseqs",      "boolean", 0,                      11,  undef,   undef,               "save per-model pass/fail sequences to files",       "save per-model pass/fail sequences to files", \%opt_HH, \@opt_order_A);
+opt_Add("--outhits",      "boolean", 0,                      11,  undef,   undef,               "save per-model pass/fail sequences to files",       "save per-model pass/fail sequences to files", \%opt_HH, \@opt_order_A);
+opt_Add("--outgaps",      "boolean", 0,                      11,  undef,   undef,               "save gap sequences between hits to a file",         "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
+opt_Add("--outxgaps",     "integer", 20,                     11,  undef,   undef,               "save gap sequence file with <n> added nts",         "save gap sequence file with <n> added nts", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",         "boolean", 0,                      11,  undef,   undef,               "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"12"} = "advanced options";
+#       option               type   default                group  requires incompat             preamble-output                                      help-output    
+opt_Add("--evalues",      "boolean", 0,                      12,  undef,   undef,               "rank by E-values, not bit scores",                  "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
+opt_Add("--skipsearch",   "boolean", 0,                      12,  undef,   "-f",                "skip search stage",                                 "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                      12,  undef,   "--skipsearch",      "no alignments in output",                           "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
+opt_Add("--samedomain",   "boolean", 0,                      12,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -194,8 +198,10 @@ my $options_okay =
                 'skipsearch'   => \$GetOptions_H{"--skipsearch"},
                 'noali'        => \$GetOptions_H{"--noali"},
                 'keep'         => \$GetOptions_H{"--keep"},
-                'gapseqs'      => \$GetOptions_H{"--gapseqs"},
-                'xgapseqs=s'   => \$GetOptions_H{"--xgapseqs"},
+                'outseqs'      => \$GetOptions_H{"--outseqs"},
+                'outhits'      => \$GetOptions_H{"--outhits"},
+                'outgaps'      => \$GetOptions_H{"--outgaps"},
+                'outxgaps=s'   => \$GetOptions_H{"--outxgaps"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
@@ -278,9 +284,9 @@ if((opt_IsUsed("--shortfail",\%opt_HH) && opt_IsUsed("--longfail",\%opt_HH)) &&
   die sprintf("ERROR, with --shortfail <n1> and --longfail <n2>, <n1> must be less than <n2> (got <n1>: %f, <n2>: %f)\n", 
                 opt_Get("--shortfail",\%opt_HH), opt_Get("--longfail",\%opt_HH)); 
 }
-if(opt_IsUsed("--xgapseqs", \%opt_HH)) {
-  if(opt_Get("--xgapseqs", \%opt_HH) < 1) {
-    die "ERROR with --xgapseqs <n>, <n> must be >= 1";
+if(opt_IsUsed("--outxgaps", \%opt_HH)) {
+  if(opt_Get("--outxgaps", \%opt_HH) < 1) {
+    die "ERROR with --outxgaps <n>, <n> must be >= 1";
   }
 }
    
@@ -628,7 +634,7 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
 }
 else { 
-  $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
   if(! -s $r1_tblout_file) { 
     ofile_FAIL("ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
   }
@@ -725,40 +731,45 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 if(defined $alg2) { # only do this if we're doing a second round of searching
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
     $start_secs = ofile_OutputProgressPrior("Fetching per-model sequence sets", $progress_w, $log_FH, *STDOUT);
-    
-    my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
-    # first initialize all arrays to empty
-    foreach $model (keys %family_H) { 
-      @{$seqsub_HA{$model}} = ();
-    }
-    
-    # fill the arrays with sequence names for each model
-    parse_round1_long_file($r1_srt_long_out_file, \%seqsub_HA, $ofile_info_HH{"FH"}); 
-    
-    # create the sfetch files with sequence names
-    foreach $model (sort keys %family_H) { 
-      $sfetchfile_H{$model} = undef;
-      if(scalar(@{$seqsub_HA{$model}}) > 0) { 
-        $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
-        ribo_WriteArrayToFile($seqsub_HA{$model}, $sfetchfile_H{$model}, $ofile_info_HH{"FH"}); 
-        $totseqlen_H{$model} = ribo_SumSeqlenGivenArray($seqsub_HA{$model}, \%seqlen_H, $ofile_info_HH{"FH"});
-        $nseq_H{$model}      = scalar(@{$seqsub_HA{$model}});
-        if(! opt_Get("--keep", \%opt_HH)) { 
-          push(@to_remove_A, $sfetchfile_H{$model});
-        }
-        else { 
-          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sfetch" . $model, $sfetchfile_H{$model}, 0, "sfetch file for $model");
-        }
+  }
+  else { 
+    $start_secs = ofile_OutputProgressPrior("Skipping per-model sequence set fetching", $progress_w, $log_FH, *STDOUT);
+  }
+
+  my %seqsub_HA = (); # key is model, value is an array of all sequences to fetch to research with that model
+  # first initialize all arrays to empty
+  foreach $model (keys %family_H) { 
+    @{$seqsub_HA{$model}} = ();
+  }
+  
+  # fill the arrays with sequence names for each model
+  parse_round1_long_file($r1_srt_long_out_file, \%seqsub_HA, $ofile_info_HH{"FH"}); 
+  
+  # create the sfetch files with sequence names
+  foreach $model (sort keys %family_H) { 
+    $sfetchfile_H{$model} = undef;
+    if(scalar(@{$seqsub_HA{$model}}) > 0) { 
+      $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
+      ribo_WriteArrayToFile($seqsub_HA{$model}, $sfetchfile_H{$model}, $ofile_info_HH{"FH"}); 
+      $totseqlen_H{$model} = ribo_SumSeqlenGivenArray($seqsub_HA{$model}, \%seqlen_H, $ofile_info_HH{"FH"});
+      $nseq_H{$model}      = scalar(@{$seqsub_HA{$model}});
+      if(! opt_Get("--keep", \%opt_HH)) { 
+        push(@to_remove_A, $sfetchfile_H{$model});
+      }
+      else { 
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sfetch" . $model, $sfetchfile_H{$model}, 0, "sfetch file for $model");
       }
     }
-    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-    
-    foreach $model (sort keys %family_H) { 
-      if(defined $sfetchfile_H{$model}) { 
-        $seqfile_H{$model} = $out_root . ".$model.fa";
+  }
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  
+  foreach $model (sort keys %family_H) { 
+    if(defined $sfetchfile_H{$model}) { 
+      $seqfile_H{$model} = $out_root . ".$model.fa";
+      if(! opt_Get("--skipsearch", \%opt_HH)) { 
         ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
         if(! opt_Get("--keep", \%opt_HH)) { 
-          push(@to_remove_A, $seqfile_H{$model});
+        push(@to_remove_A, $seqfile_H{$model});
         }
         else { 
           ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "seqfile" . $model, $seqfile_H{$model}, 0, "seqfile file for $model");
@@ -917,85 +928,8 @@ if(defined $alg2) {
   
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
-###################################################
-# Step 10: Fetch the gap sequences, if necessary.
-###################################################
-my $gap_sfetch_file  = undef;
-my $gap_fasta_file   = undef;
-my $xgap_sfetch_file = undef;
-my $xgap_fasta_file  = undef;
-#my $gap_sfetch_file  = $out_root . ".gaps.sfetch";
-#my $gap_fasta_file   = $out_root . ".gaps.fa";
-#my $xgap_sfetch_file = $out_root . ".xgaps.sfetch";
-#my $xgap_fasta_file  = $out_root . ".xgaps.fa";
-if(opt_Get("--gapseqs", \%opt_HH)) { 
-  $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
-  if(scalar(keys %seqgap_HHA)) {
-    foreach my $wmodel (sort keys (%seqgap_HHA)) { 
-      $gap_sfetch_file  = $out_root . "." . $wmodel . ".gaps.sfetch";
-      $gap_fasta_file   = $out_root . "." . $wmodel . ".gaps.fa";
-
-      open(SFETCH, ">", $gap_sfetch_file) || ofile_FileOpenFailure($gap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
-      foreach my $target (@seqorder_A) {
-        if(exists $seqgap_HHA{$wmodel}{$target}) { 
-          foreach my $region (@{$seqgap_HHA{$wmodel}{$target}}) { 
-            my ($start, $stop, undef) = decompose_region_str($region, $ofile_info_HH{"FH"});
-            printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
-          }
-        }
-      }
-      close(SFETCH);
-      # fetch the sequences
-      ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $gap_sfetch_file > $gap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch.$wmodel",  $gap_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits to model $wmodel");
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta.$wmodel",  $gap_fasta_file, 1,  "fasta file with gap sequences between multiple hits to model $wmodel");
-    }
-  }
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-}
-if(opt_IsUsed("--xgapseqs", \%opt_HH)) { 
-  my $nextra = opt_Get("--xgapseqs", \%opt_HH);
-  $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits plus $nextra nucleotides in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
-  if(scalar(keys %seqgap_HHA)) {
-    foreach my $wmodel (sort keys (%seqgap_HHA)) { 
-      $xgap_sfetch_file = $out_root . "." . $wmodel . ".xgaps.sfetch";
-      $xgap_fasta_file  = $out_root . "." . $wmodel . ".xgaps.fa";
-
-      open(SFETCH, ">", $xgap_sfetch_file) || ofile_FileOpenFailure($xgap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
-      foreach my $target (@seqorder_A) {
-        if(exists $seqgap_HHA{$wmodel}{$target}) { 
-          my $seqlen = $seqlen_H{$target};
-          foreach my $region (@{$seqgap_HHA{$wmodel}{$target}}) { 
-            my ($start, $stop, $strand) = decompose_region_str($region, $ofile_info_HH{"FH"});
-            if($strand eq "+") {
-              $start -= $nextra;
-              $stop  += $nextra;
-              if($start < 1)       { $start = 1;       }
-              if($stop  > $seqlen) { $stop  = $seqlen; }
-            }
-            else {
-              $start += $nextra;
-              $stop  -= $nextra;
-              if($start > $seqlen) { $start = $seqlen; }
-              if($stop  < 1)       { $stop  = 1;       }
-            }
-            printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
-          }
-        }
-      }
-      close(SFETCH);
-      # fetch the sequences
-      ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $xgap_sfetch_file > $xgap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "xgapsfetch.$wmodel",  $xgap_sfetch_file, 1, "sfetch file for fetching gap sequences plus $nextra nt between multiple hits to model $wmodel");
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "xgapsfasta.$wmodel",  $xgap_fasta_file, 1,  "fasta file with gap sequences plus $nextra nt between multiple hits to model $wmodel");
-    }
-  }
-}
-
 ###########################################################################
-# Step 11: Combine the round 1 and round 2 output files to create the 
+# Step 10: Combine the round 1 and round 2 output files to create the 
 #          final output file.
 ###########################################################################
 my %class_stats_HH = (); # hash of hashes with summary statistics 
@@ -1024,6 +958,228 @@ else {
   open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
   get_stats_from_long_file_for_sole_round($r1_srt_long_out_FH, \%class_stats_HH, \%ufeature_ct_H, \%opt_HH, $ofile_info_HH{"FH"});
 }
+
+##################################################################
+# Step 11: Fetch sequences that match to each model, if necessary.
+##################################################################
+my $do_outseq  = opt_Get("--outseqs", \%opt_HH);
+my $do_outhit  = opt_Get("--outhits", \%opt_HH);
+my $do_gapseq  = opt_Get("--outgaps", \%opt_HH);
+my $do_xgapseq = opt_IsUsed("--outxgaps", \%opt_HH);
+my @pass_A = (); # array 0..$i..nseq-1, '1' if sequence with index $i+1 PASSes, '0' if it FAILs
+if($do_outseq || $do_outhit || $do_gapseq || $do_xgapseq) { 
+  # we need to parse the long output file 
+  $start_secs = ofile_OutputProgressPrior("Parsing pass/fail output to facility sequence fetching", $progress_w, $log_FH, *STDOUT);
+
+  # parse the long output file to fill passfail_A, and optionally outseq_HHA and/or outhit_HHA
+  my %outseq_HHA = ();
+  my %outhit_HHA = ();
+  if($do_outseq) { 
+    %outseq_HHA = (); # 1D key is "pass" or "fail", 2D key is model, value is array of sequences that pass or fail and have best match to that model
+    %{$outseq_HHA{"pass"}} = ();
+    %{$outseq_HHA{"fail"}} = ();
+  }
+  if($do_outhit) { 
+    %outhit_HHA = (); # 1D key is "pass" or "fail", 2D key is model, value is array of sequences and start and end coordinates of top hits in seqs that pass or fail and have best match to that model
+    %{$outhit_HHA{"pass"}} = ();
+    %{$outhit_HHA{"fail"}} = ();
+  }
+  my $srt_long_file = undef;
+  my $have_evalues  = undef;
+  if(defined $alg2) { 
+    $srt_long_file = $r2_srt_long_out_file;
+    $have_evalues = determine_if_we_have_evalues(2, \%opt_HH, $ofile_info_HH{"FH"});
+  }
+  else { 
+    $srt_long_file = $r1_srt_long_out_file;
+    $have_evalues = determine_if_we_have_evalues(1, \%opt_HH, $ofile_info_HH{"FH"});
+  }
+  open(LONG, $srt_long_file) || ofile_FileOpenFailure($srt_long_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  while(my $line = <LONG>) { 
+    ##                                                                                                                                  best-scoring model                                                                        different domain's best-scoring model    
+    ##                                                                               -------------------------------------------------------------------------------------------------------------------------                  -----------------------------------------  
+    ##idx   target                         p/f  length  #fm  fam  domain             model                              strnd  #ht  tscore  bscore  s/nt   bevalue   tcov   bcov   bfrom     bto  mfrom    mto  scdiff  scd/nt  model                              tscore  unexpected_features
+    ##----  ----------------------------  ----  ------  ---  ---  -----------------  ---------------------------------  -----  ---  ------  ------  ----  --------  -----  -----  ------  ------  -----  -----  ------  ------  ---------------------------------  ------  -------------------
+    #1      KT231522.1/1-252              PASS     252    1  SSU  Bacteria           SSU_rRNA_bacteria                  plus     1   192.4   192.4  0.76   2.1e-57  0.956  0.956       1     241     28    266   105.6   0.419  SSU_rRNA_chloroplast                 90.1  -
+    if($line !~ m/^\#/) { 
+      chomp $line;
+      my @el_A = split(/\s+/, $line);
+      my ($target, $pf, $model) = ($el_A[1], $el_A[2], $el_A[7]);
+      my ($from, $to) = ($have_evalues) ? ($el_A[16], $el_A[17]) : ($el_A[15], $el_A[16]);
+      if   ($pf eq "PASS") { $pf = "pass"; push(@pass_A, 1); }
+      elsif($pf eq "FAIL") { $pf = "fail"; push(@pass_A, 0); }
+      else { ofile_FAIL("ERROR with --outseqs, on final pass through $srt_long_file, sequence $target pass/fail value is invalid ($pf)", "RIBO", 1, $ofile_info_HH{"FH"}); }
+      if($model eq "-") { $model = "NoHit"; }
+      if($do_outseq) { 
+        if(! exists $outseq_HHA{$pf}{$model}) { @{$outseq_HHA{$pf}{$model}} = (); }
+        push(@{$outseq_HHA{$pf}{$model}}, $target);
+      }
+      if(($do_outhit) && ($model ne "NoHit")) { 
+        if(! exists $outhit_HHA{$pf}{$model}) { @{$outhit_HHA{$pf}{$model}} = (); }
+        push(@{$outhit_HHA{$pf}{$model}}, ($target . "/" . $from . "-" . $to));
+      }        
+    }
+  }
+  close(LONG);
+
+  if($do_outseq) { 
+    $start_secs = ofile_OutputProgressPrior("Fetching seqs to per-model pass/fail files", $progress_w, $log_FH, *STDOUT);
+    foreach my $pf ("pass", "fail") { 
+      if(scalar(keys %{$outseq_HHA{$pf}})) { 
+        foreach my $wmodel (sort keys (%{$outseq_HHA{$pf}})) { 
+          my $outseq_sfetch_file  = $out_root . "." . $wmodel . "." . $pf . ".seqs.list";
+          my $outseq_fasta_file   = $out_root . "." . $wmodel . "." . $pf . ".seqs.fa";
+          # create sfetch file
+          ribo_WriteArrayToFile($outseq_HHA{$pf}{$wmodel}, $outseq_sfetch_file, $ofile_info_HH{"FH"}); 
+          # fetch the sequences
+          ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $outseq_sfetch_file > $outseq_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "outseqs.list.$pf.$wmodel",   $outseq_sfetch_file, 1, sprintf("list of %5d sequences that $pf and match best to $wmodel", scalar(@{$outseq_HHA{$pf}{$wmodel}})));
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "outseqs.fasta.$pf.$wmodel",  $outseq_fasta_file,  1, sprintf("fasta file of %5d sequences that $pf and match best to $wmodel", scalar(@{$outseq_HHA{$pf}{$wmodel}})));
+        }
+      }
+    }
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  }
+  if($do_outhit) { 
+    $start_secs = ofile_OutputProgressPrior("Fetching hits to per-model pass/fail files", $progress_w, $log_FH, *STDOUT);
+    foreach my $pf ("pass", "fail") { 
+      if(scalar(keys %{$outhit_HHA{$pf}})) { 
+        foreach my $wmodel (sort keys (%{$outhit_HHA{$pf}})) { 
+          my $outhit_sfetch_file  = $out_root . "." . $wmodel . "." . $pf . ".hits.list";
+          my $outhit_fasta_file   = $out_root . "." . $wmodel . "." . $pf . ".hits.fa";
+          # create sfetch file
+          open(SFETCH, ">", $outhit_sfetch_file) || ofile_FileOpenFailure($outhit_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+          foreach my $nse (@{$outhit_HHA{$pf}{$wmodel}}) { 
+            my ($valid, $name, $start, $end, undef) = ribo_NseBreakdown($nse);
+            if(! $valid) { 
+              ofile_FAIL("ERROR with --outhits, on second pass, unable to parse name/start-end $nse", "RIBO", 1, $ofile_info_HH{"FH"}); 
+            }
+            printf SFETCH ("%s/%d-%d %d %d %s\n", $name, $start, $end, $start, $end, $name);
+          }
+          # fetch the sequences
+          ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $outhit_sfetch_file > $outhit_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "outhits.list.$pf.$wmodel", $outhit_sfetch_file, 1, sprintf("list of %5d subsequences (hits) that $pf and match best to $wmodel", scalar(@{$outhit_HHA{$pf}{$wmodel}})));
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "outhits.fasta.$pf.$wmodel",  $outhit_fasta_file,  1, sprintf("fasta file of %5d subsequences (hits) that $pf and match best to $wmodel", scalar(@{$outhit_HHA{$pf}{$wmodel}})));
+        }
+      }
+    }
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  }
+}
+
+###################################################
+# Step 12: Fetch the gap sequences, if necessary.
+###################################################
+my $gap_pass_sfetch_file  = undef;
+my $gap_pass_fasta_file   = undef;
+my $xgap_pass_sfetch_file = undef;
+my $xgap_pass_fasta_file  = undef;
+
+my $gap_fail_sfetch_file  = undef;
+my $gap_fail_fasta_file   = undef;
+my $xgap_fail_sfetch_file = undef;
+my $xgap_fail_fasta_file  = undef;
+
+if(opt_Get("--outgaps", \%opt_HH)) { 
+  $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
+  if(scalar(@pass_A) != scalar(@seqorder_A)) { 
+    ofile_FAIL("ERROR with --outgaps, did not correctly fill @pass_A array", "RIBO", 1, $ofile_info_HH{"FH"}); 
+  }
+  if(scalar(keys %seqgap_HHA)) {
+    foreach my $wmodel (sort keys (%seqgap_HHA)) { 
+      $gap_pass_sfetch_file  = $out_root . "." . $wmodel . ".pass.gaps.sfetch";
+      $gap_pass_fasta_file   = $out_root . "." . $wmodel . ".pass.gaps.fa";
+      $gap_fail_sfetch_file  = $out_root . "." . $wmodel . ".fail.gaps.sfetch";
+      $gap_fail_fasta_file   = $out_root . "." . $wmodel . ".fail.gaps.fa";
+      my $npass = 0;
+      my $nfail = 0;
+      
+      open(PASSSFETCH, ">", $gap_pass_sfetch_file) || ofile_FileOpenFailure($gap_pass_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+      open(FAILSFETCH, ">", $gap_fail_sfetch_file) || ofile_FileOpenFailure($gap_fail_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+      for(my $s = 0; $s < scalar(@seqorder_A); $s++) {
+        my $target = $seqorder_A[$s];
+        if(exists $seqgap_HHA{$wmodel}{$target}) { 
+          if($pass_A[$s] == 1) { 
+            $npass++;
+            foreach my $region (@{$seqgap_HHA{$wmodel}{$target}}) { 
+              my ($start, $stop, undef) = decompose_region_str($region, $ofile_info_HH{"FH"});
+              printf PASSSFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+            }
+          }
+          else { 
+            $nfail++;
+            foreach my $region (@{$seqgap_HHA{$wmodel}{$target}}) { 
+              my ($start, $stop, undef) = decompose_region_str($region, $ofile_info_HH{"FH"});
+              printf FAILSFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+            }
+          }
+        }
+      }
+      close(PASSSFETCH);
+      close(FAILSFETCH);
+      if($npass == 0) { 
+        ribo_RemoveFileUsingSystemRm($gap_pass_sfetch_file, "main", \%opt_HH, $ofile_info_HH{"FH"});
+      }
+      else { 
+        # fetch the sequences
+        ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $gap_pass_sfetch_file > $gap_pass_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch.pass.$wmodel",  $gap_pass_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits in passing sequences to model $wmodel");
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta.pass.$wmodel",  $gap_pass_fasta_file, 1,  "fasta file with gap sequences between multiple hits for passing sequences to model $wmodel");
+      }
+      if($nfail == 0) { 
+        ribo_RemoveFileUsingSystemRm($gap_fail_sfetch_file, "main", \%opt_HH, $ofile_info_HH{"FH"});
+      }
+      else { 
+        # fetch the sequences
+        ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $gap_fail_sfetch_file > $gap_fail_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfetch.fail.$wmodel",  $gap_fail_sfetch_file, 1, "sfetch file for fetching gap sequences between multiple hits in failing sequences to model $wmodel");
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "gapsfasta.fail.$wmodel",  $gap_fail_fasta_file, 1,  "fasta file with gap sequences between multiple hits for failing sequences to model $wmodel");
+      }
+    }
+  }
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+}
+#if(opt_IsUsed("--outxgaps", \%opt_HH)) { 
+#  my $nextra = opt_Get("--outxgaps", \%opt_HH);
+#  $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits plus $nextra nucleotides in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
+#  if(scalar(keys %seqgap_HHA)) {
+#    foreach my $wmodel (sort keys (%seqgap_HHA)) { 
+#      $xgap_sfetch_file = $out_root . "." . $wmodel . ".xgaps.sfetch";
+#      $xgap_fasta_file  = $out_root . "." . $wmodel . ".xgaps.fa";
+#
+#      open(SFETCH, ">", $xgap_sfetch_file) || ofile_FileOpenFailure($xgap_sfetch_file, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+#      foreach my $target (@seqorder_A) {
+#        if(exists $seqgap_HHA{$wmodel}{$target}) { 
+#          my $seqlen = $seqlen_H{$target};
+#          foreach my $region (@{$seqgap_HHA{$wmodel}{$target}}) { 
+#            my ($start, $stop, $strand) = decompose_region_str($region, $ofile_info_HH{"FH"});
+#            if($strand eq "+") {
+#              $start -= $nextra;
+#              $stop  += $nextra;
+#              if($start < 1)       { $start = 1;       }
+#              if($stop  > $seqlen) { $stop  = $seqlen; }
+#            }
+#            else {
+#              $start += $nextra;
+#              $stop  -= $nextra;
+#              if($start > $seqlen) { $start = $seqlen; }
+#              if($stop  < 1)       { $stop  = 1;       }
+#            }
+#            printf SFETCH ("%s/%d-%d %d %d %s\n", $target, $start, $stop, $start, $stop, $target);
+#          }
+#        }
+#      }
+#      close(SFETCH);
+#      # fetch the sequences
+#      ribo_RunCommand($execs_H{"esl-sfetch"} . " -Cf $seq_file $xgap_sfetch_file > $xgap_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+#    
+#      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "xgapsfetch.$wmodel",  $xgap_sfetch_file, 1, "sfetch file for fetching gap sequences plus $nextra nt between multiple hits to model $wmod#el");
+#      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "xgapsfasta.$wmodel",  $xgap_fasta_file, 1,  "fasta file with gap sequences plus $nextra nt between multiple hits to model $wmodel");
+#    }
+#  }
+#}
 
 ##########
 # Conclude
