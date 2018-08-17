@@ -20,6 +20,7 @@ my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
+$execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
 ribo_ValidateExecutableHash(\%execs_H);
@@ -1010,22 +1011,31 @@ if($do_outseq || $do_outhit || $do_gapseq || $do_xgapseq) {
     $start_secs = ofile_OutputProgressPrior("Fetching hits to per-model pass/fail files", $progress_w, $log_FH, *STDOUT);
     fetch_pass_fail_per_model_seqs(\%outhit_HHA, \%execs_H, $out_root, "hits", \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+    # create a cmalign script that will align all the failing and passing hits
+    my $hits_cmalign_script = $out_root . ".hits.cmalign.sh";
+    my $ncmalign = 0;
+    open(CMALIGN, ">", $hits_cmalign_script) || ofile_FileOpenFailure($hits_cmalign_script, "RIBO", "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+    foreach my $model (sort keys (%family_H)) { 
+      foreach my $pf ("pass", "fail") { 
+        my $fasta_key = "out.hits.fasta.$pf.$model";
+        if(exists $ofile_info_HH{"nodirpath"}{$fasta_key}) { 
+          my $fasta_file = $ofile_info_HH{"nodirpath"}{$fasta_key};
+          my $cur_root = $fasta_file;
+          $cur_root =~ s/\.fa$//;
+          print CMALIGN $execs_H{"cmalign"} . " -o $cur_root.stk --ifile $cur_root.ifile --elfile $cur_root.elfile $indi_cmfile_H{$model} $fasta_file > $cur_root.cmalign\n";
+          $ncmalign++;
+        }
+      }
+    }
+    close(CMALIGN);
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "hits.cmalign.script", $hits_cmalign_script, 1, "shell script that will align all hits to their best matching models using cmalign");
   }
 }
 
 ###################################################
 # Step 12: Fetch the gap sequences, if necessary.
 ###################################################
-my $gap_pass_sfetch_file  = undef;
-my $gap_pass_fasta_file   = undef;
-my $xgap_pass_sfetch_file = undef;
-my $xgap_pass_fasta_file  = undef;
-
-my $gap_fail_sfetch_file  = undef;
-my $gap_fail_fasta_file   = undef;
-my $xgap_fail_sfetch_file = undef;
-my $xgap_fail_fasta_file  = undef;
-
 if(opt_Get("--outgaps", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Fetching gaps between hits in sequences with multiple hits", $progress_w, $log_FH, *STDOUT);
   if(scalar(@pass_A) != scalar(@seqorder_A)) { 
