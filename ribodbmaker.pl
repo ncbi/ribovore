@@ -100,16 +100,17 @@ $opt_group_desc_H{++$g} = "options for controlling the first stage that filters 
 opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--skipfribo1", "use ribotyper options listed in <s> for round 1",              "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/riboaligner";
-#       option          type       default        group       requires incompat        preamble-output                                                 help-output    
-opt_Add("--rainfo",    "string",  undef,            $g,        undef, "--skipfribo2", "use ra model info file <s> instead of default",               "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
-opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
-opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2", "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
+#       option          type       default        group       requires incompat         preamble-output                                                 help-output    
+opt_Add("--rainfo",    "string",  undef,            $g,        undef, "--skipfribo2",   "use ra model info file <s> instead of default",               "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2",  "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2", "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2",  "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--ribostep",   "integer",  50,              $g,        undef, "--skipfribo2",  "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits:";
 #       option           type        default             group  requires  incompat                 preamble-output                                          help-output    
 opt_Add("--fmpos",       "integer",  60,                   $g,    undef, "--skipfmspan",           "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--fmlpos",      "integer",  undef,                $g,  "--fmrpos","--skipfmspan,--fmpos", "aligned sequences must begin at or 5' of position <n>", "aligned sequences must begin at or 5' of position <n>", \%opt_HH, \@opt_order_A);
@@ -185,6 +186,7 @@ my $options_okay =
                 'rainfo=s'     => \$GetOptions_H{"--rainfo"},
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
+                'ribostep=s'   => \$GetOptions_H{"--ribostep"},
                 'fmpos=s'      => \$GetOptions_H{"--fmpos"},
                 'fmlpos=s'     => \$GetOptions_H{"--fmlpos"},
                 'fmrpos=s'     => \$GetOptions_H{"--fmrpos"},
@@ -842,12 +844,17 @@ if($do_fribo2) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rarpos", "$ra_uapos_rpos_tbl_file", 0, "unaligned position info that align at model position $min_rpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rauapos", "$ra_uapos_tbl_file", 0, "unaligned position info that align at model positions $max_lpos and $min_rpos");
 
+  # parse riboaligner tbl file
   my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass), $log_FH, *STDOUT);
     
-  # parse riboaligner tbl file
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs riboaligner identified as too long", $progress_w, $log_FH, *STDOUT);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ra_npass, $rt2_npass-$ra_npass), $log_FH, *STDOUT);
+
+  # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
+  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Generating model span survival table", $progress_w, $log_FH, *STDOUT);
+  parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $family_modellen, $out_root, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
   $stage_key = "fmspan";
   if($do_fmspan) { 
@@ -1787,6 +1794,170 @@ sub parse_riboaligner_tbl_and_uapos_files {
   }
 
   return ($rt_npass, $ra_npass, $ms_npass);
+}
+
+#################################################################
+# Subroutine:  parse_riboaligner_tbl_and_output_mdlspan_tbl()
+# Incept:      EPN, Tue Aug 21 12:41:59 2018
+#
+# Purpose:     Parse a tbl output file from riboaligner.pl and
+#              output a tabular file that lists number of sequences 
+#              and taxonomic groups that would survive for a 
+#              variety of different start/end model positions.
+#
+# Arguments:
+#   $in_file:             name of input tbl file to parse
+#   $mlen:                model length 
+#   $seqtaxid_HR:         ref to hash of taxids of each sequence
+#   $seqgtaxid_HHR:       ref to 2D hash, 1D key tax level (e.g. "order")
+#                         2D key is sequence name, value is taxid of 
+#                         that group for that sequence
+#   $opt_HHR:             ref to 2D hash of cmdline options
+#   $ofile_info_HHR:      ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies:       If we can't parse $in_file
+#             If we don't have taxid info in seqtaxid_HR or seqgtaxid_HHR 
+#             for a sequence that we read in $in_file
+# 
+#################################################################
+sub parse_riboaligner_tbl_and_output_mdlspan_tbl { 
+  my $sub_name = "parse_riboaligner_tbl_and_output_mdlspan_tbl()";
+  my $nargs_expected = 7;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $mlen, $out_root, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+
+  # open the output table
+  my $out_file = $out_root . ".mdlspan.survtbl"; 
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
+  print OUT "#5'pos\t3'pos\tnseq-survive\tnseq-do-not-survive\tnseq-not-considered(failed)\tnspecies-survive\tnorder-survive\tnclass-survive\tnphylum-survive\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+
+  # create the bins
+  my $pstep = opt_Get("--ribostep", $opt_HHR);
+  my $bidx = 0;
+  my $lpos; 
+  my $rpos;
+  my @lpos_A = ();
+  my @rpos_A = ();
+  for($lpos = 1; $lpos < ($mlen + $pstep); $lpos += $pstep) { 
+    for($rpos = $lpos + $pstep; $rpos < ($mlen + $pstep); $rpos += $pstep) { 
+      if($lpos > $mlen) { $lpos = $mlen; }
+      if($rpos > $mlen) { $rpos = $mlen; }
+      push(@lpos_A, $lpos);
+      push(@rpos_A, $rpos);
+      $bidx++;
+    }
+  }
+  my $nbins = $bidx;
+
+  # parse the tbl file, and for each sequence determine which bins it survives in and update counts for that bin
+  my @nseq_in_A  = (); # 0..$nbins-1, number of sequences surviving each bin
+  my @nseq_out_A = ();
+  my $nseq_fail = 0;
+  my @ngtaxid_bin_level_AH      = (); # array [0..$nbins-1] of hashes, key is taxonomic level, value is number of groups at that level that survive in this bin
+  my @nseq_bin_level_gtaxid_AHH = (); # array [0..$nbins-1] of hashes, key 1D is taxonomic level, key 2D is gtaxid, 
+                                      # value is number of sequences in that group that survive in this bin
+  
+  # initialize
+  for($bidx = 0; $bidx < $nbins; $bidx++) { 
+    $nseq_in_A[$bidx]  = 0;
+    $nseq_out_A[$bidx] = 0;
+    foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
+      $ngtaxid_bin_level_AH[$bidx]{$level} = 0;
+      $ngtaxid_bin_level_AH[$bidx]{"species"} = 0;
+    }
+  }
+
+  # parse each line of the output file and collect information from it
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  while(my $line = <IN>) { 
+    ##idx  target      classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
+    ##---  ----------  ---------------------  -----  ----  ------  ------  ------------  -------------------
+    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    if($line !~ m/^\#/) { 
+      chomp $line;
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 9) { 
+        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      }
+      my ($target, $mstart, $mstop) = ($el_A[1], $el_A[5], $el_A[6]); 
+      if(($mstart ne "-") && ($mstop ne "-")) { 
+        # get taxonomic information for this guy, and store in %gtaxid_H
+        my %gtaxid_H = ();
+        foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
+          if(! exists $seqgtaxid_HHR->{$level}{$target}) { 
+            ofile_FAIL("ERROR in $sub_name, no $level information for $target\n", "RIBO", $?, $FH_HR);
+          }
+          $gtaxid_H{$level} = $seqgtaxid_HHR->{$level}{$target};
+        }
+        if(! exists $seqtaxid_HR->{$target}) { 
+          ofile_FAIL("ERROR in $sub_name, no species information for $target\n", "RIBO", $?, $FH_HR);
+        }
+        $gtaxid_H{"species"} = $seqtaxid_HR->{$target};
+        
+        # for each bin, would this sequence survive? if so, update counts for that bin
+        for($bidx = 0; $bidx < $nbins; $bidx++) { 
+          if(($mstart <= $lpos_A[$bidx]) && ($mstop >= $rpos_A[$bidx])) { 
+            $nseq_in_A[$bidx]++;
+            
+            foreach my $level (sort keys (%gtaxid_H)) { 
+              my $gtaxid = $gtaxid_H{$level};
+              if(! exists $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid}) { 
+                $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid} = 1;
+                $ngtaxid_bin_level_AH[$bidx]{$level}++;
+              }
+              else { 
+                $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid}++;
+              }
+            }
+          }
+          else { 
+            $nseq_out_A[$bidx]++;
+          }
+        } # end of for($bidx = 0; $bidx < $nbins; $bidx++)
+      } # end of if($mstart ne "-" && $mstop ne "-") 
+      else { 
+        $nseq_fail++;
+      }
+    }
+  }
+  close(IN);
+
+  # we have all the information we need, output it
+  # one line per bin
+  for($bidx = 0; $bidx < $nbins; $bidx++) { 
+    # generate lists of gtaxids for each group for this bin
+    my %list_str_H = ();
+    foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
+      $list_str_H{$level} = "";
+      foreach my $gtaxid (sort {$a <=> $b} keys (%{$nseq_bin_level_gtaxid_AHH[$bidx]{$level}})) { 
+        if($list_str_H{$level} ne "") { $list_str_H{$level} .= ","; }
+        $list_str_H{$level} .= $gtaxid;
+      }
+      if($list_str_H{$level} eq "") { $list_str_H{$level} = "-"; }
+    }
+    
+    printf OUT ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+                $lpos_A[$bidx], $rpos_A[$bidx], $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_fail,
+                $ngtaxid_bin_level_AH[$bidx]{"species"}, 
+                $ngtaxid_bin_level_AH[$bidx]{"order"}, 
+                $ngtaxid_bin_level_AH[$bidx]{"class"}, 
+                $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
+                $list_str_H{"order"}, 
+                $list_str_H{"class"}, 
+                $list_str_H{"phylum"}); 
+  } # end of 'for($bidx = 0' loop over bins
+  close(OUT);
+
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "mdlspan.survtbl", $out_file, 1, "table summarizing number of sequences for different model position spans");
+
+  return;
 }
 
 #################################################################
