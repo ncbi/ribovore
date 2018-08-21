@@ -413,7 +413,7 @@ close(RIBO);
 
 foreach $family (@family_order_A) { 
   close($family_sfetch_FH_H{$family});
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, "sfetch file for $family");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, "list file for $family");
 }
                                                        
 ##########################################################
@@ -449,10 +449,10 @@ foreach $family (@family_order_A) {
     $outfile_H{"seqlist"} = $family_sfetch_filename_H{$family};
     ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   0, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"},  0, "EL file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},     0, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"}, 0, "cmalign output file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   1, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"},  1, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},     1, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"}, 1, "cmalign output file for $family");
 
     # parse cmalign file
     parse_cmalign_file($outfile_H{"cmalign"}, \%out_tbl_HH, $FH_HR);
@@ -473,7 +473,7 @@ foreach $family (@family_order_A) {
   my $family_cmalign_insert_file = $out_root . "." . $family . ".cmalign.ifile";
   my $family_cmalign_el_file     = $out_root . "." . $family . ".cmalign.elfile";
   my $family_cmalign_out_file    = $out_root . "." . $family . ".cmalign.out";
-  foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig", "partial-ambig") { 
+  foreach my $length_class ("partial", "full-exact", "full-extra", "full-ambig-extra", "full-ambig-less") { 
     if((exists $family_length_class_HHA{$family}{$length_class}) && 
        (scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0)) { 
       $length_class_list_file = $out_root . "." . $family . "." . $length_class . ".list";
@@ -481,7 +481,6 @@ foreach $family (@family_order_A) {
       $cmalign_insert_file    = $out_root . "." . $family . "." . $length_class . ".ifile";
       $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
-
 
       open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
@@ -627,16 +626,16 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "# Column 6 [mstart]:",       "model start position");
         printf OUT ("%-33s %s\n", "# Column 7 [mstop]:",        "model stop position");
         printf OUT ("%-33s %s\n", "# Column 8 [length_class]:", "classification of length, one of:");
-        printf OUT ("%-33s %s\n", "#",                          "'partial:'       does not span full model");
-        printf OUT ("%-33s %s\n", "#",                          "'full-exact':    spans full model and no 5' or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "                 and no indels in first or final $nbound model positions");
-        printf OUT ("%-33s %s\n", "#",                          "'full-extra':    spans full model but has 5' and/or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'full-ambig':    spans full model and no 5' or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "                 but has indel(s) in first and/or final $nbound model positions");
-        printf OUT ("%-33s %s\n", "#",                          "                 and insertions outnumber deletions at 5' and/or 3' end");
-        printf OUT ("%-33s %s\n", "#",                          "'partial-ambig': spans full model and no 5' or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "                 but has indel(s) in first and/or final $nbound model positions");
-        printf OUT ("%-33s %s\n", "#",                          "                 and insertions do not outnumber deletions at neither 5' nor 3' end");
+        printf OUT ("%-33s %s\n", "#",                          "'partial:'           does not span full model");
+        printf OUT ("%-33s %s\n", "#",                          "'full-exact':        spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "                     and no indels in first or final $nbound model positions");
+        printf OUT ("%-33s %s\n", "#",                          "'full-extra':        spans full model but has 5' and/or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'full-ambig-extra':  spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "                     but has indel(s) in first and/or final $nbound model positions");
+        printf OUT ("%-33s %s\n", "#",                          "                     and insertions outnumber deletions at 5' and/or 3' end");
+        printf OUT ("%-33s %s\n", "#",                          "'full-ambig-less':   spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "                     but has indel(s) in first and/or final $nbound model positions");
+        printf OUT ("%-33s %s\n", "#",                          "                     and insertions do not outnumber deletions at neither 5' nor 3' end");
         printf OUT ("%-33s %s\n", "# Column 9 [unexpected_features]:", "unexpected/unusual features of sequence (see below)")
       }
       else { # regurgitate other comment lines
@@ -724,11 +723,11 @@ sub parse_stk_file {
   my ($stk_file, $modellen, $nbound, $out_tbl_HHR, $lenclass_HAR, $FH_HR) = @_;
 
   # initialize lenclass_HAR for each length class:
-  @{$lenclass_HAR->{"partial"}}       = ();
-  @{$lenclass_HAR->{"full-exact"}}    = ();
-  @{$lenclass_HAR->{"full-extra"}}    = ();
-  @{$lenclass_HAR->{"full-ambig"}}    = ();
-  @{$lenclass_HAR->{"partial-ambig"}} = ();
+  @{$lenclass_HAR->{"partial"}}         = ();
+  @{$lenclass_HAR->{"full-exact"}}      = ();
+  @{$lenclass_HAR->{"full-extra"}}      = ();
+  @{$lenclass_HAR->{"full-ambig-more"}} = ();
+  @{$lenclass_HAR->{"full-ambig-less"}} = ();
 
   # first pass through the file to get the RF line:
   my $line;
@@ -787,20 +786,15 @@ sub parse_stk_file {
         if(! exists $out_tbl_HHR->{$seqname}) { 
           ofile_FAIL("ERROR found sequence in alignment $stk_file without an entry in the output table", "RIBO", 1, $FH_HR); 
         }
-        if(($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) &&
-           ($out_tbl_HHR->{$seqname}{"pred_cmto"}   == $modellen)) { 
-          # spans the full model, classify further as:
-          # 'exact': has 0 indels in first and final $nbound RF positions 
-          # 'extra': has >=1 inserts before first RF position or after final RF position
-          # 'ambig': has 0 inserts before first RF position or after final RF position, but
-          #          has >= 1 indel in first or final $nbound RF positions
+
+        my $i_before_first_rfpos = 0; # number of insertions before RF position 1
+        my $i_early              = 0; # number of insertions between RF position 1 and $nbound
+        my $d_early              = 0; # number of deletions  between RF position 1 and $nbound
+        my $i_after_final_rfpos  = 0; # number of insertions after RF position $modellen
+        my $i_late               = 0; # number of insertions between RF position $modellen-$nbound+1 and $modellen
+        my $d_late               = 0; # number of insertions between RF position $modellen-$nbound+1 and $modellen
+        if($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) { 
           my @seqstr_A = split("", $seqstr);
-          my $i_before_first_rfpos = 0; # number of insertions before RF position 1
-          my $i_early              = 0; # number of insertions between RF position 1 and $nbound
-          my $d_early              = 0; # number of deletions  between RF position 1 and $nbound
-          my $i_after_final_rfpos  = 0; # number of insertions after RF position $modellen
-          my $i_late               = 0; # number of insertions between RF position $modellen-$nbound+1 and $modellen
-          my $d_late               = 0; # number of insertions between RF position $modellen-$nbound+1 and $modellen
           # count number of insertions before RF position 1
           for($apos = 1; $apos < $apos_first_rfpos; $apos++) { 
             if($seqstr_A[($apos-1)] =~ m/\w/) { 
@@ -820,7 +814,10 @@ sub parse_stk_file {
               }
             }
           }
-          # count number of deletions and insertions between RF position ($modellen-$nbound+1) and $modellen
+        }
+        # count number of deletions and insertions between RF position ($modellen-$nbound+1) and $modellen
+        if($out_tbl_HHR->{$seqname}{"pred_cmto"}   == $modellen) { 
+          my @seqstr_A = split("", $seqstr);
           for($apos = $apos_3p_nbound; $apos <= $apos_final_rfpos; $apos++) { 
             if($i_am_rf_A[$apos]) { # nongap RF position
               if($seqstr_A[($apos-1)] !~ m/\w/) { # a gap: a deletion
@@ -839,7 +836,20 @@ sub parse_stk_file {
               $i_after_final_rfpos++;
             }
           }
-          # classify
+        }
+
+        # classify
+        if(($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) &&
+           ($out_tbl_HHR->{$seqname}{"pred_cmto"}   == $modellen)) { 
+          # spans the full model, classify further as:
+          # 'full-exact':       has 0 indels in first and final $nbound RF positions 
+          # 'full-extra':       has >=1 inserts before first RF position or after final RF position
+          # 'full-ambig-more':  has 0 inserts before first RF position or after final RF position, but
+          #                     has >= 1 indel in first or final $nbound RF positions
+          #                     and #insertions > #deletions at 5' or 3' end
+          # 'full-ambig-less':  has 0 inserts before first RF position or after final RF position, but
+          #                     has >= 1 indel in first or final $nbound RF positions
+          #                     and #insertions <= #deletions at 5' and 3' end
           if(($i_before_first_rfpos == 0) && ($d_early == 0) && ($i_early == 0) && 
              ($i_after_final_rfpos  == 0) && ($d_late  == 0) && ($i_late  == 0)) { 
             $out_tbl_HHR->{$seqname}{"length_class"} = "full-exact";
@@ -851,16 +861,22 @@ sub parse_stk_file {
           }
           else { 
             if(($d_late >= $i_late) && ($d_early >= $d_late)) { 
-              $out_tbl_HHR->{$seqname}{"length_class"} = "partial-ambig";
-              push(@{$lenclass_HAR->{"partial-ambig"}}, $seqname);
+              $out_tbl_HHR->{$seqname}{"length_class"} = "full-ambig-less";
+              push(@{$lenclass_HAR->{"full-ambig-less"}}, $seqname);
             }
             else { 
-              $out_tbl_HHR->{$seqname}{"length_class"} = "full-ambig";
-              push(@{$lenclass_HAR->{"full-ambig"}}, $seqname);
+              $out_tbl_HHR->{$seqname}{"length_class"} = "full-ambig-more";
+              push(@{$lenclass_HAR->{"full-ambig-more"}}, $seqname);
             }
           }
         } # end of if(($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) &&
           # ($out_tbl_HHR->{$seqname}{"pred_cmto"}   == $modellen)) { 
+        #elsif($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) { 
+        #
+      #}
+        #elsif($out_tbl_HHR->{$seqname}{"pred_cmto"} == $modellen) { 
+        #
+      #}
         else { 
           $out_tbl_HHR->{$seqname}{"length_class"} = "partial";
           push(@{$lenclass_HAR->{"partial"}}, $seqname);
