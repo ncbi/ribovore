@@ -1161,10 +1161,20 @@ if($do_fribo2) {
   push(@column_explanation_A, "#                          see $out_root-ra/$dir_tail-ra.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
   push(@column_explanation_A, "# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long\n");
-  push(@column_explanation_A, "#                          <s>=full-extra: alignment spans full model with >= 1 nt extra on 5' or 3' end\n");
-  push(@column_explanation_A, "#                          <s>=full-ambig: alignment spans full model with 0 nt extra on 5' or 3' end but\n");
-  push(@column_explanation_A, "#                                          has indels in first and/or final 10 model positions and\n");
-  push(@column_explanation_A, "#                                          insertions outnumber deletions at 5' and/or 3' end\n");
+  push(@column_explanation_A, "#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end\n");
+  push(@column_explanation_A, "#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but\n");
+  push(@column_explanation_A, "#                                                 has indels in first and/or final 10 model positions and\n");
+  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' and/or 3' end\n");
+  push(@column_explanation_A, "#                          <s>=5flush-extra:      alignment extends to first but not final model position\n")
+  push(@column_explanation_A, "#                                                 with >= 1 nt extra before first model position\n");
+  push(@column_explanation_A, "#                          <s>=5flush-ambig-more: alignment extends to first but not final model position\n");
+  push(@column_explanation_A, "#                                                 and has indels in first 10 model positions and\n");
+  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' end\n");
+  push(@column_explanation_A, "#                          <s>=3flush-extra:      alignment extends to final but not first model position\n")
+  push(@column_explanation_A, "#                                                 with >= 1 nt extra after final model position\n");
+  push(@column_explanation_A, "#                          <s>=3flush-ambig-more: alignment extends to final but not first model position\n");
+  push(@column_explanation_A, "#                                                 and has indels in final 10 model positions and\n");
+  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 3' end\n");
 }
 if($do_fmspan) { 
   push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
@@ -1564,7 +1574,9 @@ sub parse_riboaligner_tbl_file {
       }
       else { # $passfail eq "PASS"
         # check for riboaligner fail
-        if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
+        if(($lclass eq "full-extra")   || ($lclass eq "full-ambig-more")   || 
+           ($lclass eq "5flush-extra") || ($lclass eq "5flush-ambig-more") || 
+           ($lclass eq "3flush-extra") || ($lclass eq "3flush-ambig-more")) { 
           $ra_curfailstr_H{$target} = "riboaligner[" . $lclass . "];;";
         }
         else { 
