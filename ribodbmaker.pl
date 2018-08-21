@@ -119,6 +119,7 @@ opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skip
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
+opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",    "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
@@ -189,6 +190,7 @@ my $options_okay =
                 'fmrpos=s'     => \$GetOptions_H{"--fmrpos"},
                 'fmnogap'      => \$GetOptions_H{"--fmnogap"},
                 'fione'        => \$GetOptions_H{"--fione"},
+                'fimin'        => \$GetOptions_H{"--fimin"},
                 'cfid'         => \$GetOptions_H{"--cfid"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
@@ -1165,12 +1167,12 @@ if($do_fribo2) {
   push(@column_explanation_A, "#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but\n");
   push(@column_explanation_A, "#                                                 has indels in first and/or final 10 model positions and\n");
   push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' and/or 3' end\n");
-  push(@column_explanation_A, "#                          <s>=5flush-extra:      alignment extends to first but not final model position\n")
+  push(@column_explanation_A, "#                          <s>=5flush-extra:      alignment extends to first but not final model position\n");
   push(@column_explanation_A, "#                                                 with >= 1 nt extra before first model position\n");
   push(@column_explanation_A, "#                          <s>=5flush-ambig-more: alignment extends to first but not final model position\n");
   push(@column_explanation_A, "#                                                 and has indels in first 10 model positions and\n");
   push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' end\n");
-  push(@column_explanation_A, "#                          <s>=3flush-extra:      alignment extends to final but not first model position\n")
+  push(@column_explanation_A, "#                          <s>=3flush-extra:      alignment extends to final but not first model position\n");
   push(@column_explanation_A, "#                                                 with >= 1 nt extra after final model position\n");
   push(@column_explanation_A, "#                          <s>=3flush-ambig-more: alignment extends to final but not first model position\n");
   push(@column_explanation_A, "#                                                 and has indels in final 10 model positions and\n");
@@ -1191,6 +1193,11 @@ if($do_ingrup) {
     push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
     push(@column_explanation_A, "#                          other sequences in its taxonomic group than this one did\n");
     push(@column_explanation_A, "#                          at the most specific level that is defined out of order/class/phylum\n");
+    if(opt_IsUsed("--fimin", \%opt_HH)) { 
+      push(@column_explanation_A, "#                          if <s> includes 'too-few-in-species-taxid', there were fewer than\n");
+      push(@column_explanation_A, sprintf("#                          %d sequences with the species taxid of this sequence (that were not\n", opt_Get("--fimin", \%opt_HH)));
+      push(@column_explanation_A, "#                          of O type), as enforced by the --fimin option\n");
+    }
   }
 }
 
@@ -1944,7 +1951,9 @@ sub parse_alipid_analyze_tab_files {
   my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
-  my $do_one = (opt_Get("--fione", $opt_HHR)) ? 1 : 0;
+  my $do_one     = (opt_Get   ("--fione", $opt_HHR)) ? 1 : 0;
+  my $do_one_min = (opt_IsUsed("--fimin", $opt_HHR)) ? 1 : 0; # --fimin requires --fione
+  my $one_min    = opt_Get   ("--fimin", $opt_HHR);
   my %max_pid_per_taxid_HH    = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
   my %argmax_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
                                     # lowest level in @{$level_AR}
@@ -1954,6 +1963,9 @@ sub parse_alipid_analyze_tab_files {
   # note: it is wasteful for us to compute and store these for all 3 levels since we only need 
   # it for the lowest level (phylum, class, order) it is available, but we do it anyway because
   # the following implementation (see 'if($do_one)') is simple
+
+  my %do_one_min_taxid_H = (); # 1D key is $seqname, value is species taxid if seqname is candidate for failing b/c not enough sequences in its taxid (--fimin)
+  my %one_min_ntaxid_H   = (); # key is sequence taxid, value is number of sequences that have that taxid, only filled and used if $do_one_min (--fimin)
 
   my %curfailstr_H = ();  # will hold fail string 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
@@ -1998,9 +2010,10 @@ sub parse_alipid_analyze_tab_files {
         my @el_A = split(/\t/, $line);
         if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
         my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
+
         if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
         if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
-          # sequence is not an O type, and has a non-1 species taxid and valid group_taxid at this level
+          # sequence is not an O type, and valid group_taxid at this level (and so has valid seq_taxid too)
           # so it is a candidate for being the max avg pid for its species taxid
           # and also a candidate for failing if it is not max avg pid for its species
           $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
@@ -2009,6 +2022,19 @@ sub parse_alipid_analyze_tab_files {
           if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
             $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
             $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
+          }
+        }
+        # keep track of number of sequences per taxid, if the --fimin option was used
+        if(($do_one_min) && ($level eq "phylum")) { 
+          # only do this at the phylum level
+          if(($curfailstr_H{$seqname} eq "") && ($seq_taxid ne "-") && ($seq_taxid ne "1")) { 
+            $do_one_min_taxid_H{$seqname} = $seq_taxid;
+            if(! exists $one_min_ntaxid_H{$seq_taxid}) { 
+              $one_min_ntaxid_H{$seq_taxid} = 0; 
+            }
+            else { 
+              $one_min_ntaxid_H{$seq_taxid}++;
+            }
           }
         }
       }
@@ -2022,6 +2048,15 @@ sub parse_alipid_analyze_tab_files {
       my $max_seqname = $argmax_pid_per_taxid_HH{$level}{$seq_taxid};
       if($seqname ne $max_seqname) { 
         $curfailstr_H{$seqname} .= sprintf("not-max-avg-pid(%.3f<%.3f);", $do_one_avgpid_HH{$level}{$seqname}, $max_pid_per_taxid_HH{$level}{$seq_taxid});
+      }
+    }
+    if($do_one_min) { 
+      # remove any sequences with too few sequences in their seq taxid
+      foreach $seqname (sort keys %do_one_min_taxid_H) { 
+        my $seq_taxid   = $do_one_min_taxid_H{$seqname};
+        if($one_min_ntaxid_H{$seq_taxid} < $one_min) { 
+          $curfailstr_H{$seqname} .= sprintf("too-few-in-species-taxid(%d<%d);", $one_min_ntaxid_H{$seq_taxid}, $one_min); 
+        }
       }
     }
   }
