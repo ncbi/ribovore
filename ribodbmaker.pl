@@ -847,6 +847,7 @@ my @rapass_seqorder_A = (); # order of sequences that pass rapass stage
 my $ra_outdir = $out_root . "-ra";
 my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($family_modellen, \%opt_HH);
 my $ra_full_stk_file = undef;
+my $ra_tbl_out_file  = undef;
 if($do_fribo2) { 
   $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
@@ -863,7 +864,7 @@ if($do_fribo2) {
   my $ra_outdir_tail   = $dir_tail . ".ribodbmaker-ra";
   my $ra_out_file      = $out_root . ".riboaligner.out";
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
-  my $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
+  $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
   my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
   my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
@@ -887,11 +888,6 @@ if($do_fribo2) {
     
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs riboaligner identified as too long", $progress_w, $log_FH, *STDOUT);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ra_npass, $rt2_npass-$ra_npass), $log_FH, *STDOUT);
-
-  # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Generating model span survival table", $progress_w, $log_FH, *STDOUT);
-  parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
   $stage_key = "fmspan";
   if($do_fmspan) { 
@@ -1010,6 +1006,16 @@ else {
     ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail; ONLY PASSES ADVANCE", $npass_ingrup, $nfail_ingrup), $log_FH, *STDOUT);
     $did_ingrup = 1;
   } # end of if($do_ingrup)
+
+  ########################
+  # mdlspan table creation
+  ########################
+  if($do_fribo2) { # we can't create the table if we skipped the ribo2 stage
+    # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
+    $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival table", $progress_w, $log_FH, *STDOUT);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  }
 
   ######################################################################################
   # 'clustr' stage: stage that clusters remaining sequences and picks a representative 
