@@ -1831,11 +1831,6 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
-  # open the output table
-  my $out_file = $out_root . ".mdlspan.survtbl"; 
-  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
-  print OUT "#5'pos\t3'pos\tnseq-survive\tnseq-do-not-survive\tnseq-not-considered(failed)\tnspecies-survive\tnorder-survive\tnclass-survive\tnphylum-survive\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
-
   # create the bins
   my $pstep = opt_Get("--ribostep", $opt_HHR);
   my $bidx = 0;
@@ -1931,6 +1926,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
 
   # we have all the information we need, output it
   # one line per bin
+  my @out_AH = (); # [0..$nbins-1], each element is hash, key is "output", "norder", "length"
+                   # hash is used to sort output lines by norder, then length
   for($bidx = 0; $bidx < $nbins; $bidx++) { 
     # generate lists of gtaxids for each group for this bin
     my %list_str_H = ();
@@ -1942,17 +1939,35 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
       }
       if($list_str_H{$level} eq "") { $list_str_H{$level} = "-"; }
     }
-    
-    printf OUT ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
-                $lpos_A[$bidx], $rpos_A[$bidx], $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_fail,
-                $ngtaxid_bin_level_AH[$bidx]{"species"}, 
-                $ngtaxid_bin_level_AH[$bidx]{"order"}, 
-                $ngtaxid_bin_level_AH[$bidx]{"class"}, 
-                $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
-                $list_str_H{"order"}, 
-                $list_str_H{"class"}, 
-                $list_str_H{"phylum"}); 
+
+    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+                                       $rpos_A[$bidx] - $lpos_A[$bidx] + 1, $lpos_A[$bidx], $rpos_A[$bidx], $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_fail,
+                                       $ngtaxid_bin_level_AH[$bidx]{"species"}, 
+                                       $ngtaxid_bin_level_AH[$bidx]{"order"}, 
+                                       $ngtaxid_bin_level_AH[$bidx]{"class"}, 
+                                       $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
+                                       $list_str_H{"order"}, 
+                                       $list_str_H{"class"}, 
+                                       $list_str_H{"phylum"}); 
+    $out_AH[$bidx]{"norder"} = $ngtaxid_bin_level_AH[$bidx]{"order"}; 
+    $out_AH[$bidx]{"length"} = $rpos_A[$bidx] - $lpos_A[$bidx] + 1;
+    $out_AH[$bidx]{"lpos"}   = $lpos_A[$bidx];
   } # end of 'for($bidx = 0' loop over bins
+  
+  # open output file, sort the output and write output file
+  my $out_file = $out_root . ".mdlspan.survtbl"; 
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
+  print OUT "#length\t5'pos\t3'pos\tnseq-survive\tnseq-do-not-survive\tnseq-not-considered(failed)\tnspecies-survive\tnorder-survive\tnclass-survive\tnphylum-survive\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+  
+  @out_AH = sort { 
+    $b->{"norder"} <=> $a->{"norder"} or 
+    $b->{"length"} <=> $a->{"length"} or
+    $a->{"lpos"}   <=> $b->{"lpos"}
+  } @out_AH;
+  
+  for($bidx = 0; $bidx < $nbins; $bidx++) { 
+    print OUT $out_AH[$bidx]{"output"};
+  }
   close(OUT);
 
   ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "mdlspan.survtbl", $out_file, 1, "table summarizing number of sequences for different model position spans");
