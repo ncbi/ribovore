@@ -968,10 +968,8 @@ else {
       if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid.analyze.$level", $alipid_analyze_out_file_H{$level}, 0, "$level output file from alipid-taxinfo-analyze.pl");
     }
-
-    $npass = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
-
-    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, sprintf("%6d fail;", $cur_nfail), $log_FH, *STDOUT);
 
     # determine how many sequences at for each taxonomic group at each level $level are still left
     foreach $level (@level_A) { 
@@ -1012,8 +1010,11 @@ else {
   ########################
   if($do_fribo2) { # we can't create the table if we skipped the ribo2 stage
     # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
-    $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival table", $progress_w, $log_FH, *STDOUT);
-    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for all seqs", $progress_w, $log_FH, *STDOUT);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, undef, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for PASSing seqs", $progress_w, $log_FH, *STDOUT);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqfailstr_H, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   }
 
@@ -1853,6 +1854,8 @@ sub parse_riboaligner_tbl_and_uapos_files {
 #   $mdlspan_sort_exec:   path to script that we use to resort if --mslist
 #   $mlen:                model length 
 #   $out_root:            for naming output files
+#   $seqfailstr_HR:       ref to hash of sequence fail string, if undef,
+#                         do all seqs
 #   $seqtaxid_HR:         ref to hash of taxids of each sequence
 #   $seqgtaxid_HHR:       ref to 2D hash, 1D key tax level (e.g. "order")
 #                         2D key is sequence name, value is taxid of 
@@ -1869,10 +1872,10 @@ sub parse_riboaligner_tbl_and_uapos_files {
 #################################################################
 sub parse_riboaligner_tbl_and_output_mdlspan_tbl { 
   my $sub_name = "parse_riboaligner_tbl_and_output_mdlspan_tbl()";
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $mdlspan_sort_exec, $mlen, $out_root, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file, $mdlspan_sort_exec, $mlen, $out_root, $seqfailstr_HR, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
@@ -1927,7 +1930,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
         ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
       }
       my ($target, $mstart, $mstop) = ($el_A[1], $el_A[5], $el_A[6]); 
-      if(($mstart ne "-") && ($mstop ne "-")) { 
+      if(((! defined $seqfailstr_HR) || ($seqfailstr_HR->{$target} eq "")) && # we are doing all seqs ($seqfailstr_HR undef) or sequence has not failed
+         ($mstart ne "-") && ($mstop ne "-")) { 
         # get taxonomic information for this guy, and store in %gtaxid_H
         my %gtaxid_H = ();
         foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
@@ -2002,7 +2006,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   } # end of 'for($bidx = 0' loop over bins
   
   # open output file, sort the output and write output file
-  my $out_file = $out_root . ".mdlspan.survtbl"; 
+  my $out_key = (defined $seqfailstr_HR) ? "pass" : "all";
+  my $out_file = $out_root . ".$out_key.mdlspan.survtbl";
   open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
   print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
   
@@ -2016,19 +2021,18 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
     print OUT $out_AH[$bidx]{"output"};
   }
   close(OUT);
-
-  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "mdlspan.survtbl", $out_file, 1, "table summarizing number of sequences for different model position spans");
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$out_key.mdlspan.survtbl", $out_file, 1, "table summarizing number of sequences ($out_key) for different model position spans");
 
   # if --mslist used, re-sort to prioritize sequences in that file
   if(opt_IsUsed("--mslist", $opt_HHR)) { 
-    my $resort_out_file = $out_root . ".resort.mdlspan.survtbl"; 
+    my $resort_out_file = $out_root . ".$out_key.resort.mdlspan.survtbl";
     my $opt_str = ""; 
     my $key = "orders";
     if   (opt_Get("--msclass",  $opt_HHR)) { $opt_str .= "-c"; $key = "classes"; }
     elsif(opt_Get("--msphylum", $opt_HHR)) { $opt_str .= "-p"; $key = "phyla";   }
     my $resort_cmd = $mdlspan_sort_exec . " $opt_str $out_file " . opt_Get("--mslist", $opt_HHR) . " > $resort_out_file"; 
     ribo_RunCommand($resort_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
-    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "resort.mdlspan.survtbl", $resort_out_file, 1, "mdlspan.survtbl table re-sorted to prioritize $key read from --mslist <s> file");
+    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$out_key.resort.mdlspan.survtbl", $resort_out_file, 1, "$out_key.mdlspan.survtbl table re-sorted to prioritize $key read from --mslist <s> file");
   }
   return;
 }
@@ -2183,7 +2187,7 @@ sub parse_blast_output_for_self_hits {
 #   $opt_HHR:        reference to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
 #
-# Returns:    Number of sequences that pass (do not fail)
+# Returns:    Number of sequences that fail
 #
 # Dies:       if a sequence read in the alipid file is not in %{$seqfailstr_HR}
 #################################################################
@@ -2306,15 +2310,18 @@ sub parse_alipid_analyze_tab_files {
   }
 
   # now reformat the error string to include the stage name
+  my $nfail = 0;
   foreach $seqname (keys %curfailstr_H) { 
     if($curfailstr_H{$seqname} ne "") { 
       $curfailstr_H{$seqname} = "ingroup-analysis[" . $curfailstr_H{$seqname} . "];;";
+      $nfail++;
     }
   }
     
   # now output pass and fail files
-  return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ingrup", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
-  
+  update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ingrup", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
+
+  return $nfail;
 }
 
 #################################################################
