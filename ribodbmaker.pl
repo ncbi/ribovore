@@ -1884,22 +1884,31 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   my $bidx = 0;
   my $lpos; 
   my $rpos;
-  my @lpos_A = ();
-  my @rpos_A = ();
+  my @lpos_A = (); # array of all possible lpos values
+  my @rpos_A = (); # array of all possible rpos values
+  my %lpos_rpos2bin_HH = (); # key1: lpos value, key2: rpos value, value is bin index corresponding to that lpos/rpos pair
+  my @lpos_per_bin_A = (); # [0..nbins-1] lpos for this bin
+  my @rpos_per_bin_A = (); # [0..nbins-1] rpos for this bin
   for($lpos = 1; $lpos < ($mlen + $pstep); $lpos += $pstep) { 
+    if($lpos > $mlen) { $lpos = $mlen; }
+    push(@lpos_A, $lpos);
     for($rpos = $lpos + $pstep; $rpos < ($mlen + $pstep); $rpos += $pstep) { 
-      if($lpos > $mlen) { $lpos = $mlen; }
       if($rpos > $mlen) { $rpos = $mlen; }
-      push(@lpos_A, $lpos);
-      push(@rpos_A, $rpos);
+      if($lpos == 1) { push(@rpos_A, $rpos); }
+      push(@lpos_per_bin_A, $lpos);
+      push(@rpos_per_bin_A, $rpos);
+      $lpos_rpos2bin_HH{$lpos}{$rpos} = $bidx;
       $bidx++;
     }
   }
   my $nbins = $bidx;
+  my $nlpos = scalar(@lpos_A);
+  my $nrpos = scalar(@rpos_A);
 
   # parse the tbl file, and for each sequence determine which bins it survives in and update counts for that bin
-  my @nseq_in_A  = (); # 0..$nbins-1, number of sequences surviving each bin
-  my @nseq_out_A = ();
+  my @nseq_in_A   = (); # 0..$nbins-1, number of sequences surviving each bin
+  my @nseq_out_A  = (); # 0..$nbins-1, number of sequences not surviving each bin
+  my @nseq_spec_A = (); # 0..$nbins-1, number of sequences specifically that fall into this bin (if bin is 51...301 and stepsize is 50, number of sequences that begin with 51..100 and end at 252..301
   my $nseq_fail = 0;
   my @ngtaxid_bin_level_AH      = (); # array [0..$nbins-1] of hashes, key is taxonomic level, value is number of groups at that level that survive in this bin
   my @nseq_bin_level_gtaxid_AHH = (); # array [0..$nbins-1] of hashes, key 1D is taxonomic level, key 2D is gtaxid, 
@@ -1909,6 +1918,7 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   for($bidx = 0; $bidx < $nbins; $bidx++) { 
     $nseq_in_A[$bidx]  = 0;
     $nseq_out_A[$bidx] = 0;
+    $nseq_spec_A[$bidx]  = 0;
     foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
       $ngtaxid_bin_level_AH[$bidx]{$level} = 0;
       $ngtaxid_bin_level_AH[$bidx]{"species"} = 0;
@@ -1945,9 +1955,19 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
         }
         $gtaxid_H{"species"} = $seqtaxid_HR->{$target};
         
+        # determine the specific bin that this sequence falls in
+        my $lpos_idx = 0; 
+        my $rpos_idx = 0;
+        while(($mstart > $lpos_A[($lpos_idx+1)]) && ($lpos_idx < ($nlpos-1))) { $lpos_idx++; }
+        while(($mstop  > $rpos_A[($rpos_idx+1)]) && ($rpos_idx < ($nrpos-1))) { $rpos_idx++; }
+        #if(defined $seqfailstr_HR) { printf("HEYA $mstart $mstop lpos_idx: $lpos_idx rpos_idx: $rpos_idx $lpos_A[$lpos_idx] $rpos_A[$rpos_idx]\n"); }
+
+        $bidx = $lpos_rpos2bin_HH{$lpos_A[$lpos_idx]}{$rpos_A[$rpos_idx]};
+        $nseq_spec_A[$bidx]++;
+
         # for each bin, would this sequence survive? if so, update counts for that bin
         for($bidx = 0; $bidx < $nbins; $bidx++) { 
-          if(($mstart <= $lpos_A[$bidx]) && ($mstop >= $rpos_A[$bidx])) { 
+          if(($mstart <= $lpos_per_bin_A[$bidx]) && ($mstop >= $rpos_per_bin_A[$bidx])) { 
             $nseq_in_A[$bidx]++;
             
             foreach my $level (sort keys (%gtaxid_H)) { 
@@ -1989,10 +2009,10 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
       if($list_str_H{$level} eq "") { $list_str_H{$level} = "-"; }
     }
 
-    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
-                                        $rpos_A[$bidx] - $lpos_A[$bidx] + 1, 
-                                        $lpos_A[$bidx], $rpos_A[$bidx], 
-                                        $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_fail,
+    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+                                        $rpos_per_bin_A[$bidx] - $lpos_per_bin_A[$bidx] + 1, 
+                                        $lpos_per_bin_A[$bidx], $rpos_per_bin_A[$bidx], 
+                                        $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_spec_A[$bidx], $nseq_fail,
                                         $ngtaxid_bin_level_AH[$bidx]{"species"}, 
                                         $ngtaxid_bin_level_AH[$bidx]{"order"}, 
                                         $ngtaxid_bin_level_AH[$bidx]{"class"}, 
@@ -2001,15 +2021,15 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
                                         $list_str_H{"class"}, 
                                         $list_str_H{"phylum"}); 
     $out_AH[$bidx]{"norder"} = $ngtaxid_bin_level_AH[$bidx]{"order"}; 
-    $out_AH[$bidx]{"length"} = $rpos_A[$bidx] - $lpos_A[$bidx] + 1;
-    $out_AH[$bidx]{"lpos"}   = $lpos_A[$bidx];
+    $out_AH[$bidx]{"length"} = $rpos_per_bin_A[$bidx] - $lpos_per_bin_A[$bidx] + 1;
+    $out_AH[$bidx]{"lpos"}   = $lpos_per_bin_A[$bidx];
   } # end of 'for($bidx = 0' loop over bins
   
   # open output file, sort the output and write output file
   my $out_key = (defined $seqfailstr_HR) ? "pass" : "all";
   my $out_file = $out_root . ".$out_key.mdlspan.survtbl";
   open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
-  print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+  print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
   
   @out_AH = sort { 
     $b->{"norder"} <=> $a->{"norder"} or 

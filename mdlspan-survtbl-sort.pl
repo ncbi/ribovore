@@ -73,12 +73,12 @@ open(TBL, $tbl_file) || die "ERROR unable to open $tbl_file for reading";
 while(my $line = <TBL>) { 
   chomp $line;
   if($line !~ m/^\#/) { 
-    #length	5'pos	3'pos	nseq-survive	nseq-do-not-survive	nseq-not-considered(failed)	nspecies-survive	norder-survive	nclass-survive	nphylum-survive	surviving-orders	surviving-classes	surviving-phyla
-    #51	701	751	31965	8426	48836	23200	104	19	1	1,6659,6683,6816,6833,6839,6845,6855,6893,6935,6961,6993,7020,7041,7088,7147,7399,7504,7509,7516,7524,27412,27420,27434,29979,29993,29994,30073,30259,30261,30262,30263,30264,30265,30266,30267,34634,37903,37905,37910,41212,41356,41360,41361,41362,41448,43267,43271,50482,50553,50622,50657,51799,52425,58139,58151,58364,58557,58774,60152,60154,61977,65651,71419,72033,75394,75395,75396,75398,75399,75402,79705,79708,83136,83137,84308,84310,84311,84313,84314,84318,84322,84332,84337,85819,85823,88344,91340,116166,116167,116170,116171,116175,116564,116573,118449,178836,192413,319670,373319,730330,730331,1652079,2082948	1,6658,6670,6681,6844,6854,7540,7553,29997,29999,30001,50557,57294,61986,63448,72037,72040,84343,217
+    #length	5'pos	3'pos	num-surviving-seqs	num-seqs-not-surviving	num-seqs-within-range	num-seqs-not-considered(failed)	num-surviving-species	num-surviving-orders	num-surviving-classes	num-surviving-phyla	surviving-orders	surviving-classes	surviving-phyla
+    #101	451	551	8558	72	0	538	6486	151	44	8	1,4810,4827,4857,4861,4869,4892,5008,5014,5042,5114,5120,5125,5135,5139,5151,5178,5185,5197,5226,5234,5244,5258,5267,5303,5338,5404,5592,28997,29006,33183,34346,34395,34478,36064,36750,37989,38074,39677,45676,47166,48846,55070,56487,62910,62912,62913,62914,62916,62921,66275,68804,68889,78899,79272,88639,90883,90886,92860,93808,100121,105989,107465,134362,135652,139380,146291,148099,152641,152647,157608,162474,162475,189479,191554,204043,214503,214509,231212,231213,252166,261460,291611,292491,292576,297313,388450,432006,432026,432027,451442,451869,452227,452228,452281,452334,452336,452337,452338,452339,452342,452343,545373,603422,639021,642598,642607,642610,654833,716585,721927,721947,742846,1028384,1051672,1055547,1111111,1127803,1134056,1264872,1298590,1339693,1385564,1429051,1484953,1500419,1518855,1538066,1572707,1588757,1618100,1619909,1665694,1775898,1804766,1809179,1809182,1809228,1809229,1809278,1809280,1851469,1895403,1913639,1961800,1963390,1985647,2081776,2126967,2219773,2231465	1,4891,5257,62907,147539,147541,147545,147547,147548,147549,147550,147554,147555,155616,155619,162480,162481,162484,189478,214506,315355,432005,432025,451435,451454,451455,452283,452332,663566,1055546,1217819,1399768,1399770,1538065,1538075,1708517,1798830,2202803,2212702,2212703,2212704,2212732,2219690,2233521	4761,4890,5204,451459,1031332,1696033,1913637,1913638
 
     my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 13) { 
-      die sprintf("ERROR, unable to parse line in mdlspan.survtbl, expected 13 tab-delimited tokens, but read %d on line\n$line\n", scalar(@el_A));
+    if(scalar(@el_A) != 14) { 
+      die sprintf("ERROR, unable to parse line in mdlspan.survtbl, expected 14 tab-delimited tokens, but read %d on line\n$line\n", scalar(@el_A));
     }
     
     # initialize %cur_H which keeps track of which taxids in the input list we have in this line
@@ -121,12 +121,12 @@ while(my $line = <TBL>) {
     if($cur_included_str eq "") { $cur_included_str = "-"; }
 
     # store in @out_AH
-    $out_AH[$nout]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+    $out_AH[$nout]{"output"} = sprintf ("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", 
                                         $ncur_included, $ncur_missing, 
                                         $el_A[0], $el_A[1], $el_A[2], 
                                         $cur_missing_str, $cur_included_str, 
                                         $el_A[3], $el_A[4], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9], 
-                                        $el_A[10], $el_A[11], $el_A[12]);
+                                        $el_A[10], $el_A[11], $el_A[12], $el_A[13]);
 
     $out_AH[$nout]{"nin"}    = $ncur_included;
     $out_AH[$nout]{"length"} = $el_A[0];
@@ -141,7 +141,7 @@ if   ($do_class)  { $key = "classes"; }
 elsif($do_phylum) { $key = "phyla"; }
 else              { $key = "orders"; }
 
-print "#num-listed-surviving-$key\tnum-listed-missing-$key\tlength\t5'pos\t3'pos\tlisted-surviving-$key\tlisted-missing-$key\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+print "#num-listed-surviving-$key\tnum-listed-missing-$key\tlength\t5'pos\t3'pos\tlisted-surviving-$key\tlisted-missing-$key\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
 
 @out_AH = sort { 
   $b->{"nin"} <=> $a->{"nin"} or 
