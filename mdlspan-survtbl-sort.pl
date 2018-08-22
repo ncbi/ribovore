@@ -42,20 +42,25 @@ if($do_list) {
   }
 }
 else { # -l not selected, read file
+  my $line_ctr = 0;
   open(LIST, $list_file) || die "ERROR unable to open $list_file for reading";
   while(my $line = <LIST>) { 
-    chomp $line;
-    if($line =~ m/^\d+$/) { 
-      if(exists $in_H{$line}) { 
-        die "ERROR, read $line twice in input file $list_file";
+    if($line !~ m/^\#/ && $line =~ m/\w/) { 
+      chomp $line;
+      if($line =~ m/^\d+$/) { 
+        if(exists $in_H{$line}) { 
+          die "ERROR, read $line twice in input file $list_file";
+        }
+        $in_H{$line} = 1;
+        $line_ctr++;
       }
-      $in_H{$line} = 1;
-    }
-    else { 
-      die "ERROR, in list file $list_file, expected one taxid per line, read $line";
+      else { 
+        die "ERROR, in list file $list_file, expected one taxid per line, read $line";
+      }
     }
   }
   close(LIST);
+  if($line_ctr == 0) { die "ERROR, didn't read any taxid lines in $list_file"; }
 }
 
 my @sorted_in_keys = sort {$a <=> $b} keys (%in_H);

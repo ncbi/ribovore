@@ -108,7 +108,6 @@ opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfr
 opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2",  "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
 opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2",  "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
-opt_Add("--ribostep",   "integer",  50,              $g,        undef, "--skipfribo2",  "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits:";
 #       option           type        default             group  requires  incompat                 preamble-output                                          help-output    
@@ -117,14 +116,21 @@ opt_Add("--fmlpos",      "integer",  undef,                $g,  "--fmrpos","--sk
 opt_Add("--fmrpos",      "integer",  undef,                $g,  "--fmlpos","--skipfmspan,--fmpos", "aligned sequences must end at or 3' of position <n>",   "aligned sequences must end at or 3' of position <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skipfmspan",           "require sequences do not have a gap at lpos and rpos",  "require sequences do not have a gap at lpos and rpos", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for controlling clustering stage:";
+#       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
+opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
 opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",    "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling clustering stage:";
-#       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
-opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
+#       option          type       default        group       requires incompat                preamble-output                                                 help-output    
+opt_Add("--msstep",     "integer", 50,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
+opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
@@ -186,14 +192,17 @@ my $options_okay =
                 'rainfo=s'     => \$GetOptions_H{"--rainfo"},
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
-                'ribostep=s'   => \$GetOptions_H{"--ribostep"},
+                'cfid'         => \$GetOptions_H{"--cfid"},
                 'fmpos=s'      => \$GetOptions_H{"--fmpos"},
                 'fmlpos=s'     => \$GetOptions_H{"--fmlpos"},
                 'fmrpos=s'     => \$GetOptions_H{"--fmrpos"},
                 'fmnogap'      => \$GetOptions_H{"--fmnogap"},
                 'fione'        => \$GetOptions_H{"--fione"},
                 'fimin'        => \$GetOptions_H{"--fimin"},
-                'cfid'         => \$GetOptions_H{"--cfid"},
+                'msstep=s'     => \$GetOptions_H{"--msstep"},
+                'mslist=s'     => \$GetOptions_H{"--mslist"},
+                'msclass'      => \$GetOptions_H{"--msclass"},
+                'msphylum'     => \$GetOptions_H{"--msphylum"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -308,6 +317,31 @@ if(defined $in_fasta_file) {
 if(defined $in_special_file) { 
   ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1, undef); 
 }
+# a more sophisticated check for --mslist arg, make sure we can parse it
+if(opt_IsUsed("--mslist", \%opt_HH)) { 
+  my $mslist_file = opt_Get("--mslist", \%opt_HH);
+  my %tmp_H = ();
+  ribo_CheckIfFileExistsAndIsNonEmpty($mslist_file, "--mslist argument", undef, 1, undef); 
+  # further make sure it contains 1 or more lines that is an integer
+  open(IN, $mslist_file) || die "ERROR unable to open $mslist_file from --mslist <s>"; 
+  my $line_ctr = 0;
+  while(my $line = <IN>) { 
+    if($line !~ m/^\#/ && $line =~ m/\w/) { 
+      chomp $line;
+      if($line =~ m/^\d+$/) { 
+        if(exists $tmp_H{$line}) { die "ERROR, read $line twice in input file $mslist_file"; }
+        $tmp_H{$line} = 1;
+        $line_ctr++;
+      }
+      else { 
+        die "ERROR, in list file $mslist_file, expected one taxid per line, read $line";
+      }
+    }
+  }
+  close(IN);
+  if($line_ctr == 0) { die "ERROR, didn't read any taxid lines in $mslist_file"; }
+}
+
 
 # now that we know what steps we are doing, make sure that:
 # - required ENV variables are set and point to valid dirs
@@ -395,6 +429,9 @@ if($do_fribo1 || $do_fribo2) {
 
   $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
   $execs_H{"riboaligner"} = $env_ribotyper_dir  . "/riboaligner.pl";
+}
+if(opt_IsUsed("--mslist", \%opt_HH)) { 
+  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribotyper_dir . "/mdlspan-survtbl-sort.pl";
 }
 
 ribo_ValidateExecutableHash(\%execs_H);
@@ -853,7 +890,7 @@ if($do_fribo2) {
 
   # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Generating model span survival table", $progress_w, $log_FH, *STDOUT);
-  parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $family_modellen, $out_root, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+  parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
   $stage_key = "fmspan";
@@ -1807,7 +1844,9 @@ sub parse_riboaligner_tbl_and_uapos_files {
 #
 # Arguments:
 #   $in_file:             name of input tbl file to parse
+#   $mdlspan_sort_exec:   path to script that we use to resort if --mslist
 #   $mlen:                model length 
+#   $out_root:            for naming output files
 #   $seqtaxid_HR:         ref to hash of taxids of each sequence
 #   $seqgtaxid_HHR:       ref to 2D hash, 1D key tax level (e.g. "order")
 #                         2D key is sequence name, value is taxid of 
@@ -1824,15 +1863,15 @@ sub parse_riboaligner_tbl_and_uapos_files {
 #################################################################
 sub parse_riboaligner_tbl_and_output_mdlspan_tbl { 
   my $sub_name = "parse_riboaligner_tbl_and_output_mdlspan_tbl()";
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $mlen, $out_root, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file, $mdlspan_sort_exec, $mlen, $out_root, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
   # create the bins
-  my $pstep = opt_Get("--ribostep", $opt_HHR);
+  my $pstep = opt_Get("--msstep", $opt_HHR);
   my $bidx = 0;
   my $lpos; 
   my $rpos;
@@ -1926,8 +1965,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
 
   # we have all the information we need, output it
   # one line per bin
-  my @out_AH = (); # [0..$nbins-1], each element is hash, key is "output", "norder", "length"
-                   # hash is used to sort output lines by norder, then length
+  my @out_AH = (); # [0..$nbins-1], each element is hash, key is "output", "norder", "length", "lpos"
+                   # hash is used to sort output lines by norder, then length, then lpos
   for($bidx = 0; $bidx < $nbins; $bidx++) { 
     # generate lists of gtaxids for each group for this bin
     my %list_str_H = ();
@@ -1940,15 +1979,17 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
       if($list_str_H{$level} eq "") { $list_str_H{$level} = "-"; }
     }
 
-    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
-                                       $rpos_A[$bidx] - $lpos_A[$bidx] + 1, $lpos_A[$bidx], $rpos_A[$bidx], $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_fail,
-                                       $ngtaxid_bin_level_AH[$bidx]{"species"}, 
-                                       $ngtaxid_bin_level_AH[$bidx]{"order"}, 
-                                       $ngtaxid_bin_level_AH[$bidx]{"class"}, 
-                                       $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
-                                       $list_str_H{"order"}, 
-                                       $list_str_H{"class"}, 
-                                       $list_str_H{"phylum"}); 
+    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+                                        $rpos_A[$bidx] - $lpos_A[$bidx] + 1, 
+                                        $lpos_A[$bidx], $rpos_A[$bidx], 
+                                        $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_fail,
+                                        $ngtaxid_bin_level_AH[$bidx]{"species"}, 
+                                        $ngtaxid_bin_level_AH[$bidx]{"order"}, 
+                                        $ngtaxid_bin_level_AH[$bidx]{"class"}, 
+                                        $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
+                                        $list_str_H{"order"}, 
+                                        $list_str_H{"class"}, 
+                                        $list_str_H{"phylum"}); 
     $out_AH[$bidx]{"norder"} = $ngtaxid_bin_level_AH[$bidx]{"order"}; 
     $out_AH[$bidx]{"length"} = $rpos_A[$bidx] - $lpos_A[$bidx] + 1;
     $out_AH[$bidx]{"lpos"}   = $lpos_A[$bidx];
@@ -1957,7 +1998,7 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   # open output file, sort the output and write output file
   my $out_file = $out_root . ".mdlspan.survtbl"; 
   open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
-  print OUT "#length\t5'pos\t3'pos\tnseq-survive\tnseq-do-not-survive\tnseq-not-considered(failed)\tnspecies-survive\tnorder-survive\tnclass-survive\tnphylum-survive\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+  print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
   
   @out_AH = sort { 
     $b->{"norder"} <=> $a->{"norder"} or 
@@ -1972,6 +2013,17 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
 
   ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "mdlspan.survtbl", $out_file, 1, "table summarizing number of sequences for different model position spans");
 
+  # if --mslist used, re-sort to prioritize sequences in that file
+  if(opt_IsUsed("--mslist", $opt_HHR)) { 
+    my $resort_out_file = $out_root . ".resort.mdlspan.survtbl"; 
+    my $opt_str = ""; 
+    my $key = "orders";
+    if   (opt_Get("--msclass",  $opt_HHR)) { $opt_str .= "-c"; $key = "classes"; }
+    elsif(opt_Get("--msphylum", $opt_HHR)) { $opt_str .= "-p"; $key = "phyla";   }
+    my $resort_cmd = $mdlspan_sort_exec . " $opt_str $out_file " . opt_Get("--mslist", $opt_HHR) . " > $resort_out_file"; 
+    ribo_RunCommand($resort_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "resort.mdlspan.survtbl", $resort_out_file, 1, "mdlspan.survtbl table re-sorted to prioritize $key read from --mslist <s> file");
+  }
   return;
 }
 
