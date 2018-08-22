@@ -116,7 +116,7 @@ while(my $line = <TBL>) {
     if($cur_included_str eq "") { $cur_included_str = "-"; }
 
     # store in @out_AH
-    $out_AH[$nout]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+    $out_AH[$nout]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
                                         $ncur_included, $ncur_missing, 
                                         $el_A[0], $el_A[1], $el_A[2], 
                                         $cur_missing_str, $cur_included_str, 
