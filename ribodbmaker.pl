@@ -120,6 +120,13 @@ $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
 opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options that affect the alignment from which percent identities are calculated:";
+#            option         type   default            group   requires  incompat              preamble-output                                                 help-output    
+opt_Add("--fullaln",   "boolean",  0,                    $g,     undef, undef,                "do not trim alnment to min reqd span before pid calcs",        "do not trim alignment to minimum required span before pid calculations", \%opt_HH, \@opt_order_A);
+opt_Add("--noprob",    "boolean",  0,                    $g,    undef,  undef,                "do not trim alnment based on post probs before pid calcs",     "do not trim alignment based on post probs before pid calculations", \%opt_HH, \@opt_order_A);
+opt_Add("--pthresh",   "real",     0.95,                 $g,    undef,"--noprob",             "posterior probability threshold for alnment trimming is <x>",  "posterior probability threshold for alnment trimming is <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--pfract",   "real",      0.95,                 $g,    undef,"--noprob",             "seq fraction threshold for post prob alnment trimming is <x>", "seq fraction threshold for post prob alnment trimming is <x>", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
@@ -193,6 +200,10 @@ my $options_okay =
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
                 'cfid'         => \$GetOptions_H{"--cfid"},
+                "fullaln"      => \$GetOptions_H{"--fullaln"},
+                "noprob"       => \$GetOptions_H{"--noprob"},
+                "pthresh=s"    => \$GetOptions_H{"--pthresh"},
+                "pfract=s"     => \$GetOptions_H{"--pfract"},
                 'fmpos=s'      => \$GetOptions_H{"--fmpos"},
                 'fmlpos=s'     => \$GetOptions_H{"--fmlpos"},
                 'fmrpos=s'     => \$GetOptions_H{"--fmrpos"},
@@ -340,6 +351,29 @@ if(opt_IsUsed("--mslist", \%opt_HH)) {
   }
   close(IN);
   if($line_ctr == 0) { die "ERROR, didn't read any taxid lines in $mslist_file"; }
+}
+# options that affect alignment prior to pid calcs don't work in combination with *both* --skipingrup and --skipclustr
+if((opt_IsUsed("--skipingrup", \%opt_HH)) && (opt_IsUsed("--skipclustr", \%opt_HH))) { 
+  if(opt_IsUsed("--fullaln",  \%opt_HH)) { 
+    die "ERROR, --fullaln doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+  if(opt_IsUsed("--noprob",  \%opt_HH)) { 
+    die "ERROR, --noprob doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+  if(opt_IsUsed("--pthresh",  \%opt_HH)) { 
+    die "ERROR, --pthresh doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+  if(opt_IsUsed("--pfract",  \%opt_HH)) { 
+    die "ERROR, --pfract doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+}
+# --skipfmspan requires --fullaln UNLESS both --skipingrup and --skipclustr also used
+if(opt_IsUsed("--skipfmspan", \%opt_HH)) { 
+  if((! opt_IsUsed("--fullaln", \%opt_HH)) && 
+     ((! opt_IsUsed("--skipingrup", \%opt_HH)) ||
+      (! opt_IsUsed("--skipclustr", \%opt_HH)))) { 
+    die "ERROR, --fullaln is required if --skipfmspan is used unless --skipingrup and --skipclustr are also used";
+  }
 }
 
 
@@ -921,7 +955,22 @@ $stage_key = "ingrup";
 my $rfonly_stk_file    = $out_root . "." . $stage_key . ".rfonly.stk";
 my $rfonly_alipid_file = $out_root . "." . $stage_key . ".rfonly.alipid";
 my $rfonly_list_file   = $out_root . "." . $stage_key . ".seqlist";
-my $alipid_cmd = $execs_H{"esl-alipid"} . " $rfonly_stk_file > $rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
+#my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $rfonly_stk_file";
+# construct the complicated esl-alimask command, masking to keep:
+# - only RF columns
+# - only seqs that pass all filters
+# - only columns within minimum required mdlspan (unless --fullaln)
+# - only columns that pass posterior probability thresholds (unless --noprob)
+my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - ";
+if(! opt_IsUsed("--fullaln", \%opt_HH)) { # have to mask by mdlspan BEFORE masking by posterior probs
+  my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($family_modellen, \%opt_HH);
+  $alimask_cmd .= "| " . $execs_H{"esl-alimask"} . " -t --t-rf - " . $max_lpos . "-" . $min_rpos . " ";
+}
+if(! opt_IsUsed("--noprob", \%opt_HH)) { 
+  $alimask_cmd .= "| " . $execs_H{"esl-alimask"} . " -p --pfract " . opt_Get("--pfract", \%opt_HH) . " --pthresh " . opt_Get("--pthresh", \%opt_HH) . " - "; 
+}
+$alimask_cmd .= "> $rfonly_stk_file";
+my $alipid_cmd  = $execs_H{"esl-alipid"} . " $rfonly_stk_file | awk '{ printf(\"\%s \%s \%s\\n\", \$1, \$2, \$3); }' > $rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
 my %ingrup_lost_list_H        = (); # key is phylogenetic level $level, value is list of $level groups lost
 my %alipid_analyze_out_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output file
 my %alipid_analyze_tab_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output tab file
@@ -945,18 +994,19 @@ else {
 
     # merge alignments created by riboaligner with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $rfonly_stk_file";
     my $alistat_cmd = $execs_H{"esl-alistat"} . " --list $rfonly_list_file $rfonly_stk_file > /dev/null";
     my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
     foreach $level (@level_A) { 
       $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
     }
       
-    if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    #HEYAif(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rfonlystk", "$rfonly_stk_file", 0, "RF-column-only alignment");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
-    if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    #HEYA if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$rfonly_alipid_file", 0, "esl-alipid output for $rfonly_stk_file");
       
@@ -1037,7 +1087,10 @@ else {
       my $nin_clustr = 0;
       
       if(! $do_ingrup) { 
-        # we did not yet run esl-alipid, so do that now
+        # we did not yet run esl-alimask and esl-alipid, so do that now
+        if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rfonlystk", "$rfonly_stk_file", 0, "RF-column-only alignment");
+
         $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
         if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
         ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
