@@ -141,6 +141,43 @@ if   ($do_class)  { $key = "classes"; }
 elsif($do_phylum) { $key = "phyla"; }
 else              { $key = "orders"; }
 
+print ("# This file was created using mdlspan-survtbl-sort.pl\n");
+print ("# input file: $tbl_file\n");
+print ("# 2nd arg:    $list_file\n");
+if($do_list || $do_class || $do_phylum) { 
+  print ("# The following options were used:\n");
+  if($do_list)   { print ("# -l\n"); }
+  if($do_class)  { print ("# -c\n"); }
+  if($do_phylum) { print ("# -p\n"); }
+}
+else { 
+  print ("# No command line options were used.\n");
+}
+print ("#\n");
+print ("# The lines are sorted by the following columns: 'num-listed-surviving-$key', 'length', and '5'pos'.\n");
+print ("# See comments in $tbl_file for more possibly relevant information.\n");
+print ("#\n");
+print ("# Explanation of columns:\n");
+print ("#  1. 'num-listed-surviving-$key': number of listed $key that survive for this model span\n");
+print ("#  2. 'num-listed-missing-$key':   number of listed $key that do not survive for this model span\n");
+print ("#  3. 'length': length of model span\n");
+print ("#  4. '5' pos': maximum allowed 5' start position <max_lpos>\n");
+print ("#  5. '3' pos': minimum allowed 3' end   position <min_rpos>\n");
+print ("#  6. 'listed-surviving-$key': comma-separated list of $key taxids with >= 1 sequence that survives this span\n");
+print ("#  7. 'listed-missing-$key':   comma-separated list of $key taxids with 0 sequences that survive this span\n");
+print ("#  8. num-surviving-seqs:      number of sequences that span <max_lpos..min_rpos>\n");
+print ("#  9. num-seqs-not-surviving:  number of sequences that do not span <max_lpos..min_rpos>\n");
+print ("# 10. num-seqs-within-range:   number of sequences that that span <max_lpos>..<min_rpos> but\n");
+print ("#     do not span <max_lpos + $pstep> .. <min_rpos + $pstep>\n");
+print ("# 11. num-seqs-not-considered: number of sequences that FAILED for some reason and were not evaluated\n");
+print ("# 12. num-surviving-species:   number of species taxids with at least 1 sequence that survives this span\n");
+print ("# 13. num-surviving-orders:    number of order taxids with >= 1 sequence that survives this span\n");
+print ("# 14. num-surviving-classes:   number of class taxids with >= 1 sequence that survives this span\n");
+print ("# 15. num-surviving-phyla:     number of phylum taxids with >= 1 sequence that survives this span\n");
+print ("# 16. surviving-orders:        comma-separated list of order taxids with >= 1 sequence that survives this span\n");
+print ("# 17. surviving-classes:       comma-separated list of class taxids with >= 1 sequence that survives this span\n");
+print ("# 18. surviving-phyla:         comma-separated list of phyla taxids with >= 1 sequence that survives this span\n");
+print ("#\n");
 print "#num-listed-surviving-$key\tnum-listed-missing-$key\tlength\t5'pos\t3'pos\tlisted-surviving-$key\tlisted-missing-$key\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
 
 @out_AH = sort { 

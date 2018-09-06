@@ -135,6 +135,7 @@ opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--ski
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
 #       option          type       default        group       requires incompat                preamble-output                                                 help-output    
 opt_Add("--msstep",     "integer", 50,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
 opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
@@ -215,6 +216,7 @@ my $options_okay =
                 'fione'        => \$GetOptions_H{"--fione"},
                 'fimin'        => \$GetOptions_H{"--fimin"},
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
+                'msminlen=s'   => \$GetOptions_H{"--msminlen"},
                 'mslist=s'     => \$GetOptions_H{"--mslist"},
                 'msclass'      => \$GetOptions_H{"--msclass"},
                 'msphylum'     => \$GetOptions_H{"--msphylum"},
@@ -1843,25 +1845,38 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
   # create the bins
-  my $pstep = opt_Get("--msstep", $opt_HHR);
+  my $pstep      = opt_Get("--msstep",   $opt_HHR);
+  my $minspanlen = opt_Get("--msminlen", $opt_HHR);
   my $bidx = 0;
   my $lpos; 
   my $rpos;
+  my $spanlen = 0;
   my @lpos_A = (); # array of all possible lpos values
   my @rpos_A = (); # array of all possible rpos values
+  my %lpos_H = (); # key is lpos value, value is always 1, used only so we can fill lpos_A
+  my %rpos_H = (); # key is rpos value, value is always 1, used only so we can fill rpos_A
   my %lpos_rpos2bin_HH = (); # key1: lpos value, key2: rpos value, value is bin index corresponding to that lpos/rpos pair
-  my @lpos_per_bin_A = (); # [0..nbins-1] lpos for this bin
-  my @rpos_per_bin_A = (); # [0..nbins-1] rpos for this bin
+  my @lpos_per_bin_A = ();   # [0..nbins-1] lpos for this bin
+  my @rpos_per_bin_A = ();   # [0..nbins-1] rpos for this bin
   for($lpos = 1; $lpos < ($mlen + $pstep); $lpos += $pstep) { 
     if($lpos > $mlen) { $lpos = $mlen; }
-    push(@lpos_A, $lpos);
     for($rpos = $lpos + $pstep; $rpos < ($mlen + $pstep); $rpos += $pstep) { 
       if($rpos > $mlen) { $rpos = $mlen; }
-      if($lpos == 1) { push(@rpos_A, $rpos); }
-      push(@lpos_per_bin_A, $lpos);
-      push(@rpos_per_bin_A, $rpos);
-      $lpos_rpos2bin_HH{$lpos}{$rpos} = $bidx;
-      $bidx++;
+      $spanlen = ($rpos - $lpos) + 1;
+      if($spanlen >= $minspanlen) { 
+        if(! exists $lpos_H{$lpos}) {
+          push(@lpos_A, $lpos);
+          $lpos_H{$lpos} = 1;
+        }
+        if(! exists $rpos_H{$rpos}) {
+          push(@rpos_A, $rpos);
+          $rpos_H{$rpos} = 1;
+        }
+        push(@lpos_per_bin_A, $lpos);
+        push(@rpos_per_bin_A, $rpos);
+        $lpos_rpos2bin_HH{$lpos}{$rpos} = $bidx;
+        $bidx++;
+      }
     }
   }
   my $nbins = $bidx;
@@ -1991,7 +2006,57 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   # open output file, sort the output and write output file
   my $out_key = (defined $seqfailstr_HR) ? "pass" : "all";
   my $out_file = $out_root . ".$out_key.mdlspan.survtbl";
+  my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($mlen, $opt_HHR); 
   open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
+  print OUT ("# Filename: $out_file\n");
+  print OUT ("# This file contains information on how many sequences and taxonomic groups would survive for different\n");
+  print OUT ("# choices of model span coordinates <max_lpos>..<min_rpos>, which are the maximum allowed 5'-most aligned\n");
+  print OUT ("# model position and minimum allowed 3'-most model position for each sequence.\n");
+  print OUT ("# Current values:\n");
+  print OUT ("# <max_lpos>: $max_lpos\n");
+  print OUT ("# <min_rpos>: $min_rpos\n");
+  print OUT ("# These are settable with the --fmpos, --fmlpos, and --fmrpos options, do ribodbmaker.pl -h for more information\n");
+  print OUT ("#\n");
+  print OUT ("# This file shows how many sequences would pass for other possible choices of <max_lpos> and <min_rpos>.\n");
+  print OUT ("# Each line has information for a pair of values <max_lpos>..<min_rpos> and contains 14 tab delimited columns, described below.\n");
+  print OUT ("# Only values of <max_lpos> and <min_rpos> which are multiples of $pstep (plus 1) are shown (changeable with the --msstep option)\n");
+  print OUT ("# Only pairs of <max_lpos> and <min_rpos> in which the length is >= $minspanlen are shown (changeable with the --msminlen option)\n");
+  print OUT ("# The lines are sorted by the following columns: 'num-surviving-orders', 'length', and '5'pos'.\n");
+  print OUT ("#\n");
+  print OUT ("# You can recreate this file by rerunning ribodbmaker.pl using the same options it was originally run with, but\n");
+  print OUT ("# additionally with the --prvcmd option, without the -f option, and with possibly additional options listed\n");
+  print OUT ("# above related to this table with their desired values (e.g. --msstep, --msminlen).\n");
+  print OUT ("#\n");
+  print OUT ("# You can have ribodbmaker.pl create an additional file similar to this one but that prioritizes specific orders, classes\n");
+  print OUT ("# or phyla listed in a file, and ignores those not listed, by rerunning ribodbmaker.pl as described above but additionally\n");
+  print OUT ("# using the --mslist, --msclass, and/or --msphylum options. Do 'ribodbmaker.pl -h' for more information.\n");
+  print OUT ("#\n");
+  print OUT ("# Finally, you can creat that additional file that prioritizes certain orders, classes or phyla outside of\n");
+  print OUT ("# ribodbmaker.pl using the script mdlspan-survtbl-sort.pl in the ribotyper-v1 directory that ribodbmaker.pl is in.\n");
+  print OUT ("# Some example commands for that script are:\n");
+  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# OR\n");
+  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl -c <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# OR\n");
+  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl -s <PATH-TO-THIS-FILE> <comma-delimited list of orders to prioritize>\n");
+  print OUT ("#\n");
+  print OUT ("# Explanation of columns in this file:\n");
+  print OUT ("#  1. 'length': length of model span\n");
+  print OUT ("#  2. '5' pos': maximum allowed 5' start position <max_lpos>\n");
+  print OUT ("#  3. '3' pos': minimum allowed 3' end   position <min_rpos>\n");
+  print OUT ("#  4. num-surviving-seqs:      number of sequences that span <max_lpos..min_rpos>\n");
+  print OUT ("#  5. num-seqs-not-surviving:  number of sequences that do not span <max_lpos..min_rpos>\n");
+  print OUT ("#  6. num-seqs-within-range:   number of sequences that that span <max_lpos>..<min_rpos> but\n");
+  print OUT ("#     do not span <max_lpos + $pstep> .. <min_rpos + $pstep>\n");
+  print OUT ("#  7. num-seqs-not-considered: number of sequences that FAILED for some reason and were not evaluated\n");
+  print OUT ("#  8. num-surviving-species:   number of species taxids with at least 1 sequence that survives this span\n");
+  print OUT ("#  9. num-surviving-orders:    number of order taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 10. num-surviving-classes:   number of class taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 11. num-surviving-phyla:     number of phylum taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 12. surviving-orders:        comma-separated list of order taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 13. surviving-classes:       comma-separated list of class taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 14. surviving-phyla:         comma-separated list of phyla taxids with >= 1 sequence that survives this span\n");
+  print OUT ("#\n");
   print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
   
   @out_AH = sort { 
