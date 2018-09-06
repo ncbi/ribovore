@@ -1000,7 +1000,7 @@ if(! opt_IsUsed("--noprob", \%opt_HH)) {
   $alimask_cmd .= "| " . $execs_H{"esl-alimask"} . " -p --pfract " . opt_Get("--pfract", \%opt_HH) . " --pthresh " . opt_Get("--pthresh", \%opt_HH) . " - "; 
 }
 $alimask_cmd .= "> $rfonly_stk_file";
-my $alipid_cmd  = $execs_H{"esl-alipid"} . " $rfonly_stk_file | awk '{ printf(\"\%s \%s \%s\\n\", \$1, \$2, \$3); }' > $rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
+my $alipid_cmd  = $execs_H{"esl-alipid"} . " $rfonly_stk_file | grep -v ^\# | awk '{ printf(\"\%s \%s \%s\\n\", \$1, \$2, \$3); }' > $rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
 my %ingrup_lost_list_H        = (); # key is phylogenetic level $level, value is list of $level groups lost
 my %alipid_analyze_out_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output file
 my %alipid_analyze_tab_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output tab file
@@ -2212,16 +2212,19 @@ sub parse_alipid_analyze_tab_files {
     # first line is header
     my $line = <TAB>;
     while($line = <TAB>) { 
-      #sequence	seq-taxid	species	group-taxid	group-nseq	type	avgpid-in-group	maxpid-in-group	maxpid-seq-in-group	minpid-in-group	minpid-seq-in-group	avgpid-out-group	maxpid-out-group	maxpid-seq-out-group	maxpid-group-out-group	minpid-out-group	minpid-seq-out-group	minpid-group-out-group	avgdiff-in-minus-out	maxdiff-in-minus-out
-      #AJ306437.1	155213	Scutellospora spinosissima	214509	8	I1	93.6	95.1	HF968811.1	91.7	AJ306442.1	84.9	89.0	AB015052.1	1133283	65.9	AB016022.1	78918	8.8	6.2	25.8
-      #JN941634.1	45130	Bipolaris sorokiniana	92860	3	I1	96.2	96.5	DQ898289.1	95.9	AY741066.1	87.0	95.7	AB454202.1	451869	65.7	AB016022.1	78918	9.2	0.8	30.2
-      chomp $line;
-      my @el_A = split(/\t/, $line);
-      if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
-      my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
-      if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-      if($type =~ m/^O/) { 
-        $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later after determining 
+      ##sequence	seq-taxid	species	type	p/f	in-group	in-nseq	in-avgid	in-maxid	in-maxseq	in-minid	in-minseq	maxavg-string	maxavg-group	maxavg-nseq	maxavg-avgid	maxavg-maxid	maxavg-maxseq	maxavg-minid	maxavg-minseq	maxmax-string	maxmax-group	maxmax-nseq	maxmax-avgid	maxmax-maxid	maxmax-maxseq	maxmax-minid	maxmax-minseq	avgdiff	maxdiff
+      #AY761090.2	312317	Xylomelasma sordida	I1	PASS   4890	2074	96.04	99.01	MF077540.1	76.57	AB053251.1	avg:same	4761	27	93.07	94.72	AY601711.1	88.45	AF164253.2	max:same	5204	441	89.49	98.35	KJ708419.1	57.76	DQ898689.1	2.9665557163529	0.660000000000011
+      #KY368137.1	1116880	Wickerhamiella infanticola	I1	PASS   4890	2074	94.60	99.68	AB018151.1	76.62	AB053253.1	avg:same	4761	27	91.82	93.53	HQ901742.1	88.31	AF164253.2	max:same	5204	441	88.66	95.79	KJ708419.1	58.12	DQ898689.1	2.77972825213143	3.89
+      #MH201386.1	1195475	Benjaminiella youngii	I1	PASS   1913637	161	88.74	99.68	MH201385.1	78.50	GU559979.1	avg:same	4761	27	83.86	86.41	KY350147.1	81.55	GU358605.1	max:same	4761	27	83.86	86.41	KY350147.1	81.55	GU358605.1	4.87068055555551	13.27
+      if($line !~ m/^\#/) { 
+        chomp $line;
+        my @el_A = split(/\t/, $line);
+        if(scalar(@el_A) != 30) { ofile_FAIL(sprintf("ERROR in $sub_name, tab file line had %d tab-delimited tokens, but expected 30: $line\n", scalar(@el_A)), "RIBO", $?, $FH_HR); }
+        my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
+        if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+        if($pf eq "FAIL") { 
+          $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later
+        }
       }
     }
     close(TAB);
@@ -2238,33 +2241,35 @@ sub parse_alipid_analyze_tab_files {
       my $line = <TAB>;
       while($line = <TAB>) { 
         chomp $line;
-        my @el_A = split(/\t/, $line);
-        if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
-        my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
+        if($line !~ m/^\#/) { 
+          my @el_A = split(/\t/, $line);
+          if(scalar(@el_A) != 30) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 30 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
+          my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
 
-        if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-        if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
-          # sequence is not an O type, and valid group_taxid at this level (and so has valid seq_taxid too)
-          # so it is a candidate for being the max avg pid for its species taxid
-          # and also a candidate for failing if it is not max avg pid for its species
-          $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
-          $do_one_taxid_H{$seqname}           = $seq_taxid;
-          $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
-          if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
-            $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
-            $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
-          }
-        }
-        # keep track of number of sequences per taxid, if the --fimin option was used
-        if(($do_one_min) && ($level eq "phylum")) { 
-          # only do this at the phylum level
-          if(($curfailstr_H{$seqname} eq "") && ($seq_taxid ne "-") && ($seq_taxid ne "1")) { 
-            $do_one_min_taxid_H{$seqname} = $seq_taxid;
-            if(! exists $one_min_ntaxid_H{$seq_taxid}) { 
-              $one_min_ntaxid_H{$seq_taxid} = 0; 
+          if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
+            # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
+            # so it is a candidate for being the max avg pid for its species taxid
+            # and also a candidate for failing if it is not max avg pid for its species
+            $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
+            $do_one_taxid_H{$seqname}           = $seq_taxid;
+            $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
+            if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
+              $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
+              $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
             }
-            else { 
-              $one_min_ntaxid_H{$seq_taxid}++;
+          }
+          # keep track of number of sequences per taxid, if the --fimin option was used
+          if(($do_one_min) && ($level eq "phylum")) { 
+            # only do this at the phylum level, so we don't do it each time for all 3 levels
+            if(($curfailstr_H{$seqname} eq "") && ($seq_taxid ne "-") && ($seq_taxid ne "1")) { 
+              $do_one_min_taxid_H{$seqname} = $seq_taxid;
+              if(! exists $one_min_ntaxid_H{$seq_taxid}) { 
+                $one_min_ntaxid_H{$seq_taxid} = 0; 
+              }
+              else { 
+                $one_min_ntaxid_H{$seq_taxid}++;
+              }
             }
           }
         }
@@ -2338,9 +2343,9 @@ sub parse_alipid_output_to_create_dist_file {
   open(DIST, ">", $dist_file)   || ofile_FileOpenFailure($dist_file,   "RIBO", $sub_name, $!, "writing", $FH_HR);
 
   while($line = <ALIPID>) { 
-    ## seqname1 seqname2 %id nid denomid %match nmatch denommatch
-    #AB024594.1 AB024593.1  91.36   1576   1725  99.48   1722   1731
-    #AB024594.1 AB024591.1  99.94   1727   1728 100.00   1728   1728
+    #EU011733.1 KM065910.1 99.07
+    #EU011733.1 AB053242.2 97.22
+    #EU011733.1 AB018172.1 96.60
     chomp $line;
     if($line !~ m/^\#/) { 
       my @el_A = split(/\s+/, $line);
