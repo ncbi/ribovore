@@ -136,6 +136,8 @@ $opt_group_desc_H{++$g} = "options for controlling model span survival table out
 #       option          type       default        group       requires incompat                preamble-output                                                 help-output    
 opt_Add("--msstep",     "integer", 50,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min start position to <n>",   "for model span output table, set min start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msmaxstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max stop position to <n>",    "for model span output table, set max stop position to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
 opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
@@ -217,6 +219,8 @@ my $options_okay =
                 'fimin'        => \$GetOptions_H{"--fimin"},
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
                 'msminlen=s'   => \$GetOptions_H{"--msminlen"},
+                'msminstart=s' => \$GetOptions_H{"--msminstart"},
+                'msmaxstop=s'  => \$GetOptions_H{"--msmaxstop"},
                 'mslist=s'     => \$GetOptions_H{"--mslist"},
                 'msclass'      => \$GetOptions_H{"--msclass"},
                 'msphylum'     => \$GetOptions_H{"--msphylum"},
@@ -383,7 +387,25 @@ if(opt_IsUsed("--skipfmspan", \%opt_HH)) {
     die "ERROR, --fullaln is required if --skipfmspan is used unless --skipingrup and --skipclustr are also used";
   }
 }
-
+# --msminstart <n1> --msmaxstop <n2>: 
+# enforce <n1> <= <n2>, we do more complicated tests later after we know $family_modellen
+if(opt_IsUsed("--msminstart", \%opt_HH)) { 
+  if(opt_Get("--msminstart", \%opt_HH) < 1) { 
+    die "ERROR, with --msminstart <n1>, <n1> must be >= 1";
+  }
+}
+if(opt_IsUsed("--msmaxstop", \%opt_HH)) { 
+  if(opt_Get("--msmaxstop", \%opt_HH) < 1) { 
+    die "ERROR, with --msmaxstop <n1>, <n1> must be >= 1";
+  }
+}
+if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_IsUsed("--msmaxstop", \%opt_HH))) { 
+  my $tmp_minstart = opt_Get("--msminstart", \%opt_HH);
+  my $tmp_maxsstop = opt_Get("--msminstart", \%opt_HH);
+  if((opt_Get("--msminstart", \%opt_HH)) > (opt_Get("--msmaxstop", \%opt_HH))) { 
+    die "ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> must be >= <n1>";
+  }
+}
 
 # now that we know what steps we are doing, make sure that:
 # - required ENV variables are set and point to valid dirs
@@ -644,6 +666,22 @@ if($do_fribo1 || $do_fribo2) {
     if(! opt_IsUsed("--ribo2hmm",   \%opt_HH)) { $riboopts_str .= " --2slow"; }
     printf RIBOOPTS2 ($riboopts_str . "\n"); 
     close(RIBOOPTS2);
+  }
+
+  # now that we know $family_modellen, check that --msminstart <n1> and --msmaxstop <n2> still make sense
+  if(opt_IsUsed("--msminstart", \%opt_HH) || opt_IsUsed("--msmaxstop", \%opt_HH)) { 
+    my $tmp_minstart = opt_IsUsed("--msminstart", \%opt_HH) ? opt_Get("--msminstart", \%opt_HH) : 1;
+    my $tmp_maxstop  = opt_IsUsed("--msmaxstop",  \%opt_HH) ? opt_Get("--msmaxstop",  \%opt_HH) : $family_modellen;
+    my $tmp_step     = opt_Get("--msstep",  \%opt_HH);
+    my $tmp_msminlen = opt_Get("--msminlen",  \%opt_HH);
+    my $tmp_minlen   = ($tmp_step > $tmp_msminlen) ? $tmp_step : $tmp_msminlen;
+    # enforce <n1> <= <n2> and (<n2> - <n1> + 1) >= MAX($tmp_minlen, $tmp_step)
+    if($tmp_minstart > $tmp_maxstop) { 
+      ofile_FAIL("ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> must be >= <n1> (<n1> is $tmp_minstart, <n2> is $tmp_maxstop)", "RIBO", $!, $ofile_info_HH{"FH"});
+    }
+    if(($tmp_maxstop - $tmp_minstart + 1) < $tmp_minlen) { 
+      ofile_FAIL("ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> - <n1> + 1 must be must be >= $tmp_minlen (<n1> is $tmp_minstart, <n2> is $tmp_maxstop)", "RIBO", $!, $ofile_info_HH{"FH"});
+    }
   }
 }
 
@@ -1032,13 +1070,11 @@ else {
       $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
     }
       
-    #HEYAif(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-    ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rfonlystk", "$rfonly_stk_file", 0, "RF-column-only alignment");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
-    #HEYA if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-    ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "merged" . "alipid", "$rfonly_alipid_file", 0, "esl-alipid output for $rfonly_stk_file");
       
@@ -1847,6 +1883,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   # create the bins
   my $pstep      = opt_Get("--msstep",   $opt_HHR);
   my $minspanlen = opt_Get("--msminlen", $opt_HHR);
+  my $minstart   = opt_IsUsed("--msminstart", $opt_HHR) ? opt_Get("--msminstart", $opt_HHR) : 1;
+  my $maxstop    = opt_IsUsed("--msmaxstop",  $opt_HHR) ? opt_Get("--msmaxstop",  $opt_HHR) : $mlen;
   my $bidx = 0;
   my $lpos; 
   my $rpos;
@@ -1858,10 +1896,12 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   my %lpos_rpos2bin_HH = (); # key1: lpos value, key2: rpos value, value is bin index corresponding to that lpos/rpos pair
   my @lpos_per_bin_A = ();   # [0..nbins-1] lpos for this bin
   my @rpos_per_bin_A = ();   # [0..nbins-1] rpos for this bin
-  for($lpos = 1; $lpos < ($mlen + $pstep); $lpos += $pstep) { 
-    if($lpos > $mlen) { $lpos = $mlen; }
-    for($rpos = $lpos + $pstep; $rpos < ($mlen + $pstep); $rpos += $pstep) { 
-      if($rpos > $mlen) { $rpos = $mlen; }
+  # $minstart == 1     unless --msminstart was used
+  # $maxstop  == $mlen unless --msmaxstop  was used
+  for($lpos = $minstart; $lpos < ($maxstop + $pstep); $lpos += $pstep) { 
+    if($lpos > $maxstop) { $lpos = $maxstop; }
+    for($rpos = $lpos + $pstep; $rpos < ($maxstop + $pstep); $rpos += $pstep) { 
+      if($rpos > $maxstop) { $rpos = $maxstop; }
       $spanlen = ($rpos - $lpos) + 1;
       if($spanlen >= $minspanlen) { 
         if(! exists $lpos_H{$lpos}) {
@@ -1936,8 +1976,12 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
         # determine the specific bin that this sequence falls in
         my $lpos_idx = 0; 
         my $rpos_idx = 0;
-        while(($mstart > $lpos_A[($lpos_idx+1)]) && ($lpos_idx < ($nlpos-1))) { $lpos_idx++; }
-        while(($mstop  > $rpos_A[($rpos_idx+1)]) && ($rpos_idx < ($nrpos-1))) { $rpos_idx++; }
+        if($nlpos > 1) { 
+          while(($mstart > $lpos_A[($lpos_idx+1)]) && ($lpos_idx < ($nlpos-1))) { $lpos_idx++; }
+        }
+        if($nrpos > 1) { 
+          while(($mstop  > $rpos_A[($rpos_idx+1)]) && ($rpos_idx < ($nrpos-1))) { $rpos_idx++; }
+        }
         #if(defined $seqfailstr_HR) { printf("HEYA $mstart $mstop lpos_idx: $lpos_idx rpos_idx: $rpos_idx $lpos_A[$lpos_idx] $rpos_A[$rpos_idx]\n"); }
 
         $bidx = $lpos_rpos2bin_HH{$lpos_A[$lpos_idx]}{$rpos_A[$rpos_idx]};
@@ -2011,27 +2055,37 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   print OUT ("# Filename: $out_file\n");
   print OUT ("# This file contains information on how many sequences and taxonomic groups would survive for different\n");
   print OUT ("# choices of model span coordinates <max_lpos>..<min_rpos>, which are the maximum allowed 5'-most aligned\n");
-  print OUT ("# model position and minimum allowed 3'-most model position for each sequence.\n");
+  print OUT ("# model position and minimum allowed 3'-most model position for each aligned sequence.\n");
   print OUT ("# Current values:\n");
-  print OUT ("# <max_lpos>: $max_lpos\n");
+  print OUT ("# <max_lpos>: $max_lpos\n",);
   print OUT ("# <min_rpos>: $min_rpos\n");
+  print OUT ("#\n");
   print OUT ("# These are settable with the --fmpos, --fmlpos, and --fmrpos options, do ribodbmaker.pl -h for more information\n");
   print OUT ("#\n");
   print OUT ("# This file shows how many sequences would pass for other possible choices of <max_lpos> and <min_rpos>.\n");
   print OUT ("# Each line has information for a pair of values <max_lpos>..<min_rpos> and contains 14 tab delimited columns, described below.\n");
-  print OUT ("# Only values of <max_lpos> and <min_rpos> which are multiples of $pstep (plus 1) are shown (changeable with the --msstep option)\n");
-  print OUT ("# Only pairs of <max_lpos> and <min_rpos> in which the length is >= $minspanlen are shown (changeable with the --msminlen option)\n");
-  print OUT ("# The lines are sorted by the following columns: 'num-surviving-orders', 'length', and '5'pos'.\n");
+  print OUT ("# Only values of <max_lpos> and <min_rpos> which are multiples of $pstep (plus 1) are shown (changeable with the --msstep option).\n");
+  print OUT ("# Only pairs of <max_lpos> and <min_rpos> in which the length is >= $minspanlen are shown (changeable with the --msminlen option).\n");
+  print OUT ("# The lines are sorted by the following columns: first by 'num-surviving-orders', then by 'length', and then by '5'pos'.\n");
   print OUT ("#\n");
   print OUT ("# You can recreate this file by rerunning ribodbmaker.pl using the same options it was originally run with, but\n");
-  print OUT ("# additionally with the --prvcmd option, without the -f option, and with possibly additional options listed\n");
-  print OUT ("# above related to this table with their desired values (e.g. --msstep, --msminlen).\n");
+  print OUT ("# additionally with the --prvcmd option, without the -f option, and with the additional options that change\n");
+  print OUT ("# what data will be printed to this file:\n");
+  my $used_str = undef;
+  $used_str = opt_IsUsed("--msstep", $opt_HHR) ? opt_Get("--msstep", $opt_HHR) : "NOT ENABLED; used default of : " . opt_Get("--msstep", $opt_HHR); 
+  print OUT ("#   --msstep <n>     : for model span output table, set step size to <n> [VALUE: $used_str]\n"); 
+  $used_str = opt_IsUsed("--msminlen", $opt_HHR) ? opt_Get("--msminlen", $opt_HHR) : "NOT ENABLED; used default of: " . opt_Get("--msminlen", $opt_HHR); 
+  print OUT ("#   --msminlen <n>   : for model span output table, set min length span to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msminstart", $opt_HHR) ? opt_Get("--msminstart", $opt_HHR) : "NOT ENABLED; used default of: 1";
+  print OUT ("#   --msminstart <n> : for model span output table, set min start position to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msmaxstop", $opt_HHR) ? opt_Get("--msmaxstop", $opt_HHR) : "NOT ENABLED; used default of: $mlen (model length)";
+  print OUT ("#   --msmaxstop <n>  : for model span output table, set max stop position to <n> [VALUE: $used_str]\n");
   print OUT ("#\n");
-  print OUT ("# You can have ribodbmaker.pl create an additional file similar to this one but that prioritizes specific orders, classes\n");
+  print OUT ("# Also, you can have ribodbmaker.pl create an additional file similar to this one but that prioritizes specific orders, classes\n");
   print OUT ("# or phyla listed in a file, and ignores those not listed, by rerunning ribodbmaker.pl as described above but additionally\n");
   print OUT ("# using the --mslist, --msclass, and/or --msphylum options. Do 'ribodbmaker.pl -h' for more information.\n");
   print OUT ("#\n");
-  print OUT ("# Finally, you can creat that additional file that prioritizes certain orders, classes or phyla outside of\n");
+  print OUT ("# Finally, you can create that additional file that prioritizes certain orders, classes or phyla outside of\n");
   print OUT ("# ribodbmaker.pl using the script mdlspan-survtbl-sort.pl in the ribotyper-v1 directory that ribodbmaker.pl is in.\n");
   print OUT ("# Some example commands for that script are:\n");
   print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
