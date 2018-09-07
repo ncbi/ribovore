@@ -148,7 +148,7 @@
 #  3.  *BothStrands            One or more primary hits above the minimum primary score threshold
 #                              of 20 bits (--minpsc) were found on each strand.
 #  4.  *DuplicateRegion        At least two hits (primary or secondary) on the same strand overlap
-#                              in model coordinates by 10 (--maxoverlap) positions or more
+#                              in model coordinates by 20 (--maxoverlap) positions or more
 #  5.  *InconsistentHits       Not all hits (primary or secondary) are in the same order in the
 #                              sequence and in the model.
 #  6.  MinusStrand             Best hit is on the minus strand.
@@ -157,9 +157,11 @@
 #  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
 #                              model (summed length of all hits divided by total length of sequence)
 #                              is below threshold of 0.86 (--tcov).
-#  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
-#                              of sequence) is below threshold of 0.5 (--lowppossc).
-# 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
-#                              of sequence) is below threshold of 0.5 (--lowppossc).
+#  9.  LowScoreDifference      The difference between the top two domains is below the 'low'
+#                              threshold of 0.10 (--lowpdiff) bits per position (total bit score
+#                              divided by summed length of all hits).
+# 10.  VeryLowScoreDifference  The difference between the top two domains is below the 'very low'
+#                              threshold of 0.04 (--vlowpdiff) bits per position (total bit score
+#                              divided by summed length of all hits).
 # 11.  MultipleHits            There is more than one hit to the best scoring model on the same strand.
 #

@@ -1818,7 +1818,12 @@ sub parse_riboaligner_tbl_and_uapos_files {
       else { # $passfail eq "PASS"
         # check for riboaligner fail
         if(defined $seqlenclass_HR) { $seqlenclass_HR->{$target} = $lclass; }
-        if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
+        if(($lclass eq "full-extra")        || 
+           ($lclass eq "full-ambig-more")   || 
+           ($lclass eq "5flush-extra")      || 
+           ($lclass eq "5flush-ambig-more") || 
+           ($lclass eq "3flush-extra")      || 
+           ($lclass eq "3flush-ambig-more")) { 
           $ra_curfailstr_H{$target} = "riboaligner[" . $lclass . "];;";
         }
         else { 
