@@ -1,6 +1,6 @@
-EPN, Tue Aug  7 09:40:29 2018
+EPN, Fri Sep  7 15:11:41 2018
 
-Ribotyper v0.24 README
+Ribotyper v0.25 README
 
 Organization of this file:
 
@@ -226,27 +226,27 @@ OUTPUT
 Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Wed Aug  1 09:46:19 2018
-# $RIBODIR:          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
-# $RIBOEASELDIR:     /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
-# $RIBOINFERNALDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/src/
+# date:              Fri Sep  7 15:12:22 2018
+# $RIBODIR:          /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
 #
 # target sequence input file:  example-16.fa
-# output directory name:       test         
+# output directory name:       test
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Validating input files                           ... done. [1.7 seconds]
-# Determining target sequence lengths              ... done. [0.0 seconds]
-# Classifying sequences                            ... done. [2.4 seconds]
-# Sorting classification results                   ... done. [0.0 seconds]
-# Processing classification results                ... done. [0.0 seconds]
-# Fetching per-model sequence sets                 ... done. [0.0 seconds]
-# Searching sequences against best-matching models ... done. [1.7 seconds]
-# Concatenating tabular round 2 search results     ... done. [0.0 seconds]
-# Sorting search results                           ... done. [0.0 seconds]
-# Processing tabular round 2 search results        ... done. [0.0 seconds]
-# Creating final output files                      ... done. [0.0 seconds]
+# Validating input files                                                           ... done. [0.3 seconds]
+# Determining target sequence lengths                                              ... done. [0.0 seconds]
+# Classifying sequences                                                            ... done. [2.5 seconds]
+# Sorting classification results                                                   ... done. [0.0 seconds]
+# Processing classification results                                                ... done. [0.0 seconds]
+# Fetching per-model sequence sets                                                 ... done. [0.0 seconds]
+# Searching sequences against best-matching models                                 ... done. [1.3 seconds]
+# Concatenating tabular round 2 search results                                     ... done. [0.0 seconds]
+# Sorting search results                                                           ... done. [0.0 seconds]
+# Processing tabular round 2 search results                                        ... done. [0.0 seconds]
+# Creating final output files                                                      ... done. [0.0 seconds]
 #
 # Summary statistics:
 #
@@ -277,9 +277,9 @@ Example output of the script from the above command
 #
 # stage           num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # --------------  --------  -------  ----------  ----------  -----------------------
-  classification        16      6.6      8775.0      8775.0  00:00:02.42  (hh:mm:ss)
-  search                15      9.0     12218.5     12218.5  00:00:01.66  (hh:mm:ss)
-  total                 16      2.6      3465.1      3465.1  00:00:06.14  (hh:mm:ss)
+  classification        16      6.4      8532.8      8532.8  00:00:02.49  (hh:mm:ss)
+  search                15     11.8     15929.4     15929.4  00:00:01.27  (hh:mm:ss)
+  total                 16      3.7      4881.8      4881.8  00:00:04.35  (hh:mm:ss)
 #
 #
 # List and description of all output files saved in:   test.ribotyper.list
@@ -290,7 +290,7 @@ Example output of the script from the above command
 #
 # All output files created in directory ./test/
 #
-# CPU time:  00:00:06.14
+# CPU time:  00:00:04.35
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -356,7 +356,7 @@ $ cat test/test.ribotyper.short.out
 #  3.  *BothStrands            One or more primary hits above the minimum primary score threshold
 #                              of 20 bits (--minpsc) were found on each strand.
 #  4.  *DuplicateRegion        At least two hits (primary or secondary) on the same strand overlap
-#                              in model coordinates by 10 (--maxoverlap) positions or more
+#                              in model coordinates by 20 (--maxoverlap) positions or more
 #  5.  *InconsistentHits       Not all hits (primary or secondary) are in the same order in the
 #                              sequence and in the model.
 #  6.  MinusStrand             Best hit is on the minus strand.
@@ -365,10 +365,12 @@ $ cat test/test.ribotyper.short.out
 #  8.  LowCoverage             The total coverage of all hits (primary and secondary) to the best
 #                              model (summed length of all hits divided by total length of sequence)
 #                              is below threshold of 0.86 (--tcov).
-#  9.  LowScoreDifference      The bits per nucleotide (total bit score divided by total length
-#                              of sequence) is below threshold of 0.5 (--lowppossc).
-# 10.  VeryLowScoreDifference  The bits per nucleotide (total bit score divided by total length
-#                              of sequence) is below threshold of 0.5 (--lowppossc).
+#  9.  LowScoreDifference      The difference between the top two domains is below the 'low'
+#                              threshold of 0.10 (--lowpdiff) bits per position (total bit score
+#                              divided by summed length of all hits).
+# 10.  VeryLowScoreDifference  The difference between the top two domains is below the 'very low'
+#                              threshold of 0.04 (--vlowpdiff) bits per position (total bit score
+#                              divided by summed length of all hits).
 # 11.  MultipleHits            There is more than one hit to the best scoring model on the same strand.
 #
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -513,9 +515,9 @@ additional information. That file is:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p20.modelinfo
 
 Here is the modelinfo file:
-$ cat /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/models/ribo.0p15.modelinfo
+$ cat $RIBODIR/models/ribo.0p15.modelinfo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Each non-# prefixed line should have 4 white-space delimited tokens: 
+# Each non-# prefixed line should have 4 white-space delimited tokens: 
 #<modelname> <family> <domain> <CM-file-with-only-this-model>
 # The first line is special, it indicates the name of the master CM file
 # with all the models in it
@@ -678,9 +680,9 @@ calling it at the command line with the -h option:
 
 $ ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Aug  1 09:46:19 2018
+# date:    Fri Sep  7 15:15:58 2018
 #
 Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
@@ -724,7 +726,7 @@ options for controlling thresholds for failure/warning criteria:
   --absdiff        : use total score difference thresholds instead of per-posn
   --lowadiff <x>   : set 'low'      total score difference threshold to <x> bits [100.]
   --vlowadiff <x>  : set 'very low' total score difference threshold to <x> bits [40.]
-  --maxoverlap <n> : set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n> [10]
+  --maxoverlap <n> : set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n> [20]
   --esdmaxsc <x>   : set maximum allowed bit score difference for E-value/score discrepancies to <x> [0.001]
 
 optional input files:
@@ -746,14 +748,18 @@ options for controlling gap type definitions:
   --mgap <n> : maximum size of a 'small' gap in model coordinates is <n> [10]
   --sgap <n> : maximum size of a 'small' gap in sequence coordinates is <n> [10]
 
-advanced options:
-  --evalues      : rank hits by E-values, not bit scores
-  --skipsearch   : skip search stage, use results from earlier run
-  --noali        : no alignments in output with --1hmm, --1slow, or --2slow
-  --samedomain   : top two hits can be to models in the same domain
-  --gapseqs      : save gap sequences between hits to a file
-  --xgapseqs <n> : save gap sequence file with <n> added nts [20]
+options for creating additional output files:
+  --outseqs      : save per-model pass/fail sequences to files
+  --outhits      : save per-model pass/fail sequences to files
+  --outgaps      : save gap sequences between hits to a file
+  --outxgaps <n> : save gap sequence file with <n> added nts [20]
   --keep         : keep all intermediate files that are removed by default
+
+advanced options:
+  --evalues    : rank hits by E-values, not bit scores
+  --skipsearch : skip search stage, use results from earlier run
+  --noali      : no alignments in output with --1hmm, --1slow, or --2slow
+  --samedomain : top two hits can be to models in the same domain
 
 ##############################################################################
 ADDITIONAL SCRIPT: riboaligner.pl
@@ -785,20 +791,20 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 > riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Wed Aug  1 09:46:19 2018
-# $RIBODIR:          /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1
-# $RIBOEASELDIR:     /Users/nawrockie/src/infernal-1.1.2/easel/miniapps
-# $RIBOINFERNALDIR:  /Users/nawrockie/src/infernal-1.1.2/src
+# date:              Fri Sep  7 15:16:21 2018
+# $RIBODIR:          /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
 #
-# target sequence input file:  /Users/nawrockie/Dropbox/work/notebook/18_0505_ribo_gap_types/ribotyper-v1/testfiles/example-rlc-11.fa
+# target sequence input file:  /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1/testfiles/example-rlc-11.fa
 # output directory name:       test-ra
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [0.0 seconds]
-# Running ribotyper                                ... done. [3.4 seconds]
-# Running cmalign and classifying sequence lengths ... done. [4.7 seconds]
-# Extracting alignments for each length class      ... done. [0.0 seconds]
+# Running ribotyper                                ... done. [4.5 seconds]
+# Running cmalign and classifying sequence lengths ... done. [5.1 seconds]
+# Extracting alignments for each length class      ... done. [1.3 seconds]
 #
 # WARNING: 1 sequence(s) were not aligned because they were not classified by ribotyper into one of: SSU.Archaea SSU.Bacteria
 #  01223::Audouinella_hermannii.::AF026040
@@ -814,33 +820,41 @@ where <user directory> is the directory in which riboaligner.pl is installed.
 #
 # Tabular output saved to file test-ra/test-ra.riboaligner.tbl
 #
-# List and description of all output files saved in:                             test-ra.riboaligner.list
-# Output printed to screen saved in:                                             test-ra.riboaligner.log
-# List of executed commands saved in:                                            test-ra.riboaligner.cmd
-# List file          for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.list
-# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.stk
-# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.ifile
-# EL file            for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.elfile
-# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:      test-ra.riboaligner.SSU.Archaea.full-exact.cmalign
-# List file          for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.list
-# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.stk
-# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.ifile
-# EL file            for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.elfile
-# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-exact.cmalign
-# List file          for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.list
-# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.stk
-# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.ifile
-# EL file            for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.elfile
-# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:      test-ra.riboaligner.SSU.Bacteria.full-extra.cmalign
-# List file          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.list
-# Alignment          for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.stk
-# Insert file        for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.ifile
-# EL file            for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.elfile
-# cmalign output     for      1 SSU.Bacteria partial-ambig sequences saved in:   test-ra.riboaligner.SSU.Bacteria.partial-ambig.cmalign
+# List and description of all output files saved in:                               test-ra.riboaligner.list
+# Output printed to screen saved in:                                               test-ra.riboaligner.log
+# List of executed commands saved in:                                              test-ra.riboaligner.cmd
+# insert file for SSU.Archaea saved in:                                            test-ra.riboaligner.SSU.Archaea.cmalign.ifile
+# EL file for SSU.Archaea saved in:                                                test-ra.riboaligner.SSU.Archaea.cmalign.elfile
+# stockholm alignment file for SSU.Archaea saved in:                               test-ra.riboaligner.SSU.Archaea.cmalign.stk
+# cmalign output file for SSU.Archaea saved in:                                    test-ra.riboaligner.SSU.Archaea.cmalign.out
+# insert file for SSU.Bacteria saved in:                                           test-ra.riboaligner.SSU.Bacteria.cmalign.ifile
+# EL file for SSU.Bacteria saved in:                                               test-ra.riboaligner.SSU.Bacteria.cmalign.elfile
+# stockholm alignment file for SSU.Bacteria saved in:                              test-ra.riboaligner.SSU.Bacteria.cmalign.stk
+# cmalign output file for SSU.Bacteria saved in:                                   test-ra.riboaligner.SSU.Bacteria.cmalign.out
+# List file          for      8 SSU.Archaea  full-exact sequences saved in:        test-ra.riboaligner.SSU.Archaea.full-exact.list
+# Alignment          for      8 SSU.Archaea  full-exact sequences saved in:        test-ra.riboaligner.SSU.Archaea.full-exact.stk
+# Insert file        for      8 SSU.Archaea  full-exact sequences saved in:        test-ra.riboaligner.SSU.Archaea.full-exact.ifile
+# EL file            for      8 SSU.Archaea  full-exact sequences saved in:        test-ra.riboaligner.SSU.Archaea.full-exact.elfile
+# cmalign output     for      8 SSU.Archaea  full-exact sequences saved in:        test-ra.riboaligner.SSU.Archaea.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.list
+# Alignment          for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.stk
+# Insert file        for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.ifile
+# EL file            for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.elfile
+# cmalign output     for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.cmalign
+# List file          for      1 SSU.Bacteria full-exact sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-exact.list
+# Alignment          for      1 SSU.Bacteria full-exact sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-exact.stk
+# Insert file        for      1 SSU.Bacteria full-exact sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-exact.ifile
+# EL file            for      1 SSU.Bacteria full-exact sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-exact.elfile
+# cmalign output     for      1 SSU.Bacteria full-exact sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-exact.cmalign
+# List file          for      1 SSU.Bacteria full-extra sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-extra.list
+# Alignment          for      1 SSU.Bacteria full-extra sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-extra.stk
+# Insert file        for      1 SSU.Bacteria full-extra sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-extra.ifile
+# EL file            for      1 SSU.Bacteria full-extra sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-extra.elfile
+# cmalign output     for      1 SSU.Bacteria full-extra sequences saved in:        test-ra.riboaligner.SSU.Bacteria.full-extra.cmalign
 #
 # All output files created in directory ./test-ra/
 #
-# CPU time:  00:00:08.20
+# CPU time:  00:00:10.99
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -857,7 +871,7 @@ end of the tabular output file has comments explaining those columns
 as well as the definitions of each length classification.
 
 The alignment files
-(e.g. test-ra.riboaligner.SSU.Bacteria.full-ambig.stk)
+(e.g. test-ra.riboaligner.SSU.Bacteria.full-ambig-more.stk)
 are in 'Stockholm' format created by Infernal's cmalign program. There
 is a wiki page describing the Stockholm format:
 https://en.wikipedia.org/wiki/Stockholm_format, but a more helpful
@@ -873,16 +887,34 @@ created by the above command:
 # Column 6 [mstart]:              model start position
 # Column 7 [mstop]:               model stop position
 # Column 8 [length_class]:        classification of length, one of:
-#                                 'partial:'       does not span full model
-#                                 'full-exact':    spans full model and no 5' or 3' inserts
-#                                                  and no indels in first or final 10 model positions
-#                                 'full-extra':    spans full model but has 5' and/or 3' inserts
-#                                 'full-ambig':    spans full model and no 5' or 3' inserts
-#                                                  but has indel(s) in first and/or final 10 model positions
-#                                                  and insertions outnumber deletions at 5' and/or 3' end
-#                                 'partial-ambig': spans full model and no 5' or 3' inserts
-#                                                  but has indel(s) in first and/or final 10 model positions
-#                                                  and insertions do not outnumber deletions at neither 5' nor 3' end
+#                                 'partial:'             does not extend to first model position or final model position
+#                                 'full-exact':          spans full model and no 5' or 3' inserts
+#                                                        and no indels in first or final 10 model positions
+#                                 'full-extra':          spans full model but has 5' and/or 3' inserts
+#                                 'full-ambig-extra':    spans full model and no 5' or 3' inserts
+#                                                        but has indel(s) in first and/or final 10 model positions
+#                                                        and insertions outnumber deletions at 5' and/or 3' end
+#                                 'full-ambig-less':     spans full model and no 5' or 3' inserts
+#                                                        but has indel(s) in first and/or final 10 model positions
+#                                                        and insertions do not outnumber deletions at neither 5' nor 3' end
+#                                 '5flush-exact':        extends to first but not final model position, has no 5' inserts
+#                                                        and no indels in first 10 model positions
+#                                 '5flush-extra':        extends to first but not final model position and has 5' inserts
+#                                 '5flush-ambig-extra':  extends to first but not final model position and has no 5' inserts
+#                                                        but has indel(s) in first 10 model positions
+#                                                        and insertions outnumber deletions at 5' end
+#                                 '5flush-ambig-less':   extends to first but not final model position and has no 5' inserts
+#                                                        but has indel(s) in first 10 model positions
+#                                                        and insertions do not outnumber deletions at 5' end
+#                                 '3flush-exact':        extends to final but not first model position, has no 3' inserts
+#                                                        and no indels in final 10 model positions
+#                                 '3flush-extra':        extends to final but not first model position and has 3' inserts
+#                                 '3flush-ambig-extra':  extends to final but not first model position and has no 3' inserts
+#                                                        but has indel(s) in final 10 model positions
+#                                                        and insertions outnumber deletions at 3' end
+#                                 '3flush-ambig-less':   extends to final but not first model position and has no 3' inserts
+#                                                        but has indel(s) in final 10 model positions
+#                                                        and insertions do not outnumber deletions at 3' end
 -----------------------
 Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
 output file from ribotyper.pl. 
@@ -892,9 +924,9 @@ the -h option, just as with ribotyper.pl:
 
 > riboaligner.pl -h
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Aug  1 09:46:19 2018
+# date:    Fri Sep  7 15:17:37 2018
 #
 Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
 
@@ -984,66 +1016,73 @@ Usage 1: create a representative database of high quality sequences
 
 -------------
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Wed Aug  1 09:46:19 2018
+# date:           Fri Sep  7 15:19:50 2018
 # $RIBOBLASTDIR:  /usr/bin
-# $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
-# $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
+# $RIBODIR:       /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1
+# $RIBOEASELDIR:  /usr/local/infernal/1.1.2/bin
 # $RIBOTAXDIR:    /panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
 # $VECPLUSDIR:    /panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy
 #
-# input sequence file:                                          /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/fungi-ssu.r100.fa
-# output directory name:                                        u1-r100                                                                                        
-# forcing directory overwrite:                                  yes [-f]                                                                                       
-# skip 1st stage that filters based on ribotyper:               yes [--skipfribo1]                                                                             
-# model to use is <s>:                                          SSU.Eukarya [--model]                                                                          
-# run ribotyper stage 2 in HMM-only mode (do not use --2slow):  yes [--ribo2hmm]                                                                               
+# input sequence file:                                          /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1/testfiles/fungi-ssu.r100.fa
+# output directory name:                                        u1-r100
+# forcing directory overwrite:                                  yes [-f]
+# skip 1st stage that filters based on ribotyper:               yes [--skipfribo1]
+# model to use is <s>:                                          SSU.Eukarya [--model]
+# run ribotyper stage 2 in HMM-only mode (do not use --2slow):  yes [--ribo2hmm]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # [Stage: prelim] Validating input files                                           ... done. [0.0 seconds]
-# [Stage: prelim] Copying input fasta file                                         ... done. [0.1 seconds]
+# [Stage: prelim] Copying input fasta file                                         ... done. [0.0 seconds]
 # [Stage: prelim] Reformatting names of sequences                                  ... done. [0.0 seconds]
 # [Stage: prelim] Determining target sequence lengths                              ... done. [0.1 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [26.7 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                 ... done. [31.0 seconds]
 # [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     95 pass;      5 fail;]
-# [Stage: ftaxid] Filtering for specified species                                  ... done. [3.4 seconds,     60 pass;     40 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [3.7 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [1.8 seconds,    100 pass;      0 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [64.7 seconds,     70 pass;     30 fail;]
+# [Stage: ftaxid] Filtering for specified species                                  ... done. [4.1 seconds,     61 pass;     39 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [2.2 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [1.9 seconds,    100 pass;      0 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                           ... done. [64.9 seconds,     70 pass;     30 fail;]
 # [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [0.0 seconds,     70 pass;      0 fail;]
 # [Stage: fmspan] Filtering out seqs based on model span                           ... done. [0.0 seconds,     32 pass;     38 fail;]
 # [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     18 pass;     82 fail; ONLY PASSES ADVANCE]
 # [Stage: ingrup] Determining percent identities in alignments                     ... done. [0.0 seconds]
-# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.2 seconds]
-# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 5 phyla lost]
-# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 7 classes lost]
-# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 20 orders lost]
+# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.7 seconds,      0 fail;]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 0 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 0 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 0 orders lost]
 # [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     18 pass;      0 fail; ONLY PASSES ADVANCE]
+# [***OutputFile] Generating model span survival tables for all seqs               ... done. [0.3 seconds]
+# [***OutputFile] Generating model span survival tables for PASSing seqs           ... done. [0.1 seconds]
 # [Stage: clustr] Clustering surviving sequences                                   ... done. [0.0 seconds]
-# [***Checkpoint] Creating lists of seqs that survived clustering                  ... done. [0.0 seconds,      5 pass;     13 fail;]
+# [***Checkpoint] Creating lists of seqs that survived clustering                  ... done. [0.0 seconds,      9 pass;      9 fail;]
 #
-# Number of input sequences:                                 100  [listed in u1-r100/u1-r100.ribodbmaker.full.seqlist]
-# Number surviving all filter stages:                         18  [listed in u1-r100/u1-r100.ribodbmaker.surv_filters.pass.seqlist]
-# Number surviving ingroup analysis:                          18  [listed in u1-r100/u1-r100.ribodbmaker.surv_ingrup.pass.seqlist]
-# Number surviving clustering (number of clusters):            5  [listed in u1-r100/u1-r100.ribodbmaker.surv_clustr.pass.seqlist]
-# Number in final set of surviving sequences:                  5  [listed in u1-r100/u1-r100.ribodbmaker.final.pass.seqlist]
+# Number of input sequences:                                                100  [listed in u1-r100/u1-r100.ribodbmaker.full.seqlist]
+# Number surviving all filter stages:                                        18  [listed in u1-r100/u1-r100.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                                         18  [listed in u1-r100/u1-r100.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number surviving clustering (number of clusters):                           9  [listed in u1-r100/u1-r100.ribodbmaker.surv_clustr.pass.seqlist]
+# Number in final set of surviving sequences:                                 9  [listed in u1-r100/u1-r100.ribodbmaker.final.pass.seqlist]
+# Number of phyla   represented in final set of surviving sequences:          4  [listed in final line of u1-r100/u1-r100.ribodbmaker.phylum.ct]
+# Number of classes represented in final set of surviving sequences:          8  [listed in final line of u1-r100/u1-r100.ribodbmaker.class.ct]
+# Number of orders  represented in final set of surviving sequences:          9  [listed in final line of u1-r100/u1-r100.ribodbmaker.order.ct]
 #
-# Output printed to screen saved in:                                          u1-r100.ribodbmaker.log
-# List of executed commands saved in:                                         u1-r100.ribodbmaker.cmd
-# List and description of all output files saved in:                          u1-r100.ribodbmaker.list
-# list of 5 phyla lost in the ingroup analysis saved in:                      u1-r100.ribodbmaker.ingrup.phylum.lost.list
-# list of 7 classes lost in the ingroup analysis saved in:                    u1-r100.ribodbmaker.ingrup.class.lost.list
-# list of 20 orders lost in the ingroup analysis saved in:                    u1-r100.ribodbmaker.ingrup.order.lost.list
-# fasta file with final set of surviving sequences saved in:                  u1-r100.ribodbmaker.final.fa
-# tab-delimited file listing number of sequences per phylum taxid saved in:   u1-r100.ribodbmaker.phylum.ct
-# tab-delimited file listing number of sequences per class taxid saved in:    u1-r100.ribodbmaker.class.ct
-# tab-delimited file listing number of sequences per order taxid saved in:    u1-r100.ribodbmaker.order.ct
-# tab-delimited tabular output summary file saved in:                         u1-r100.ribodbmaker.tab.tbl
-# whitespace-delimited, more readable output summary file saved in:           u1-r100.ribodbmaker.rdb.tbl
+# Output printed to screen saved in:                                                          u1-r100.ribodbmaker.log
+# List of executed commands saved in:                                                         u1-r100.ribodbmaker.cmd
+# List and description of all output files saved in:                                          u1-r100.ribodbmaker.list
+# list of 0 phyla lost in the ingroup analysis saved in:                                      u1-r100.ribodbmaker.ingrup.phylum.lost.list
+# list of 0 classes lost in the ingroup analysis saved in:                                    u1-r100.ribodbmaker.ingrup.class.lost.list
+# list of 0 orders lost in the ingroup analysis saved in:                                     u1-r100.ribodbmaker.ingrup.order.lost.list
+# table summarizing number of sequences (all) for different model position spans saved in:    u1-r100.ribodbmaker.all.mdlspan.survtbl
+# table summarizing number of sequences (pass) for different model position spans saved in:   u1-r100.ribodbmaker.pass.mdlspan.survtbl
+# fasta file with final set of surviving sequences saved in:                                  u1-r100.ribodbmaker.final.fa
+# tab-delimited file listing number of sequences per phylum taxid saved in:                   u1-r100.ribodbmaker.phylum.ct
+# tab-delimited file listing number of sequences per class taxid saved in:                    u1-r100.ribodbmaker.class.ct
+# tab-delimited file listing number of sequences per order taxid saved in:                    u1-r100.ribodbmaker.order.ct
+# tab-delimited tabular output summary file saved in:                                         u1-r100.ribodbmaker.tab.tbl
+# whitespace-delimited, more readable output summary file saved in:                           u1-r100.ribodbmaker.rdb.tbl
 #
 # All output files created in directory ./u1-r100/
 #
-# CPU time:  00:01:41.00
+# CPU time:  00:01:45.71
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -1095,6 +1134,21 @@ file. The beginning of the file explains the information in each column:
 # 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>
 #                          see u1-r100/u1-r100.ribodbmaker-ra/u1-r100-ra.ribotyper.long.out
 #                          for explanation of unexpected features
+# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long
+#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end
+#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                 has indels in first and/or final 10 model positions and
+#                                                 insertions outnumber deletions at 5' and/or 3' end
+#                          <s>=5flush-extra:      alignment extends to first but not final model position
+#                                                 with >= 1 nt extra before first model position
+#                          <s>=5flush-ambig-more: alignment extends to first but not final model position
+#                                                 and has indels in first 10 model positions and
+#                                                 insertions outnumber deletions at 5' end
+#                          <s>=3flush-extra:      alignment extends to final but not first model position
+#                                                 with >= 1 nt extra after final model position
+#                          <s>=3flush-ambig-more: alignment extends to final but not first model position
+#                                                 and has indels in final 10 model positions and
+#                                                 insertions outnumber deletions at 3' end
 # 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>
 # 'ingroup-analysis[<s>]:  sequence failed ingroup analysis
 #                          if <s> includes 'type=<s1>', sequence was classified as type <s1>
@@ -1102,7 +1156,7 @@ file. The beginning of the file explains the information in each column:
 #idx  seqname     seqlen   staxid   otaxid   ctaxid   ptaxid   p/f  clust  special  failstr
 1     KC674542.1    1809   175245        1        1        1  FAIL      -        -  not-specified-species;;vecscreen-match[None];;ribotyper2[*LowCoverage:(0.972<0.990);];;
 2     EU278606.1    1737   209559     5042   147545     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.990<0.990);];;
-3     AB034910.1    1763    36909     4892     4891     4890  PASS     NC        -  -
+3     AB034910.1    1763    36909     4892     4891     4890  PASS      C        -  -
 4     KC670242.1    1741   175245        1        1        1  FAIL      -        -  not-specified-species;;
 5     MG520986.1    1063  1821266    92860   147541     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.678<0.990);*MultipleHits:(2:SI[M:-1(568..568),S:338(510..847)]);];;
 6     DQ677995.1    1644    45130    92860   147541     4890  FAIL      -        -  mdlspan[86-1781];;
@@ -1115,63 +1169,70 @@ file. The beginning of the file explains the information in each column:
 Usage 2: create a subset of high quality sequences
 > ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Wed Aug  1 09:46:19 2018
+# date:           Fri Sep  7 15:24:00 2018
 # $RIBOBLASTDIR:  /usr/bin
-# $RIBODIR:       /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
-# $RIBOEASELDIR:  /home/nawrocke/src/dnaorg_install_script/infernal-1.1.2/easel/miniapps/
+# $RIBODIR:       /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1
+# $RIBOEASELDIR:  /usr/local/infernal/1.1.2/bin
 # $RIBOTAXDIR:    /panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
 # $VECPLUSDIR:    /panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy
 #
-# input sequence file:                           /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/fungi-ssu.r100.fa
-# output directory name:                         u2-r100                                                                                        
-# forcing directory overwrite:                   yes [-f]                                                                                       
-# skip stage that clusters surviving sequences:  yes [--skipclustr]                                                                             
-# model to use is <s>:                           SSU.Eukarya [--model]                                                                          
+# input sequence file:                           /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1/testfiles/fungi-ssu.r100.fa
+# output directory name:                         u2-r100
+# forcing directory overwrite:                   yes [-f]
+# skip stage that clusters surviving sequences:  yes [--skipclustr]
+# model to use is <s>:                           SSU.Eukarya [--model]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # [Stage: prelim] Validating input files                                           ... done. [0.0 seconds]
 # [Stage: prelim] Copying input fasta file                                         ... done. [0.0 seconds]
 # [Stage: prelim] Reformatting names of sequences                                  ... done. [0.0 seconds]
-# [Stage: prelim] Determining target sequence lengths                              ... done. [0.0 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [24.4 seconds]
+# [Stage: prelim] Determining target sequence lengths                              ... done. [0.1 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                 ... done. [36.2 seconds]
 # [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [0.0 seconds,     95 pass;      5 fail;]
-# [Stage: ftaxid] Filtering for specified species                                  ... done. [3.5 seconds,     60 pass;     40 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [3.5 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [2.8 seconds,    100 pass;      0 fail;]
-# [Stage: fribo1] Running ribotyper.pl                                             ... done. [20.4 seconds,     94 pass;      6 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [325.0 seconds,     92 pass;      8 fail;]
+# [Stage: ftaxid] Filtering for specified species                                  ... done. [3.6 seconds,     61 pass;     39 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [2.3 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [1.7 seconds,    100 pass;      0 fail;]
+# [Stage: fribo1] Running ribotyper.pl                                             ... done. [22.4 seconds,     94 pass;      6 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                           ... done. [328.2 seconds,     92 pass;      8 fail;]
 # [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [0.0 seconds,     92 pass;      0 fail;]
 # [Stage: fmspan] Filtering out seqs based on model span                           ... done. [0.0 seconds,     44 pass;     48 fail;]
 # [***Checkpoint] Creating lists that survived all filter stages                   ... done. [0.0 seconds,     19 pass;     81 fail; ONLY PASSES ADVANCE]
 # [Stage: ingrup] Determining percent identities in alignments                     ... done. [0.0 seconds]
-# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.2 seconds]
-# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 5 phyla lost]
-# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 7 classes lost]
-# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 20 orders lost]
+# [Stage: ingrup] Performing ingroup analysis                                      ... done. [0.7 seconds,      0 fail;]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [0.0 seconds, 0 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [0.0 seconds, 0 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [0.0 seconds, 0 orders lost]
 # [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [0.0 seconds,     19 pass;      0 fail; ONLY PASSES ADVANCE]
+# [***OutputFile] Generating model span survival tables for all seqs               ... done. [0.5 seconds]
+# [***OutputFile] Generating model span survival tables for PASSing seqs           ... done. [0.1 seconds]
 #
-# Number of input sequences:                                 100  [listed in u2-r100/u2-r100.ribodbmaker.full.seqlist]
-# Number surviving all filter stages:                         19  [listed in u2-r100/u2-r100.ribodbmaker.surv_filters.pass.seqlist]
-# Number surviving ingroup analysis:                          19  [listed in u2-r100/u2-r100.ribodbmaker.surv_ingrup.pass.seqlist]
-# Number in final set of surviving sequences:                 19  [listed in u2-r100/u2-r100.ribodbmaker.final.pass.seqlist]
+# Number of input sequences:                                                100  [listed in u2-r100/u2-r100.ribodbmaker.full.seqlist]
+# Number surviving all filter stages:                                        19  [listed in u2-r100/u2-r100.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                                         19  [listed in u2-r100/u2-r100.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number in final set of surviving sequences:                                19  [listed in u2-r100/u2-r100.ribodbmaker.final.pass.seqlist]
+# Number of phyla   represented in final set of surviving sequences:          4  [listed in final line of u2-r100/u2-r100.ribodbmaker.phylum.ct]
+# Number of classes represented in final set of surviving sequences:         10  [listed in final line of u2-r100/u2-r100.ribodbmaker.class.ct]
+# Number of orders  represented in final set of surviving sequences:         11  [listed in final line of u2-r100/u2-r100.ribodbmaker.order.ct]
 #
-# Output printed to screen saved in:                                          u2-r100.ribodbmaker.log
-# List of executed commands saved in:                                         u2-r100.ribodbmaker.cmd
-# List and description of all output files saved in:                          u2-r100.ribodbmaker.list
-# list of 5 phyla lost in the ingroup analysis saved in:                      u2-r100.ribodbmaker.ingrup.phylum.lost.list
-# list of 7 classes lost in the ingroup analysis saved in:                    u2-r100.ribodbmaker.ingrup.class.lost.list
-# list of 20 orders lost in the ingroup analysis saved in:                    u2-r100.ribodbmaker.ingrup.order.lost.list
-# fasta file with final set of surviving sequences saved in:                  u2-r100.ribodbmaker.final.fa
-# tab-delimited file listing number of sequences per phylum taxid saved in:   u2-r100.ribodbmaker.phylum.ct
-# tab-delimited file listing number of sequences per class taxid saved in:    u2-r100.ribodbmaker.class.ct
-# tab-delimited file listing number of sequences per order taxid saved in:    u2-r100.ribodbmaker.order.ct
-# tab-delimited tabular output summary file saved in:                         u2-r100.ribodbmaker.tab.tbl
-# whitespace-delimited, more readable output summary file saved in:           u2-r100.ribodbmaker.rdb.tbl
+# Output printed to screen saved in:                                                          u2-r100.ribodbmaker.log
+# List of executed commands saved in:                                                         u2-r100.ribodbmaker.cmd
+# List and description of all output files saved in:                                          u2-r100.ribodbmaker.list
+# list of 0 phyla lost in the ingroup analysis saved in:                                      u2-r100.ribodbmaker.ingrup.phylum.lost.list
+# list of 0 classes lost in the ingroup analysis saved in:                                    u2-r100.ribodbmaker.ingrup.class.lost.list
+# list of 0 orders lost in the ingroup analysis saved in:                                     u2-r100.ribodbmaker.ingrup.order.lost.list
+# table summarizing number of sequences (all) for different model position spans saved in:    u2-r100.ribodbmaker.all.mdlspan.survtbl
+# table summarizing number of sequences (pass) for different model position spans saved in:   u2-r100.ribodbmaker.pass.mdlspan.survtbl
+# fasta file with final set of surviving sequences saved in:                                  u2-r100.ribodbmaker.final.fa
+# tab-delimited file listing number of sequences per phylum taxid saved in:                   u2-r100.ribodbmaker.phylum.ct
+# tab-delimited file listing number of sequences per class taxid saved in:                    u2-r100.ribodbmaker.class.ct
+# tab-delimited file listing number of sequences per order taxid saved in:                    u2-r100.ribodbmaker.order.ct
+# tab-delimited tabular output summary file saved in:                                         u2-r100.ribodbmaker.tab.tbl
+# whitespace-delimited, more readable output summary file saved in:                           u2-r100.ribodbmaker.rdb.tbl
 #
 # All output files created in directory ./u2-r100/
 #
-# CPU time:  00:06:20.19
+# CPU time:  00:06:36.23
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
@@ -1298,20 +1359,20 @@ To do all tests and save output to the file 'test.out', do:
 Here is the output for the first test performed by that script
 ($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1)
 # ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
-# ribotyper 0.23 (Aug 2018)
+# ribotyper 0.25 (Sept 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:      Wed Aug  1 09:46:19 2018
-# $RIBODIR:  /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1
+# date:      Fri Sep  7 15:34:34 2018
+# $RIBODIR:  /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1
 #
-# test file:                    /panfs/pan1/infernal/notebook/18_0524_rrna_wrapper_dev/ribotyper-v1/testfiles/testin.example-16
-# output directory name:        test1                                                                                          
-# forcing directory overwrite:  yes [-f]                                                                                       
+# test file:                    /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1/testfiles/testin.example-16
+# output directory name:        test1
+# forcing directory overwrite:  yes [-f]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [      ribotyper-1-16]          ... done. [7.8 seconds]
+# Running command  1 [      ribotyper-1-16]          ... done. [4.7 seconds]
 #	checking test-16/test-16.ribotyper.short.out                 ... pass
 #	checking test-16/test-16.ribotyper.long.out                  ... pass
 #	removing directory test-16                                   ... done
-# Running command  2 [    riboaligner-1-16]          ... done. [16.1 seconds]
+# Running command  2 [    riboaligner-1-16]          ... done. [8.9 seconds]
 #	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
@@ -1329,7 +1390,7 @@ Here is the output for the first test performed by that script
 #
 # All output files created in directory ./test1/
 #
-# CPU time:  00:00:24.35
+# CPU time:  00:00:13.78
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
