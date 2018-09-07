@@ -313,7 +313,7 @@ my $pass_type_str = ($do_o3fail) ? "{I1,I2,I3,NA}" : "{I1,I2,I3,O3,NA}";
 my $fail_type_str = ($do_o3fail) ? "{O1,O2,O3}"    : "{O1,O2}";
 
 my @column_explanation_A = (); # array of strings that explain columns to write to output files and stdout
-push(@column_explanation_A, "# Explanation of columns [RIBO v0.25]:\n");
+push(@column_explanation_A, "# Explanation of columns [RIBO v0.26]:\n");
 push(@column_explanation_A, "# 1.  sequence: sequence accession.version\n");
 push(@column_explanation_A, "# 2.  seq-taxid: sequence taxid read from input file: $taxinfo_file\n");
 push(@column_explanation_A, "# 3.  species: sequence genus and species\n");
