@@ -137,6 +137,8 @@ $opt_group_desc_H{++$g} = "options for controlling model span survival table out
 opt_Add("--msstep",     "integer", 50,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msminstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min start position to <n>",   "for model span output table, set min start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msmaxstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max start position to <n>",   "for model span output table, set max start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min stop position to <n>",    "for model span output table, set min stop position to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msmaxstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max stop position to <n>",    "for model span output table, set max stop position to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
@@ -220,6 +222,8 @@ my $options_okay =
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
                 'msminlen=s'   => \$GetOptions_H{"--msminlen"},
                 'msminstart=s' => \$GetOptions_H{"--msminstart"},
+                'msmaxstart=s' => \$GetOptions_H{"--msmaxstart"},
+                'msminstop=s'  => \$GetOptions_H{"--msminstop"},
                 'msmaxstop=s'  => \$GetOptions_H{"--msmaxstop"},
                 'mslist=s'     => \$GetOptions_H{"--mslist"},
                 'msclass'      => \$GetOptions_H{"--msclass"},
@@ -387,25 +391,40 @@ if(opt_IsUsed("--skipfmspan", \%opt_HH)) {
     die "ERROR, --fullaln is required if --skipfmspan is used unless --skipingrup and --skipclustr are also used";
   }
 }
-# --msminstart <n1> --msmaxstop <n2>: 
-# enforce <n1> <= <n2>, we do more complicated tests later after we know $family_modellen
-if(opt_IsUsed("--msminstart", \%opt_HH)) { 
-  if(opt_Get("--msminstart", \%opt_HH) < 1) { 
+
+# enforce <n> >= 1 for all of --msminstart, --msmaxstart, --msminstop, --msmaxstop
+if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_Get("--msminstart", \%opt_HH) < 1)) { 
     die "ERROR, with --msminstart <n1>, <n1> must be >= 1";
-  }
 }
-if(opt_IsUsed("--msmaxstop", \%opt_HH)) { 
-  if(opt_Get("--msmaxstop", \%opt_HH) < 1) { 
+if((opt_IsUsed("--msmaxstart", \%opt_HH)) && (opt_Get("--msmaxstart", \%opt_HH) < 1)) { 
+    die "ERROR, with --msmaxstart <n1>, <n1> must be >= 1";
+}
+if((opt_IsUsed("--msminstop", \%opt_HH)) && (opt_Get("--msminstop", \%opt_HH) < 1)) { 
+    die "ERROR, with --msminstop <n1>, <n1> must be >= 1";
+}
+if((opt_IsUsed("--msmaxstop", \%opt_HH)) && (opt_Get("--msmaxstop", \%opt_HH) < 1)) { 
     die "ERROR, with --msmaxstop <n1>, <n1> must be >= 1";
+}
+# with --msminstart <n1> and --msmaxstart <n2>, enforce <n1> <= <n2>
+if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_IsUsed("--msmaxstart", \%opt_HH))) { 
+  if((opt_Get("--msminstart", \%opt_HH)) > (opt_Get("--msmaxstart", \%opt_HH))) { 
+    die "ERROR, with --msminstart <n1> and --msmaxstart <n2>, <n2> must be >= <n1>";
   }
 }
+# with --msminstop <n1> and --msmaxstop <n2>, enforce <n1> <= <n2>
+if((opt_IsUsed("--msminstop", \%opt_HH)) && (opt_IsUsed("--msmaxstop", \%opt_HH))) { 
+  if((opt_Get("--msminstop", \%opt_HH)) > (opt_Get("--msmaxstop", \%opt_HH))) { 
+    die "ERROR, with --msminstop <n1> and --msmaxstop <n2>, <n2> must be >= <n1>";
+  }
+}
+# with --msminstart <n1> and --msmaxstop <n2>, enforce <n1> <= <n2>
 if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_IsUsed("--msmaxstop", \%opt_HH))) { 
-  my $tmp_minstart = opt_Get("--msminstart", \%opt_HH);
-  my $tmp_maxsstop = opt_Get("--msminstart", \%opt_HH);
   if((opt_Get("--msminstart", \%opt_HH)) > (opt_Get("--msmaxstop", \%opt_HH))) { 
     die "ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> must be >= <n1>";
   }
 }
+# we do more sophisticated tests for these --ms{min,max}{start,stop} options later
+# after we know $family_modellen
 
 # now that we know what steps we are doing, make sure that:
 # - required ENV variables are set and point to valid dirs
@@ -668,17 +687,35 @@ if($do_fribo1 || $do_fribo2) {
     close(RIBOOPTS2);
   }
 
-  # now that we know $family_modellen, check that --msminstart <n1> and --msmaxstop <n2> still make sense
+  # now that we know $family_modellen, check that the --ms{min,max}{start,stop} options still make make sense
+  # note that we already checked that --msminstart <= --msmaxstart, --msminstop <= --msmaxstop, and --msminstart <= --msmaxstop above
+
+  # first, make sure that all values are now less than or equal to modellen
+  if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_Get("--msminstart", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msminstart <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  if((opt_IsUsed("--msmaxstart", \%opt_HH)) && (opt_Get("--msmaxstart", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msmaxstart <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  if((opt_IsUsed("--msminstop", \%opt_HH)) && (opt_Get("--msminstop", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msminstop <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  if((opt_IsUsed("--msmaxstop", \%opt_HH)) && (opt_Get("--msmaxstop", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msmaxstop <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  # second, make sure there's at least one bin we're going to have
+  # this only relies on --msminstart and --msmaxstop
   if(opt_IsUsed("--msminstart", \%opt_HH) || opt_IsUsed("--msmaxstop", \%opt_HH)) { 
     my $tmp_minstart = opt_IsUsed("--msminstart", \%opt_HH) ? opt_Get("--msminstart", \%opt_HH) : 1;
     my $tmp_maxstop  = opt_IsUsed("--msmaxstop",  \%opt_HH) ? opt_Get("--msmaxstop",  \%opt_HH) : $family_modellen;
     my $tmp_step     = opt_Get("--msstep",  \%opt_HH);
     my $tmp_msminlen = opt_Get("--msminlen",  \%opt_HH);
     my $tmp_minlen   = ($tmp_step > $tmp_msminlen) ? $tmp_step : $tmp_msminlen;
-    # enforce <n1> <= <n2> and (<n2> - <n1> + 1) >= MAX($tmp_minlen, $tmp_step)
+    # don't think this check is actually necessary, but I'm leaving it
     if($tmp_minstart > $tmp_maxstop) { 
       ofile_FAIL("ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> must be >= <n1> (<n1> is $tmp_minstart, <n2> is $tmp_maxstop)", "RIBO", $!, $ofile_info_HH{"FH"});
     }
+    # enforce <n1> <= <n2> and (<n2> - <n1> + 1) >= MAX($tmp_minlen, $tmp_step)
     if(($tmp_maxstop - $tmp_minstart + 1) < $tmp_minlen) { 
       ofile_FAIL("ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> - <n1> + 1 must be must be >= $tmp_minlen (<n1> is $tmp_minstart, <n2> is $tmp_maxstop)", "RIBO", $!, $ofile_info_HH{"FH"});
     }
@@ -1099,9 +1136,9 @@ else {
       my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
       my $nlost = 0;
       open(LOST, ">", $ingrup_lost_list_H{$level}) || ofile_FileOpenFailure($ingrup_lost_list_H{$level}, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-      foreach my $gtaxid (sort {$a <=> $b} keys (%{$full_level_ct_HH{$level}})) { 
+      foreach my $gtaxid (sort {$a <=> $b} keys (%{$surv_filters_level_ct_HH{$level}})) { 
         if($gtaxid != 0) { 
-          if(($full_level_ct_HH{$level}{$gtaxid} > 0) && 
+          if(($surv_filters_level_ct_HH{$level}{$gtaxid} > 0) && 
              ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || ($surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0))) { 
             print LOST $gtaxid . "\n";
             $nlost++;
@@ -1261,7 +1298,10 @@ if($npass_final > 0) {
 #   (whitepsace delimited) 
 #####################################################################
 # output taxonomy level count files
+my %final_nsurv_H = (); 
 foreach $level (@level_A) { 
+  $final_nsurv_H{$level} = 0;
+  my $final_str = ""; # comma separated list of all taxids that have >= 1 sequences
   my $out_level_ct_file = $out_root . "." . $level . ".ct";
   open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
   print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
@@ -1277,7 +1317,10 @@ foreach $level (@level_A) {
                 ($did_ingrup) ? $surv_ingrup_level_ct_HH{$level}{$taxid} : "-", 
                 ($did_clustr) ? $surv_clustr_level_ct_HH{$level}{$taxid} : "-", 
                 $final_level_ct_HR->{$taxid});
+    if($final_level_ct_HR->{$taxid} > 0) { $final_nsurv_H{$level}++; $final_str .= $taxid . ","; }
   } 
+  if($final_str ne "") { $final_str =~ s/\,$//; } # remove final ','
+  printf LVL ("# List of %d taxids represented by >= 1 sequence in final set:\n#%s\n", $final_nsurv_H{$level}, $final_str eq "" ? "NONE" : $final_str);
   close(LVL);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "out.$level", "$out_level_ct_file", 1, "tab-delimited file listing number of sequences per $level taxid");
 }
@@ -1421,16 +1464,18 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rdbtbl", $out_rdb_tbl
 ##########
 # final stats on number of sequences passing each stage
 ofile_OutputString($log_FH, 1, "#\n");
-ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number of input sequences:", $nseq, $full_list_file));
-ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving all filter stages:", $npass_filters, $out_root . ".surv_filters.pass.seqlist"));
+ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number of input sequences:", $nseq, $full_list_file));
+ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number surviving all filter stages:", $npass_filters, $out_root . ".surv_filters.pass.seqlist"));
 if($do_ingrup) { 
-  ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving ingroup analysis:", $npass_ingrup, $out_root . ".surv_ingrup.pass.seqlist"));
+  ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number surviving ingroup analysis:", $npass_ingrup, $out_root . ".surv_ingrup.pass.seqlist"));
 }
 if($do_clustr) { 
-  ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving clustering (number of clusters):", $npass_clustr, $out_root . ".surv_clustr.pass.seqlist"));
+  ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number surviving clustering (number of clusters):", $npass_clustr, $out_root . ".surv_clustr.pass.seqlist"));
 }
-ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number in final set of surviving sequences:", $npass_final, $final_list_file));
-
+ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number in final set of surviving sequences:", $npass_final, $final_list_file));
+foreach $level (@level_A) { 
+  ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in final line of %s]\n", sprintf("# Number of %-7s represented in final set of surviving sequences:", pluralize_level($level)), $final_nsurv_H{$level}, $out_root . "." . $level . ".ct"));
+}
 $total_seconds += ribo_SecondsSinceEpoch();
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
 exit 0;
@@ -1884,6 +1929,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   my $pstep      = opt_Get("--msstep",   $opt_HHR);
   my $minspanlen = opt_Get("--msminlen", $opt_HHR);
   my $minstart   = opt_IsUsed("--msminstart", $opt_HHR) ? opt_Get("--msminstart", $opt_HHR) : 1;
+  my $maxstart   = opt_IsUsed("--msmaxstart", $opt_HHR) ? opt_Get("--msmaxstart", $opt_HHR) : $mlen;
+  my $minstop    = opt_IsUsed("--msminstop",  $opt_HHR) ? opt_Get("--msminstop",  $opt_HHR) : 1;
   my $maxstop    = opt_IsUsed("--msmaxstop",  $opt_HHR) ? opt_Get("--msmaxstop",  $opt_HHR) : $mlen;
   my $bidx = 0;
   my $lpos; 
@@ -1897,25 +1944,33 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   my @lpos_per_bin_A = ();   # [0..nbins-1] lpos for this bin
   my @rpos_per_bin_A = ();   # [0..nbins-1] rpos for this bin
   # $minstart == 1     unless --msminstart was used
+  # $maxstart == $mlen unless --msmaxstart was used
+  # $minstop  == 1     unless --msminstop  was used
   # $maxstop  == $mlen unless --msmaxstop  was used
-  for($lpos = $minstart; $lpos < ($maxstop + $pstep); $lpos += $pstep) { 
+  if($minstop  < $minstart) { $minstop  = $minstart; }
+  if($maxstart > $maxstop)  { $maxstart = $maxstop; }
+
+  # determine the bins
+  for($lpos = $minstart; $lpos < ($maxstart + $pstep); $lpos += $pstep) { 
     if($lpos > $maxstop) { $lpos = $maxstop; }
     for($rpos = $lpos + $pstep; $rpos < ($maxstop + $pstep); $rpos += $pstep) { 
-      if($rpos > $maxstop) { $rpos = $maxstop; }
-      $spanlen = ($rpos - $lpos) + 1;
-      if($spanlen >= $minspanlen) { 
-        if(! exists $lpos_H{$lpos}) {
-          push(@lpos_A, $lpos);
-          $lpos_H{$lpos} = 1;
+      if($rpos >= $minstop) { 
+        if($rpos > $maxstop) { $rpos = $maxstop; }
+        $spanlen = ($rpos - $lpos) + 1;
+        if($spanlen >= $minspanlen) { 
+          if(! exists $lpos_H{$lpos}) {
+            push(@lpos_A, $lpos);
+            $lpos_H{$lpos} = 1;
+          }
+          if(! exists $rpos_H{$rpos}) {
+            push(@rpos_A, $rpos);
+            $rpos_H{$rpos} = 1;
+          }
+          push(@lpos_per_bin_A, $lpos);
+          push(@rpos_per_bin_A, $rpos);
+          $lpos_rpos2bin_HH{$lpos}{$rpos} = $bidx;
+          $bidx++;
         }
-        if(! exists $rpos_H{$rpos}) {
-          push(@rpos_A, $rpos);
-          $rpos_H{$rpos} = 1;
-        }
-        push(@lpos_per_bin_A, $lpos);
-        push(@rpos_per_bin_A, $rpos);
-        $lpos_rpos2bin_HH{$lpos}{$rpos} = $bidx;
-        $bidx++;
       }
     }
   }
@@ -1976,12 +2031,8 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
         # determine the specific bin that this sequence falls in
         my $lpos_idx = 0; 
         my $rpos_idx = 0;
-        if($nlpos > 1) { 
-          while(($mstart > $lpos_A[($lpos_idx+1)]) && ($lpos_idx < ($nlpos-1))) { $lpos_idx++; }
-        }
-        if($nrpos > 1) { 
-          while(($mstop  > $rpos_A[($rpos_idx+1)]) && ($rpos_idx < ($nrpos-1))) { $rpos_idx++; }
-        }
+        while(($lpos_idx < ($nlpos-1)) && ($mstart > $lpos_A[($lpos_idx+1)])) { $lpos_idx++; }
+        while(($rpos_idx < ($nrpos-1)) && ($mstop  > $rpos_A[($rpos_idx+1)])) { $rpos_idx++; }
         #if(defined $seqfailstr_HR) { printf("HEYA $mstart $mstop lpos_idx: $lpos_idx rpos_idx: $rpos_idx $lpos_A[$lpos_idx] $rpos_A[$rpos_idx]\n"); }
 
         $bidx = $lpos_rpos2bin_HH{$lpos_A[$lpos_idx]}{$rpos_A[$rpos_idx]};
@@ -2078,6 +2129,10 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   print OUT ("#   --msminlen <n>   : for model span output table, set min length span to <n> [VALUE: $used_str]\n");
   $used_str = opt_IsUsed("--msminstart", $opt_HHR) ? opt_Get("--msminstart", $opt_HHR) : "NOT ENABLED; used default of: 1";
   print OUT ("#   --msminstart <n> : for model span output table, set min start position to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msmaxstart", $opt_HHR) ? opt_Get("--msmaxstart", $opt_HHR) : "NOT ENABLED; used default of: $mlen (model length)";
+  print OUT ("#   --msmaxstart <n> : for model span output table, set maxstart position to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msminstop", $opt_HHR) ? opt_Get("--msminstop", $opt_HHR) : "NOT ENABLED; used default of: 1";
+  print OUT ("#   --msminstop <n>  : for model span output table, set min stop position to <n> [VALUE: $used_str]\n");
   $used_str = opt_IsUsed("--msmaxstop", $opt_HHR) ? opt_Get("--msmaxstop", $opt_HHR) : "NOT ENABLED; used default of: $mlen (model length)";
   print OUT ("#   --msmaxstop <n>  : for model span output table, set max stop position to <n> [VALUE: $used_str]\n");
   print OUT ("#\n");
