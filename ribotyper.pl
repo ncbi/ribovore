@@ -208,9 +208,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.24";
+my $version           = "0.25";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
-my $releasedate       = "Aug 2018";
+my $releasedate       = "Sept 2018";
 my $package_name      = "ribotyper";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it

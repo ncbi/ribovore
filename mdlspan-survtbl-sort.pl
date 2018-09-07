@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # EPN, Fri May 25 12:55:03 2018
-# ali-apos-to-uapos.pl
-# Given an alignment position return the unaligned position that aligns to that alignment column
+# mdlspan-survtbl-sort.pl
+# Sort a mdlspan table to prioritize listed orders, classes or phyla
 #
 use warnings;
 use strict;
