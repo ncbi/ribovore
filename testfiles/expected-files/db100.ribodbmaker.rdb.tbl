@@ -14,7 +14,7 @@
 # Possible substrings in 'failstr' column 11, each substring separated by ';;':
 # 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed
 # 'not-in-tax-tree':       sequence taxid is not present in the input NCBI taxonomy tree
-# 'not-specified-species': sequence does not belong to a specified sequence according to NCBI taxonomy
+# 'not-specified-species': sequence does not belong to a specified species according to NCBI taxonomy
 # 'vecscreen-match[<s>]':  vecscreen reported match to vector of strength <s>
 # 'blastrepeat[<s>]':      repetitive sequence identified by blastn
 #                          <s> = <s1>,<s2>,...<sI>...<sN> for N >= 1, where
@@ -29,6 +29,21 @@
 # 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>
 #                          see db100/db100.ribodbmaker-ra/db100-ra.ribotyper.long.out
 #                          for explanation of unexpected features
+# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long
+#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end
+#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                 has indels in first and/or final 10 model positions and
+#                                                 insertions outnumber deletions at 5' and/or 3' end
+#                          <s>=5flush-extra:      alignment extends to first but not final model position
+#                                                 with >= 1 nt extra before first model position
+#                          <s>=5flush-ambig-more: alignment extends to first but not final model position
+#                                                 and has indels in first 10 model positions and
+#                                                 insertions outnumber deletions at 5' end
+#                          <s>=3flush-extra:      alignment extends to final but not first model position
+#                                                 with >= 1 nt extra after final model position
+#                          <s>=3flush-ambig-more: alignment extends to final but not first model position
+#                                                 and has indels in final 10 model positions and
+#                                                 insertions outnumber deletions at 3' end
 # 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>
 # 'ingroup-analysis[<s>]:  sequence failed ingroup analysis
 #                          if <s> includes 'type=<s1>', sequence was classified as type <s1>
@@ -36,7 +51,7 @@
 #idx  seqname     seqlen   staxid   otaxid   ctaxid   ptaxid   p/f  clust  special  failstr
 1     KC674542.1    1809   175245        1        1        1  FAIL      -        -  not-specified-species;;vecscreen-match[None];;ribotyper2[*LowCoverage:(0.972<0.990);];;
 2     EU278606.1    1737   209559     5042   147545     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.990<0.990);];;
-3     AB034910.1    1763    36909     4892     4891     4890  PASS     NC        -  -
+3     AB034910.1    1763    36909     4892     4891     4890  PASS      C        -  -
 4     KC670242.1    1741   175245        1        1        1  FAIL      -        -  not-specified-species;;
 5     MG520986.1    1063  1821266    92860   147541     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.678<0.990);*MultipleHits:(2:SI[M:-1(568..568),S:338(510..847)]);];;
 6     DQ677995.1    1644    45130    92860   147541     4890  FAIL      -        -  mdlspan[86-1781];;
@@ -54,20 +69,20 @@
 18    KC672092.1    1780   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.976<0.990);];;
 19    DQ646548.1    1774   353017     5185   147549     4890  PASS     NC        -  -
 20    AY640212.1    1736    45567     4892     4891     4890  PASS     NC        -  -
-21    EU107180.1    1770    47165    47162   147548     4890  PASS      C        -  -
+21    EU107180.1    1770    47165    47162   147548     4890  PASS     NC        -  -
 22    AB758270.1    1102   280754     5125   147550     4890  FAIL      -        -  mdlspan[35-1160];;
 23    FJ824759.1    1134    55181   451869   147541     4890  FAIL      -        -  mdlspan[20-1173];;
 24    KC671358.1    1765   175245        1        1        1  FAIL      -        -  not-specified-species;;
 25    KC675106.1    1743   175245        1        1        1  FAIL      -        -  not-specified-species;;
 26    AJ232952.1    1752    82112    34395   147545     4890  FAIL      -        -  not-specified-species;;
-27    AB048279.1    1780   137040    37989   147550     4890  PASS     NC        -  -
+27    AB048279.1    1780   137040    37989   147550     4890  PASS      C        -  -
 28    AF242261.1    1818    57086  1302181   147547     4890  FAIL      -        -  ambig[126>5];;ribotyper2[*LowCoverage:(0.909<0.990);*MultipleHits:(2:NH[M:123(445..567),S:166(444..609)]);];;
 29    AY657012.1    1774   282310   452343   155619     5204  PASS      C        -  -
-30    DQ457647.1    1785   378279     5338   155619     5204  PASS     NC        -  -
+30    DQ457647.1    1785   378279     5338   155619     5204  PASS      C        -  -
 31    GU187642.1    1799     5372    68889   155619     5204  FAIL      -        -  ribotyper2[*LowCoverage:(0.972<0.990);];;
 32    KC669941.1    1744   175245        1        1        1  FAIL      -        -  not-specified-species;;
 33    AJ560302.1    1684   178876     5234   155616     5204  FAIL      -        -  mdlspan[22-1752];;
-34    AB002062.1    1771    41900     5042   147545     4890  PASS     NC        -  -
+34    AB002062.1    1771    41900     5042   147545     4890  PASS      C        -  -
 35    KT259197.1    1075   327282     5178   147548     4890  FAIL      -        -  mdlspan[21-1115];;
 36    KC670223.1    1782   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.976<0.990);];;
 37    GU004234.1    1518   885918   292491   147548     4890  FAIL      -        -  not-specified-species;;mdlspan[216-1779];;
@@ -114,7 +129,7 @@
 78    KF061201.1    1697  1382202     4892     4891     4890  FAIL      -        -  mdlspan[75-1829];;
 79    KX354828.1    1179   281847        1        1  1031332  FAIL      -        -  mdlspan[476-1710];;
 80    DQ354565.3    1730   203904     5258   162484     5204  PASS      C        -  -
-81    DQ248951.1    1712     5188     5185   147549     4890  PASS     NC        -  -
+81    DQ248951.1    1712     5188     5185   147549     4890  PASS      C        -  -
 82    AB069703.1    1659   168478     5042   147545     4890  FAIL      -        -  not-specified-species;;mdlspan[102-1813];;
 83    AY497756.1    1066     4909     4892     4891     4890  FAIL      -        -  mdlspan[160-1275];;
 84    KC674165.1    1778   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.978<0.990);];;
@@ -125,7 +140,7 @@
 89    AB797290.1    1023   178142    92860   147541     4890  FAIL      -        -  mdlspan[75-1118];;
 90    GU126739.1    1040   690520     4892     4891     4890  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.983<0.990);];;
 91    AF542179.1    1627   208437    34395   147545     4890  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.979<0.990);];;
-92    MF410242.1    1043  2008654   451869   147541     4890  FAIL      -        -  not-specified-species;;mdlspan[64-1126];;
+92    MF410242.1    1043  2008654   451869   147541     4890  FAIL      -        -  mdlspan[64-1126];;
 93    KC672704.1    1801   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.978<0.990);];;
 94    KC670867.1    1765   175245        1        1        1  FAIL      -        -  not-specified-species;;
 95    AB018129.2    1766    51931     4892     4891     4890  PASS     NC        -  -
