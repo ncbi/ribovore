@@ -100,29 +100,53 @@ $opt_group_desc_H{++$g} = "options for controlling the first stage that filters 
 opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--skipfribo1", "use ribotyper options listed in <s> for round 1",              "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/riboaligner";
-#       option          type       default        group       requires incompat        preamble-output                                                 help-output    
-opt_Add("--rainfo",    "string",  undef,            $g,        undef, "--skipfribo2", "use ra model info file <s> instead of default",               "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
-opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
-opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2", "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2", "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
+#       option          type       default        group       requires incompat         preamble-output                                                 help-output    
+opt_Add("--rainfo",    "string",  undef,            $g,        undef, "--skipfribo2",   "use ra model info file <s> instead of default",               "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2",  "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2", "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2",  "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling the stage that filters based model span of hits:";
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits:";
 #       option           type        default             group  requires  incompat                 preamble-output                                          help-output    
 opt_Add("--fmpos",       "integer",  60,                   $g,    undef, "--skipfmspan",           "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--fmlpos",      "integer",  undef,                $g,  "--fmrpos","--skipfmspan,--fmpos", "aligned sequences must begin at or 5' of position <n>", "aligned sequences must begin at or 5' of position <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--fmrpos",      "integer",  undef,                $g,  "--fmlpos","--skipfmspan,--fmpos", "aligned sequences must end at or 3' of position <n>",   "aligned sequences must end at or 3' of position <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skipfmspan",           "require sequences do not have a gap at lpos and rpos",  "require sequences do not have a gap at lpos and rpos", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for controlling clustering stage:";
+#       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
+opt_Add("--cfid",        "real",     0.97,                  $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options that affect the alignment from which percent identities are calculated:";
+#            option         type   default            group   requires  incompat              preamble-output                                                 help-output    
+opt_Add("--fullaln",   "boolean",  0,                    $g,     undef, undef,                "do not trim alnment to min reqd span before pid calcs",        "do not trim alignment to minimum required span before pid calculations", \%opt_HH, \@opt_order_A);
+opt_Add("--noprob",    "boolean",  0,                    $g,    undef,  undef,                "do not trim alnment based on post probs before pid calcs",     "do not trim alignment based on post probs before pid calculations", \%opt_HH, \@opt_order_A);
+opt_Add("--pthresh",   "real",     0.95,                 $g,    undef,"--noprob",             "posterior probability threshold for alnment trimming is <x>",  "posterior probability threshold for alnment trimming is <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--pfract",   "real",      0.95,                 $g,    undef,"--noprob",             "seq fraction threshold for post prob alnment trimming is <x>", "seq fraction threshold for post prob alnment trimming is <x>", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
 #       option           type        default             group  requires  incompat              preamble-output                                               help-output    
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
+opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",    "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling clustering stage:";
-#       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
-opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
+#       option          type       default        group       requires incompat                preamble-output                                                 help-output    
+opt_Add("--msstep",     "integer", 50,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min start position to <n>",   "for model span output table, set min start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msmaxstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max start position to <n>",   "for model span output table, set max start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min stop position to <n>",    "for model span output table, set min stop position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msmaxstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max stop position to <n>",    "for model span output table, set max stop position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
+opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options for changing sequence descriptions (deflines):";
+#       option           type        default             group  requires  incompat              preamble-output                                     help-output    
+opt_Add("--def",         "boolean",  0,                     $g, undef, "--skipftaxid,--skipfribo2,--prvcmd", "standardize sequence descriptions/deflines",       "standardize sequence descriptions/deflines", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
@@ -184,12 +208,27 @@ my $options_okay =
                 'rainfo=s'     => \$GetOptions_H{"--rainfo"},
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
+                'cfid'         => \$GetOptions_H{"--cfid"},
+                "fullaln"      => \$GetOptions_H{"--fullaln"},
+                "noprob"       => \$GetOptions_H{"--noprob"},
+                "pthresh=s"    => \$GetOptions_H{"--pthresh"},
+                "pfract=s"     => \$GetOptions_H{"--pfract"},
                 'fmpos=s'      => \$GetOptions_H{"--fmpos"},
                 'fmlpos=s'     => \$GetOptions_H{"--fmlpos"},
                 'fmrpos=s'     => \$GetOptions_H{"--fmrpos"},
                 'fmnogap'      => \$GetOptions_H{"--fmnogap"},
                 'fione'        => \$GetOptions_H{"--fione"},
-                'cfid'         => \$GetOptions_H{"--cfid"},
+                'fimin'        => \$GetOptions_H{"--fimin"},
+                'msstep=s'     => \$GetOptions_H{"--msstep"},
+                'msminlen=s'   => \$GetOptions_H{"--msminlen"},
+                'msminstart=s' => \$GetOptions_H{"--msminstart"},
+                'msmaxstart=s' => \$GetOptions_H{"--msmaxstart"},
+                'msminstop=s'  => \$GetOptions_H{"--msminstop"},
+                'msmaxstop=s'  => \$GetOptions_H{"--msmaxstop"},
+                'mslist=s'     => \$GetOptions_H{"--mslist"},
+                'msclass'      => \$GetOptions_H{"--msclass"},
+                'msphylum'     => \$GetOptions_H{"--msphylum"},
+                'def'          => \$GetOptions_H{"--def"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -202,9 +241,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.24";
+my $version           = "0.25";
 my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "Aug 2018";
+my $releasedate       = "Sept 2018";
 my $package_name      = "ribotyper";
 my $pkgstr    = "RIBO";
 
@@ -263,6 +302,7 @@ my $do_listms = opt_Get("--skiplistms", \%opt_HH) ? 0 : 1;
 my $do_prvcmd = opt_Get("--prvcmd",     \%opt_HH) ? 1 : 0;
 my $do_keep   = opt_Get("--keep",       \%opt_HH) ? 1 : 0;
 my $do_special= opt_IsUsed("--special", \%opt_HH) ? 1 : 0;
+my $do_def    = opt_Get("--def",        \%opt_HH) ? 1 : 0;
 
 # and related options
 my $do_fmspan_nogap = opt_Get("--fmnogap", \%opt_HH) ? 1 : 0;
@@ -304,6 +344,87 @@ if(defined $in_fasta_file) {
 if(defined $in_special_file) { 
   ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1, undef); 
 }
+# a more sophisticated check for --mslist arg, make sure we can parse it
+if(opt_IsUsed("--mslist", \%opt_HH)) { 
+  my $mslist_file = opt_Get("--mslist", \%opt_HH);
+  my %tmp_H = ();
+  ribo_CheckIfFileExistsAndIsNonEmpty($mslist_file, "--mslist argument", undef, 1, undef); 
+  # further make sure it contains 1 or more lines that is an integer
+  open(IN, $mslist_file) || die "ERROR unable to open $mslist_file from --mslist <s>"; 
+  my $line_ctr = 0;
+  while(my $line = <IN>) { 
+    if($line !~ m/^\#/ && $line =~ m/\w/) { 
+      chomp $line;
+      if($line =~ m/^\d+$/) { 
+        if(exists $tmp_H{$line}) { die "ERROR, read $line twice in input file $mslist_file"; }
+        $tmp_H{$line} = 1;
+        $line_ctr++;
+      }
+      else { 
+        die "ERROR, in list file $mslist_file, expected one taxid per line, read $line";
+      }
+    }
+  }
+  close(IN);
+  if($line_ctr == 0) { die "ERROR, didn't read any taxid lines in $mslist_file"; }
+}
+# options that affect alignment prior to pid calcs don't work in combination with *both* --skipingrup and --skipclustr
+if((opt_IsUsed("--skipingrup", \%opt_HH)) && (opt_IsUsed("--skipclustr", \%opt_HH))) { 
+  if(opt_IsUsed("--fullaln",  \%opt_HH)) { 
+    die "ERROR, --fullaln doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+  if(opt_IsUsed("--noprob",  \%opt_HH)) { 
+    die "ERROR, --noprob doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+  if(opt_IsUsed("--pthresh",  \%opt_HH)) { 
+    die "ERROR, --pthresh doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+  if(opt_IsUsed("--pfract",  \%opt_HH)) { 
+    die "ERROR, --pfract doesn't make sense in combination with both --skipingrup and --skipclustr";
+  }
+}
+# --skipfmspan requires --fullaln UNLESS both --skipingrup and --skipclustr also used
+if(opt_IsUsed("--skipfmspan", \%opt_HH)) { 
+  if((! opt_IsUsed("--fullaln", \%opt_HH)) && 
+     ((! opt_IsUsed("--skipingrup", \%opt_HH)) ||
+      (! opt_IsUsed("--skipclustr", \%opt_HH)))) { 
+    die "ERROR, --fullaln is required if --skipfmspan is used unless --skipingrup and --skipclustr are also used";
+  }
+}
+
+# enforce <n> >= 1 for all of --msminstart, --msmaxstart, --msminstop, --msmaxstop
+if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_Get("--msminstart", \%opt_HH) < 1)) { 
+    die "ERROR, with --msminstart <n1>, <n1> must be >= 1";
+}
+if((opt_IsUsed("--msmaxstart", \%opt_HH)) && (opt_Get("--msmaxstart", \%opt_HH) < 1)) { 
+    die "ERROR, with --msmaxstart <n1>, <n1> must be >= 1";
+}
+if((opt_IsUsed("--msminstop", \%opt_HH)) && (opt_Get("--msminstop", \%opt_HH) < 1)) { 
+    die "ERROR, with --msminstop <n1>, <n1> must be >= 1";
+}
+if((opt_IsUsed("--msmaxstop", \%opt_HH)) && (opt_Get("--msmaxstop", \%opt_HH) < 1)) { 
+    die "ERROR, with --msmaxstop <n1>, <n1> must be >= 1";
+}
+# with --msminstart <n1> and --msmaxstart <n2>, enforce <n1> <= <n2>
+if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_IsUsed("--msmaxstart", \%opt_HH))) { 
+  if((opt_Get("--msminstart", \%opt_HH)) > (opt_Get("--msmaxstart", \%opt_HH))) { 
+    die "ERROR, with --msminstart <n1> and --msmaxstart <n2>, <n2> must be >= <n1>";
+  }
+}
+# with --msminstop <n1> and --msmaxstop <n2>, enforce <n1> <= <n2>
+if((opt_IsUsed("--msminstop", \%opt_HH)) && (opt_IsUsed("--msmaxstop", \%opt_HH))) { 
+  if((opt_Get("--msminstop", \%opt_HH)) > (opt_Get("--msmaxstop", \%opt_HH))) { 
+    die "ERROR, with --msminstop <n1> and --msmaxstop <n2>, <n2> must be >= <n1>";
+  }
+}
+# with --msminstart <n1> and --msmaxstop <n2>, enforce <n1> <= <n2>
+if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_IsUsed("--msmaxstop", \%opt_HH))) { 
+  if((opt_Get("--msminstart", \%opt_HH)) > (opt_Get("--msmaxstop", \%opt_HH))) { 
+    die "ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> must be >= <n1>";
+  }
+}
+# we do more sophisticated tests for these --ms{min,max}{start,stop} options later
+# after we know $family_modellen
 
 # now that we know what steps we are doing, make sure that:
 # - required ENV variables are set and point to valid dirs
@@ -335,7 +456,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) {
     $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
     $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
   }
-  if($do_ftaxid || $do_ingrup || $do_special) { 
+  if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
     $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
     
     $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
@@ -391,6 +512,9 @@ if($do_fribo1 || $do_fribo2) {
 
   $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
   $execs_H{"riboaligner"} = $env_ribotyper_dir  . "/riboaligner.pl";
+}
+if(opt_IsUsed("--mslist", \%opt_HH)) { 
+  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribotyper_dir . "/mdlspan-survtbl-sort.pl";
 }
 
 ribo_ValidateExecutableHash(\%execs_H);
@@ -543,7 +667,8 @@ if($do_fribo1 || $do_fribo2) {
     close(OPTS1);
   }
   else { 
-    $ribotyper_options = sprintf("--scfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
+    $ribotyper_options = sprintf("--minusfail --lowppossc %s ", opt_Get("--lowppossc", \%opt_HH));
+    if(! opt_IsUsed("--noscfail",    \%opt_HH)) { $ribotyper_options .= "--scfail "; }
     # --2slow doesn't apply here
   }
 
@@ -560,6 +685,40 @@ if($do_fribo1 || $do_fribo2) {
     if(! opt_IsUsed("--ribo2hmm",   \%opt_HH)) { $riboopts_str .= " --2slow"; }
     printf RIBOOPTS2 ($riboopts_str . "\n"); 
     close(RIBOOPTS2);
+  }
+
+  # now that we know $family_modellen, check that the --ms{min,max}{start,stop} options still make make sense
+  # note that we already checked that --msminstart <= --msmaxstart, --msminstop <= --msmaxstop, and --msminstart <= --msmaxstop above
+
+  # first, make sure that all values are now less than or equal to modellen
+  if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_Get("--msminstart", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msminstart <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  if((opt_IsUsed("--msmaxstart", \%opt_HH)) && (opt_Get("--msmaxstart", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msmaxstart <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  if((opt_IsUsed("--msminstop", \%opt_HH)) && (opt_Get("--msminstop", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msminstop <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  if((opt_IsUsed("--msmaxstop", \%opt_HH)) && (opt_Get("--msmaxstop", \%opt_HH) < 1)) { 
+    ofile_FAIL("ERROR, with --msmaxstop <n1>, <n1> must be >= 1", "RIBO", $!, $ofile_info_HH{"FH"});
+  }
+  # second, make sure there's at least one bin we're going to have
+  # this only relies on --msminstart and --msmaxstop
+  if(opt_IsUsed("--msminstart", \%opt_HH) || opt_IsUsed("--msmaxstop", \%opt_HH)) { 
+    my $tmp_minstart = opt_IsUsed("--msminstart", \%opt_HH) ? opt_Get("--msminstart", \%opt_HH) : 1;
+    my $tmp_maxstop  = opt_IsUsed("--msmaxstop",  \%opt_HH) ? opt_Get("--msmaxstop",  \%opt_HH) : $family_modellen;
+    my $tmp_step     = opt_Get("--msstep",  \%opt_HH);
+    my $tmp_msminlen = opt_Get("--msminlen",  \%opt_HH);
+    my $tmp_minlen   = ($tmp_step > $tmp_msminlen) ? $tmp_step : $tmp_msminlen;
+    # don't think this check is actually necessary, but I'm leaving it
+    if($tmp_minstart > $tmp_maxstop) { 
+      ofile_FAIL("ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> must be >= <n1> (<n1> is $tmp_minstart, <n2> is $tmp_maxstop)", "RIBO", $!, $ofile_info_HH{"FH"});
+    }
+    # enforce <n1> <= <n2> and (<n2> - <n1> + 1) >= MAX($tmp_minlen, $tmp_step)
+    if(($tmp_maxstop - $tmp_minstart + 1) < $tmp_minlen) { 
+      ofile_FAIL("ERROR, with --msminstart <n1> and --msmaxstop <n2>, <n2> - <n1> + 1 must be must be >= $tmp_minlen (<n1> is $tmp_minstart, <n2> is $tmp_maxstop)", "RIBO", $!, $ofile_info_HH{"FH"});
+    }
   }
 }
 
@@ -611,9 +770,12 @@ my %seqlen_H = (); # key: sequence name, value: length of sequence,
                    # but if somehow it does then we want to know about it.
 my %seqnambig_H  = (); # number of ambiguous nucleotides per sequence
 my %seqtaxid_H   = (); # taxid, from srcchk of each sequence, remains empty if srcchk does not need to be run
+my %seqorgn_H    = (); # organism field, from srcchk of each sequence, filled only if defline redefinition option (--def) is used
+my %seqstrain_H  = (); # strain field, from srcchk of each sequence, filled only if defline redefinition option (--def) is used
 my %seqgtaxid_HH = (); # %seqtaxid_HH{$level}: group taxid at taxonomic level $level for each sequence, remains empty if srcchk does not need to be run
 my %seqlpos_H    = (); # key: sequence name, value is unaligned position that aligns to left model position we care about
 my %seqrpos_H    = (); # key: sequence name, value is unaligned position that aligns to right model position we care about
+my %seqlenclass_H= (); # key: sequence name, value is length class from riboaligner
 my @seqorder_A   = (); # array of sequence names in order they appeared in the file
 my %is_centroid_H = (); # key is sequence name, value is 1 if sequence is a centroid, 0 if it is not, key does not exist if sequence did not survive to clustering
 my %not_centroid_H = (); # key is sequence name, value is 1 if sequence is NOT a centroid, "" if it is, key does not exist if sequence did not survive to clustering
@@ -636,9 +798,9 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 if(! $do_prvcmd) { ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $full_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullssi", $full_fasta_file . ".ssi", 0, ".ssi index file for full fasta file");
 
-###########################################################################################
-# Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_ingrup || $do_special)
-###########################################################################################
+######################################################################################################
+# Preliminary stage: Run srcchk, if necessary (if $do_ftaxid || $do_ingrup || $do_special || $do_def)
+######################################################################################################
 my $full_srcchk_file = undef;
 my %taxinfo_wlevel_file_H = ();
 foreach $level (@level_A) { 
@@ -646,14 +808,17 @@ foreach $level (@level_A) {
   %{$seqgtaxid_HH{$level}} = ();
 }
 
-if($do_ftaxid || $do_ingrup || $do_special) { 
+if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
   $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
   $full_srcchk_file = $out_root . ".full.srcchk";
-  if(! $do_prvcmd) { ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism\' > $full_srcchk_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism,strain\' > $full_srcchk_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullsrcchk", "$full_srcchk_file", 0, "srcchk output for all $nseq input sequences");
 
-  # parse srcchk output to fill %seqtaxid_H
-  parse_srcchk_file($full_srcchk_file, \%seqtaxid_H, \@seqorder_A, \%ofile_info_HH);
+  # parse srcchk output to fill %seqtaxid_H, and possibly %seq_orgn_H
+  parse_srcchk_file($full_srcchk_file, $taxonomy_tree_six_column_file, \%seqtaxid_H, 
+                    ($do_def ? \%seqorgn_H   : undef), 
+                    ($do_def ? \%seqstrain_H : undef), 
+                    \@seqorder_A, \%ofile_info_HH);
   $have_taxids = 1;
 
   # get taxonomy file with taxonomic levels
@@ -805,6 +970,7 @@ my @rapass_seqorder_A = (); # order of sequences that pass rapass stage
 my $ra_outdir = $out_root . "-ra";
 my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($family_modellen, \%opt_HH);
 my $ra_full_stk_file = undef;
+my $ra_tbl_out_file  = undef;
 if($do_fribo2) { 
   $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
@@ -821,7 +987,7 @@ if($do_fribo2) {
   my $ra_outdir_tail   = $dir_tail . ".ribodbmaker-ra";
   my $ra_out_file      = $out_root . ".riboaligner.out";
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
-  my $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
+  $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
   my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
   my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
@@ -831,7 +997,6 @@ if($do_fribo2) {
   my $ra_command = $execs_H{"riboaligner"} . " $ra_options --riboopts $local_ra_riboopts_file $full_fasta_file $ra_outdir > $ra_out_file";
   if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "raout", "$ra_out_file", 0, "output of riboaligner");
-  #my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_file($ra_tbl_out_file, $do_fmspan, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%opt_HH, \%ofile_info_HH);
 
   if(! $do_prvcmd) { ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   if(! $do_prvcmd) { ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
@@ -839,10 +1004,10 @@ if($do_fribo2) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rarpos", "$ra_uapos_rpos_tbl_file", 0, "unaligned position info that align at model position $min_rpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rauapos", "$ra_uapos_tbl_file", 0, "unaligned position info that align at model positions $max_lpos and $min_rpos");
 
-  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%opt_HH, \%ofile_info_HH);
+  # parse riboaligner tbl file
+  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass), $log_FH, *STDOUT);
     
-  # parse riboaligner tbl file
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs riboaligner identified as too long", $progress_w, $log_FH, *STDOUT);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ra_npass, $rt2_npass-$ra_npass), $log_FH, *STDOUT);
 
@@ -873,12 +1038,46 @@ $nfail_filters = $nseq - $npass_filters;
 my $npass_filters_list = $out_root . ".surv_filters.pass.seqlist";
 ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail; ONLY PASSES ADVANCE", $npass_filters, $nfail_filters), $log_FH, *STDOUT);
 
+###############################################################################################################
+# If --def, create the file with redefined sequence descriptions of sequences that survived all filter stages 
+###############################################################################################################
+my $def_fasta_file = $out_root . ".def.fa"; # need to define this here so it's in scope when we fetch final seqs from it
+if($do_def) { 
+  my $tmp_fasta_file = $out_root . ".tmp.def.fa";
+  my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $full_fasta_file $npass_filters_list > $tmp_fasta_file";
+  if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+
+  fasta_rewrite_sequence_descriptions($tmp_fasta_file, $def_fasta_file, $family, \%seqlenclass_H, \%seqorgn_H, \%seqstrain_H, \%opt_HH, \%ofile_info_HH);
+
+  # remove the temporary fasta file
+  ribo_RemoveFileUsingSystemRm($tmp_fasta_file, "ribodbmaker.pl:main", \%opt_HH, $ofile_info_HH{"FH"});
+
+  # index the new sequence file
+  if(! $do_prvcmd) { ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $def_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "defssi", $def_fasta_file . ".ssi", 0, ".ssi index file for def-rewritten fasta file");
+}
+
 # define file names for ingrup stage
 $stage_key = "ingrup";
 my $rfonly_stk_file    = $out_root . "." . $stage_key . ".rfonly.stk";
 my $rfonly_alipid_file = $out_root . "." . $stage_key . ".rfonly.alipid";
 my $rfonly_list_file   = $out_root . "." . $stage_key . ".seqlist";
-my $alipid_cmd = $execs_H{"esl-alipid"} . " $rfonly_stk_file > $rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
+#my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $rfonly_stk_file";
+# construct the complicated esl-alimask command, masking to keep:
+# - only RF columns
+# - only seqs that pass all filters
+# - only columns within minimum required mdlspan (unless --fullaln)
+# - only columns that pass posterior probability thresholds (unless --noprob)
+my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - ";
+if(! opt_IsUsed("--fullaln", \%opt_HH)) { # have to mask by mdlspan BEFORE masking by posterior probs
+  my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($family_modellen, \%opt_HH);
+  $alimask_cmd .= "| " . $execs_H{"esl-alimask"} . " -t --t-rf - " . $max_lpos . "-" . $min_rpos . " ";
+}
+if(! opt_IsUsed("--noprob", \%opt_HH)) { 
+  $alimask_cmd .= "| " . $execs_H{"esl-alimask"} . " -p --pfract " . opt_Get("--pfract", \%opt_HH) . " --pthresh " . opt_Get("--pthresh", \%opt_HH) . " - "; 
+}
+$alimask_cmd .= "> $rfonly_stk_file";
+my $alipid_cmd  = $execs_H{"esl-alipid"} . " $rfonly_stk_file | grep -v ^\# | awk '{ printf(\"\%s \%s \%s\\n\", \$1, \$2, \$3); }' > $rfonly_alipid_file"; # we will do this if $do_ingrup or $do_clustr
 my %ingrup_lost_list_H        = (); # key is phylogenetic level $level, value is list of $level groups lost
 my %alipid_analyze_out_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output file
 my %alipid_analyze_tab_file_H = (); # key is phylogenetic level $level, value is alipid_analyze output tab file
@@ -902,7 +1101,6 @@ else {
 
     # merge alignments created by riboaligner with esl-alimerge and remove any seqs that have not
     # passed up to this point (using esl-alimanip --seq-k)
-    my $alimask_cmd = $execs_H{"esl-alimask"} .  " --rf-is-mask $ra_full_stk_file | " . $execs_H{"esl-alimanip"} . " --seq-k $npass_filters_list - > $rfonly_stk_file";
     my $alistat_cmd = $execs_H{"esl-alistat"} . " --list $rfonly_list_file $rfonly_stk_file > /dev/null";
     my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
     foreach $level (@level_A) { 
@@ -925,10 +1123,8 @@ else {
       if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid.analyze.$level", $alipid_analyze_out_file_H{$level}, 0, "$level output file from alipid-taxinfo-analyze.pl");
     }
-
-    $npass = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
-
-    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, sprintf("%6d fail;", $cur_nfail), $log_FH, *STDOUT);
 
     # determine how many sequences at for each taxonomic group at each level $level are still left
     foreach $level (@level_A) { 
@@ -940,9 +1136,9 @@ else {
       my @ingrup_lost_gtaxid_A = (); # list of the group taxids that got lost in the ingroup analysis
       my $nlost = 0;
       open(LOST, ">", $ingrup_lost_list_H{$level}) || ofile_FileOpenFailure($ingrup_lost_list_H{$level}, $pkgstr, "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
-      foreach my $gtaxid (sort {$a <=> $b} keys (%{$full_level_ct_HH{$level}})) { 
+      foreach my $gtaxid (sort {$a <=> $b} keys (%{$surv_filters_level_ct_HH{$level}})) { 
         if($gtaxid != 0) { 
-          if(($full_level_ct_HH{$level}{$gtaxid} > 0) && 
+          if(($surv_filters_level_ct_HH{$level}{$gtaxid} > 0) && 
              ((! exists $surv_ingrup_level_ct_HH{$level}{$gtaxid}) || ($surv_ingrup_level_ct_HH{$level}{$gtaxid} == 0))) { 
             print LOST $gtaxid . "\n";
             $nlost++;
@@ -964,6 +1160,19 @@ else {
     $did_ingrup = 1;
   } # end of if($do_ingrup)
 
+  ########################
+  # mdlspan table creation
+  ########################
+  if($do_fribo2) { # we can't create the table if we skipped the ribo2 stage
+    # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
+    $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for all seqs", $progress_w, $log_FH, *STDOUT);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, undef, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for PASSing seqs", $progress_w, $log_FH, *STDOUT);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqfailstr_H, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  }
+
   ######################################################################################
   # 'clustr' stage: stage that clusters remaining sequences and picks a representative 
   ######################################################################################
@@ -983,7 +1192,10 @@ else {
       my $nin_clustr = 0;
       
       if(! $do_ingrup) { 
-        # we did not yet run esl-alipid, so do that now
+        # we did not yet run esl-alimask and esl-alipid, so do that now
+        if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rfonlystk", "$rfonly_stk_file", 0, "RF-column-only alignment");
+
         $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
         if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
         ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
@@ -1072,7 +1284,8 @@ my $final_list_file  = $out_root . ".final.pass.seqlist";
 my $final_fasta_file = $out_root . ".final.fa";
 if($npass_final > 0) { 
   # create the fasta file of the final sequences
-  my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $full_fasta_file $final_list_file > $final_fasta_file";
+  my $fa_fetch_file = ($do_def) ? $def_fasta_file : $full_fasta_file;
+  my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $fa_fetch_file $final_list_file > $final_fasta_file";
   if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "final.fa", "$final_fasta_file", 1, "fasta file with final set of surviving sequences");
 }
@@ -1085,7 +1298,10 @@ if($npass_final > 0) {
 #   (whitepsace delimited) 
 #####################################################################
 # output taxonomy level count files
+my %final_nsurv_H = (); 
 foreach $level (@level_A) { 
+  $final_nsurv_H{$level} = 0;
+  my $final_str = ""; # comma separated list of all taxids that have >= 1 sequences
   my $out_level_ct_file = $out_root . "." . $level . ".ct";
   open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
   print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
@@ -1101,7 +1317,10 @@ foreach $level (@level_A) {
                 ($did_ingrup) ? $surv_ingrup_level_ct_HH{$level}{$taxid} : "-", 
                 ($did_clustr) ? $surv_clustr_level_ct_HH{$level}{$taxid} : "-", 
                 $final_level_ct_HR->{$taxid});
+    if($final_level_ct_HR->{$taxid} > 0) { $final_nsurv_H{$level}++; $final_str .= $taxid . ","; }
   } 
+  if($final_str ne "") { $final_str =~ s/\,$//; } # remove final ','
+  printf LVL ("# List of %d taxids represented by >= 1 sequence in final set:\n#%s\n", $final_nsurv_H{$level}, $final_str eq "" ? "NONE" : $final_str);
   close(LVL);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "out.$level", "$out_level_ct_file", 1, "tab-delimited file listing number of sequences per $level taxid");
 }
@@ -1159,6 +1378,21 @@ if($do_fribo2) {
   push(@column_explanation_A, "# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>\n");
   push(@column_explanation_A, "#                          see $out_root-ra/$dir_tail-ra.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
+  push(@column_explanation_A, "# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long\n");
+  push(@column_explanation_A, "#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end\n");
+  push(@column_explanation_A, "#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but\n");
+  push(@column_explanation_A, "#                                                 has indels in first and/or final 10 model positions and\n");
+  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' and/or 3' end\n");
+  push(@column_explanation_A, "#                          <s>=5flush-extra:      alignment extends to first but not final model position\n");
+  push(@column_explanation_A, "#                                                 with >= 1 nt extra before first model position\n");
+  push(@column_explanation_A, "#                          <s>=5flush-ambig-more: alignment extends to first but not final model position\n");
+  push(@column_explanation_A, "#                                                 and has indels in first 10 model positions and\n");
+  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' end\n");
+  push(@column_explanation_A, "#                          <s>=3flush-extra:      alignment extends to final but not first model position\n");
+  push(@column_explanation_A, "#                                                 with >= 1 nt extra after final model position\n");
+  push(@column_explanation_A, "#                          <s>=3flush-ambig-more: alignment extends to final but not first model position\n");
+  push(@column_explanation_A, "#                                                 and has indels in final 10 model positions and\n");
+  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 3' end\n");
 }
 if($do_fmspan) { 
   push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
@@ -1175,6 +1409,11 @@ if($do_ingrup) {
     push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
     push(@column_explanation_A, "#                          other sequences in its taxonomic group than this one did\n");
     push(@column_explanation_A, "#                          at the most specific level that is defined out of order/class/phylum\n");
+    if(opt_IsUsed("--fimin", \%opt_HH)) { 
+      push(@column_explanation_A, "#                          if <s> includes 'too-few-in-species-taxid', there were fewer than\n");
+      push(@column_explanation_A, sprintf("#                          %d sequences with the species taxid of this sequence (that were not\n", opt_Get("--fimin", \%opt_HH)));
+      push(@column_explanation_A, "#                          of O type), as enforced by the --fimin option\n");
+    }
   }
 }
 
@@ -1225,16 +1464,18 @@ ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rdbtbl", $out_rdb_tbl
 ##########
 # final stats on number of sequences passing each stage
 ofile_OutputString($log_FH, 1, "#\n");
-ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number of input sequences:", $nseq, $full_list_file));
-ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving all filter stages:", $npass_filters, $out_root . ".surv_filters.pass.seqlist"));
+ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number of input sequences:", $nseq, $full_list_file));
+ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number surviving all filter stages:", $npass_filters, $out_root . ".surv_filters.pass.seqlist"));
 if($do_ingrup) { 
-  ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving ingroup analysis:", $npass_ingrup, $out_root . ".surv_ingrup.pass.seqlist"));
+  ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number surviving ingroup analysis:", $npass_ingrup, $out_root . ".surv_ingrup.pass.seqlist"));
 }
 if($do_clustr) { 
-  ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number surviving clustering (number of clusters):", $npass_clustr, $out_root . ".surv_clustr.pass.seqlist"));
+  ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number surviving clustering (number of clusters):", $npass_clustr, $out_root . ".surv_clustr.pass.seqlist"));
 }
-ofile_OutputString($log_FH, 1, sprintf("%-55s  %7d  [listed in %s]\n", "# Number in final set of surviving sequences:", $npass_final, $final_list_file));
-
+ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number in final set of surviving sequences:", $npass_final, $final_list_file));
+foreach $level (@level_A) { 
+  ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in final line of %s]\n", sprintf("# Number of %-7s represented in final set of surviving sequences:", pluralize_level($level)), $final_nsurv_H{$level}, $out_root . "." . $level . ".ct"));
+}
 $total_seconds += ribo_SecondsSinceEpoch();
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
 exit 0;
@@ -1322,7 +1563,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     chomp $line;
     my @el_A = split(/\t/, $line);
     if(scalar(@el_A) != 6) { 
-      ofile_FAIL("ERROR in $sub_name, tax file line did not have exactly 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, tax file line did not have exactly 6 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
     my ($taxid, $parent_taxid, $rank, undef, undef, $specified_species) = @el_A;
     if(exists $specified_species_H{$taxid}) { 
@@ -1342,10 +1583,11 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     #FJ552229.1221169uncultured Gemmatimonas sp.
     chomp $line;
     my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 3) { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    if((scalar(@el_A) != 3) && (scalar(@el_A) != 4)){ 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 or 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
-    my ($accver, $taxid, $organism) = @el_A;
+    my $accver = $el_A[0];
+    my $taxid  = $el_A[1];
     if($specified_species_H{$taxid} == -1) { 
       if($do_strict) { $diestr .= "taxid: $taxid, accession: $accver\n"; }
       else           { $curfailstr_H{$accver} = "not-in-taxtree;;"; }
@@ -1482,130 +1724,6 @@ sub parse_ribotyper_short_file {
 }
 
 #################################################################
-# Subroutine:  parse_riboaligner_tbl_file()
-# Incept:      EPN, Wed May 30 14:11:47 2018
-#
-# Purpose:     Parse a tbl output file from riboaligner.pl
-#
-# Arguments:
-#   $in_file:             name of input tbl file to parse
-#   $do_fmspan:           '1' to filter based on model span too
-#   $mlen:                model length 
-#   $seqfailstr_HR:       ref to hash of failure string to add to here
-#   $seqorder_AR:         ref to array of sequences in order
-#   $rapass_seqorder_AR: ref to array of sequences in order
-#   $opt_HHR:             ref to 2D hash of cmdline options
-#   $ofile_info_HHR:      ref to the ofile info 2D hash
-#
-# Returns:    3 values:
-#             $rt_npass:  number of sequences that pass ribotyper stage
-#             $ra_npass: number of sequences that pass riboaligner stage
-#             $ms_npass:  number of sequences that pass model span stage
-#
-# Dies:       if options are unexpected
-#             if unable to parse a tabular line
-#             in there's no model length for an observed classification
-# 
-#################################################################
-sub parse_riboaligner_tbl_file { 
-  my $sub_name = "parse_riboaligner_tbl_file()";
-  my $nargs_expected = 8;
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($in_file, $do_fmspan, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $opt_HHR, $ofile_info_HHR) = (@_);
-
-  my %rt_curfailstr_H  = (); # holds fail strings for ribotyper
-  my %ra_curfailstr_H = (); # holds fail strings for riboaligner
-  my %ms_curfailstr_H  = (); # holds fail strings for model span stage
-  my @rtpass_seqorder_A = (); # array of sequences that pass ribotyper stage, in order
-  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
-
-  ribo_InitializeHashToEmptyString(\%rt_curfailstr_H,  $seqorder_AR);
-  # for %ra_curfailstr_H, we only do pass/fail for those that survive ribotyper
-  # for %ms_curfailstr_H,  we only do pass/fail for those that survive ribotyper and riboaligner
-  # so we can't initialize those yet, we will fill in the FAILs and PASSes as we see them in the output
-  
-  # determine maximum 5' start position and minimum 3' stop position required to be kept
-  my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($mlen, $opt_HHR); 
-
-  # parse each line of the output file
-  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  my $nlines = 0;
-
-  while(my $line = <IN>) { 
-    ##idx  target      classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
-    ##---  ----------  ---------------------  -----  ----  ------  ------  ------------  -------------------
-    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #3     X74753.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowCoverage:(0.831<0.860);MultipleHits:(2);
-    #4     X51542.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.09<0.50);*LowCoverage:(0.085<0.860);
-    #5     X66111.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.01<0.50);*LowCoverage:(0.019<0.860);
-    #6     X56532.1    SSU.Eukarya            plus   PASS       1    1849       partial  -
-    #7     AY572456.1  SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #8     AY364851.1  SSU.Eukarya            plus   PASS      35    1816       partial  -
-    if($line !~ m/^\#/) { 
-      chomp $line;
-      my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 9) { 
-        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
-      }
-      my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
-      $nlines++;
-
-      # add to failstr if necessary
-      if($passfail eq "FAIL") { 
-        $rt_curfailstr_H{$target} = "ribotyper2[" . $ufeatures . "];;";
-      }
-      else { # $passfail eq "PASS"
-        # check for riboaligner fail
-        if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
-          $ra_curfailstr_H{$target} = "riboaligner[" . $lclass . "];;";
-        }
-        else { 
-          $ra_curfailstr_H{$target} = "";
-          
-          # check for model span fail
-          if($do_fmspan) { 
-            if(($mstart > $max_lpos) || ($mstop < $min_rpos)) { 
-              $ms_curfailstr_H{$target} = "mdlspan[" . $mstart . "-" . $mstop . "];;";
-            }
-            else { 
-              $ms_curfailstr_H{$target} = "";
-            }
-          }
-        }
-      }
-    }
-  }
-  close(IN);
-  
-  # fill @rtpass_seqorder_A and @{$rapass_seqorder_AR}
-  @rtpass_seqorder_A     = ();
-  @{$rapass_seqorder_AR} = ();
-  my $seqname;
-  foreach $seqname (@{$seqorder_AR}) { 
-    if(exists $ra_curfailstr_H{$seqname}) { 
-      push(@rtpass_seqorder_A, $seqname); 
-      if((! $do_fmspan) || (exists $ms_curfailstr_H{$seqname})) { 
-        push(@{$rapass_seqorder_AR}, $seqname);
-      }
-    }
-  }
-
-  my $rt_npass  = update_and_output_pass_fails(\%rt_curfailstr_H,  $seqfailstr_HR, $seqorder_AR,         0, $out_root, "fribty", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
-  my $ra_npass = update_and_output_pass_fails(\%ra_curfailstr_H, $seqfailstr_HR, \@rtpass_seqorder_A,  0, $out_root, "friblc", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
-  my $ms_npass  = undef;
-  if($do_fmspan) { 
-    $ms_npass = update_and_output_pass_fails(\%ms_curfailstr_H,  $seqfailstr_HR, $rapass_seqorder_AR, 0, $out_root, "fmspan", \%ofile_info_HH); # 0: do not output description of pass/fail lists to log file
-  }
-  else { 
-    $ms_npass = $ra_npass;
-  }
-
-  return ($rt_npass, $ra_npass, $ms_npass);
-}
-
-#################################################################
 # Subroutine:  parse_riboaligner_tbl_and_uapos_files()
 # Incept:      EPN, Wed May 30 14:11:47 2018
 #
@@ -1623,7 +1741,10 @@ sub parse_riboaligner_tbl_file {
 #   $mlen:                model length 
 #   $seqfailstr_HR:       ref to hash of failure string to add to here
 #   $seqorder_AR:         ref to array of sequences in order
-#   $rapass_seqorder_AR: ref to array of sequences in order
+#   $rapass_seqorder_AR:  ref to array of sequences in order
+#   $seq_uapos_lpos_HR:   ref to hash of unaligned positions that align to left model span position
+#   $seq_uapos_rpos_HR:   ref to hash of unaligned positions that align to right model span position
+#   $seqlenclass_HR:      ref to hash of length classes, can be undef
 #   $opt_HHR:             ref to 2D hash of cmdline options
 #   $ofile_info_HHR:      ref to the ofile info 2D hash
 #
@@ -1639,10 +1760,10 @@ sub parse_riboaligner_tbl_file {
 #################################################################
 sub parse_riboaligner_tbl_and_uapos_files { 
   my $sub_name = "parse_riboaligner_tbl_and_uapos_files()";
-  my $nargs_expected = 14;
+  my $nargs_expected = 15;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $seqlenclass_HR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %rt_curfailstr_H  = (); # holds fail strings for ribotyper
   my %ra_curfailstr_H = (); # holds fail strings for riboaligner
@@ -1696,7 +1817,13 @@ sub parse_riboaligner_tbl_and_uapos_files {
       }
       else { # $passfail eq "PASS"
         # check for riboaligner fail
-        if(($lclass eq "full-extra") || ($lclass eq "full-ambig")) { 
+        if(defined $seqlenclass_HR) { $seqlenclass_HR->{$target} = $lclass; }
+        if(($lclass eq "full-extra")        || 
+           ($lclass eq "full-ambig-more")   || 
+           ($lclass eq "5flush-extra")      || 
+           ($lclass eq "5flush-ambig-more") || 
+           ($lclass eq "3flush-extra")      || 
+           ($lclass eq "3flush-ambig-more")) { 
           $ra_curfailstr_H{$target} = "riboaligner[" . $lclass . "];;";
         }
         else { 
@@ -1762,6 +1889,314 @@ sub parse_riboaligner_tbl_and_uapos_files {
   }
 
   return ($rt_npass, $ra_npass, $ms_npass);
+}
+
+#################################################################
+# Subroutine:  parse_riboaligner_tbl_and_output_mdlspan_tbl()
+# Incept:      EPN, Tue Aug 21 12:41:59 2018
+#
+# Purpose:     Parse a tbl output file from riboaligner.pl and
+#              output a tabular file that lists number of sequences 
+#              and taxonomic groups that would survive for a 
+#              variety of different start/end model positions.
+#
+# Arguments:
+#   $in_file:             name of input tbl file to parse
+#   $mdlspan_sort_exec:   path to script that we use to resort if --mslist
+#   $mlen:                model length 
+#   $out_root:            for naming output files
+#   $seqfailstr_HR:       ref to hash of sequence fail string, if undef,
+#                         do all seqs
+#   $seqtaxid_HR:         ref to hash of taxids of each sequence
+#   $seqgtaxid_HHR:       ref to 2D hash, 1D key tax level (e.g. "order")
+#                         2D key is sequence name, value is taxid of 
+#                         that group for that sequence
+#   $opt_HHR:             ref to 2D hash of cmdline options
+#   $ofile_info_HHR:      ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies:       If we can't parse $in_file
+#             If we don't have taxid info in seqtaxid_HR or seqgtaxid_HHR 
+#             for a sequence that we read in $in_file
+# 
+#################################################################
+sub parse_riboaligner_tbl_and_output_mdlspan_tbl { 
+  my $sub_name = "parse_riboaligner_tbl_and_output_mdlspan_tbl()";
+  my $nargs_expected = 9;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $mdlspan_sort_exec, $mlen, $out_root, $seqfailstr_HR, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+
+  # create the bins
+  my $pstep      = opt_Get("--msstep",   $opt_HHR);
+  my $minspanlen = opt_Get("--msminlen", $opt_HHR);
+  my $minstart   = opt_IsUsed("--msminstart", $opt_HHR) ? opt_Get("--msminstart", $opt_HHR) : 1;
+  my $maxstart   = opt_IsUsed("--msmaxstart", $opt_HHR) ? opt_Get("--msmaxstart", $opt_HHR) : $mlen;
+  my $minstop    = opt_IsUsed("--msminstop",  $opt_HHR) ? opt_Get("--msminstop",  $opt_HHR) : 1;
+  my $maxstop    = opt_IsUsed("--msmaxstop",  $opt_HHR) ? opt_Get("--msmaxstop",  $opt_HHR) : $mlen;
+  my $bidx = 0;
+  my $lpos; 
+  my $rpos;
+  my $spanlen = 0;
+  my @lpos_A = (); # array of all possible lpos values
+  my @rpos_A = (); # array of all possible rpos values
+  my %lpos_H = (); # key is lpos value, value is always 1, used only so we can fill lpos_A
+  my %rpos_H = (); # key is rpos value, value is always 1, used only so we can fill rpos_A
+  my %lpos_rpos2bin_HH = (); # key1: lpos value, key2: rpos value, value is bin index corresponding to that lpos/rpos pair
+  my @lpos_per_bin_A = ();   # [0..nbins-1] lpos for this bin
+  my @rpos_per_bin_A = ();   # [0..nbins-1] rpos for this bin
+  # $minstart == 1     unless --msminstart was used
+  # $maxstart == $mlen unless --msmaxstart was used
+  # $minstop  == 1     unless --msminstop  was used
+  # $maxstop  == $mlen unless --msmaxstop  was used
+  if($minstop  < $minstart) { $minstop  = $minstart; }
+  if($maxstart > $maxstop)  { $maxstart = $maxstop; }
+
+  # determine the bins
+  for($lpos = $minstart; $lpos < ($maxstart + $pstep); $lpos += $pstep) { 
+    if($lpos > $maxstop) { $lpos = $maxstop; }
+    for($rpos = $lpos + $pstep; $rpos < ($maxstop + $pstep); $rpos += $pstep) { 
+      if($rpos >= $minstop) { 
+        if($rpos > $maxstop) { $rpos = $maxstop; }
+        $spanlen = ($rpos - $lpos) + 1;
+        if($spanlen >= $minspanlen) { 
+          if(! exists $lpos_H{$lpos}) {
+            push(@lpos_A, $lpos);
+            $lpos_H{$lpos} = 1;
+          }
+          if(! exists $rpos_H{$rpos}) {
+            push(@rpos_A, $rpos);
+            $rpos_H{$rpos} = 1;
+          }
+          push(@lpos_per_bin_A, $lpos);
+          push(@rpos_per_bin_A, $rpos);
+          $lpos_rpos2bin_HH{$lpos}{$rpos} = $bidx;
+          $bidx++;
+        }
+      }
+    }
+  }
+  my $nbins = $bidx;
+  my $nlpos = scalar(@lpos_A);
+  my $nrpos = scalar(@rpos_A);
+
+  # parse the tbl file, and for each sequence determine which bins it survives in and update counts for that bin
+  my @nseq_in_A   = (); # 0..$nbins-1, number of sequences surviving each bin
+  my @nseq_out_A  = (); # 0..$nbins-1, number of sequences not surviving each bin
+  my @nseq_spec_A = (); # 0..$nbins-1, number of sequences specifically that fall into this bin (if bin is 51...301 and stepsize is 50, number of sequences that begin with 51..100 and end at 252..301
+  my $nseq_fail = 0;
+  my @ngtaxid_bin_level_AH      = (); # array [0..$nbins-1] of hashes, key is taxonomic level, value is number of groups at that level that survive in this bin
+  my @nseq_bin_level_gtaxid_AHH = (); # array [0..$nbins-1] of hashes, key 1D is taxonomic level, key 2D is gtaxid, 
+                                      # value is number of sequences in that group that survive in this bin
+  
+  # initialize
+  for($bidx = 0; $bidx < $nbins; $bidx++) { 
+    $nseq_in_A[$bidx]  = 0;
+    $nseq_out_A[$bidx] = 0;
+    $nseq_spec_A[$bidx]  = 0;
+    foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
+      $ngtaxid_bin_level_AH[$bidx]{$level} = 0;
+      $ngtaxid_bin_level_AH[$bidx]{"species"} = 0;
+    }
+  }
+
+  # parse each line of the output file and collect information from it
+  open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  while(my $line = <IN>) { 
+    ##idx  target      classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
+    ##---  ----------  ---------------------  -----  ----  ------  ------  ------------  -------------------
+    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    if($line !~ m/^\#/) { 
+      chomp $line;
+      my @el_A = split(/\s+/, $line);
+      if(scalar(@el_A) != 9) { 
+        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      }
+      my ($target, $mstart, $mstop) = ($el_A[1], $el_A[5], $el_A[6]); 
+      if(((! defined $seqfailstr_HR) || ($seqfailstr_HR->{$target} eq "")) && # we are doing all seqs ($seqfailstr_HR undef) or sequence has not failed
+         ($mstart ne "-") && ($mstop ne "-")) { 
+        # get taxonomic information for this guy, and store in %gtaxid_H
+        my %gtaxid_H = ();
+        foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
+          if(! exists $seqgtaxid_HHR->{$level}{$target}) { 
+            ofile_FAIL("ERROR in $sub_name, no $level information for $target\n", "RIBO", $?, $FH_HR);
+          }
+          $gtaxid_H{$level} = $seqgtaxid_HHR->{$level}{$target};
+        }
+        if(! exists $seqtaxid_HR->{$target}) { 
+          ofile_FAIL("ERROR in $sub_name, no species information for $target\n", "RIBO", $?, $FH_HR);
+        }
+        $gtaxid_H{"species"} = $seqtaxid_HR->{$target};
+        
+        # determine the specific bin that this sequence falls in
+        my $lpos_idx = 0; 
+        my $rpos_idx = 0;
+        while(($lpos_idx < ($nlpos-1)) && ($mstart > $lpos_A[($lpos_idx+1)])) { $lpos_idx++; }
+        while(($rpos_idx < ($nrpos-1)) && ($mstop  > $rpos_A[($rpos_idx+1)])) { $rpos_idx++; }
+        #if(defined $seqfailstr_HR) { printf("HEYA $mstart $mstop lpos_idx: $lpos_idx rpos_idx: $rpos_idx $lpos_A[$lpos_idx] $rpos_A[$rpos_idx]\n"); }
+
+        $bidx = $lpos_rpos2bin_HH{$lpos_A[$lpos_idx]}{$rpos_A[$rpos_idx]};
+        $nseq_spec_A[$bidx]++;
+
+        # for each bin, would this sequence survive? if so, update counts for that bin
+        for($bidx = 0; $bidx < $nbins; $bidx++) { 
+          if(($mstart <= $lpos_per_bin_A[$bidx]) && ($mstop >= $rpos_per_bin_A[$bidx])) { 
+            $nseq_in_A[$bidx]++;
+            
+            foreach my $level (sort keys (%gtaxid_H)) { 
+              my $gtaxid = $gtaxid_H{$level};
+              if(! exists $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid}) { 
+                $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid} = 1;
+                $ngtaxid_bin_level_AH[$bidx]{$level}++;
+              }
+              else { 
+                $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid}++;
+              }
+            }
+          }
+          else { 
+            $nseq_out_A[$bidx]++;
+          }
+        } # end of for($bidx = 0; $bidx < $nbins; $bidx++)
+      } # end of if($mstart ne "-" && $mstop ne "-") 
+      else { 
+        $nseq_fail++;
+      }
+    }
+  }
+  close(IN);
+
+  # we have all the information we need, output it
+  # one line per bin
+  my @out_AH = (); # [0..$nbins-1], each element is hash, key is "output", "norder", "length", "lpos"
+                   # hash is used to sort output lines by norder, then length, then lpos
+  for($bidx = 0; $bidx < $nbins; $bidx++) { 
+    # generate lists of gtaxids for each group for this bin
+    my %list_str_H = ();
+    foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
+      $list_str_H{$level} = "";
+      foreach my $gtaxid (sort {$a <=> $b} keys (%{$nseq_bin_level_gtaxid_AHH[$bidx]{$level}})) { 
+        if($list_str_H{$level} ne "") { $list_str_H{$level} .= ","; }
+        $list_str_H{$level} .= $gtaxid;
+      }
+      if($list_str_H{$level} eq "") { $list_str_H{$level} = "-"; }
+    }
+
+    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+                                        $rpos_per_bin_A[$bidx] - $lpos_per_bin_A[$bidx] + 1, 
+                                        $lpos_per_bin_A[$bidx], $rpos_per_bin_A[$bidx], 
+                                        $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_spec_A[$bidx], $nseq_fail,
+                                        $ngtaxid_bin_level_AH[$bidx]{"species"}, 
+                                        $ngtaxid_bin_level_AH[$bidx]{"order"}, 
+                                        $ngtaxid_bin_level_AH[$bidx]{"class"}, 
+                                        $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
+                                        $list_str_H{"order"}, 
+                                        $list_str_H{"class"}, 
+                                        $list_str_H{"phylum"}); 
+    $out_AH[$bidx]{"norder"} = $ngtaxid_bin_level_AH[$bidx]{"order"}; 
+    $out_AH[$bidx]{"length"} = $rpos_per_bin_A[$bidx] - $lpos_per_bin_A[$bidx] + 1;
+    $out_AH[$bidx]{"lpos"}   = $lpos_per_bin_A[$bidx];
+  } # end of 'for($bidx = 0' loop over bins
+  
+  # open output file, sort the output and write output file
+  my $out_key = (defined $seqfailstr_HR) ? "pass" : "all";
+  my $out_file = $out_root . ".$out_key.mdlspan.survtbl";
+  my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($mlen, $opt_HHR); 
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
+  print OUT ("# Filename: $out_file\n");
+  print OUT ("# This file contains information on how many sequences and taxonomic groups would survive for different\n");
+  print OUT ("# choices of model span coordinates <max_lpos>..<min_rpos>, which are the maximum allowed 5'-most aligned\n");
+  print OUT ("# model position and minimum allowed 3'-most model position for each aligned sequence.\n");
+  print OUT ("# Current values:\n");
+  print OUT ("# <max_lpos>: $max_lpos\n",);
+  print OUT ("# <min_rpos>: $min_rpos\n");
+  print OUT ("#\n");
+  print OUT ("# These are settable with the --fmpos, --fmlpos, and --fmrpos options, do ribodbmaker.pl -h for more information\n");
+  print OUT ("#\n");
+  print OUT ("# This file shows how many sequences would pass for other possible choices of <max_lpos> and <min_rpos>.\n");
+  print OUT ("# Each line has information for a pair of values <max_lpos>..<min_rpos> and contains 14 tab delimited columns, described below.\n");
+  print OUT ("# Only values of <max_lpos> and <min_rpos> which are multiples of $pstep (plus 1) are shown (changeable with the --msstep option).\n");
+  print OUT ("# Only pairs of <max_lpos> and <min_rpos> in which the length is >= $minspanlen are shown (changeable with the --msminlen option).\n");
+  print OUT ("# The lines are sorted by the following columns: first by 'num-surviving-orders', then by 'length', and then by '5'pos'.\n");
+  print OUT ("#\n");
+  print OUT ("# You can recreate this file by rerunning ribodbmaker.pl using the same options it was originally run with, but\n");
+  print OUT ("# additionally with the --prvcmd option, without the -f option, and with the additional options that change\n");
+  print OUT ("# what data will be printed to this file:\n");
+  my $used_str = undef;
+  $used_str = opt_IsUsed("--msstep", $opt_HHR) ? opt_Get("--msstep", $opt_HHR) : "NOT ENABLED; used default of : " . opt_Get("--msstep", $opt_HHR); 
+  print OUT ("#   --msstep <n>     : for model span output table, set step size to <n> [VALUE: $used_str]\n"); 
+  $used_str = opt_IsUsed("--msminlen", $opt_HHR) ? opt_Get("--msminlen", $opt_HHR) : "NOT ENABLED; used default of: " . opt_Get("--msminlen", $opt_HHR); 
+  print OUT ("#   --msminlen <n>   : for model span output table, set min length span to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msminstart", $opt_HHR) ? opt_Get("--msminstart", $opt_HHR) : "NOT ENABLED; used default of: 1";
+  print OUT ("#   --msminstart <n> : for model span output table, set min start position to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msmaxstart", $opt_HHR) ? opt_Get("--msmaxstart", $opt_HHR) : "NOT ENABLED; used default of: $mlen (model length)";
+  print OUT ("#   --msmaxstart <n> : for model span output table, set maxstart position to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msminstop", $opt_HHR) ? opt_Get("--msminstop", $opt_HHR) : "NOT ENABLED; used default of: 1";
+  print OUT ("#   --msminstop <n>  : for model span output table, set min stop position to <n> [VALUE: $used_str]\n");
+  $used_str = opt_IsUsed("--msmaxstop", $opt_HHR) ? opt_Get("--msmaxstop", $opt_HHR) : "NOT ENABLED; used default of: $mlen (model length)";
+  print OUT ("#   --msmaxstop <n>  : for model span output table, set max stop position to <n> [VALUE: $used_str]\n");
+  print OUT ("#\n");
+  print OUT ("# Also, you can have ribodbmaker.pl create an additional file similar to this one but that prioritizes specific orders, classes\n");
+  print OUT ("# or phyla listed in a file, and ignores those not listed, by rerunning ribodbmaker.pl as described above but additionally\n");
+  print OUT ("# using the --mslist, --msclass, and/or --msphylum options. Do 'ribodbmaker.pl -h' for more information.\n");
+  print OUT ("#\n");
+  print OUT ("# Finally, you can create that additional file that prioritizes certain orders, classes or phyla outside of\n");
+  print OUT ("# ribodbmaker.pl using the script mdlspan-survtbl-sort.pl in the ribotyper-v1 directory that ribodbmaker.pl is in.\n");
+  print OUT ("# Some example commands for that script are:\n");
+  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# OR\n");
+  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl -c <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# OR\n");
+  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl -s <PATH-TO-THIS-FILE> <comma-delimited list of orders to prioritize>\n");
+  print OUT ("#\n");
+  print OUT ("# Explanation of columns in this file:\n");
+  print OUT ("#  1. 'length': length of model span\n");
+  print OUT ("#  2. '5' pos': maximum allowed 5' start position <max_lpos>\n");
+  print OUT ("#  3. '3' pos': minimum allowed 3' end   position <min_rpos>\n");
+  print OUT ("#  4. num-surviving-seqs:      number of sequences that span <max_lpos..min_rpos>\n");
+  print OUT ("#  5. num-seqs-not-surviving:  number of sequences that do not span <max_lpos..min_rpos>\n");
+  print OUT ("#  6. num-seqs-within-range:   number of sequences that that span <max_lpos>..<min_rpos> but\n");
+  print OUT ("#     do not span <max_lpos + $pstep> .. <min_rpos + $pstep>\n");
+  print OUT ("#  7. num-seqs-not-considered: number of sequences that FAILED for some reason and were not evaluated\n");
+  print OUT ("#  8. num-surviving-species:   number of species taxids with at least 1 sequence that survives this span\n");
+  print OUT ("#  9. num-surviving-orders:    number of order taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 10. num-surviving-classes:   number of class taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 11. num-surviving-phyla:     number of phylum taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 12. surviving-orders:        comma-separated list of order taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 13. surviving-classes:       comma-separated list of class taxids with >= 1 sequence that survives this span\n");
+  print OUT ("# 14. surviving-phyla:         comma-separated list of phyla taxids with >= 1 sequence that survives this span\n");
+  print OUT ("#\n");
+  print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+  
+  @out_AH = sort { 
+    $b->{"norder"} <=> $a->{"norder"} or 
+    $b->{"length"} <=> $a->{"length"} or
+    $a->{"lpos"}   <=> $b->{"lpos"}
+  } @out_AH;
+  
+  for($bidx = 0; $bidx < $nbins; $bidx++) { 
+    print OUT $out_AH[$bidx]{"output"};
+  }
+  close(OUT);
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$out_key.mdlspan.survtbl", $out_file, 1, "table summarizing number of sequences ($out_key) for different model position spans");
+
+  # if --mslist used, re-sort to prioritize sequences in that file
+  if(opt_IsUsed("--mslist", $opt_HHR)) { 
+    my $resort_out_file = $out_root . ".$out_key.resort.mdlspan.survtbl";
+    my $opt_str = ""; 
+    my $key = "orders";
+    if   (opt_Get("--msclass",  $opt_HHR)) { $opt_str .= "-c"; $key = "classes"; }
+    elsif(opt_Get("--msphylum", $opt_HHR)) { $opt_str .= "-p"; $key = "phyla";   }
+    my $resort_cmd = $mdlspan_sort_exec . " $opt_str $out_file " . opt_Get("--mslist", $opt_HHR) . " > $resort_out_file"; 
+    ribo_RunCommand($resort_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$out_key.resort.mdlspan.survtbl", $resort_out_file, 1, "$out_key.mdlspan.survtbl table re-sorted to prioritize $key read from --mslist <s> file");
+  }
+  return;
 }
 
 #################################################################
@@ -1914,7 +2349,7 @@ sub parse_blast_output_for_self_hits {
 #   $opt_HHR:        reference to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
 #
-# Returns:    Number of sequences that pass (do not fail)
+# Returns:    Number of sequences that fail
 #
 # Dies:       if a sequence read in the alipid file is not in %{$seqfailstr_HR}
 #################################################################
@@ -1926,7 +2361,9 @@ sub parse_alipid_analyze_tab_files {
   my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
-  my $do_one = (opt_Get("--fione", $opt_HHR)) ? 1 : 0;
+  my $do_one     = (opt_Get   ("--fione", $opt_HHR)) ? 1 : 0;
+  my $do_one_min = (opt_IsUsed("--fimin", $opt_HHR)) ? 1 : 0; # --fimin requires --fione
+  my $one_min    = opt_Get   ("--fimin", $opt_HHR);
   my %max_pid_per_taxid_HH    = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
   my %argmax_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
                                     # lowest level in @{$level_AR}
@@ -1936,6 +2373,9 @@ sub parse_alipid_analyze_tab_files {
   # note: it is wasteful for us to compute and store these for all 3 levels since we only need 
   # it for the lowest level (phylum, class, order) it is available, but we do it anyway because
   # the following implementation (see 'if($do_one)') is simple
+
+  my %do_one_min_taxid_H = (); # 1D key is $seqname, value is species taxid if seqname is candidate for failing b/c not enough sequences in its taxid (--fimin)
+  my %one_min_ntaxid_H   = (); # key is sequence taxid, value is number of sequences that have that taxid, only filled and used if $do_one_min (--fimin)
 
   my %curfailstr_H = ();  # will hold fail string 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
@@ -1951,16 +2391,19 @@ sub parse_alipid_analyze_tab_files {
     # first line is header
     my $line = <TAB>;
     while($line = <TAB>) { 
-      #sequence	seq-taxid	species	group-taxid	group-nseq	type	avgpid-in-group	maxpid-in-group	maxpid-seq-in-group	minpid-in-group	minpid-seq-in-group	avgpid-out-group	maxpid-out-group	maxpid-seq-out-group	maxpid-group-out-group	minpid-out-group	minpid-seq-out-group	minpid-group-out-group	avgdiff-in-minus-out	maxdiff-in-minus-out
-      #AJ306437.1	155213	Scutellospora spinosissima	214509	8	I1	93.6	95.1	HF968811.1	91.7	AJ306442.1	84.9	89.0	AB015052.1	1133283	65.9	AB016022.1	78918	8.8	6.2	25.8
-      #JN941634.1	45130	Bipolaris sorokiniana	92860	3	I1	96.2	96.5	DQ898289.1	95.9	AY741066.1	87.0	95.7	AB454202.1	451869	65.7	AB016022.1	78918	9.2	0.8	30.2
-      chomp $line;
-      my @el_A = split(/\t/, $line);
-      if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
-      my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
-      if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-      if($type =~ m/^O/) { 
-        $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later after determining 
+      ##sequence	seq-taxid	species	type	p/f	in-group	in-nseq	in-avgid	in-maxid	in-maxseq	in-minid	in-minseq	maxavg-string	maxavg-group	maxavg-nseq	maxavg-avgid	maxavg-maxid	maxavg-maxseq	maxavg-minid	maxavg-minseq	maxmax-string	maxmax-group	maxmax-nseq	maxmax-avgid	maxmax-maxid	maxmax-maxseq	maxmax-minid	maxmax-minseq	avgdiff	maxdiff
+      #AY761090.2	312317	Xylomelasma sordida	I1	PASS   4890	2074	96.04	99.01	MF077540.1	76.57	AB053251.1	avg:same	4761	27	93.07	94.72	AY601711.1	88.45	AF164253.2	max:same	5204	441	89.49	98.35	KJ708419.1	57.76	DQ898689.1	2.9665557163529	0.660000000000011
+      #KY368137.1	1116880	Wickerhamiella infanticola	I1	PASS   4890	2074	94.60	99.68	AB018151.1	76.62	AB053253.1	avg:same	4761	27	91.82	93.53	HQ901742.1	88.31	AF164253.2	max:same	5204	441	88.66	95.79	KJ708419.1	58.12	DQ898689.1	2.77972825213143	3.89
+      #MH201386.1	1195475	Benjaminiella youngii	I1	PASS   1913637	161	88.74	99.68	MH201385.1	78.50	GU559979.1	avg:same	4761	27	83.86	86.41	KY350147.1	81.55	GU358605.1	max:same	4761	27	83.86	86.41	KY350147.1	81.55	GU358605.1	4.87068055555551	13.27
+      if($line !~ m/^\#/) { 
+        chomp $line;
+        my @el_A = split(/\t/, $line);
+        if(scalar(@el_A) != 30) { ofile_FAIL(sprintf("ERROR in $sub_name, tab file line had %d tab-delimited tokens, but expected 30: $line\n", scalar(@el_A)), "RIBO", $?, $FH_HR); }
+        my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
+        if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+        if($pf eq "FAIL") { 
+          $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later
+        }
       }
     }
     close(TAB);
@@ -1977,20 +2420,36 @@ sub parse_alipid_analyze_tab_files {
       my $line = <TAB>;
       while($line = <TAB>) { 
         chomp $line;
-        my @el_A = split(/\t/, $line);
-        if(scalar(@el_A) != 21) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 21 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
-        my ($seqname, $seq_taxid, $group_taxid, $type, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6]);
-        if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-        if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
-          # sequence is not an O type, and has a non-1 species taxid and valid group_taxid at this level
-          # so it is a candidate for being the max avg pid for its species taxid
-          # and also a candidate for failing if it is not max avg pid for its species
-          $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
-          $do_one_taxid_H{$seqname}           = $seq_taxid;
-          $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
-          if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
-            $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
-            $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
+        if($line !~ m/^\#/) { 
+          my @el_A = split(/\t/, $line);
+          if(scalar(@el_A) != 30) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 30 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
+          my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
+
+          if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
+            # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
+            # so it is a candidate for being the max avg pid for its species taxid
+            # and also a candidate for failing if it is not max avg pid for its species
+            $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
+            $do_one_taxid_H{$seqname}           = $seq_taxid;
+            $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
+            if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
+              $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
+              $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
+            }
+          }
+          # keep track of number of sequences per taxid, if the --fimin option was used
+          if(($do_one_min) && ($level eq "phylum")) { 
+            # only do this at the phylum level, so we don't do it each time for all 3 levels
+            if(($curfailstr_H{$seqname} eq "") && ($seq_taxid ne "-") && ($seq_taxid ne "1")) { 
+              $do_one_min_taxid_H{$seqname} = $seq_taxid;
+              if(! exists $one_min_ntaxid_H{$seq_taxid}) { 
+                $one_min_ntaxid_H{$seq_taxid} = 0; 
+              }
+              else { 
+                $one_min_ntaxid_H{$seq_taxid}++;
+              }
+            }
           }
         }
       }
@@ -2006,18 +2465,30 @@ sub parse_alipid_analyze_tab_files {
         $curfailstr_H{$seqname} .= sprintf("not-max-avg-pid(%.3f<%.3f);", $do_one_avgpid_HH{$level}{$seqname}, $max_pid_per_taxid_HH{$level}{$seq_taxid});
       }
     }
+    if($do_one_min) { 
+      # remove any sequences with too few sequences in their seq taxid
+      foreach $seqname (sort keys %do_one_min_taxid_H) { 
+        my $seq_taxid   = $do_one_min_taxid_H{$seqname};
+        if($one_min_ntaxid_H{$seq_taxid} < $one_min) { 
+          $curfailstr_H{$seqname} .= sprintf("too-few-in-species-taxid(%d<%d);", $one_min_ntaxid_H{$seq_taxid}, $one_min); 
+        }
+      }
+    }
   }
 
   # now reformat the error string to include the stage name
+  my $nfail = 0;
   foreach $seqname (keys %curfailstr_H) { 
     if($curfailstr_H{$seqname} ne "") { 
       $curfailstr_H{$seqname} = "ingroup-analysis[" . $curfailstr_H{$seqname} . "];;";
+      $nfail++;
     }
   }
     
   # now output pass and fail files
-  return update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ingrup", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
-  
+  update_and_output_pass_fails(\%curfailstr_H, $seqfailstr_HR, $seqorder_AR, 1, $out_root, "ingrup", $ofile_info_HHR); # 1: do not require all seqs in seqorder exist in %curfailstr_H
+
+  return $nfail;
 }
 
 #################################################################
@@ -2051,13 +2522,13 @@ sub parse_alipid_output_to_create_dist_file {
   open(DIST, ">", $dist_file)   || ofile_FileOpenFailure($dist_file,   "RIBO", $sub_name, $!, "writing", $FH_HR);
 
   while($line = <ALIPID>) { 
-    ## seqname1 seqname2 %id nid denomid %match nmatch denommatch
-    #AB024594.1 AB024593.1  91.36   1576   1725  99.48   1722   1731
-    #AB024594.1 AB024591.1  99.94   1727   1728 100.00   1728   1728
+    #EU011733.1 KM065910.1 99.07
+    #EU011733.1 AB053242.2 97.22
+    #EU011733.1 AB018172.1 96.60
     chomp $line;
     if($line !~ m/^\#/) { 
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 8) { 
+      if(scalar(@el_A) != 3) { 
         ofile_FAIL("ERROR in $sub_name, unable to parse line that does not have 8 whitespace-delimited tokens in $alipid_file\n$line\n", "RIBO", 1, $FH_HR);
       }
       my ($seq1, $seq2, $pid) = ($el_A[0], $el_A[1], $el_A[2]);
@@ -2251,12 +2722,21 @@ sub parse_esl_cluster_output {
 # Incept:      EPN, Tue Jun 26 15:36:11 2018
 #
 # Purpose:     Parse the srcchk output file run with option
-#              -f 'taxid,organism' and fill %{$seqtaxid_HR}
-#              with taxid for each sequence in the file.
+#              -f 'taxid,organism,strain' and fill %{$seqtaxid_HR}
+#              with taxid for each sequence in the file,
+#              and %{$seqorgn_HR} and %{$seqstrain_HR} with organism for each
+#              sequence (if $seqorgn_HR/$seqstrain_HR is defined).
+#              Also, parse the six column taxonomy tree file,
+#              for any sequence in the srcchk output file with
+#              a taxid NOT in the taxonomy tree (obsolete taxid)
+#              give that sequence a taxid of 1.
 #
 # Arguments:
-#   $in_file:        name of srcchk output file to parse
+#   $srcchk_file:    name of srcchk output file to parse
+#   $taxtree_file:   name of taxonomy tree file
 #   $seqtaxid_HR:    ref to hash of failure string to add to here
+#   $seqorgn_HR:     ref to hash of organism values for each sequence
+#   $seqstrain_HR:   ref to hash of strain value for each sequence
 #   $seqorder_AR:    ref to array of sequences in order
 #   $ofile_info_HHR: ref to the ofile info 2D hash
 #
@@ -2266,37 +2746,74 @@ sub parse_esl_cluster_output {
 #################################################################
 sub parse_srcchk_file { 
   my $sub_name = "parse_srcchk_file";
-  my $nargs_expected = 4;
+  my $nargs_expected = 7;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $seqtaxid_HR, $seqorder_AR, $ofile_info_HHR) = (@_);
+  my ($srcchk_file, $taxtree_file, $seqtaxid_HR, $seqorgn_HR, $seqstrain_HR, $seqorder_AR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
   my $seqname;
+  my %valid_taxid_H = ();
 
   %{$seqtaxid_HR} = ();
 
-  open(SRCCHK, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  # first parse the taxtree file to determine all valid taxids
+  open(TAXTREE, $taxtree_file)  || ofile_FileOpenFailure($taxtree_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   # first line is header
-  my $line = <SRCCHK>;
+  my $line = <TAXTREE>;
+  while($line = <TAXTREE>) { 
+    #1	1	no rank	1	0	0
+    #2	131567	superkingdom	3	1	0
+    my @el_A = split(/\t/, $line);
+    if(scalar(@el_A) != 6) { 
+      ofile_FAIL("ERROR in $sub_name, taxtree file line did not have exactly 6 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    $valid_taxid_H{$el_A[0]} = 1; 
+  }
+  close(TAXTREE);
+
+  open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
+  # first line is header
+  $line = <SRCCHK>;
   while($line = <SRCCHK>) { 
     #accessiontaxidorganism
     #AY343923.1	175243	uncultured Ascomycota	
     #DQ181066.1	343769	Dilophotes sp. UPOL 000244	
     chomp $line;
     my @el_A = split(/\t/, $line);
-    if(scalar(@el_A) != 3) { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    my ($seqname, $taxid, $organism, $strain);
+    # there can be 3 or 4 elements
+    if(scalar(@el_A) == 4) { 
+      ($seqname, $taxid, $organism, $strain) = @el_A;
     }
-    my ($seqname, $taxid, $organism) = @el_A;
+    elsif(scalar(@el_A) == 3) { 
+      ($seqname, $taxid, $organism) = @el_A;
+      $strain = "";
+    }
+    else { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 or 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    }
+    if(! exists $valid_taxid_H{$taxid}) { # replace obsolete taxids with '1'
+      $taxid = 1; 
+      $organism = ""
+    }
     $seqtaxid_HR->{$seqname} = $taxid;
+    if(defined $seqorgn_HR) { 
+      $seqorgn_HR->{$seqname} = $organism; 
+      if(($valid_taxid_H{$taxid}) && (! defined $organism || $organism eq "")) { 
+        ofile_FAIL("ERROR in $sub_name, srcchk did not return a organism for line: $line\n", "RIBO", $?, $FH_HR);
+      }
+    }
+    if(defined $seqstrain_HR) { 
+      $seqstrain_HR->{$seqname} = $valid_taxid_H{$taxid} ? $strain : ""; # $strain can be ""
+    }
   }
   close(SRCCHK);
 
   # make sure all sequences were read
   foreach $seqname (@{$seqorder_AR}) { 
     if(! exists $seqtaxid_HR->{$seqname}) { 
-      ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in $in_file\n", "RIBO", $?, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in $srcchk_file\n", "RIBO", $?, $FH_HR);
     }
   }
 }
@@ -2894,3 +3411,73 @@ sub combine_ali_apos_to_uapos_files {
   return;
 }
 
+#################################################################
+# Subroutine:  fasta_rewrite_sequence_descriptions
+# Incept:      EPN, Wed Sep  5 14:37:59 2018
+#
+# Purpose:     Rewrite the 'deflines' (sequence descriptions) for
+#              sequences in a fasta file based on the family 
+#              being annotated ($family), and the organism, strain
+#              and length class information.
+# 
+# Arguments:
+#   $in_file:        name of fasta file to update
+#   $out_file:       name of new fasta file to create with updated descs
+#   $family:         family for the model being used (e.g. "SSU.eukarya")
+#   $seqlenclass_HR: ref to hash of length class for each sequence, value should be defined for all seqs
+#   $seqorgn_HR:     ref to hash of organism for each sequence, value should be defined for all seqs
+#   $seqstrain_HR:   ref to hash of organism for each sequence, value can be undefined for some seqs
+#   $opt_HHR:        ref to 2D hash of cmdline options
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:    void
+#
+# Dies: If unable to create $out_file, or doesn't have required
+#       info for a sequence in $in_file
+# 
+#################################################################
+sub fasta_rewrite_sequence_descriptions { 
+  my $sub_name = "fasta_rewrite_sequence_descriptions";
+  my $nargs_expected = 8;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $out_file, $family, $seqlenclass_HR, $seqorgn_HR, $seqstrain_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+
+  my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
+
+  my $subunit_size = undef;   # --def is incompatible with --skipfribo2, so --model must be used and so $family will be defined
+  if   ($family =~ m/SSU/) { $subunit_size = "small subunit"; }
+  elsif($family =~ m/LSU/) { $subunit_size = "large subunit"; }
+  else                     { ofile_FAIL("ERROR in $sub_name, family $family does not have SSU or LSU in it, --def option not yet set up for $family", "RIBO", $!, $FH_HR); }
+
+  open(IN,  $in_file)       || ofile_FileOpenFailure($in_file,  "RIBO", "ribodbmaker.pl:main()", $!, "reading", $ofile_info_HH{"FH"});
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
+  while($line = <IN>) { 
+    if($line =~ m/^>(\S+)(\s*.+$)/) { 
+      chomp $line;
+      my ($seqname, $orig_def) = ($1, $2); 
+      if(! defined $seqlenclass_HR->{$seqname}) { 
+        ofile_FAIL("ERROR trying to create new definition line for $seqname, but no length class information exists for this sequence", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+      }
+      if(! defined $seqorgn_HR->{$seqname}) { 
+        ofile_FAIL("ERROR trying to create new definition line for $seqname, but organism is undefined for this sequence", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+      }
+      if($seqorgn_HR->{$seqname} eq "") { 
+        ofile_FAIL("ERROR trying to create new definition line for $seqname, but organism is blank for this sequence", $pkgstr, $!, $ofile_info_HH{"FH"}); 
+      }
+      my $orgn_strain = $seqorgn_HR->{$seqname};
+      if((defined $seqstrain_HR->{$seqname}) && ($seqstrain_HR->{$seqname} ne "")) { $orgn_strain .= " " . $seqstrain_HR->{$seqname}; }
+      my $feature = sprintf("%s ribosomal RNA gene, %s sequence", $subunit_size, ($seqlenclass_HR->{$seqname} eq "full-exact") ? "complete" : "partial");
+      printf OUT (">%s %s %s\n", $seqname, $orgn_strain, $feature);
+    }
+    else { # not a sequence name line, output it as is
+      print OUT $line; 
+    }
+  }
+  close(IN);
+  close(OUT);
+
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "def.fa", "$out_file", 1, "fasta file with final set of surviving sequences with new deflines (--def)");
+
+  return;
+}
