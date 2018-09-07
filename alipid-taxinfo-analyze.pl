@@ -299,6 +299,9 @@ foreach my $seq (@seq_order_A) {
       $seq_grp_pid_avg_HH{$seq}{$grp} /= $seq_grp_pid_denom_HH{$seq}{$grp};
     }
   }
+  if(exists $cur_grp_pid_avg_H{$seq}) { 
+    $cur_grp_pid_avg_H{$seq} /= $cur_grp_pid_denom_H{$seq};
+  }
 }
 
 # define column explanations
