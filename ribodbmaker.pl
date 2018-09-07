@@ -118,7 +118,7 @@ opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skip
 
 $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
-opt_Add("--cfid",        "real",     0.9,                   $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--cfid",        "real",     0.97,                  $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options that affect the alignment from which percent identities are calculated:";
 #            option         type   default            group   requires  incompat              preamble-output                                                 help-output    
@@ -2528,7 +2528,7 @@ sub parse_alipid_output_to_create_dist_file {
     chomp $line;
     if($line !~ m/^\#/) { 
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 8) { 
+      if(scalar(@el_A) != 3) { 
         ofile_FAIL("ERROR in $sub_name, unable to parse line that does not have 8 whitespace-delimited tokens in $alipid_file\n$line\n", "RIBO", 1, $FH_HR);
       }
       my ($seq1, $seq2, $pid) = ($el_A[0], $el_A[1], $el_A[2]);
