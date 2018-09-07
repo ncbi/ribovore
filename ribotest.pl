@@ -231,7 +231,7 @@ for(my $i = 1; $i <= $ncmd; $i++) {
     else      { $nfail++; }
   }
 
-  if(! opt_Get("--keep", \%opt_HH)) { 
+  if(($nfail == 0) && (! opt_Get("--keep", \%opt_HH))) { # only remove dir if no tests failed
     my $nrmdir = (defined $rmdir_AR) ? scalar(@{$rmdir_AR}) : 0;
     for(my $k = 0; $k < $nrmdir; $k++) { 
       ofile_OutputString($log_FH, 1, sprintf("#\t%-60s ... ", "removing directory $rmdir_AR->[$k]"));
