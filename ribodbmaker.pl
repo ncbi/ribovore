@@ -134,7 +134,7 @@ opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--ski
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
 #       option          type       default        group       requires incompat                preamble-output                                                 help-output    
-opt_Add("--msstep",     "integer", 50,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msstep",     "integer", 10,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msminstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min start position to <n>",   "for model span output table, set min start position to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msmaxstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max start position to <n>",   "for model span output table, set max start position to <n>", \%opt_HH, \@opt_order_A);
@@ -281,11 +281,13 @@ my %full_level_ct_HH = ();         # key 1 is $level, key 2 is $level taxid, val
 my %surv_filters_level_ct_HH = (); # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive all filters for that taxid
 my %surv_ingrup_level_ct_HH = ();  # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive ingrup analysis for that taxid
 my %surv_clustr_level_ct_HH = ();  # key 1 is $level, key 2 is $level taxid, value is number of sequences that survive clustering for that taxid
+my %all_gtaxid_HA = (); # 1D key is taxonomic level, array is all tax ids in that level
 foreach $level (@level_A) {
   %{$full_level_ct_HH{$level}} = ();          
   %{$surv_filters_level_ct_HH{$level}} = ();  
   %{$surv_ingrup_level_ct_HH{$level}}  = ();  
   %{$surv_clustr_level_ct_HH{$level}}  = ();  
+  @{$all_gtaxid_HA{$level}} = ();
 }
 
 # determine what stages we are going to do:
@@ -828,6 +830,8 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "taxinfo.$level", $taxinfo_wlevel_file_H{$level}, 0, "taxinfo file with $level");
     # parse tax_level file to fill %full_level_ct_HH
     parse_tax_level_file($taxinfo_wlevel_file_H{$level}, undef, $seqgtaxid_HH{$level}, $full_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+    # now fill @all_gtaxid_HA
+    @{$all_gtaxid_HA{$level}} = (sort {$a <=> $b} keys %{$full_level_ct_HH{$level}});
   }
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
@@ -1166,10 +1170,10 @@ else {
   if($do_fribo2) { # we can't create the table if we skipped the ribo2 stage
     # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
     $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for all seqs", $progress_w, $log_FH, *STDOUT);
-    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, undef, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, undef, \%seqtaxid_H, \%seqgtaxid_HH, \%all_gtaxid_HA, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for PASSing seqs", $progress_w, $log_FH, *STDOUT);
-    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqfailstr_H, \%seqtaxid_H, \%seqgtaxid_HH, \%opt_HH, \%ofile_info_HH);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqfailstr_H, \%seqtaxid_H, \%seqgtaxid_HH, \%all_gtaxid_HA, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   }
 
@@ -1298,10 +1302,13 @@ if($npass_final > 0) {
 #   (whitepsace delimited) 
 #####################################################################
 # output taxonomy level count files
-my %final_nsurv_H = (); 
+my %final_nsurv_H = (); # key: taxonomic level, value number of groups at this level that have >=1 surviving seq
+my %final_nmiss_H = (); # key: taxonomic level, value number of groups at this level that have >=1 input seq but 0 surviving
 foreach $level (@level_A) { 
   $final_nsurv_H{$level} = 0;
-  my $final_str = ""; # comma separated list of all taxids that have >= 1 sequences
+  $final_nmiss_H{$level} = 0;
+  my $final_surv_str = ""; # comma separated list of all taxids that have >= 1 sequences
+  my $final_miss_str = ""; # comma separated list of all taxids that have 0 sequences
   my $out_level_ct_file = $out_root . "." . $level . ".ct";
   open(LVL, ">", $out_level_ct_file) || ofile_FileOpenFailure($out_level_ct_file,  "RIBO", "ribodbmaker.pl:main()", $!, "writing", $ofile_info_HH{"FH"});
   print LVL ("#taxid-$level\tnum-input\tnum-survive-filters\tnum-survive-ingroup-analysis\tnum-survive-clustering\tnum-final\n");
@@ -1309,7 +1316,7 @@ foreach $level (@level_A) {
   if   ($did_clustr)  { $final_level_ct_HR = $surv_clustr_level_ct_HH{$level};  }
   elsif($did_ingrup)  { $final_level_ct_HR = $surv_ingrup_level_ct_HH{$level};  }
   else                { $final_level_ct_HR = $surv_filters_level_ct_HH{$level}; }
-  foreach my $taxid (sort {$a <=> $b} keys %{$full_level_ct_HH{$level}}) { 
+  foreach my $taxid (@{$all_gtaxid_HA{$level}}) { 
     printf LVL ("%s\t%s\t%s\t%s\t%s\t%s\n", 
                 $taxid, 
                 $full_level_ct_HH{$level}{$taxid}, 
@@ -1317,10 +1324,19 @@ foreach $level (@level_A) {
                 ($did_ingrup) ? $surv_ingrup_level_ct_HH{$level}{$taxid} : "-", 
                 ($did_clustr) ? $surv_clustr_level_ct_HH{$level}{$taxid} : "-", 
                 $final_level_ct_HR->{$taxid});
-    if($final_level_ct_HR->{$taxid} > 0) { $final_nsurv_H{$level}++; $final_str .= $taxid . ","; }
+    if($final_level_ct_HR->{$taxid} > 0) { 
+      $final_nsurv_H{$level}++; 
+      if($final_surv_str ne "") { $final_surv_str .= ","; }
+      $final_surv_str .= $taxid;
+    }
+    else { 
+      $final_nmiss_H{$level}++; 
+      if($final_miss_str ne "") { $final_miss_str .= ","; }
+      $final_miss_str .= $taxid;
+    }
   } 
-  if($final_str ne "") { $final_str =~ s/\,$//; } # remove final ','
-  printf LVL ("# List of %d taxids represented by >= 1 sequence in final set:\n#%s\n", $final_nsurv_H{$level}, $final_str eq "" ? "NONE" : $final_str);
+  printf LVL ("# List of %d/%d taxids missing (0 surviving sequences) in final set:\n#%s\n", $final_nmiss_H{$level}, $final_nsurv_H{$level} + $final_nmiss_H{$level}, $final_miss_str eq "" ? "NONE" : $final_miss_str);
+  printf LVL ("# List of %d/%d taxids represented by >= 1 sequence in final set:\n#%s\n", $final_nsurv_H{$level}, $final_nsurv_H{$level} + $final_nmiss_H{$level}, $final_surv_str eq "" ? "NONE" : $final_surv_str);
   close(LVL);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "out.$level", "$out_level_ct_file", 1, "tab-delimited file listing number of sequences per $level taxid");
 }
@@ -1911,6 +1927,9 @@ sub parse_riboaligner_tbl_and_uapos_files {
 #   $seqgtaxid_HHR:       ref to 2D hash, 1D key tax level (e.g. "order")
 #                         2D key is sequence name, value is taxid of 
 #                         that group for that sequence
+#   $all_gtaxid_HAR:      ref to hash of arrays, key is taxonomic level,
+#                         array is all taxids in that level that had >= 1
+#                         sequence in the input sequence file
 #   $opt_HHR:             ref to 2D hash of cmdline options
 #   $ofile_info_HHR:      ref to the ofile info 2D hash
 #
@@ -1923,10 +1942,10 @@ sub parse_riboaligner_tbl_and_uapos_files {
 #################################################################
 sub parse_riboaligner_tbl_and_output_mdlspan_tbl { 
   my $sub_name = "parse_riboaligner_tbl_and_output_mdlspan_tbl()";
-  my $nargs_expected = 9;
+  my $nargs_expected = 10;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file, $mdlspan_sort_exec, $mlen, $out_root, $seqfailstr_HR, $seqtaxid_HR, $seqgtaxid_HHR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file, $mdlspan_sort_exec, $mlen, $out_root, $seqfailstr_HR, $seqtaxid_HR, $seqgtaxid_HHR, $all_gtaxid_HAR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
@@ -2063,7 +2082,7 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
             $nseq_out_A[$bidx]++;
           }
         } # end of for($bidx = 0; $bidx < $nbins; $bidx++)
-      } # end of if($mstart ne "-" && $mstop ne "-") 
+      } # end of if(((! defined $seqfailstr_HR) || ($seqfailstr_HR->{$target} eq "")) && ($mstart ne "-") && ($mstop ne "-"))
       else { 
         $nseq_fail++;
       }
@@ -2077,27 +2096,42 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
                    # hash is used to sort output lines by norder, then length, then lpos
   for($bidx = 0; $bidx < $nbins; $bidx++) { 
     # generate lists of gtaxids for each group for this bin
-    my %list_str_H = ();
+    my %inlist_str_H  = ();
+    my %outlist_str_H = ();
     foreach my $level (sort keys (%{$seqgtaxid_HHR})) { 
-      $list_str_H{$level} = "";
-      foreach my $gtaxid (sort {$a <=> $b} keys (%{$nseq_bin_level_gtaxid_AHH[$bidx]{$level}})) { 
-        if($list_str_H{$level} ne "") { $list_str_H{$level} .= ","; }
-        $list_str_H{$level} .= $gtaxid;
+      $inlist_str_H{$level}  = "";
+      $outlist_str_H{$level} = "";
+      foreach my $gtaxid (@{$all_gtaxid_HAR->{$level}}) { 
+        if(exists $nseq_bin_level_gtaxid_AHH[$bidx]{$level}{$gtaxid}) { 
+          if($inlist_str_H{$level} ne "") { $inlist_str_H{$level} .= ","; }
+          $inlist_str_H{$level} .= $gtaxid;
+        }
+        else { 
+          if($outlist_str_H{$level} ne "") { $outlist_str_H{$level} .= ","; }
+          $outlist_str_H{$level} .= "-" . $gtaxid;
+        }
       }
-      if($list_str_H{$level} eq "") { $list_str_H{$level} = "-"; }
+      if($inlist_str_H{$level}  eq "") { $inlist_str_H{$level}  = "-"; }
+      if($outlist_str_H{$level} eq "") { $outlist_str_H{$level} = "-"; }
     }
 
-    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\n", 
+    $out_AH[$bidx]{"output"} = sprintf ("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", 
                                         $rpos_per_bin_A[$bidx] - $lpos_per_bin_A[$bidx] + 1, 
                                         $lpos_per_bin_A[$bidx], $rpos_per_bin_A[$bidx], 
                                         $nseq_in_A[$bidx], $nseq_out_A[$bidx], $nseq_spec_A[$bidx], $nseq_fail,
                                         $ngtaxid_bin_level_AH[$bidx]{"species"}, 
                                         $ngtaxid_bin_level_AH[$bidx]{"order"}, 
+                                        scalar(@{$all_gtaxid_HAR->{"order"}}) - $ngtaxid_bin_level_AH[$bidx]{"order"}, 
                                         $ngtaxid_bin_level_AH[$bidx]{"class"}, 
+                                        scalar(@{$all_gtaxid_HAR->{"class"}}) - $ngtaxid_bin_level_AH[$bidx]{"class"}, 
                                         $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
-                                        $list_str_H{"order"}, 
-                                        $list_str_H{"class"}, 
-                                        $list_str_H{"phylum"}); 
+                                        scalar(@{$all_gtaxid_HAR->{"phylum"}}) - $ngtaxid_bin_level_AH[$bidx]{"phylum"}, 
+                                        $inlist_str_H{"order"}, 
+                                        $outlist_str_H{"order"}, 
+                                        $inlist_str_H{"class"}, 
+                                        $outlist_str_H{"class"}, 
+                                        $inlist_str_H{"phylum"}, 
+                                        $outlist_str_H{"phylum"}); 
     $out_AH[$bidx]{"norder"} = $ngtaxid_bin_level_AH[$bidx]{"order"}; 
     $out_AH[$bidx]{"length"} = $rpos_per_bin_A[$bidx] - $lpos_per_bin_A[$bidx] + 1;
     $out_AH[$bidx]{"lpos"}   = $lpos_per_bin_A[$bidx];
@@ -2109,9 +2143,17 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($mlen, $opt_HHR); 
   open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "writing", $ofile_info_HH{"FH"});
   print OUT ("# Filename: $out_file\n");
-  print OUT ("# This file contains information on how many sequences and taxonomic groups would survive for different\n");
+  print OUT ("# This file contains information on how many sequences and taxonomic groups would 'survive' for different\n");
   print OUT ("# choices of model span coordinates <max_lpos>..<min_rpos>, which are the maximum allowed 5'-most aligned\n");
   print OUT ("# model position and minimum allowed 3'-most model position for each aligned sequence.\n");
+  if($out_key eq "pass") { 
+    print OUT ("# For this file 'survive' means PASSes all filters (incl. fribo2: riboaligner) AND has alignment boundaries\n");
+    print OUT ("# within the relevant model span for the row of the table below.\n");
+  }
+  else { 
+    print OUT ("# For this file 'survive' means PASSes all filters OR FAILs >= 1 filters, but passes fribo2 (riboaligner)\n");
+    print OUT ("# AND has alignment boundaries within the relevant model span for the row of the table below.\n");
+  }
   print OUT ("# Current values:\n");
   print OUT ("# <max_lpos>: $max_lpos\n",);
   print OUT ("# <min_rpos>: $min_rpos\n");
@@ -2119,7 +2161,7 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   print OUT ("# These are settable with the --fmpos, --fmlpos, and --fmrpos options, do ribodbmaker.pl -h for more information\n");
   print OUT ("#\n");
   print OUT ("# This file shows how many sequences would pass for other possible choices of <max_lpos> and <min_rpos>.\n");
-  print OUT ("# Each line has information for a pair of values <max_lpos>..<min_rpos> and contains 14 tab delimited columns, described below.\n");
+  print OUT ("# Each line has information for a pair of values <max_lpos>..<min_rpos> and contains 20 tab delimited columns, described below.\n");
   print OUT ("# Only values of <max_lpos> and <min_rpos> which are multiples of $pstep (plus 1) are shown (changeable with the --msstep option).\n");
   print OUT ("# Only pairs of <max_lpos> and <min_rpos> in which the length is >= $minspanlen are shown (changeable with the --msminlen option).\n");
   print OUT ("# The lines are sorted by the following columns: first by 'num-surviving-orders', then by 'length', and then by '5'pos'.\n");
@@ -2158,20 +2200,26 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   print OUT ("#  1. 'length': length of model span\n");
   print OUT ("#  2. '5' pos': maximum allowed 5' start position <max_lpos>\n");
   print OUT ("#  3. '3' pos': minimum allowed 3' end   position <min_rpos>\n");
-  print OUT ("#  4. num-surviving-seqs:      number of sequences that span <max_lpos..min_rpos>\n");
-  print OUT ("#  5. num-seqs-not-surviving:  number of sequences that do not span <max_lpos..min_rpos>\n");
-  print OUT ("#  6. num-seqs-within-range:   number of sequences that that span <max_lpos>..<min_rpos> but\n");
-  print OUT ("#     do not span <max_lpos + $pstep> .. <min_rpos + $pstep>\n");
-  print OUT ("#  7. num-seqs-not-considered: number of sequences that FAILED for some reason and were not evaluated\n");
+  print OUT ("#  4. num-surviving-seqs:      number of sequences that survive riboaligner and span <max_lpos..min_rpos>\n");
+  print OUT ("#  5. num-seqs-not-surviving:  number of sequences that survive riboaligner and do not span <max_lpos..min_rpos>\n");
+  print OUT ("#  6. num-seqs-within-range:   number of sequences that survive riboaligner that span <max_lpos>..<min_rpos> but\n");
+  print OUT ("#                              do not span <max_lpos + $pstep> .. <min_rpos + $pstep>\n");
+  printf OUT ("#  7. num-seqs-not-considered: number of sequences that FAILed %s riboaligner for some reason and were not evaluated\n", ($out_key eq "pass") ? "riboaligner" : "riboaligner or another filter");
   print OUT ("#  8. num-surviving-species:   number of species taxids with at least 1 sequence that survives this span\n");
-  print OUT ("#  9. num-surviving-orders:    number of order taxids with >= 1 sequence that survives this span\n");
-  print OUT ("# 10. num-surviving-classes:   number of class taxids with >= 1 sequence that survives this span\n");
-  print OUT ("# 11. num-surviving-phyla:     number of phylum taxids with >= 1 sequence that survives this span\n");
-  print OUT ("# 12. surviving-orders:        comma-separated list of order taxids with >= 1 sequence that survives this span\n");
-  print OUT ("# 13. surviving-classes:       comma-separated list of class taxids with >= 1 sequence that survives this span\n");
-  print OUT ("# 14. surviving-phyla:         comma-separated list of phyla taxids with >= 1 sequence that survives this span\n");
+  printf OUT ("#  9. num-surviving-orders:    number of order taxids with >= 1 sequence that %s survives this span\n",                  ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 10. num-missing-orders:      number of order taxids with >= 1 input sequence but 0 that %s and survives this span\n",  ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 11. num-surviving-classes:   number of class taxids with >= 1 sequence that %s survives this span\n",                  ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 12. num-missing-classes:     number of class taxids with >= 1 input sequence but 0 that %s and survives this span\n",  ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 13. num-surviving-phyla:     number of phylum taxids with >= 1 sequence that %s survives this span\n",                 ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 14. num-missing-phyla:       number of phylum taxids with >= 1 input sequence but 0 that %s and survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 15. surviving-orders:        comma-separated list of order taxids with >= 1 sequence that %s survives this span\n",             ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and"); 
+  printf OUT ("# 16. missing-orders:          comma-separated list of order taxids with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 17. surviving-classes:       comma-separated list of class taxids with >= 1 sequence that %s survives this span\n",             ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and"); 
+  printf OUT ("# 18. missing-classes:         comma-separated list of class taxids with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 19. surviving-phyla:         comma-separated list of phyla taxids with >= 1 sequence that %s survives this span\n",             ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and"); 
+  printf OUT ("# 20. missing-phyla:           comma-separated list of phyla taxids with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
   print OUT ("#\n");
-  print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-surviving-classes\tnum-surviving-phyla\tsurviving-orders\tsurviving-classes\tsurviving-phyla\n";
+  print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-missing-orders\tnum-surviving-classes\tnum-missing-classes\tnum-surviving-phyla\tnum-missing-phyla\tsurviving-orders\tmissing-orders\tsurviving-classes\tmissing-classes\tsurviving-phyla\tmissing-phyla\n";
   
   @out_AH = sort { 
     $b->{"norder"} <=> $a->{"norder"} or 
