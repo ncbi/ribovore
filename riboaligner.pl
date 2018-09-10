@@ -103,7 +103,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.26";
+my $version           = "0.27";
 my $releasedate       = "Sept 2018";
 my $package_name      = "ribotyper";
 my $ribotyper_model_version_str   = "0p20"; 
@@ -501,7 +501,7 @@ foreach $family (@family_order_A) {
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_out_file,    $cmalign_out_file,    $family_length_class_HHA{$family}{$length_class}, 1, $FH_HR);
 
       # extract subset from the alignment
-      ribo_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | esl-reformat --mingap stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), $FH_HR);
+      ribo_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | " . $execs_H{"esl-reformat"} . " --mingap --keeprf stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), $FH_HR);
 
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
