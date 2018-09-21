@@ -1127,8 +1127,13 @@ else {
       if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid.analyze.$level", $alipid_analyze_out_file_H{$level}, 0, "$level output file from alipid-taxinfo-analyze.pl");
     }
-    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
-    ofile_OutputProgressComplete($start_secs, sprintf("%6d fail;", $cur_nfail), $log_FH, *STDOUT);
+    # we need an array that has only the sequences that PASS all filters and will be listed
+    # in the alipid_analyze_tab_files, those sequences are listed in $rfonly_list_file, we make
+    # an array of them here
+    my @survfilters_seqorder_A = ();
+    ribo_ReadFileToArray($rfonly_list_file, \@survfilters_seqorder_A, $ofile_info_HH{"FH"});
+    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@survfilters_seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+    ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", scalar(@survfilters_seqorder_A) - $cur_nfail, $cur_nfail), $log_FH, *STDOUT);
 
     # determine how many sequences at for each taxonomic group at each level $level are still left
     foreach $level (@level_A) { 
@@ -2392,7 +2397,7 @@ sub parse_blast_output_for_self_hits {
 #                    file for that level to parse
 #   $level_AR:       ref to array of level keys in %{$in_file_HR}
 #   $seqfailstr_HR:  ref to hash of failure string to add to here
-#   $seqorder_AR:    ref to array of sequences in order
+#   $seqorder_AR:    ref to array of sequences in order, ONLY seqs that 
 #   $out_root:       for naming output files
 #   $opt_HHR:        reference to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
@@ -3116,8 +3121,18 @@ sub update_and_output_pass_fails {
   close(PASS);
   close(FAIL);
 
-  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".pass.seqlist", "$pass_file", 0, "sequences that PASSed $stage_key stage [$npass]");
-  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".fail.seqlist", "$fail_file", 0, "sequences that FAILed $stage_key stage [$nfail]");
+  my $pass_desc = "";
+  my $fail_desc = "";
+  if($stage_key eq "final") {  # special case, we word it a bit differently
+    $pass_desc = "sequences that PASSed all filters and stages and are in the final set [$npass]";
+    $fail_desc = "sequences that FAILed one or more filter or stage and are NOT in the final set [$nfail]";
+  }
+  else { 
+    $pass_desc = "sequences that PASSed $stage_key stage [$npass]";
+    $fail_desc = "sequences that FAILed $stage_key stage [$nfail]";
+  }
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".pass.seqlist", "$pass_file", 0, $pass_desc);
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", $stage_key . ".fail.seqlist", "$fail_file", 0, $fail_desc);
 
   return $npass;
 }

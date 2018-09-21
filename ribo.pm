@@ -26,6 +26,7 @@ use warnings;
 # ribo_CheckIfFileExistsAndIsNonEmpty
 # ribo_ConcatenateListOfFiles
 # ribo_WriteArrayToFile
+# ribo_ReadFileToArray
 # ribo_RemoveFileUsingSystemRm
 # ribo_FastaFileSplitRandomly
 # ribo_FastaFileReadAndOutputNextSeq
@@ -691,12 +692,55 @@ sub ribo_WriteArrayToFile {
     ofile_FAIL("ERROR in $sub_name, array is empty or not defined", "RIBO", 1, $FH_HR);
   }
 
-  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "writing", $FH_HR);
 
   foreach my $el (@{$AR}) { 
     print OUT $el . "\n"; 
   }
   close(OUT);
+
+  return;
+}
+
+#################################################################
+# Subroutine : ribo_ReadFileToArray()
+# Incept:      EPN, Fri Sep 21 09:21:27 2018
+#
+# Purpose:     Given an input file, create an array from it
+#              where each line of the file becomes an element
+#              of the array, in order, with newline characters
+#              removed.
+#              
+# Arguments: 
+#   $file:  name of file to read
+#   $AR:    reference to array to create (if it already exists it will be 
+#           deleted before creating it -- we don't ADD to it)
+#   $FH_HR: ref to hash of file handles, including "cmd"
+#
+# Returns:  Nothing.
+# 
+# Dies:     If we can't open $file, or $AR is undefined.
+#
+################################################################# 
+sub ribo_ReadFileToArray { 
+  my $nargs_expected = 3;
+  my $sub_name = "ribo_ReadFileToArray";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($file, $AR, $FH_HR) = @_;
+
+  open(IN, $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  if(! defined $AR) { 
+    ofile_FAIL("ERROR in $sub_name, array is not defined", "RIBO", 1, $FH_HR);
+  }
+  @{$AR} = (); # zero array, even if it already had values
+
+  while(my $line = <IN>) { 
+    chomp $line;
+    push(@{$AR}, $line);
+  }
+  close(IN);
 
   return;
 }
