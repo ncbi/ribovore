@@ -1595,17 +1595,21 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     
   # go through srrchk_file to determine if each sequence passes or fails
   open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  # first line is header
   my $diestr = ""; # if $do_strict and we add to this below for >= 1 sequences, we will fail after going through the full file
-  $line = <SRCCHK>;
+  # first line is header, determine max number of fields we should see based on this
+  #accession  taxid   organism
+  # OR 
+  #accession	taxid	organism	strain	strain#2	
+  my $header_line = <SRCCHK>;
+  my @el_A = split(/\t/, $header_line);
+  my $max_nel = scalar(@el_A); 
   while($line = <SRCCHK>) { 
-    #accessiontaxidorganism
     #KJ925573.1100272uncultured eukaryote
     #FJ552229.1221169uncultured Gemmatimonas sp.
     chomp $line;
-    my @el_A = split(/\t/, $line);
-    if((scalar(@el_A) != 3) && (scalar(@el_A) != 4)){ 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 or 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+    @el_A = split(/\t/, $line);
+    if((scalar(@el_A) < 3) || (scalar(@el_A) > $max_nel)) { 
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
     my $accver = $el_A[0];
     my $taxid  = $el_A[1];
@@ -2826,17 +2830,22 @@ sub parse_srcchk_file {
   close(TAXTREE);
 
   open(SRCCHK, $srcchk_file)  || ofile_FileOpenFailure($srcchk_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  # first line is header
-  $line = <SRCCHK>;
+  # first line is header, determine max number of fields we should see based on this
+  #accession  taxid   organism
+  # OR 
+  #accession	taxid	organism	strain	strain#2	
+  my $header_line = <SRCCHK>;
+  my @el_A = split(/\t/, $header_line);
+  my $max_nel = scalar(@el_A); 
   while($line = <SRCCHK>) { 
     #accessiontaxidorganism
     #AY343923.1	175243	uncultured Ascomycota	
     #DQ181066.1	343769	Dilophotes sp. UPOL 000244	
     chomp $line;
-    my @el_A = split(/\t/, $line);
+    @el_A = split(/\t/, $line);
     my ($seqname, $taxid, $organism, $strain);
-    # there can be 3 or 4 elements
-    if(scalar(@el_A) == 4) { 
+    # there can anywhere between be 3 and $max_nel elements
+    if((scalar(@el_A) >= 4) && (scalar(@el_A) <= $max_nel)) { 
       ($seqname, $taxid, $organism, $strain) = @el_A;
     }
     elsif(scalar(@el_A) == 3) { 
@@ -2844,7 +2853,7 @@ sub parse_srcchk_file {
       $strain = "";
     }
     else { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have exactly 3 or 4 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
     if(! exists $valid_taxid_H{$taxid}) { # replace obsolete taxids with '1'
       $taxid = 1; 
