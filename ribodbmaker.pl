@@ -454,25 +454,25 @@ $execs_H{"esl-alipid"}   = $env_riboeasel_dir    . "/esl-alipid";
 $execs_H{"esl-alistat"}  = $env_riboeasel_dir    . "/esl-alistat";
 $execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
 
-if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) { 
+if($do_fvecsc) { 
+  $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
+  $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
+  $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+}
+
+if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
-  if($do_fvecsc) { 
-    $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
-    $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
-    $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
-  }
-  if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
-    $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
+}
+if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
+  $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
     
-    $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
-    $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbmaker.txt";
-    ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
-    if($do_ingrup || $do_def) { 
-      $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
-      $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/alipid-taxinfo-analyze.pl";
-      $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribotyper_dir . "/ali-apos-to-uapos.pl";
-    }
-  }
+  $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
+  $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbmaker.txt";
+  ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
+
+  $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
+  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/alipid-taxinfo-analyze.pl";
+  $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribotyper_dir . "/ali-apos-to-uapos.pl";
 }
 
 if($do_fblast) { 
