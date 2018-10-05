@@ -65,6 +65,7 @@ opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,       
 opt_Add("--skipingrup", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",                "skip stage that performs ingroup analysis",                        \%opt_HH, \@opt_order_A);
 opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                     "skip stage that clusters sequences surviving all filters",         \%opt_HH, \@opt_order_A);
 opt_Add("--skiplistms", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that lists missing taxids",                             "skip stage that lists missing taxids",                             \%opt_HH, \@opt_order_A);
+opt_Add("--skipmstbl",  "boolean", 0,                       $g,    undef,                   undef,  "skip stage that outputs model span tables",                        "skip stage that outputs model span tables",                         \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on ambiguous nucleotides";
 #              option   type       default               group  requires incompat      preamble-output                                            help-output    
@@ -133,16 +134,16 @@ opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--ski
 opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",    "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
-#       option          type       default        group       requires incompat                preamble-output                                                 help-output    
-opt_Add("--msstep",     "integer", 10,            $g,         undef, "--skipfribo2",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--msminstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min start position to <n>",   "for model span output table, set min start position to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--msmaxstart", "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max start position to <n>",   "for model span output table, set max start position to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--msminstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set min stop position to <n>",    "for model span output table, set min stop position to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--msmaxstop",  "integer", undef,         $g,         undef, "--skipfribo2",           "for model span output table, set max stop position to <n>",    "for model span output table, set max stop position to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
-opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
-opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
+#       option          type       default        group       requires incompat                            preamble-output                                                 help-output    
+opt_Add("--msstep",     "integer", 10,            $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminstart", "integer", undef,         $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set min start position to <n>",   "for model span output table, set min start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msmaxstart", "integer", undef,         $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set max start position to <n>",   "for model span output table, set max start position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msminstop",  "integer", undef,         $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set min stop position to <n>",    "for model span output table, set min stop position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--msmaxstop",  "integer", undef,         $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set max stop position to <n>",    "for model span output table, set max stop position to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfribo2,--skipmstbl",           "re-sort model span table to prioritize taxids in file <s>",    "re-sort model span table to prioritize taxids (orders) in file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2,--skipmstbl",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
+opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--skipmstbl,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for changing sequence descriptions (deflines):";
 #       option           type        default             group  requires  incompat              preamble-output                                     help-output    
@@ -183,6 +184,7 @@ my $options_okay =
                 'skipingrup'   => \$GetOptions_H{"--skipingrup"},
                 'skipclustr'   => \$GetOptions_H{"--skipclustr"},
                 'skiplistms'   => \$GetOptions_H{"--skiplistms"},
+                'skipmstbl'    => \$GetOptions_H{"--skipmstbl"},
                 'famaxn=s'     => \$GetOptions_H{"--famaxn"},
                 'famaxf=s'     => \$GetOptions_H{"--famaxf"},
                 'faonlyn'      => \$GetOptions_H{"--faonlyn"},
@@ -241,9 +243,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.28";
+my $version           = "0.28dev";
 my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "Sep 2018";
+my $releasedate       = "Oct 2018";
 my $package_name      = "ribotyper";
 my $pkgstr    = "RIBO";
 
@@ -301,6 +303,7 @@ my $do_fmspan = opt_Get("--skipfmspan", \%opt_HH) ? 0 : 1;
 my $do_ingrup = opt_Get("--skipingrup",  \%opt_HH) ? 0 : 1;
 my $do_clustr = opt_Get("--skipclustr", \%opt_HH) ? 0 : 1;
 my $do_listms = opt_Get("--skiplistms", \%opt_HH) ? 0 : 1;
+my $do_mstbl  = opt_Get("--skipmstbl",  \%opt_HH) ? 0 : 1;
 my $do_prvcmd = opt_Get("--prvcmd",     \%opt_HH) ? 1 : 0;
 my $do_keep   = opt_Get("--keep",       \%opt_HH) ? 1 : 0;
 my $do_special= opt_IsUsed("--special", \%opt_HH) ? 1 : 0;
@@ -464,7 +467,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special) {
     $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
     $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbmaker.txt";
     ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
-    if($do_ingrup) { 
+    if($do_ingrup || $do_def) { 
       $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
       $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/alipid-taxinfo-analyze.pl";
       $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribotyper_dir . "/ali-apos-to-uapos.pl";
@@ -1172,7 +1175,7 @@ else {
   ########################
   # mdlspan table creation
   ########################
-  if($do_fribo2) { # we can't create the table if we skipped the ribo2 stage
+  if($do_mstbl && $do_fribo2) { # we can't create the table if we skipped the ribo2 stage
     # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
     $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for all seqs", $progress_w, $log_FH, *STDOUT);
     parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, undef, \%seqtaxid_H, \%seqgtaxid_HH, \%all_gtaxid_HA, \%opt_HH, \%ofile_info_HH);
