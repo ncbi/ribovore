@@ -1381,7 +1381,12 @@ sub ribo_RunCmsearchOrCmalign {
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
-# Returns:     void
+# Returns: $sum_cpu_secs:   '0' unless -p used.
+#                           If -p used: this is an estimate on total number CPU
+#                           seconds used required by all jobs summed together. This is
+#                           more than actual CPU seconds, because, for example, if a
+#                           job takes 1 seconds and we didn't check on until 10 
+#                           seconds elapsed, then it will contribute 10 seconds to this total.
 # 
 # Dies: If an executable doesn't exist, or cmsearch command fails if we're running locally
 ################################################################# 
@@ -1394,13 +1399,14 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
-  my $start_secs; # timing start
   my $out_dir = ribo_GetDirPath($out_root);
   my $executable = undef;     # path to the cmsearch or cmalign executable
   my @reqd_file_keys = (); # array of required file_HR keys for this executable program
   my $file_key = undef;    # a single outfile key
   my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
   my $wait_str = undef;       # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
+  my $sum_cpu_secs = 0; # will be returned as '0' unless -p used
+  my $njobs_finished = 0; 
 
   # determine if we have the appropriate paths defined in %{$file_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
@@ -1455,9 +1461,9 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     # wait for the jobs to finish
     ofile_OutputString($log_FH, 0, sprintf("\n"));
     print STDERR "\n";
-    $start_secs = ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
+    ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
                                            $progress_w, $log_FH, *STDERR);
-    my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+    ($njobs_finished, $sum_cpu_secs) = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
     }
@@ -1486,7 +1492,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     }
   } # end of 'else' entered if -p used
 
-  return;
+  return $sum_cpu_secs; # will be '0' unless -p used
 }
 
 #################################################################
@@ -1576,9 +1582,13 @@ sub ribo_MergeAlignmentsAndReorder {
 #  $do_errcheck:     '1' to consider output to an error file a 'failure' of a job, '0' not to.
 #  $FH_HR:           REF to hash of file handles
 #
-# Returns:     Number of jobs (<= scalar(@{$outfile_AR})) that have
-#              finished.
-# 
+# Returns:     Two values: 
+#              $njobs_finished: Number of jobs (<= scalar(@{$outfile_AR})) that have
+#                               finished.
+#              $sum_cpu_secs:   Summed number of CPU seconds all jobs required, this is an
+#                               upper estimate because a job that took 1 second, but that
+#                               we didn't check on until 10 seconds elapsed will contribute
+#                               10 seconds to this total.
 # Dies: never.
 #
 ################################################################# 
@@ -1598,12 +1608,16 @@ sub ribo_WaitForFarmJobsToFinish {
   my @is_finished_A  = ();  # $is_finished_A[$i] is 1 if job $i is finished (either successfully or having failed), else 0
   my @is_failed_A    = ();  # $is_failed_A[$i] is 1 if job $i has finished and failed (all failed jobs are considered 
                             # to be finished), else 0. We only use this array if the --errcheck option is enabled.
-  my $nfinished      = 0;   # number of jobs finished
-  my $nfail          = 0;   # number of jobs that have failed
-  my $cur_sleep_secs = 15;  # number of seconds to wait between checks, we'll double this until we reach $max_sleep, every $doubling_secs seconds
-  my $doubling_secs  = 120; # number of seconds to wait before doublign $cur_sleep
-  my $max_sleep_secs = 120; # maximum number of seconds we'll wait between checks
-  my $secs_waited    = 0;   # number of total seconds we've waited thus far
+  my $nfinished       = 0;   # number of jobs finished
+  my $nfail           = 0;   # number of jobs that have failed
+  my $cur_sleep_secs  = 7.5; # number of seconds to wait between checks, we'll double this until we reach $max_sleep, every $doubling_secs seconds
+  my $doubling_secs   = 120; # number of seconds to wait before doublign $cur_sleep
+  my $max_sleep_secs  = 120; # maximum number of seconds we'll wait between checks
+  my $secs_waited     = 0;   # number of total seconds we've waited thus far
+  my $sum_cpu_secs    = 0;   # number of CPU seconds required for all jobs summed together
+                             # an estimate that is >= actualy number of CPU seconds because
+                             # for example, a job that takes 1 second but that we don't check
+                             # on for 10 seconds contributes 10 seconds to this total.
 
   # initialize @is_finished_A to all '0's
   for(my $i = 0; $i < $njobs; $i++) { 
@@ -1635,6 +1649,7 @@ sub ribo_WaitForFarmJobsToFinish {
           if($final_line =~ m/\Q$finished_str\E/) { 
             $is_finished_A[$i] = 1;
             $nfinished++;
+            $sum_cpu_secs += $secs_waited;
           }
         }
         if(($do_errcheck) && (-s $errfile_AR->[$i])) { # errfile exists and is non-empty, this is a failure, even if we saw $finished_str above
@@ -1671,7 +1686,7 @@ sub ribo_WaitForFarmJobsToFinish {
   }
 
   # if we get here we have no failures
-  return $nfinished;
+  return ($nfinished, $sum_cpu_secs);
 }
 
 #################################################################
