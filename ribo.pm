@@ -414,6 +414,44 @@ sub ribo_ParseLogFileForParallelTime {
   return $tot_secs;
 }
 
+#################################################################
+# Subroutine : ribo_ParseCmsearchFileForTotalCpuTime()
+# Incept:      EPN, Tue Oct  9 15:12:34 2018
+#
+# Purpose:     Parse a cmsearch output file to get total number of
+#              CPU seconds elapsed in lines starting with
+#              "# Total CPU time" which are only printed if the 
+#              --verbose option is used to cmsearch.
+#              
+# Arguments: 
+#   $out_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Summed number of elapsed seconds read from >= 1 Total CPU time lines.
+#
+################################################################# 
+sub ribo_ParseCmsearchFileForTotalCpuTime { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseCmsearchFileForTotalCpuTime";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $FH_HR) = @_;
+
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # Total CPU time:1.43u 0.19s 00:00:01.62 Elapsed: 00:00:01.70
+    if($line =~ /^# Total CPU time.+Elapsed\:\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+      my ($hours, $minutes, $seconds) = ($1, $2, $3);
+      $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
+
 
 #################################################################
 # Subroutine : ribo_ProcessSequenceFile()
@@ -1382,7 +1420,12 @@ sub ribo_RunCmsearchOrCmalign {
   # depending on if $executable is "cmalign" or "cmsearch"
   # and run the program
   if($executable =~ /cmsearch$/) { 
-    $cmd .= "$executable $opts --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+    if(opt_Get("--keep", $opt_HHR)) { 
+      $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+    }
+    else { # only save the Total CPU line output, otherwise output files get big for large inputs
+      $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \\\"Total CPU time\\\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+    }
   }
   elsif($executable =~ /cmalign$/) { 
     $cmd .= "$executable $opts --ifile " . $file_HR->{"ifile"} . " --elfile " . $file_HR->{"elfile"} . " -o " . $file_HR->{"stk"} . " $model_file $seq_file > " . $file_HR->{"cmalign"} . $cmd_suffix;
@@ -1425,7 +1468,7 @@ sub ribo_RunCmsearchOrCmalign {
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
-# Returns: $sum_cpu_secs:   '0' unless -p used.
+# Returns: $sum_cpu_plus_wait_secs:   '0' unless -p used.
 #                           If -p used: this is an estimate on total number CPU
 #                           seconds used required by all jobs summed together. This is
 #                           more than actual CPU seconds, because, for example, if a
@@ -1449,7 +1492,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
   my $file_key = undef;    # a single outfile key
   my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
   my $wait_str = undef;       # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
-  my $sum_cpu_secs = 0; # will be returned as '0' unless -p used
+  my $sum_cpu_plus_wait_secs = 0; # will be returned as '0' unless -p used
   my $njobs_finished = 0; 
 
   # determine if we have the appropriate paths defined in %{$file_HR} 
@@ -1507,7 +1550,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     print STDERR "\n";
     ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
                                            $progress_w, $log_FH, *STDERR);
-    ($njobs_finished, $sum_cpu_secs) = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
     }
@@ -1536,7 +1579,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     }
   } # end of 'else' entered if -p used
 
-  return $sum_cpu_secs; # will be '0' unless -p used
+  return $sum_cpu_plus_wait_secs; # will be '0' unless -p used
 }
 
 #################################################################

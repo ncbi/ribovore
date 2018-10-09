@@ -615,19 +615,20 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # as the command for sorting the output and parsing the output
 ###########################################################################
 # set up defaults
-my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
+#my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
+my $r1_searchout_file = $out_root . ".r1.cmsearch.out";
 my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
 my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
 my $sum_cpu_secs = undef; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
-my $opt_p_sum_cpu_secs = 0.;
+my $r1_opt_p_sum_cpu_secs = 0.;
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   my %outfile_H = (); 
   $outfile_H{"tblout"}   = $r1_tblout_file;
   $outfile_H{"cmsearch"} = $r1_searchout_file;
-  $sum_cpu_secs = ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
-  $opt_p_sum_cpu_secs += $sum_cpu_secs;
+  ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+  $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
 }
 else { 
   $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
@@ -637,13 +638,13 @@ else {
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
-  # $r1_cmsearch_file is /dev/null
+  push(@to_remove_A, $r1_searchout_file);
 }
 else { 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
 }
-my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(<= %10.1f summed CPU plus wait seconds)", $sum_cpu_secs) : undef;
+my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%10.1f summed elapsed seconds)", $r1_opt_p_sum_cpu_secs) : undef;
 $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 ###########################################################################
@@ -781,6 +782,8 @@ my $r2_all_sorted_tblout_file;    # single sorted tblout file for all models we 
 my $r2_all_sort_cmd;              # sort command for $r2_all_tblout_file to create $r2_tblout_file
 my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
+my $r2_opt_p_sum_cpu_secs = 0.;
+
 if(defined $alg2) { 
   $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";;
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
@@ -793,28 +796,23 @@ if(defined $alg2) {
   foreach $model (sort keys %family_H) { 
     if(defined $sfetchfile_H{$model}) { 
       push(@r2_model_A, $model);
-      push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
-      if(opt_Get("--keep", \%opt_HH)) { 
-        push(@r2_searchout_file_A,   $out_root . ".r2.$model.cmsearch.out");
-      }
-      else { 
-        push(@r2_searchout_file_A,   "/dev/null")
-      }
-      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
+      push(@r2_tblout_file_A,    $out_root . ".r2.$model.cmsearch.tbl");
+      push(@r2_searchout_file_A, $out_root . ".r2.$model.cmsearch.out");
+      push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
         my %outfile_H = (); 
         $outfile_H{"tblout"}   = $r2_tblout_file_A[$midx];
         $outfile_H{"cmsearch"} = $r2_searchout_file_A[$midx];
-        $sum_cpu_secs = ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
-        $opt_p_sum_cpu_secs += $sum_cpu_secs;
+        ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+        $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
         ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
       }
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_tblout_file_A[$midx]);
-        # $r2_searchout_file_A[$midx] is /dev/null
+        push(@to_remove_A, $r2_searchout_file_A[$midx]);
       }
       else { 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");
@@ -824,7 +822,7 @@ if(defined $alg2) {
     }
   }
   $nr2 = $midx;
-  $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(<= %10.1f summed CPU plus wait seconds)", $sum_cpu_secs) : undef;
+  $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%10.1f summed elapsed seconds)", $r2_opt_p_sum_cpu_secs) : undef;
   $r2_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
   # concatenate round 2 tblout files 
@@ -1062,8 +1060,8 @@ output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_
 
 $total_seconds += ribo_SecondsSinceEpoch();
 
-output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds, $opt_p_sum_cpu_secs, \%opt_HH, $ofile_info_HH{"FH"});
-output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds, $opt_p_sum_cpu_secs, \%opt_HH, $ofile_info_HH{"FH"});
+output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 ###########################################################################
@@ -3241,9 +3239,10 @@ sub output_summary_statistics {
 #   $class_stats_HHR:    ref to the class statistics 2D hash
 #   $ncpu:               number of CPUs used to do searches
 #   $r1_secs:            number of seconds required for round 1 searches
+#   $r1_opt_p_secs:      if -p: summed total CPU secs required for all round 1 jobs
 #   $r2_secs:            number of seconds required for round 2 searches
+#   $r2_opt_p_secs:      if -p: summed total CPU secs required for all round 2 jobs
 #   $tot_secs:           number of seconds required for entire script
-#   $opt_p_sum_cpu_secs: if -p: summed total CPU secs required for all jobs
 #   $opt_HHR:            ref to options 2D hash
 #   $FH_HR:              ref to hash of file handles, including "cmd"
 #
@@ -3254,10 +3253,10 @@ sub output_summary_statistics {
 #################################################################
 sub output_timing_statistics { 
   my $sub_name = "output_timing_statistics";
-  my $nargs_expected = 9;
+  my $nargs_expected = 10;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs, $tot_secs, $opt_p_sum_cpu_secs, $opt_HHR, $FH_HR) = (@_);
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r1_opt_p_secs, $r2_secs, $r2_opt_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -3302,14 +3301,24 @@ sub output_timing_statistics {
                   $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
                   $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR));
   
+  if(opt_Get("-p", $opt_HHR)) { 
+    $r1_secs  += $r1_opt_p_secs;
+    $tot_secs += $r1_opt_p_secs;
+  }
+
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
                   $width_H{"seqsec"},   $r1_nseq / $r1_secs,
-                  $width_H{"ntsec"},    $r1_nnt  / $r1_secs, 
+                  $width_H{"ntsec"},    $r1_nnt / $r1_secs, 
                   $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
                   $width_H{"total"},    ribo_GetTimeString($r1_secs));
+
+  if(opt_Get("-p", $opt_HHR)) { 
+    $r2_secs  += $r2_opt_p_secs;
+    $tot_secs += $r2_opt_p_secs;
+  }
 
   $class = "search";
   if(defined $alg2) { 
@@ -3323,9 +3332,6 @@ sub output_timing_statistics {
   }
   
   $class = "total";
-  if(opt_Get("-p", $opt_HHR)) { 
-    $tot_secs += $opt_p_sum_cpu_secs;
-  }
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
@@ -3336,7 +3342,7 @@ sub output_timing_statistics {
                   
   printf $out_FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
-    printf $out_FH ("# Timing statistics above include summed CPU plus wait time of multiple jobs [-p], totalling %s\n", ribo_GetTimeString($opt_p_sum_cpu_secs));
+    printf $out_FH ("# Timing statistics above include summed elapsed time (but not waiting time) of multiple jobs [-p], totalling %s\n", ribo_GetTimeString($r1_opt_p_secs + $r2_opt_p_secs));
     printf $out_FH ("#\n");
   }
   
