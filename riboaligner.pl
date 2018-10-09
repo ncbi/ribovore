@@ -332,6 +332,7 @@ my $ribotyper_outfile      = $out_root . ".ribotyper.out";
 my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
 my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
 my $ribotyper_seqstat_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.seqstat";
+my $ribotyper_log_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.log";
 my $found_family_match;  # set to '1' if a sequence matches one of the families we are aligning for
 my @fail_str_A    = (); # array of strings of FAIL sequences to output 
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
@@ -367,6 +368,12 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # parse the ribotyper seqstat file
 $tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \@seqorder_A, \%seqidx_H, \%seqlen_H, $FH_HR);
+
+# if -p: parse the ribotyper log file to get CPU+wait time for parallel
+my $rt_opt_p_sum_cpu_secs = 0;
+if(opt_Get("-p", \%opt_HH)) { 
+  $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $FH_HR);
+}
 
 # parse ribotyper output and create sfetch input files for sequences to fetch
 my %family_sfetch_filename_H = ();  # key: family name, value: sfetch input file name
@@ -468,6 +475,9 @@ foreach $family (@family_order_A) {
     }
   }
 }
+
+# add in -p time from ribotyper run
+$opt_p_sum_cpu_secs += $rt_opt_p_sum_cpu_secs;
 my $extra_desc = ((opt_Get("-p", \%opt_HH)) && ($opt_p_sum_cpu_secs > 0.)) ? sprintf("(<= %10.1f summed CPU plus wait seconds)", $opt_p_sum_cpu_secs) : undef;
 ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 

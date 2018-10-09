@@ -936,6 +936,7 @@ if($do_fblast) {
 ##########################################################
 # 'fribo1' stage: stage that filters based on ribotyper.pl
 ##########################################################
+my $rt_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in ribotyper call, filled only if -p
 if($do_fribo1) { 
   $stage_key = "fribo1";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
@@ -946,6 +947,7 @@ if($do_fribo1) {
   my $ribotyper_outfile      = $out_root . ".ribotyper.out";
   my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
   my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+  my $ribotyper_log_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.log";
 
   # first we need to create the acceptable models file
   ribo_WriteAcceptFile($tmp_family_rtname_HA{$family}, $ribotyper_accept_file, $ofile_info_HH{"FH"});
@@ -964,9 +966,21 @@ if($do_fribo1) {
   if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$ribotyper_outfile", 0, "output of ribotyper");
   
+  # if -p: parse the ribotyper log file to get CPU+wait time for parallel
+  if(opt_Get("-p", \%opt_HH)) { 
+    $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $ofile_info_HH{"FH"});
+  }
+
   # parse ribotyper short file
   $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
+  my $extra_desc = undef;
+  if((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) { 
+    $extra_desc = sprintf("%6d pass; %6d fail; (<= %10.1f summed CPU plus wait seconds)", $npass, $nseq-$npass, $rt_opt_p_sum_cpu_secs);
+  }
+  else { 
+    $extra_desc = sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass);
+  }
+  ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 }
 
 ###################################################################
@@ -979,6 +993,8 @@ my $ra_full_stk_file = undef;
 my $ra_tbl_out_file  = undef;
 my %ignorems_seqfailstr_H = (); # copy of %seqfailstr_H as it existed after the mdlspan stage with mdlspan errors
                                         # removed. We use this to determine the set of PASSing seqs for the PASS mdlspan tbl 
+my $ra_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in riboaligner call, filled only if -p
+
 if($do_fribo2) { 
   $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
@@ -997,6 +1013,7 @@ if($do_fribo2) {
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
   $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
+  my $ra_log_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.log";
   my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
   my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
   my $uapos_lpos_cmd  = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir $ra_full_stk_file $max_lpos > $ra_uapos_lpos_tbl_file";
@@ -1006,6 +1023,11 @@ if($do_fribo2) {
   if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "raout", "$ra_out_file", 0, "output of riboaligner");
 
+  # if -p: parse the ribotyper log file to get CPU+wait time for parallel
+  if(opt_Get("-p", \%opt_HH)) { 
+    $ra_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ra_log_file, $ofile_info_HH{"FH"});
+  }
+
   if(! $do_prvcmd) { ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   if(! $do_prvcmd) { ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ralpos", "$ra_uapos_lpos_tbl_file", 0, "unaligned position info that align at model position $max_lpos");
@@ -1014,7 +1036,14 @@ if($do_fribo2) {
 
   # parse riboaligner tbl file
   my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass), $log_FH, *STDOUT);
+  my $extra_desc = undef;
+  if((opt_Get("-p", \%opt_HH)) && ($ra_opt_p_sum_cpu_secs > 0.)) { 
+    $extra_desc = sprintf("%6d pass; %6d fail; (<= %10.1f summed CPU plus wait seconds)", $rt2_npass, $nseq-$rt2_npass, $ra_opt_p_sum_cpu_secs);
+  }
+  else { 
+    $extra_desc = sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass);
+  }
+  ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
     
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs riboaligner identified as too long", $progress_w, $log_FH, *STDOUT);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ra_npass, $rt2_npass-$ra_npass), $log_FH, *STDOUT);
@@ -1521,6 +1550,13 @@ foreach $level (@level_A) {
   ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in final line of %s]\n", sprintf("# Number of %-7s represented in final set of surviving sequences:", pluralize_level($level)), $final_nsurv_H{$level}, $out_root . "." . $level . ".ct"));
 }
 $total_seconds += ribo_SecondsSinceEpoch();
+
+if(opt_Get("-p", \%opt_HH)) { 
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below includes summed CPU plus wait time of multiple jobs [-p], totalling %s\n", ribo_GetTimeString($rt_opt_p_sum_cpu_secs + $rt_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
+
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
 exit 0;
 

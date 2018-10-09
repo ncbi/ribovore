@@ -372,6 +372,50 @@ sub ribo_ParseQsubFile {
 }
 
 #################################################################
+# Subroutine : ribo_ParseLogFileForParallelTime()
+# Incept:      EPN, Tue Oct  9 10:24:09 2018
+#
+# Purpose:     Parse a log file output from ribotyper or riboaligner
+#              to get CPU time. 
+#              
+# Arguments: 
+#   $log_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Number of seconds read from special lines showing
+#              time of multiple jobs due to -p option.
+#
+################################################################# 
+sub ribo_ParseLogFileForParallelTime { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseQsubFileForParallelTime";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($log_file, $FH_HR) = @_;
+
+  open(IN, $log_file) || ofile_FileOpenFailure($log_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $qsub_prefix_line = undef;
+  my $qsub_suffix_line = undef;
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # riboaligner line to parse
+    # Elapsed time below includes summed CPU plus wait time of multiple jobs [-p], totalling 00:03:45.00  (hh:mm:ss)
+    #
+    # ribotyper line to parse:
+    # Timing statistics above include summed CPU plus wait time of multiple jobs [-p], totalling 00:04:52.50  (hh:mm:ss)
+    if($line =~ /summed CPU plus wait time of.+totalling\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+      my ($hours, $minutes, $seconds) = ($1, $2, $3);
+      $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
+
+
+#################################################################
 # Subroutine : ribo_ProcessSequenceFile()
 # Incept:      EPN, Fri May 12 10:08:47 2017
 #
