@@ -557,8 +557,8 @@ sub ribo_CheckIfFileExistsAndIsNonEmpty {
 # Incept:      EPN, Sun Apr 24 08:08:15 2016 [dnaorg_scripts]
 #
 # Purpose:     Concatenate a list of files into one file.
-#              If the list has more than 500 files, split
-#              up job into concatenating 500 at a time.
+#              If the list has more than 800 files, split
+#              up job into concatenating 800 at a time.
 # 
 #              We remove all files that we concatenate unless
 #              --keep option is on in %{$opt_HHR}.
@@ -593,6 +593,9 @@ sub ribo_ConcatenateListOfFiles {
     ofile_FAIL(sprintf("ERROR in $sub_name%s, output file name $outfile exists in list of files to concatenate", 
                        (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), 1, $FH_HR);
   }
+
+  # as a special case, check if output file names are /dev/null, in that case
+  # they don't exist and there's not 
 
   # first, convert @{$file_AR} array into a 2D array of file names, each of which has 
   # a max of 800 elements, we'll concatenate each of these lists separately
@@ -1309,9 +1312,9 @@ sub ribo_RunCmsearchOrCmalign {
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
   }
   foreach $file_key (@reqd_file_keys) { 
-    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $file_key file not set", "RIBO", 1, $FH_HR); }
+    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable, $file_key file not set", "RIBO", 1, $FH_HR); }
     # remove this file if it already exists
-    if(-e $file_HR->{$file_key}) { ribo_RemoveFileUsingSystemRm($file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    if(($file_HR->{$file_key} ne "/dev/null") && (-e $file_HR->{$file_key})) { ribo_RemoveFileUsingSystemRm($file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
   } 
 
   # determine if we are running on the farm or locally
@@ -1438,7 +1441,12 @@ sub ribo_RunCmsearchOrCmalignWrapper {
       my $tmp_seq_file  = $out_dir . "/" . $seq_file_tail . "." . $f;
       push(@{$tmp_outfile_HA{"fafile"}}, $tmp_seq_file);
       foreach $file_key ((@reqd_file_keys), "err") { 
-        $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
+        if((exists $file_HR->{$file_key}) && ($file_HR->{$file_key} eq "/dev/null")) { 
+          $tmp_outfile_H{$file_key} = "/dev/null"; 
+        }
+        else { 
+          $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
+        }
         push(@{$tmp_outfile_HA{$file_key}}, $tmp_outfile_H{$file_key});
       }
       ribo_RunCmsearchOrCmalign($executable, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, \%tmp_outfile_H, $opt_HHR, $ofile_info_HHR); 
@@ -1460,7 +1468,8 @@ sub ribo_RunCmsearchOrCmalignWrapper {
       if($file_key eq "stk") { # special case
         ribo_MergeAlignmentsAndReorder($execs_HR, $tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $file_HR->{"seqlist"}, $opt_HHR, $ofile_info_HHR);
       }
-      elsif($file_key ne "seqlist") { # another special case, don't concatenate seqlist files
+      elsif(($file_key ne "seqlist") && ($file_HR->{$file_key} ne "/dev/null")) { 
+        # two more special cases, don't concatenate seqlist files and no need to create a file if /dev/null 
         ribo_ConcatenateListOfFiles($tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
     }
@@ -1469,7 +1478,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     if(! opt_Get("--keep", $opt_HHR)) { 
       foreach $file_key ((@reqd_file_keys), "err", "fafile") { 
         foreach my $tmp_file (@{$tmp_outfile_HA{$file_key}}) {
-          if(-e $tmp_file) { 
+          if(($tmp_file ne "/dev/null") && (-e $tmp_file)) { 
             ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
           }
         }

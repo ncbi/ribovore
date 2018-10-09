@@ -134,7 +134,7 @@ $opt_group_desc_H{"12"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                                      help-output    
 opt_Add("--evalues",      "boolean", 0,                      12,  undef,   undef,               "rank by E-values, not bit scores",                  "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch",   "boolean", 0,                      12,  undef,   "-f",                "skip search stage",                                 "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                      12,  undef,   "--skipsearch",      "no alignments in output",                           "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                      12,"--keep",  "--skipsearch",      "no alignments in output",                           "no alignments in output, requires --keep", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                      12,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
@@ -258,14 +258,6 @@ if(opt_Get("--max", \%opt_HH)) {
   if((! opt_Get("--1slow", \%opt_HH)) &&
      (! opt_Get("--2slow", \%opt_HH))) { 
     die "ERROR, --max requires one of --1slow or --2slow";
-  }
-}
-if(opt_Get("--noali", \%opt_HH)) { 
-  if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--1hmm", \%opt_HH)) && 
-     (! opt_Get("--1slow", \%opt_HH)) && 
-     (! opt_Get("--2slow", \%opt_HH))) { 
-    die "ERROR, --noali requires one of --nhmmer, --1hmm, --1slow or --2slow";
   }
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
@@ -623,8 +615,8 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # as the command for sorting the output and parsing the output
 # set up defaults
 ###########################################################################
-my $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
-my $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
+my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
+my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
 my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
@@ -642,19 +634,11 @@ else {
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
-  if(($alg1 ne "slow" || 
-      $alg1 ne "hmmonly") && 
-     (! opt_Get("--noali", \%opt_HH))) { 
-    push(@to_remove_A, $r1_searchout_file);
-  }
+  # $r1_cmsearch_file is /dev/null
 }
 else { 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
-  if(($alg1 ne "slow" || 
-      $alg1 ne "hmmonly") && 
-     (! opt_Get("--noali", \%opt_HH))) { 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
-  }
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
 }
 $r1_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -806,7 +790,12 @@ if(defined $alg2) {
     if(defined $sfetchfile_H{$model}) { 
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
-      push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
+      if(opt_Get("--keep", \%opt_HH)) { 
+        push(@r2_searchout_file_A,   $out_root . ".r2.$model.cmsearch.out");
+      }
+      else { 
+        push(@r2_searchout_file_A,   "/dev/null")
+      }
       push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
@@ -820,17 +809,11 @@ if(defined $alg2) {
       }
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_tblout_file_A[$midx]);
-        if(($alg2 ne "slow") && 
-           (! opt_Get("--noali", \%opt_HH))) { 
-          push(@to_remove_A, $r2_searchout_file_A[$midx]);
-        }
+        # $r2_searchout_file_A[$midx] is /dev/null
       }
       else { 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");
-        if(($alg2 ne "slow") && 
-           (! opt_Get("--noali", \%opt_HH))) { 
-          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, "$model .tblout file for round 2");
-        }
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, "$model .tblout file for round 2");
       }
       $midx++; 
     }
