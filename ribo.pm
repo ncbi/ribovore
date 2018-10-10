@@ -395,16 +395,10 @@ sub ribo_ParseLogFileForParallelTime {
 
   open(IN, $log_file) || ofile_FileOpenFailure($log_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
 
-  my $qsub_prefix_line = undef;
-  my $qsub_suffix_line = undef;
   my $tot_secs = 0.;
   while(my $line = <IN>) { 
-    # riboaligner line to parse
-    # Elapsed time below includes summed CPU plus wait time of multiple jobs [-p], totalling 00:03:45.00  (hh:mm:ss)
-    #
-    # ribotyper line to parse:
-    # Timing statistics above include summed CPU plus wait time of multiple jobs [-p], totalling 00:04:52.50  (hh:mm:ss)
-    if($line =~ /summed CPU plus wait time of.+totalling\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+    # Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling 00:01:37.55  (hh:mm:ss) (does not include waiting time)
+    if($line =~ /summed elapsed time.+totalling\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
       my ($hours, $minutes, $seconds) = ($1, $2, $3);
       $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
     }
@@ -443,6 +437,43 @@ sub ribo_ParseCmsearchFileForTotalCpuTime {
   while(my $line = <IN>) { 
     # Total CPU time:1.43u 0.19s 00:00:01.62 Elapsed: 00:00:01.70
     if($line =~ /^# Total CPU time.+Elapsed\:\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+      my ($hours, $minutes, $seconds) = ($1, $2, $3);
+      $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
+
+#################################################################
+# Subroutine : ribo_ParseCmalignFileForCpuTime()
+# Incept:      EPN, Wed Oct 10 09:20:32 2018
+#
+# Purpose:     Parse a cmalign output file to get total number of
+#              CPU seconds elapsed in lines starting with
+#              "# CPU time".
+#              
+# Arguments: 
+#   $out_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Summed number of elapsed seconds read from >= 1 Total CPU time lines.
+#
+################################################################# 
+sub ribo_ParseCmalignFileForCpuTime { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseCmalignFileForCpuTime";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $FH_HR) = @_;
+
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # CPU time: 6.72u 0.28s 00:00:07.00 Elapsed: 00:00:07.93
+    if($line =~ /^# CPU time.+Elapsed\:\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
       my ($hours, $minutes, $seconds) = ($1, $2, $3);
       $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
     }
@@ -1424,7 +1455,12 @@ sub ribo_RunCmsearchOrCmalign {
       $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
     }
     else { # only save the Total CPU line output, otherwise output files get big for large inputs
-      $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \\\"Total CPU time\\\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+      if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
+        $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \\\"Total CPU time\\\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+      }
+      else { 
+        $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \"Total CPU time\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+      }
     }
   }
   elsif($executable =~ /cmalign$/) { 

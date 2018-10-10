@@ -644,7 +644,7 @@ else {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
 }
-my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%10.1f summed elapsed seconds)", $r1_opt_p_sum_cpu_secs) : undef;
+my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r1_opt_p_sum_cpu_secs) : undef;
 $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 ###########################################################################
@@ -822,7 +822,7 @@ if(defined $alg2) {
     }
   }
   $nr2 = $midx;
-  $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%10.1f summed elapsed seconds)", $r2_opt_p_sum_cpu_secs) : undef;
+  $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r2_opt_p_sum_cpu_secs) : undef;
   $r2_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
   # concatenate round 2 tblout files 
@@ -1062,6 +1062,13 @@ $total_seconds += ribo_SecondsSinceEpoch();
 
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+
+
+if(opt_Get("-p", \%opt_HH)) { 
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($r1_opt_p_sum_cpu_secs + $r2_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 ###########################################################################
@@ -3342,7 +3349,7 @@ sub output_timing_statistics {
                   
   printf $out_FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
-    printf $out_FH ("# Timing statistics above include summed elapsed time (but not waiting time) of multiple jobs [-p], totalling %s\n", ribo_GetTimeString($r1_opt_p_secs + $r2_opt_p_secs));
+    printf $out_FH ("# Timing statistics above include summed elapsed time of multiple jobs [-p]\n");
     printf $out_FH ("#\n");
   }
   

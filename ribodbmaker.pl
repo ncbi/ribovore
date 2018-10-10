@@ -975,7 +975,7 @@ if($do_fribo1) {
   $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
   if((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) { 
-    $extra_desc = sprintf("%6d pass; %6d fail; (<= %10.1f summed CPU plus wait seconds)", $npass, $nseq-$npass, $rt_opt_p_sum_cpu_secs);
+    $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $npass, $nseq-$npass, $rt_opt_p_sum_cpu_secs);
   }
   else { 
     $extra_desc = sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass);
@@ -1038,7 +1038,7 @@ if($do_fribo2) {
   my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
   if((opt_Get("-p", \%opt_HH)) && ($ra_opt_p_sum_cpu_secs > 0.)) { 
-    $extra_desc = sprintf("%6d pass; %6d fail; (<= %10.1f summed CPU plus wait seconds)", $rt2_npass, $nseq-$rt2_npass, $ra_opt_p_sum_cpu_secs);
+    $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $rt2_npass, $nseq-$rt2_npass, $ra_opt_p_sum_cpu_secs);
   }
   else { 
     $extra_desc = sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass);
@@ -1553,7 +1553,7 @@ $total_seconds += ribo_SecondsSinceEpoch();
 
 if(opt_Get("-p", \%opt_HH)) { 
   ofile_OutputString($log_FH, 1, "#\n");
-  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below includes summed CPU plus wait time of multiple jobs [-p], totalling %s\n", ribo_GetTimeString($rt_opt_p_sum_cpu_secs + $rt_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($rt_opt_p_sum_cpu_secs + $ra_opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
 }
 
