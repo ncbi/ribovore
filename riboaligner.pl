@@ -658,7 +658,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "'full-exact':          spans full model and no 5' or 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in first or final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "'full-extra':          spans full model but has 5' and/or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'full-ambig-extra':    spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'full-ambig-more':     spans full model and no 5' or 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in first and/or final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions outnumber deletions at 5' and/or 3' end");
         printf OUT ("%-33s %s\n", "#",                          "'full-ambig-less':     spans full model and no 5' or 3' inserts");
@@ -667,7 +667,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "'5flush-exact':        extends to first but not final model position, has no 5' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in first $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "'5flush-extra':        extends to first but not final model position and has 5' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'5flush-ambig-extra':  extends to first but not final model position and has no 5' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'5flush-ambig-more':   extends to first but not final model position and has no 5' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in first $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions outnumber deletions at 5' end");
         printf OUT ("%-33s %s\n", "#",                          "'5flush-ambig-less':   extends to first but not final model position and has no 5' inserts");
@@ -676,7 +676,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "'3flush-exact':        extends to final but not first model position, has no 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "'3flush-extra':        extends to final but not first model position and has 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'3flush-ambig-extra':  extends to final but not first model position and has no 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'3flush-ambig-more':   extends to final but not first model position and has no 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions outnumber deletions at 3' end");
         printf OUT ("%-33s %s\n", "#",                          "'3flush-ambig-less':   extends to final but not first model position and has no 3' inserts");
