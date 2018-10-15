@@ -1355,20 +1355,20 @@ To do all tests and save output to the file 'test.out', do:
 Here is the output for the first test performed by that script
 ($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1)
 # ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
-# ribotyper 0.25 (Sept 2018)
+# ribotyper 0.29 (Oct 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:      Fri Sep  7 15:34:34 2018
-# $RIBODIR:  /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1
+# date:      Mon Oct 15 15:29:40 2018
+# $RIBODIR:  /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1
 #
-# test file:                    /panfs/pan1/infernal/notebook/18_0814_rrna_barbara_ingroup_email/ribotyper-v1/testfiles/testin.example-16
-# output directory name:        test1
-# forcing directory overwrite:  yes [-f]
+# test file:                    /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1/testfiles/testin.example-16
+# output directory name:        test1                                                                                           
+# forcing directory overwrite:  yes [-f]                                                                                        
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [      ribotyper-1-16]          ... done. [4.7 seconds]
+# Running command  1 [      ribotyper-1-16]          ... done. [    4.6 seconds]
 #	checking test-16/test-16.ribotyper.short.out                 ... pass
 #	checking test-16/test-16.ribotyper.long.out                  ... pass
 #	removing directory test-16                                   ... done
-# Running command  2 [    riboaligner-1-16]          ... done. [8.9 seconds]
+# Running command  2 [    riboaligner-1-16]          ... done. [    8.7 seconds]
 #	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
@@ -1386,7 +1386,7 @@ Here is the output for the first test performed by that script
 #
 # All output files created in directory ./test1/
 #
-# CPU time:  00:00:13.78
+# Elapsed time:  00:00:13.70
 #            hh:mm:ss
 # 
 # RIBO-SUCCESS
