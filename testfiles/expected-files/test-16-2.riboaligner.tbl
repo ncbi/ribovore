@@ -32,7 +32,7 @@
 #                                 'full-exact':          spans full model and no 5' or 3' inserts
 #                                                        and no indels in first or final 10 model positions
 #                                 'full-extra':          spans full model but has 5' and/or 3' inserts
-#                                 'full-ambig-extra':    spans full model and no 5' or 3' inserts
+#                                 'full-ambig-more':     spans full model and no 5' or 3' inserts
 #                                                        but has indel(s) in first and/or final 10 model positions
 #                                                        and insertions outnumber deletions at 5' and/or 3' end
 #                                 'full-ambig-less':     spans full model and no 5' or 3' inserts
@@ -41,7 +41,7 @@
 #                                 '5flush-exact':        extends to first but not final model position, has no 5' inserts
 #                                                        and no indels in first 10 model positions
 #                                 '5flush-extra':        extends to first but not final model position and has 5' inserts
-#                                 '5flush-ambig-extra':  extends to first but not final model position and has no 5' inserts
+#                                 '5flush-ambig-more':   extends to first but not final model position and has no 5' inserts
 #                                                        but has indel(s) in first 10 model positions
 #                                                        and insertions outnumber deletions at 5' end
 #                                 '5flush-ambig-less':   extends to first but not final model position and has no 5' inserts
@@ -50,7 +50,7 @@
 #                                 '3flush-exact':        extends to final but not first model position, has no 3' inserts
 #                                                        and no indels in final 10 model positions
 #                                 '3flush-extra':        extends to final but not first model position and has 3' inserts
-#                                 '3flush-ambig-extra':  extends to final but not first model position and has no 3' inserts
+#                                 '3flush-ambig-more':   extends to final but not first model position and has no 3' inserts
 #                                                        but has indel(s) in final 10 model positions
 #                                                        and insertions outnumber deletions at 3' end
 #                                 '3flush-ambig-less':   extends to final but not first model position and has no 3' inserts

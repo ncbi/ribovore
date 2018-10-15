@@ -372,6 +372,119 @@ sub ribo_ParseQsubFile {
 }
 
 #################################################################
+# Subroutine : ribo_ParseLogFileForParallelTime()
+# Incept:      EPN, Tue Oct  9 10:24:09 2018
+#
+# Purpose:     Parse a log file output from ribotyper or riboaligner
+#              to get CPU time. 
+#              
+# Arguments: 
+#   $log_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Number of seconds read from special lines showing
+#              time of multiple jobs due to -p option.
+#
+################################################################# 
+sub ribo_ParseLogFileForParallelTime { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseQsubFileForParallelTime";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($log_file, $FH_HR) = @_;
+
+  open(IN, $log_file) || ofile_FileOpenFailure($log_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling 00:01:37.55  (hh:mm:ss) (does not include waiting time)
+    if($line =~ /summed elapsed time.+totalling\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+      my ($hours, $minutes, $seconds) = ($1, $2, $3);
+      $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
+
+#################################################################
+# Subroutine : ribo_ParseCmsearchFileForTotalCpuTime()
+# Incept:      EPN, Tue Oct  9 15:12:34 2018
+#
+# Purpose:     Parse a cmsearch output file to get total number of
+#              CPU seconds elapsed in lines starting with
+#              "# Total CPU time" which are only printed if the 
+#              --verbose option is used to cmsearch.
+#              
+# Arguments: 
+#   $out_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Summed number of elapsed seconds read from >= 1 Total CPU time lines.
+#
+################################################################# 
+sub ribo_ParseCmsearchFileForTotalCpuTime { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseCmsearchFileForTotalCpuTime";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $FH_HR) = @_;
+
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # Total CPU time:1.43u 0.19s 00:00:01.62 Elapsed: 00:00:01.70
+    if($line =~ /^# Total CPU time.+Elapsed\:\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+      my ($hours, $minutes, $seconds) = ($1, $2, $3);
+      $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
+
+#################################################################
+# Subroutine : ribo_ParseCmalignFileForCpuTime()
+# Incept:      EPN, Wed Oct 10 09:20:32 2018
+#
+# Purpose:     Parse a cmalign output file to get total number of
+#              CPU seconds elapsed in lines starting with
+#              "# CPU time".
+#              
+# Arguments: 
+#   $out_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Summed number of elapsed seconds read from >= 1 Total CPU time lines.
+#
+################################################################# 
+sub ribo_ParseCmalignFileForCpuTime { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseCmalignFileForCpuTime";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $FH_HR) = @_;
+
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # CPU time: 6.72u 0.28s 00:00:07.00 Elapsed: 00:00:07.93
+    if($line =~ /^# CPU time.+Elapsed\:\s+(\d+)\:(\d+)\:(\d+\.\d+)/) { 
+      my ($hours, $minutes, $seconds) = ($1, $2, $3);
+      $tot_secs += (3600. * $hours) + (60. * $minutes) + $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
+
+
+#################################################################
 # Subroutine : ribo_ProcessSequenceFile()
 # Incept:      EPN, Fri May 12 10:08:47 2017
 #
@@ -557,8 +670,8 @@ sub ribo_CheckIfFileExistsAndIsNonEmpty {
 # Incept:      EPN, Sun Apr 24 08:08:15 2016 [dnaorg_scripts]
 #
 # Purpose:     Concatenate a list of files into one file.
-#              If the list has more than 500 files, split
-#              up job into concatenating 500 at a time.
+#              If the list has more than 800 files, split
+#              up job into concatenating 800 at a time.
 # 
 #              We remove all files that we concatenate unless
 #              --keep option is on in %{$opt_HHR}.
@@ -593,6 +706,9 @@ sub ribo_ConcatenateListOfFiles {
     ofile_FAIL(sprintf("ERROR in $sub_name%s, output file name $outfile exists in list of files to concatenate", 
                        (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), 1, $FH_HR);
   }
+
+  # as a special case, check if output file names are /dev/null, in that case
+  # they don't exist and there's not 
 
   # first, convert @{$file_AR} array into a 2D array of file names, each of which has 
   # a max of 800 elements, we'll concatenate each of these lists separately
@@ -1309,9 +1425,9 @@ sub ribo_RunCmsearchOrCmalign {
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
   }
   foreach $file_key (@reqd_file_keys) { 
-    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $file_key file not set", "RIBO", 1, $FH_HR); }
+    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable, $file_key file not set", "RIBO", 1, $FH_HR); }
     # remove this file if it already exists
-    if(-e $file_HR->{$file_key}) { ribo_RemoveFileUsingSystemRm($file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    if(($file_HR->{$file_key} ne "/dev/null") && (-e $file_HR->{$file_key})) { ribo_RemoveFileUsingSystemRm($file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
   } 
 
   # determine if we are running on the farm or locally
@@ -1335,7 +1451,17 @@ sub ribo_RunCmsearchOrCmalign {
   # depending on if $executable is "cmalign" or "cmsearch"
   # and run the program
   if($executable =~ /cmsearch$/) { 
-    $cmd .= "$executable $opts --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+    if(opt_Get("--keep", $opt_HHR)) { 
+      $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+    }
+    else { # only save the Total CPU line output, otherwise output files get big for large inputs
+      if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
+        $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \\\"Total CPU time\\\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+      }
+      else { 
+        $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \"Total CPU time\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+      }
+    }
   }
   elsif($executable =~ /cmalign$/) { 
     $cmd .= "$executable $opts --ifile " . $file_HR->{"ifile"} . " --elfile " . $file_HR->{"elfile"} . " -o " . $file_HR->{"stk"} . " $model_file $seq_file > " . $file_HR->{"cmalign"} . $cmd_suffix;
@@ -1378,7 +1504,12 @@ sub ribo_RunCmsearchOrCmalign {
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
-# Returns:     void
+# Returns: $sum_cpu_plus_wait_secs:   '0' unless -p used.
+#                           If -p used: this is an estimate on total number CPU
+#                           seconds used required by all jobs summed together. This is
+#                           more than actual CPU seconds, because, for example, if a
+#                           job takes 1 seconds and we didn't check on until 10 
+#                           seconds elapsed, then it will contribute 10 seconds to this total.
 # 
 # Dies: If an executable doesn't exist, or cmsearch command fails if we're running locally
 ################################################################# 
@@ -1391,13 +1522,14 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
-  my $start_secs; # timing start
   my $out_dir = ribo_GetDirPath($out_root);
   my $executable = undef;     # path to the cmsearch or cmalign executable
   my @reqd_file_keys = (); # array of required file_HR keys for this executable program
   my $file_key = undef;    # a single outfile key
   my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
   my $wait_str = undef;       # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
+  my $sum_cpu_plus_wait_secs = 0; # will be returned as '0' unless -p used
+  my $njobs_finished = 0; 
 
   # determine if we have the appropriate paths defined in %{$file_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
@@ -1438,7 +1570,12 @@ sub ribo_RunCmsearchOrCmalignWrapper {
       my $tmp_seq_file  = $out_dir . "/" . $seq_file_tail . "." . $f;
       push(@{$tmp_outfile_HA{"fafile"}}, $tmp_seq_file);
       foreach $file_key ((@reqd_file_keys), "err") { 
-        $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
+        if((exists $file_HR->{$file_key}) && ($file_HR->{$file_key} eq "/dev/null")) { 
+          $tmp_outfile_H{$file_key} = "/dev/null"; 
+        }
+        else { 
+          $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
+        }
         push(@{$tmp_outfile_HA{$file_key}}, $tmp_outfile_H{$file_key});
       }
       ribo_RunCmsearchOrCmalign($executable, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, \%tmp_outfile_H, $opt_HHR, $ofile_info_HHR); 
@@ -1447,9 +1584,9 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     # wait for the jobs to finish
     ofile_OutputString($log_FH, 0, sprintf("\n"));
     print STDERR "\n";
-    $start_secs = ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
+    ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
                                            $progress_w, $log_FH, *STDERR);
-    my $njobs_finished = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
     }
@@ -1460,7 +1597,8 @@ sub ribo_RunCmsearchOrCmalignWrapper {
       if($file_key eq "stk") { # special case
         ribo_MergeAlignmentsAndReorder($execs_HR, $tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $file_HR->{"seqlist"}, $opt_HHR, $ofile_info_HHR);
       }
-      elsif($file_key ne "seqlist") { # another special case, don't concatenate seqlist files
+      elsif(($file_key ne "seqlist") && ($file_HR->{$file_key} ne "/dev/null")) { 
+        # two more special cases, don't concatenate seqlist files and no need to create a file if /dev/null 
         ribo_ConcatenateListOfFiles($tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
     }
@@ -1469,7 +1607,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     if(! opt_Get("--keep", $opt_HHR)) { 
       foreach $file_key ((@reqd_file_keys), "err", "fafile") { 
         foreach my $tmp_file (@{$tmp_outfile_HA{$file_key}}) {
-          if(-e $tmp_file) { 
+          if(($tmp_file ne "/dev/null") && (-e $tmp_file)) { 
             ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
           }
         }
@@ -1477,7 +1615,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     }
   } # end of 'else' entered if -p used
 
-  return;
+  return $sum_cpu_plus_wait_secs; # will be '0' unless -p used
 }
 
 #################################################################
@@ -1567,9 +1705,13 @@ sub ribo_MergeAlignmentsAndReorder {
 #  $do_errcheck:     '1' to consider output to an error file a 'failure' of a job, '0' not to.
 #  $FH_HR:           REF to hash of file handles
 #
-# Returns:     Number of jobs (<= scalar(@{$outfile_AR})) that have
-#              finished.
-# 
+# Returns:     Two values: 
+#              $njobs_finished: Number of jobs (<= scalar(@{$outfile_AR})) that have
+#                               finished.
+#              $sum_cpu_secs:   Summed number of CPU seconds all jobs required, this is an
+#                               upper estimate because a job that took 1 second, but that
+#                               we didn't check on until 10 seconds elapsed will contribute
+#                               10 seconds to this total.
 # Dies: never.
 #
 ################################################################# 
@@ -1589,12 +1731,16 @@ sub ribo_WaitForFarmJobsToFinish {
   my @is_finished_A  = ();  # $is_finished_A[$i] is 1 if job $i is finished (either successfully or having failed), else 0
   my @is_failed_A    = ();  # $is_failed_A[$i] is 1 if job $i has finished and failed (all failed jobs are considered 
                             # to be finished), else 0. We only use this array if the --errcheck option is enabled.
-  my $nfinished      = 0;   # number of jobs finished
-  my $nfail          = 0;   # number of jobs that have failed
-  my $cur_sleep_secs = 15;  # number of seconds to wait between checks, we'll double this until we reach $max_sleep, every $doubling_secs seconds
-  my $doubling_secs  = 120; # number of seconds to wait before doublign $cur_sleep
-  my $max_sleep_secs = 120; # maximum number of seconds we'll wait between checks
-  my $secs_waited    = 0;   # number of total seconds we've waited thus far
+  my $nfinished       = 0;   # number of jobs finished
+  my $nfail           = 0;   # number of jobs that have failed
+  my $cur_sleep_secs  = 7.5; # number of seconds to wait between checks, we'll double this until we reach $max_sleep, every $doubling_secs seconds
+  my $doubling_secs   = 120; # number of seconds to wait before doublign $cur_sleep
+  my $max_sleep_secs  = 120; # maximum number of seconds we'll wait between checks
+  my $secs_waited     = 0;   # number of total seconds we've waited thus far
+  my $sum_cpu_secs    = 0;   # number of CPU seconds required for all jobs summed together
+                             # an estimate that is >= actualy number of CPU seconds because
+                             # for example, a job that takes 1 second but that we don't check
+                             # on for 10 seconds contributes 10 seconds to this total.
 
   # initialize @is_finished_A to all '0's
   for(my $i = 0; $i < $njobs; $i++) { 
@@ -1626,6 +1772,7 @@ sub ribo_WaitForFarmJobsToFinish {
           if($final_line =~ m/\Q$finished_str\E/) { 
             $is_finished_A[$i] = 1;
             $nfinished++;
+            $sum_cpu_secs += $secs_waited;
           }
         }
         if(($do_errcheck) && (-s $errfile_AR->[$i])) { # errfile exists and is non-empty, this is a failure, even if we saw $finished_str above
@@ -1662,7 +1809,7 @@ sub ribo_WaitForFarmJobsToFinish {
   }
 
   # if we get here we have no failures
-  return $nfinished;
+  return ($nfinished, $sum_cpu_secs);
 }
 
 #################################################################

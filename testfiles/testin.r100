@@ -20,7 +20,7 @@ exp: @RIBODIR@/testfiles/expected-files/r100.ribotyper.short.out
 exp: @RIBODIR@/testfiles/expected-files/r100.ribotyper.long.out
 rmdir: r100
 command: perl $RIBODIR/riboaligner.pl -i $RIBODIR/models/riboaligner.0p15.ssu.euk.modelinfo -f $RIBODIR/testfiles/fungi-ssu.r100.fa r100-2 > /dev/null
-desc: ribolengtchecker-2-100
+desc: riboaligner-2-100
 out: r100-2/r100-2.riboaligner.tbl
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.list
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.ifile

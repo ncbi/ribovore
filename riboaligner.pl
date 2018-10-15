@@ -103,8 +103,8 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.28";
-my $releasedate       = "Sep 2018";
+my $version           = "0.29";
+my $releasedate       = "Oct 2018";
 my $package_name      = "ribotyper";
 my $ribotyper_model_version_str   = "0p20"; 
 my $riboaligner_model_version_str = "0p15";
@@ -332,9 +332,12 @@ my $ribotyper_outfile      = $out_root . ".ribotyper.out";
 my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
 my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
 my $ribotyper_seqstat_file = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.seqstat";
+my $ribotyper_log_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.log";
 my $found_family_match;  # set to '1' if a sequence matches one of the families we are aligning for
 my @fail_str_A    = (); # array of strings of FAIL sequences to output 
 my @nomatch_str_A = (); # array of strings of FAIL sequences to output 
+my $rt_opt_p_sum_cpu_secs = 0; # summed elapsed seconds of worker jobs in ribotyper
+my $extra_desc = undef; # extra description of a stage
 
 # information about the sequences, which we get by processing the ribotyper seqstat file
 my $tot_nnt    = 0;  # total number of nucleotides in target sequence file (summed length of all seqs)
@@ -363,7 +366,13 @@ if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . o
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
 ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), $FH_HR);
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+# if -p: parse the ribotyper log file to get CPU+wait time for parallel
+$rt_opt_p_sum_cpu_secs = 0;
+if(opt_Get("-p", \%opt_HH)) { 
+  $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $FH_HR);
+}
+$extra_desc = ((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $rt_opt_p_sum_cpu_secs) : undef;
+ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 # parse the ribotyper seqstat file
 $tot_nnt = ribo_ParseSeqstatFile($ribotyper_seqstat_file, undef, undef, \$nseq, \@seqorder_A, \%seqidx_H, \%seqlen_H, $FH_HR);
@@ -419,7 +428,7 @@ foreach $family (@family_order_A) {
 ##########################################################
 # Step 3: Run cmalign on sequences that passed ribotyper
 ##########################################################
-$start_secs = ofile_OutputProgressPrior("Running cmalign and classifying sequence lengths", $progress_w, $log_FH, *STDOUT);
+$start_secs = ofile_OutputProgressPrior(sprintf("Running cmalign and classifying sequence lengths%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
 # for each family to align, run cmalign:
 my $nfiles = 0;               # number of fasta files that exist for this sequence directory
 my $rtkey_seq_file = undef; # a ribotyper key fasta file
@@ -433,6 +442,7 @@ my %family_length_class_HHA;  # key 1D is family, key 2D is length class (e.g. '
 my %out_tbl_HH = ();          # hash of hashes with information for output file
                               # key 1 is sequence name, key 2 is a column name, e.g. pred_cmfrom
 my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign options that are consistently used in all cmalign calls
+my $opt_p_sum_cpu_secs = 0; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
 
 foreach $family (@family_order_A) { 
   if(-s $family_sfetch_filename_H{$family}) { 
@@ -448,6 +458,7 @@ foreach $family (@family_order_A) {
     $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
     $outfile_H{"seqlist"} = $family_sfetch_filename_H{$family};
     ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+    $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($outfile_H{"cmalign"}, $ofile_info_HH{"FH"});
 
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   1, "insert file for $family");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"},  1, "EL file for $family");
@@ -467,7 +478,11 @@ foreach $family (@family_order_A) {
     }
   }
 }
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+
+# add in -p time from ribotyper run
+$opt_p_sum_cpu_secs += $rt_opt_p_sum_cpu_secs;
+$extra_desc = ((opt_Get("-p", \%opt_HH)) && ($opt_p_sum_cpu_secs > 0.)) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $opt_p_sum_cpu_secs) : undef;
+ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 ##########################################################
 # Step 5: Extract class subsets from cmalign output files
@@ -554,6 +569,13 @@ ofile_OutputString($log_FH, 1, "# ribotyper output directory saved as $ribotyper
 ofile_OutputString($log_FH, 1, "#\n# Tabular output saved to file $output_file\n");
 
 $total_seconds += ribo_SecondsSinceEpoch();
+
+if(opt_Get("-p", \%opt_HH)) { 
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
+
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 
 #################################################################
@@ -636,7 +658,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "'full-exact':          spans full model and no 5' or 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in first or final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "'full-extra':          spans full model but has 5' and/or 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'full-ambig-extra':    spans full model and no 5' or 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'full-ambig-more':     spans full model and no 5' or 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in first and/or final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions outnumber deletions at 5' and/or 3' end");
         printf OUT ("%-33s %s\n", "#",                          "'full-ambig-less':     spans full model and no 5' or 3' inserts");
@@ -645,7 +667,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "'5flush-exact':        extends to first but not final model position, has no 5' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in first $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "'5flush-extra':        extends to first but not final model position and has 5' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'5flush-ambig-extra':  extends to first but not final model position and has no 5' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'5flush-ambig-more':   extends to first but not final model position and has no 5' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in first $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions outnumber deletions at 5' end");
         printf OUT ("%-33s %s\n", "#",                          "'5flush-ambig-less':   extends to first but not final model position and has no 5' inserts");
@@ -654,7 +676,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "'3flush-exact':        extends to final but not first model position, has no 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "'3flush-extra':        extends to final but not first model position and has 3' inserts");
-        printf OUT ("%-33s %s\n", "#",                          "'3flush-ambig-extra':  extends to final but not first model position and has no 3' inserts");
+        printf OUT ("%-33s %s\n", "#",                          "'3flush-ambig-more':   extends to final but not first model position and has no 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions outnumber deletions at 3' end");
         printf OUT ("%-33s %s\n", "#",                          "'3flush-ambig-less':   extends to final but not first model position and has no 3' inserts");
