@@ -134,7 +134,7 @@ $opt_group_desc_H{"12"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                                      help-output    
 opt_Add("--evalues",      "boolean", 0,                      12,  undef,   undef,               "rank by E-values, not bit scores",                  "rank hits by E-values, not bit scores", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch",   "boolean", 0,                      12,  undef,   "-f",                "skip search stage",                                 "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
-opt_Add("--noali",        "boolean", 0,                      12,  undef,   "--skipsearch",      "no alignments in output",                           "no alignments in output with --1hmm, --1slow, or --2slow", \%opt_HH, \@opt_order_A);
+opt_Add("--noali",        "boolean", 0,                      12,"--keep",  "--skipsearch",      "no alignments in output",                           "no alignments in output, requires --keep", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                      12,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
@@ -258,14 +258,6 @@ if(opt_Get("--max", \%opt_HH)) {
   if((! opt_Get("--1slow", \%opt_HH)) &&
      (! opt_Get("--2slow", \%opt_HH))) { 
     die "ERROR, --max requires one of --1slow or --2slow";
-  }
-}
-if(opt_Get("--noali", \%opt_HH)) { 
-  if((! opt_Get("--nhmmer", \%opt_HH)) && 
-     (! opt_Get("--1hmm", \%opt_HH)) && 
-     (! opt_Get("--1slow", \%opt_HH)) && 
-     (! opt_Get("--2slow", \%opt_HH))) { 
-    die "ERROR, --noali requires one of --nhmmer, --1hmm, --1slow or --2slow";
   }
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
@@ -621,18 +613,22 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # Step 3: classify sequences using round 1 search algorithm
 # determine which algorithm to use and options to use as well
 # as the command for sorting the output and parsing the output
-# set up defaults
 ###########################################################################
-my $r1_searchout_file     = $out_root . ".r1.cmsearch.out";
-my $r1_tblout_file        = $out_root . ".r1.cmsearch.tbl";
+# set up defaults
+#my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
+my $r1_searchout_file = $out_root . ".r1.cmsearch.out";
+my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
 my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
+my $sum_cpu_secs = undef; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
+my $r1_opt_p_sum_cpu_secs = 0.;
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = ofile_OutputProgressPrior("Classifying sequences", $progress_w, $log_FH, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   my %outfile_H = (); 
   $outfile_H{"tblout"}   = $r1_tblout_file;
   $outfile_H{"cmsearch"} = $r1_searchout_file;
   ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+  $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
 }
 else { 
   $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
@@ -642,21 +638,14 @@ else {
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
-  if(($alg1 ne "slow" || 
-      $alg1 ne "hmmonly") && 
-     (! opt_Get("--noali", \%opt_HH))) { 
-    push(@to_remove_A, $r1_searchout_file);
-  }
+  push(@to_remove_A, $r1_searchout_file);
 }
 else { 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
-  if(($alg1 ne "slow" || 
-      $alg1 ne "hmmonly") && 
-     (! opt_Get("--noali", \%opt_HH))) { 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
-  }
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
 }
-$r1_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r1_opt_p_sum_cpu_secs) : undef;
+$r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 ###########################################################################
 # Step 4: Sort round 1 output
@@ -793,10 +782,12 @@ my $r2_all_sorted_tblout_file;    # single sorted tblout file for all models we 
 my $r2_all_sort_cmd;              # sort command for $r2_all_tblout_file to create $r2_tblout_file
 my $midx = 0;                     # counter of models in round 2
 my $nr2 = 0;                      # number of models we run round 2 searches for
+my $r2_opt_p_sum_cpu_secs = 0.;
+
 if(defined $alg2) { 
   $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";;
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
-    $start_secs = ofile_OutputProgressPrior("Searching sequences against best-matching models", $progress_w, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior(sprintf("Searching sequences against best-matching models%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   }
   else { 
     $start_secs = ofile_OutputProgressPrior("Skipping sequence search (using results from previous run)", $progress_w, $log_FH, *STDOUT);
@@ -805,38 +796,34 @@ if(defined $alg2) {
   foreach $model (sort keys %family_H) { 
     if(defined $sfetchfile_H{$model}) { 
       push(@r2_model_A, $model);
-      push(@r2_tblout_file_A,        $out_root . ".r2.$model.cmsearch.tbl");
-      push(@r2_searchout_file_A,     $out_root . ".r2.$model.cmsearch.out");
-      push(@r2_search_cmd_A,         $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
+      push(@r2_tblout_file_A,    $out_root . ".r2.$model.cmsearch.tbl");
+      push(@r2_searchout_file_A, $out_root . ".r2.$model.cmsearch.out");
+      push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
         my %outfile_H = (); 
         $outfile_H{"tblout"}   = $r2_tblout_file_A[$midx];
         $outfile_H{"cmsearch"} = $r2_searchout_file_A[$midx];
         ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+        $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
         ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
       }
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_tblout_file_A[$midx]);
-        if(($alg2 ne "slow") && 
-           (! opt_Get("--noali", \%opt_HH))) { 
-          push(@to_remove_A, $r2_searchout_file_A[$midx]);
-        }
+        push(@to_remove_A, $r2_searchout_file_A[$midx]);
       }
       else { 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");
-        if(($alg2 ne "slow") && 
-           (! opt_Get("--noali", \%opt_HH))) { 
-          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, "$model .tblout file for round 2");
-        }
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, "$model .tblout file for round 2");
       }
       $midx++; 
     }
   }
   $nr2 = $midx;
-  $r2_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r2_opt_p_sum_cpu_secs) : undef;
+  $r2_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
   # concatenate round 2 tblout files 
   my $cat_cmd = ""; # command used to concatenate tabular output from all round 2 searches
@@ -1072,8 +1059,16 @@ output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_
 output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"}, $ofile_info_HH{"FH"});
 
 $total_seconds += ribo_SecondsSinceEpoch();
-output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds, $ofile_info_HH{"FH"});
-output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r2_secs, $total_seconds, $ofile_info_HH{"FH"});
+
+output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+
+
+if(opt_Get("-p", \%opt_HH)) { 
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($r1_opt_p_sum_cpu_secs + $r2_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 ###########################################################################
@@ -3247,13 +3242,16 @@ sub output_summary_statistics {
 # Purpose:    Output timing statistics.
 #
 # Arguments:
-#   $out_FH:          output file handle
-#   $class_stats_HHR: ref to the class statistics 2D hash
-#   $ncpu:            number of CPUs used to do searches
-#   $r1_secs:         number of seconds required for round 1 searches
-#   $r2_secs:         number of seconds required for round 2 searches
-#   $tot_secs:        number of seconds required for entire script
-#   $FH_HR:           ref to hash of file handles, including "cmd"
+#   $out_FH:             output file handle
+#   $class_stats_HHR:    ref to the class statistics 2D hash
+#   $ncpu:               number of CPUs used to do searches
+#   $r1_secs:            number of seconds required for round 1 searches
+#   $r1_opt_p_secs:      if -p: summed total CPU secs required for all round 1 jobs
+#   $r2_secs:            number of seconds required for round 2 searches
+#   $r2_opt_p_secs:      if -p: summed total CPU secs required for all round 2 jobs
+#   $tot_secs:           number of seconds required for entire script
+#   $opt_HHR:            ref to options 2D hash
+#   $FH_HR:              ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -3262,10 +3260,10 @@ sub output_summary_statistics {
 #################################################################
 sub output_timing_statistics { 
   my $sub_name = "output_timing_statistics";
-  my $nargs_expected = 7;
+  my $nargs_expected = 10;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r2_secs, $tot_secs, $FH_HR) = (@_);
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r1_opt_p_secs, $r2_secs, $r2_opt_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -3310,14 +3308,24 @@ sub output_timing_statistics {
                   $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
                   $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR));
   
+  if(opt_Get("-p", $opt_HHR)) { 
+    $r1_secs  += $r1_opt_p_secs;
+    $tot_secs += $r1_opt_p_secs;
+  }
+
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
                   $width_H{"seqsec"},   $r1_nseq / $r1_secs,
-                  $width_H{"ntsec"},    $r1_nnt  / $r1_secs, 
+                  $width_H{"ntsec"},    $r1_nnt / $r1_secs, 
                   $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
                   $width_H{"total"},    ribo_GetTimeString($r1_secs));
+
+  if(opt_Get("-p", $opt_HHR)) { 
+    $r2_secs  += $r2_opt_p_secs;
+    $tot_secs += $r2_opt_p_secs;
+  }
 
   $class = "search";
   if(defined $alg2) { 
@@ -3340,6 +3348,10 @@ sub output_timing_statistics {
                   $width_H{"total"},    ribo_GetTimeString($tot_secs));
                   
   printf $out_FH ("#\n");
+  if(opt_Get("-p", $opt_HHR)) { 
+    printf $out_FH ("# Timing statistics above include summed elapsed time of multiple jobs [-p]\n");
+    printf $out_FH ("#\n");
+  }
   
   return;
 

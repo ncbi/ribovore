@@ -454,14 +454,13 @@ $execs_H{"esl-alipid"}   = $env_riboeasel_dir    . "/esl-alipid";
 $execs_H{"esl-alistat"}  = $env_riboeasel_dir    . "/esl-alistat";
 $execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
 
-if($do_fvecsc) { 
-  $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
-  $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
-  $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
-}
-
 if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
+  if($do_fvecsc) { 
+    $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
+    $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
+    $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+  }
 }
 if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
   $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
@@ -937,6 +936,7 @@ if($do_fblast) {
 ##########################################################
 # 'fribo1' stage: stage that filters based on ribotyper.pl
 ##########################################################
+my $rt_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in ribotyper call, filled only if -p
 if($do_fribo1) { 
   $stage_key = "fribo1";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
@@ -947,6 +947,7 @@ if($do_fribo1) {
   my $ribotyper_outfile      = $out_root . ".ribotyper.out";
   my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
   my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+  my $ribotyper_log_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.log";
 
   # first we need to create the acceptable models file
   ribo_WriteAcceptFile($tmp_family_rtname_HA{$family}, $ribotyper_accept_file, $ofile_info_HH{"FH"});
@@ -965,9 +966,21 @@ if($do_fribo1) {
   if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$ribotyper_outfile", 0, "output of ribotyper");
   
+  # if -p: parse the ribotyper log file to get CPU+wait time for parallel
+  if(opt_Get("-p", \%opt_HH)) { 
+    $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $ofile_info_HH{"FH"});
+  }
+
   # parse ribotyper short file
   $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass), $log_FH, *STDOUT);
+  my $extra_desc = undef;
+  if((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) { 
+    $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $npass, $nseq-$npass, $rt_opt_p_sum_cpu_secs);
+  }
+  else { 
+    $extra_desc = sprintf("%6d pass; %6d fail;", $npass, $nseq-$npass);
+  }
+  ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 }
 
 ###################################################################
@@ -978,6 +991,10 @@ my $ra_outdir = $out_root . "-ra";
 my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($family_modellen, \%opt_HH);
 my $ra_full_stk_file = undef;
 my $ra_tbl_out_file  = undef;
+my %ignorems_seqfailstr_H = (); # copy of %seqfailstr_H as it existed after the mdlspan stage with mdlspan errors
+                                        # removed. We use this to determine the set of PASSing seqs for the PASS mdlspan tbl 
+my $ra_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in riboaligner call, filled only if -p
+
 if($do_fribo2) { 
   $stage_key = "fribo2";
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
@@ -996,6 +1013,7 @@ if($do_fribo2) {
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
   $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
   $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
+  my $ra_log_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.log";
   my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
   my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
   my $uapos_lpos_cmd  = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir $ra_full_stk_file $max_lpos > $ra_uapos_lpos_tbl_file";
@@ -1005,6 +1023,11 @@ if($do_fribo2) {
   if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "raout", "$ra_out_file", 0, "output of riboaligner");
 
+  # if -p: parse the ribotyper log file to get CPU+wait time for parallel
+  if(opt_Get("-p", \%opt_HH)) { 
+    $ra_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ra_log_file, $ofile_info_HH{"FH"});
+  }
+
   if(! $do_prvcmd) { ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   if(! $do_prvcmd) { ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ralpos", "$ra_uapos_lpos_tbl_file", 0, "unaligned position info that align at model position $max_lpos");
@@ -1013,11 +1036,34 @@ if($do_fribo2) {
 
   # parse riboaligner tbl file
   my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
-  ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass), $log_FH, *STDOUT);
+  my $extra_desc = undef;
+  if((opt_Get("-p", \%opt_HH)) && ($ra_opt_p_sum_cpu_secs > 0.)) { 
+    $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $rt2_npass, $nseq-$rt2_npass, $ra_opt_p_sum_cpu_secs);
+  }
+  else { 
+    $extra_desc = sprintf("%6d pass; %6d fail;", $rt2_npass, $nseq-$rt2_npass);
+  }
+  ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
     
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs riboaligner identified as too long", $progress_w, $log_FH, *STDOUT);
   ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $ra_npass, $rt2_npass-$ra_npass), $log_FH, *STDOUT);
 
+  # copy %seqfailstr_H here and remove any errors that are mdlspan errors,
+  # we use this later when outputting the mdlspan survival PASS table we want
+  # to consider all seqs that only failed due to mdlspan
+  %ignorems_seqfailstr_H = %seqfailstr_H;
+  if($do_fmspan) { 
+    foreach my $target (sort keys %ignorems_seqfailstr_H) { 
+      if($ignorems_seqfailstr_H{$target} ne "") { 
+        my @err_str_A = split(";;", $ignorems_seqfailstr_H{$target});
+        if((scalar(@err_str_A) == 1) && ($err_str_A[0] =~ m/^mdlspan/)) { 
+          # only error is a mdlspan error, 
+          $ignorems_seqfailstr_H{$target} = "";
+        }
+      }
+    }
+  }
+  
   $stage_key = "fmspan";
   if($do_fmspan) { 
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Filtering out seqs based on model span", $progress_w, $log_FH, *STDOUT);
@@ -1178,10 +1224,13 @@ else {
   if($do_mstbl && $do_fribo2) { # we can't create the table if we skipped the ribo2 stage
     # create the mdlspan table file that gives number of seqs/groups surviving different possible model spans
     $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for all seqs", $progress_w, $log_FH, *STDOUT);
+    # first, create mdlspan table with counts of all sequences (PASSing or FAILing)
     parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, undef, \%seqtaxid_H, \%seqgtaxid_HH, \%all_gtaxid_HA, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+    # now we want to include any sequence that PASSES all filters *and* sequences that PASS all filters EXCEPT the mdlspan filter stage (fmspan)
+    # we made a copy of %seqfailstr_H before fmspan stage, this will ALSO not include failures from the ingrup stage, but that's okay
     $start_secs = ofile_OutputProgressPrior("[***OutputFile] Generating model span survival tables for PASSing seqs", $progress_w, $log_FH, *STDOUT);
-    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%seqfailstr_H, \%seqtaxid_H, \%seqgtaxid_HH, \%all_gtaxid_HA, \%opt_HH, \%ofile_info_HH);
+    parse_riboaligner_tbl_and_output_mdlspan_tbl($ra_tbl_out_file, $execs_H{"mdlspan-survtbl-sort.pl"}, $family_modellen, $out_root, \%ignorems_seqfailstr_H, \%seqtaxid_H, \%seqgtaxid_HH, \%all_gtaxid_HA, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   }
 
@@ -1501,6 +1550,13 @@ foreach $level (@level_A) {
   ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in final line of %s]\n", sprintf("# Number of %-7s represented in final set of surviving sequences:", pluralize_level($level)), $final_nsurv_H{$level}, $out_root . "." . $level . ".ct"));
 }
 $total_seconds += ribo_SecondsSinceEpoch();
+
+if(opt_Get("-p", \%opt_HH)) { 
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($rt_opt_p_sum_cpu_secs + $ra_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
+
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
 exit 0;
 
@@ -1760,21 +1816,21 @@ sub parse_ribotyper_short_file {
 #              determine which sequences pass and which fail.
 #
 # Arguments:
-#   $ra_tbl_file:         name of input riboaligner tbl file to parse
-#   $lpos_tbl_file:       name of input ali-apos-to-uapos lpos tbl file to parse
-#   $rpos_tbl_file:       name of input ali-apos-to-uapos rpos tbl file to parse
-#   $uapos_out_file:      name of output file to create as a combination of $lpos_tbl_file and $rpos_tbl_file
-#   $do_fmspan:           '1' to filter based on model span too
-#   $do_fmspan_strict:    '1' to fail sequences that have a gap at either $max_lpos or $min_rpos
-#   $mlen:                model length 
-#   $seqfailstr_HR:       ref to hash of failure string to add to here
-#   $seqorder_AR:         ref to array of sequences in order
-#   $rapass_seqorder_AR:  ref to array of sequences in order
-#   $seq_uapos_lpos_HR:   ref to hash of unaligned positions that align to left model span position
-#   $seq_uapos_rpos_HR:   ref to hash of unaligned positions that align to right model span position
-#   $seqlenclass_HR:      ref to hash of length classes, can be undef
-#   $opt_HHR:             ref to 2D hash of cmdline options
-#   $ofile_info_HHR:      ref to the ofile info 2D hash
+#   $ra_tbl_file:            name of input riboaligner tbl file to parse
+#   $lpos_tbl_file:          name of input ali-apos-to-uapos lpos tbl file to parse
+#   $rpos_tbl_file:          name of input ali-apos-to-uapos rpos tbl file to parse
+#   $uapos_out_file:         name of output file to create as a combination of $lpos_tbl_file and $rpos_tbl_file
+#   $do_fmspan:              '1' to filter based on model span too
+#   $do_fmspan_strict:       '1' to fail sequences that have a gap at either $max_lpos or $min_rpos
+#   $mlen:                   model length 
+#   $seqfailstr_HR:          ref to hash of failure string to add to here
+#   $seqorder_AR:            ref to array of sequences in order
+#   $rapass_seqorder_AR:     ref to array of sequences in order
+#   $seq_uapos_lpos_HR:      ref to hash of unaligned positions that align to left model span position
+#   $seq_uapos_rpos_HR:      ref to hash of unaligned positions that align to right model span position
+#   $seqlenclass_HR:         ref to hash of length classes, can be undef
+#   $opt_HHR:                ref to 2D hash of cmdline options
+#   $ofile_info_HHR:         ref to the ofile info 2D hash
 #
 # Returns:    3 values:
 #             $rt_npass:  number of sequences that pass ribotyper stage
@@ -1793,9 +1849,9 @@ sub parse_riboaligner_tbl_and_uapos_files {
 
   my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $seqlenclass_HR, $opt_HHR, $ofile_info_HHR) = (@_);
 
-  my %rt_curfailstr_H  = (); # holds fail strings for ribotyper
-  my %ra_curfailstr_H = (); # holds fail strings for riboaligner
-  my %ms_curfailstr_H  = (); # holds fail strings for model span stage
+  my %rt_curfailstr_H   = (); # holds fail strings for ribotyper
+  my %ra_curfailstr_H   = (); # holds fail strings for riboaligner
+  my %ms_curfailstr_H   = (); # holds fail strings for model span stage
   my @rtpass_seqorder_A = (); # array of sequences that pass ribotyper stage, in order
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
