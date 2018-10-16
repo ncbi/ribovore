@@ -247,7 +247,7 @@ my $version           = "0.29";
 my $riboaligner_model_version_str = "0p15"; 
 my $releasedate       = "Oct 2018";
 my $package_name      = "ribotyper";
-my $pkgstr    = "RIBO";
+my $pkgstr            = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -588,7 +588,7 @@ if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_d
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
-# open the log and command files:
+# open the list, log and command files:
 # set output file names and file handles, and open those file handles
 my %ofile_info_HH = ();  # hash of information on output files we created,
                          # 1D keys: 

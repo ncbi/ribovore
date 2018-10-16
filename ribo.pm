@@ -578,7 +578,7 @@ sub ribo_ValidateExecutableHash {
   }
   
   if(defined $fail_str) { 
-    die "ERROR in $sub_name(),\n$fail_str"; # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
+    die "ERROR in $sub_name,\n$fail_str"; # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
   }
 
   return;

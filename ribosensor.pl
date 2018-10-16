@@ -16,13 +16,15 @@ my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_sensor_dir       = ribo_VerifyEnvVariableIsValidDir("SENSORDIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_riboblast_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
 my $ribo_model_dir       = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"ribo"}        = $env_ribotyper_dir . "/ribotyper.pl";
-$execs_H{"sensor"}      = $env_ribotyper_dir . "/rRNA_sensor_script";
-$execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
-$execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"sensor"}      = $env_sensor_dir    . "/rRNA_sensor_script";
+$execs_H{"esl-seqstat"} = $env_riboeasel_dir . "/esl-seqstat";
+$execs_H{"esl-sfetch"}  = $env_riboeasel_dir . "/esl-sfetch";
+$execs_H{"blastn"}      = $env_riboblast_dir . "/blastn";
 ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
@@ -63,16 +65,16 @@ opt_Add("-n",           "integer", 0,                        1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                        "be verbose; output commands to stdout as they're run",    \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 opt_Add("--skipsearch", "boolean", 0,                        1,    undef,  "-f",      "skip search stages, use results from earlier run",  "skip search stages, use results from earlier run",        \%opt_HH, \@opt_order_A);
-$opt_group_desc_H{"2"} = "16S_sensor related options";
-opt_Add("--Sminlen",    "integer", 100,                      2,    undef, undef,      "set 16S_sensor minimum seq length to <n>",                      "set 16S_sensor minimum sequence length to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Smaxlen",    "integer", 2000,                     2,    undef, undef,      "set 16S_sensor maximum seq length to <n>",                      "set 16S_sensor minimum sequence length to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Smaxevalue",    "real", 1e-40,                    2,    undef, undef,      "set 16S_sensor maximum E-value to <x>",                         "set 16S_sensor maximum E-value to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--Sminid1",    "integer", 75,                       2,    undef, undef,      "set 16S_sensor min percent id for seqs <= 350 nt to <n>",       "set 16S_sensor minimum percent id for seqs <= 350 nt to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Sminid2",    "integer", 80,                       2,    undef, undef,      "set 16S_sensor min percent id for seqs [351..600] nt to <n>",   "set 16S_sensor minimum percent id for seqs [351..600] nt to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Sminid3",    "integer", 86,                       2,    undef, undef,      "set 16S_sensor min percent id for seqs > 600 nt to <n>",        "set 16S_sensor minimum percent id for seqs > 600 nt to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Smincovall", "integer", 10,                       2,    undef, undef,      "set 16S_sensor min percent coverage for all sequences to <n>",  "set 16S_sensor minimum coverage for all sequences to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Smincov1",   "integer", 80,                       2,    undef, undef,      "set 16S_sensor min percent coverage for seqs <= 350 nt to <n>", "set 16S_sensor minimum coverage for seqs <= 350 nt to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--Smincov2",   "integer", 86,                       2,    undef, undef,      "set 16S_sensor min percent coverage for seqs  > 350 nt to <n>", "set 16S_sensor minimum coverage for seqs  > 350 nt to <n>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"2"} = "rRNA_sensor related options";
+opt_Add("--Sminlen",    "integer", 100,                      2,    undef, undef,      "set rRNA_sensor minimum seq length to <n>",                      "set rRNA_sensor minimum sequence length to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Smaxlen",    "integer", 2000,                     2,    undef, undef,      "set rRNA_sensor maximum seq length to <n>",                      "set rRNA_sensor minimum sequence length to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Smaxevalue",    "real", 1e-40,                    2,    undef, undef,      "set rRNA_sensor maximum E-value to <x>",                         "set rRNA_sensor maximum E-value to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--Sminid1",    "integer", 75,                       2,    undef, undef,      "set rRNA_sensor min percent id for seqs <= 350 nt to <n>",       "set rRNA_sensor minimum percent id for seqs <= 350 nt to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Sminid2",    "integer", 80,                       2,    undef, undef,      "set rRNA_sensor min percent id for seqs [351..600] nt to <n>",   "set rRNA_sensor minimum percent id for seqs [351..600] nt to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Sminid3",    "integer", 86,                       2,    undef, undef,      "set rRNA_sensor min percent id for seqs > 600 nt to <n>",        "set rRNA_sensor minimum percent id for seqs > 600 nt to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Smincovall", "integer", 10,                       2,    undef, undef,      "set rRNA_sensor min percent coverage for all sequences to <n>",  "set rRNA_sensor minimum coverage for all sequences to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Smincov1",   "integer", 80,                       2,    undef, undef,      "set rRNA_sensor min percent coverage for seqs <= 350 nt to <n>", "set rRNA_sensor minimum coverage for seqs <= 350 nt to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--Smincov2",   "integer", 86,                       2,    undef, undef,      "set rRNA_sensor min percent coverage for seqs  > 350 nt to <n>", "set rRNA_sensor minimum coverage for seqs  > 350 nt to <n>", \%opt_HH, \@opt_order_A);
 $opt_group_desc_H{"3"} = "options for saving sequence subsets to files";
 opt_Add("--psave",       "boolean",0,                        3,    undef, undef,      "save passing sequences to a file",                              "save passing sequences to a file", \%opt_HH, \@opt_order_A);
 
@@ -103,9 +105,10 @@ my $options_okay =
 my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
-my $version       = "0.27";
-my $releasedate   = "Mar 2018";
-my $package_name  = "ribosensor";
+my $version       = "0.29";
+my $releasedate   = "Oct 2018";
+my $package_name  = "ribotyper";
+my $pkgstr        = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -136,7 +139,8 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
 my $cmd  = undef;                    # a command to be run by ribo_RunCommand()
 my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
-my @to_remove_A = ();                # array of files to remove at end
+my @early_cmd_A = (); # array of commands we run before our log file is opened
+my @to_remove_A = (); # array of files to remove at end
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -158,7 +162,7 @@ else {  # --skipsearch not used, normal case
       die "ERROR you used --psave but directory $dir_out already exists.\nYou can either run with --skipsearch to create the psave file and not redo the searches OR\nremove the $dir_out directory and then rerun with --psave if you really want to redo the search steps";
     }
     elsif(opt_Get("-f", \%opt_HH)) { 
-      ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); 
+      ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); 
     }
     else { 
       die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -166,14 +170,14 @@ else {  # --skipsearch not used, normal case
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH)); }
+    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); }
     else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
 }
 # if $dir_out does not exist, create it
 if(! -d $dir_out) { 
   $cmd = "mkdir $dir_out";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
 }
 
 my $dir_out_tail = $dir_out;
@@ -193,10 +197,12 @@ push(@arg_A, $seq_file);
 push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
+my %extra_H    = ();
 $extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
-$extra_H{"\$SENSORDIR"}       = $env_riboinfernal_dir;
-$extra_H{"\$RIBOINFERNALDIR"} = $env_riboeasel_dir;
+$extra_H{"\$SENSORDIR"}       = $env_sensor_dir;
+$extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
+$extra_H{"\$RIBOBLASTDIR"}    = $env_riboblast_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -213,9 +219,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the list, log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBOSENSOR", "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBOSENSOR", "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBOSENSOR", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "list", $out_root . ".list", 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "log",  $out_root . ".log",  1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cmd",  $out_root . ".cmd",  1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -253,24 +259,25 @@ my $sensor_indi_FH       = undef; # output file handle for gpipe file sorted by 
 my $ribo_indi_FH         = undef; # output file handle for ribotyper gpipe file sorted by input sequence index
 my $combined_out_FH      = undef; # output file handle for the combined output file
 my $combined_gpipe_FH    = undef; # output file handle for the combined gpipe file
-open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || die "ERROR unable to open $unsrt_sensor_indi_file for writing";
-open($sensor_indi_FH,       ">", $sensor_indi_file)       || die "ERROR unable to open $sensor_indi_file for writing";
-open($ribo_indi_FH,         ">", $ribo_indi_file)         || die "ERROR unable to open $ribo_indi_file for writing";
-open($combined_out_FH,      ">", $combined_out_file)      || die "ERROR unable to open $combined_out_file for writing";
-open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || die "ERROR unable to open $combined_gpipe_file for writing";
+open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 ###################################################################
 # Step 1: Split up input sequence file into 3 files based on length
 ###################################################################
-# The primary reason for the split is that sensor uses different thresholds
+# The primary reason for the split is that rRNA_sensor uses different thresholds
 # depending on whether the length is [0,350], [351,600}, or [601, infinity]
-# The filter that 16S sequences are expected to be below a certain length
-# is applied within sensor, not here.
+# The filter that rRNA sequences are expected to be below a certain length
+# is applied within rRNA_sensor, not here.
 # We do this split by length before running ribotyper, even though ribotyper is run
 # on the full file. A beneficial side effect is that we exit early, if there
 # is a detectable syntactic problem in the sequence file.
 my $progress_w = 53; # the width of the left hand column in our progress output, hard-coded
 my $start_secs;
+my @seqorder_A = (); # array of sequences in order they appear in input file
 my %seqidx_H = (); # key: sequence name, value: index of sequence in original input sequence file (1..$nseq)
 my %seqlen_H = (); # key: sequence name, value: length of sequence
 my %width_H  = (); # hash, key is "model" or "target", value is maximum length of any model/target
@@ -297,21 +304,21 @@ my @subseq_sfetch_A = (); # array of sfetch input files that we created
 my @subseq_nseq_A   = (); # array of number of sequences in each sequence
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = ribo_OutputProgressPrior("Partitioning sequence file based on sequence lengths", $progress_w, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Partitioning sequence file based on sequence lengths", $progress_w, $log_FH, *STDOUT);
   # check for SSI index file for the sequence file,
   # if it doesn't exist, create it
-  if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-    ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH));
-    if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0) != 1) { 
-      die "ERROR, tried to create $ssi_file, but failed"; 
+  if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
+    ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
+      ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $ofile_info_HH{"FH"}); 
     }
   }
 }
 else { 
-  $start_secs = ribo_OutputProgressPrior("Determining size of input sequence file", $progress_w, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Determining size of input sequence file", $progress_w, $log_FH, *STDOUT);
 }
   
-$tot_nnt  = ribo_ProcessSequenceFile("esl-seqstat", $seq_file, $seqstat_file, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
+$tot_nnt  = ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $seq_file, $seqstat_file, \@seqorder_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $tot_nseq = scalar(keys %seqidx_H);
 if(length($tot_nseq) > $width_H{"index"}) { 
   $width_H{"index"} = length($tot_nseq);
@@ -325,10 +332,10 @@ my $do_fetch = (opt_Get("--skipsearch", \%opt_HH)) ? 0 : 1; # do not fetch the s
 for($i = 0; $i < $nseq_parts; $i++) { 
   $subseq_sfetch_A[$i] = $out_root . "." . ($i+1) . ".sfetch";
   $subseq_file_A[$i]   = $out_root . "." . ($i+1) . ".fa";
-  $subseq_nseq_A[$i]   = fetch_seqs_in_length_range("esl-sfetch", $seq_file, $do_fetch, $spart_minlen_A[$i], $spart_maxlen_A[$i], \%seqlen_H, $subseq_sfetch_A[$i], $subseq_file_A[$i], \%opt_HH);
+  $subseq_nseq_A[$i]   = fetch_seqs_in_length_range("esl-sfetch", $seq_file, $do_fetch, $spart_minlen_A[$i], $spart_maxlen_A[$i], \%seqlen_H, $subseq_sfetch_A[$i], $subseq_file_A[$i], \%opt_HH, $ofile_info_HH{"FH"});
 
   # files are marked for removal at this step, but not actually 
-  # removed until the 16S_sensor analysis has been completed
+  # removed until the rRNA_sensor analysis has been completed
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $subseq_sfetch_A[$i]);
     if($subseq_nseq_A[$i] > 0) { 
@@ -336,7 +343,7 @@ for($i = 0; $i < $nseq_parts; $i++) {
     }
   }
 }
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 #############################################
 # Step 2: Run ribotyper on full sequence file
@@ -349,13 +356,13 @@ my $ribotyper_cmd   = $execs_H{"ribo"} . " -f $keep_opt -n $ncpu --inaccept $rib
 my $ribo_secs       = 0.; # total number of seconds required for ribotyper command
 my $ribo_shortfile  = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
-  $start_secs = ribo_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, undef, *STDOUT);
-  $ribo_secs = ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH));
-  ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+  $start_secs = ofile_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, $log_FH, *STDOUT);
+  $ribo_secs = ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }  
 
 ###########################################################################
-# Step 3: Run 16S_sensor on the (up to 3) length-partitioned sequence files
+# Step 3: Run rRNA_sensor on the (up to 3) length-partitioned sequence files
 ###########################################################################
 my @sensor_dir_out_A             = (); # [0..$i..$nseq_parts-1], directory created for sensor run on partition $i
 my @sensor_stdoutfile_A          = (); # [0..$i..$nseq_parts-1], standard output file for sensor run on partition $i
@@ -369,6 +376,7 @@ my $sensor_maxlen    = opt_Get("--Smaxlen",    \%opt_HH);
 my $sensor_maxevalue = opt_Get("--Smaxevalue", \%opt_HH);
 my $sensor_secs      = 0.; # total number of seconds required for sensor commands
 my $sensor_ncpu      = ($ncpu == 0) ? 1 : $ncpu;
+my $sensor_blastdb   = "16S_centroids";
 
 for($i = 0; $i < $nseq_parts; $i++) { 
   $sensor_minid_A[$i] = opt_Get("--Sminid" . ($i+1), \%opt_HH);
@@ -377,11 +385,11 @@ for($i = 0; $i < $nseq_parts; $i++) {
     $sensor_stdoutfile_A[$i]          = $out_root . ".sensor-" . ($i+1) . ".stdout";
     $sensor_classfile_argument_A[$i]  = "sensor-class." . ($i+1) . ".out";
     $sensor_classfile_fullpath_A[$i]  = $sensor_dir_out_A[$i] . "/sensor-class." . ($i+1) . ".out";
-    $sensor_cmd = $execs_H{"sensor"} . " $sensor_minlen $sensor_maxlen $subseq_file_A[$i] $sensor_classfile_argument_A[$i] $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu $sensor_dir_out_A[$i] > $sensor_stdoutfile_A[$i]";
+    $sensor_cmd = $execs_H{"sensor"} . " $sensor_minlen $sensor_maxlen $subseq_file_A[$i] $sensor_classfile_argument_A[$i] $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu $sensor_dir_out_A[$i] $sensor_blastdb > $sensor_stdoutfile_A[$i]";
     if(! opt_Get("--skipsearch", \%opt_HH)) { 
-      $start_secs = ribo_OutputProgressPrior("Running 16S_sensor on seqs of length $spart_desc_A[$i]", $progress_w, undef, *STDOUT);
-      $sensor_secs += ribo_RunCommand($sensor_cmd, opt_Get("-v", \%opt_HH));
-      ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+      $start_secs = ofile_OutputProgressPrior("Running rRNA_sensor on seqs of length $spart_desc_A[$i]", $progress_w, $log_FH, *STDOUT);
+      $sensor_secs += ribo_RunCommand($sensor_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     }
   }
   else { 
@@ -393,7 +401,7 @@ for($i = 0; $i < $nseq_parts; $i++) {
 }
 
 ###########################################################################
-# Step 4: Parse 16S_sensor results and create intermediate file 
+# Step 4: Parse rRNA_sensor results and create intermediate file 
 ###########################################################################
 # define data structures for statistics/counts that we will output
 my @outcome_type_A;        # array of outcome 'types', in order they should be output
@@ -495,24 +503,24 @@ define_failsto_hash(\@herror_A, \@indexer_A, \%herror_failsto_H);
 my %gpipe2human_HH = ();
 define_gpipe_to_human_map(\%gpipe2human_HH, \@gerror_A, \@herror_A);
 
-$start_secs = ribo_OutputProgressPrior("Parsing and combining 16S_sensor and ribotyper output", $progress_w, undef, *STDOUT);
-# parse 16S_sensor file to create gpipe format file
+$start_secs = ofile_OutputProgressPrior("Parsing and combining rRNA_sensor and ribotyper output", $progress_w, $log_FH, *STDOUT);
+# parse rRNA_sensor file to create gpipe format file
 # first unsorted, then sort it.
 parse_sensor_files($unsrt_sensor_indi_FH, \@sensor_classfile_fullpath_A, \@cpart_minlen_A, \@cpart_maxlen_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 close($unsrt_sensor_indi_FH);
 
 # sort sensor shortfile
-output_headers_without_fails_to($sensor_indi_FH, \%width_H);
+output_headers_without_fails_to($sensor_indi_FH, \%width_H, $ofile_info_HH{"FH"});
 close($sensor_indi_FH);
 
 $cmd = "sort -n $unsrt_sensor_indi_file >> $sensor_indi_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH));
+ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 open($sensor_indi_FH, ">>", $sensor_indi_file) || die "ERROR, unable to open $sensor_indi_file for appending";
 output_tail_without_fails_to($sensor_indi_FH, \%opt_HH); 
 close($sensor_indi_FH);
 
 # convert ribotyper output to gpipe 
-output_headers_without_fails_to($ribo_indi_FH, \%width_H);
+output_headers_without_fails_to($ribo_indi_FH, \%width_H, $ofile_info_HH{"FH"});
 convert_ribo_short_to_indi_file($ribo_indi_FH, $ribo_shortfile, \@herror_A, \%seqidx_H, \%width_H, \%opt_HH);
 output_tail_without_fails_to($ribo_indi_FH, \%opt_HH); 
 close($ribo_indi_FH);
@@ -522,8 +530,8 @@ initialize_hash_of_hash_of_counts(\%herror_ct_HH,  \@outcome_type_A, \@herror_A)
 initialize_hash_of_hash_of_counts(\%gerror_ct_HH,  \@outcome_type_A, \@gerror_A);
 
 # combine sensor and ribotyper indi output files to get combined output file
-output_headers_with_fails_to   ($combined_out_FH,   \%width_H);
-output_headers_without_fails_to($combined_gpipe_FH, \%width_H);
+output_headers_with_fails_to   ($combined_out_FH,   \%width_H, $ofile_info_HH{"FH"});
+output_headers_without_fails_to($combined_gpipe_FH, \%width_H, $ofile_info_HH{"FH"});
 combine_gpipe_files($combined_out_FH, $combined_gpipe_FH, $sensor_indi_file, $ribo_indi_file, 
                     \@gerror_A, \%gpipe2human_HH, \%outcome_ct_HH, 
                     \%herror_ct_HH, \%gerror_ct_HH, 
@@ -536,7 +544,7 @@ output_tail_without_fails_to($combined_gpipe_FH, \%opt_HH);
 close($combined_out_FH);
 close($combined_gpipe_FH);
 
-ribo_OutputProgressComplete($start_secs, undef, undef, *STDOUT);
+ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # remove files we do not want anymore, then exit
 foreach my $file (@to_remove_A) { 
@@ -547,22 +555,23 @@ foreach my $file (@to_remove_A) {
 my $nseq_passed    = 0; # number of sequences 
 my $nseq_revcomped = 0; # number of sequences reverse complemented
 if(opt_Get("--psave", \%opt_HH)) { 
-  ($nseq_passed, $nseq_revcomped) = fetch_seqs_given_gpipe_file("esl-sfetch", $seq_file, $combined_out_file, "pass", 6, 1, $passes_sfetch_file, $passes_seq_file, \%seqlen_H, \%opt_HH);
+  ($nseq_passed, $nseq_revcomped) = fetch_seqs_given_gpipe_file("esl-sfetch", $seq_file, $combined_out_file, "pass", 6, 1, $passes_sfetch_file, $passes_seq_file, \%seqlen_H, \%opt_HH, $ofile_info_HH{"FH"});
 }
 
-output_outcome_counts(*STDOUT, \%outcome_ct_HH);
-output_error_counts(*STDOUT, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A);
-output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A);
+output_outcome_counts(*STDOUT, \%outcome_ct_HH, $ofile_info_HH{"FH"});
+output_error_counts(*STDOUT, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
+output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
 $total_seconds += ribo_SecondsSinceEpoch();
-output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $total_seconds, \%opt_HH);
+output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
 printf("#\n# Human readable error-based output saved to file $combined_out_file\n");
 printf("# GPIPE error-based output saved to file $combined_gpipe_file\n");
 if((opt_Get("--psave", \%opt_HH)) && ($nseq_passed > 0)) { 
   printf("#\n# The $nseq_passed sequences that passed (with $nseq_revcomped minus strand sequences\n# reverse complemented) saved to file $passes_seq_file\n");
 }
-printf("#\n#[RIBO-SUCCESS]\n");
+
+ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
 
 ###############
 # SUBROUTINES #
@@ -585,6 +594,7 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #   $sfetch_file:  name of esl-sfetch input file to create
 #   $subseq_file:  name of fasta file to create 
 #   $opt_HHR:      reference to 2D hash of cmdline options
+#   $FH_HR:        ref to hash of file handles, including "cmd"
 # 
 # Returns:     Number of sequences fetched.
 #
@@ -592,10 +602,10 @@ printf("#\n#[RIBO-SUCCESS]\n");
 #
 ################################################################# 
 sub fetch_seqs_in_length_range { 
-  my $nargs_expected = 9;
+  my $nargs_expected = 10;
   my $sub_name = "fetch_seqs_in_length_range";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($sfetch_exec, $seq_file, $do_fetch, $minlen, $maxlen, $seqlen_HR, $sfetch_file, $subseq_file, $opt_HHR) = (@_);
+  my ($sfetch_exec, $seq_file, $do_fetch, $minlen, $maxlen, $seqlen_HR, $sfetch_file, $subseq_file, $opt_HHR, $FH_HR) = (@_);
 
   my $target;   # name of a target sequence
   my $nseq = 0; # number of sequences fetched
@@ -616,7 +626,7 @@ sub fetch_seqs_in_length_range {
 
   if($nseq > 0 && ($do_fetch)) { 
     my $sfetch_cmd = $sfetch_exec . " -f $seq_file $sfetch_file > $subseq_file"; 
-    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR));
+    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
   }
 
   return $nseq;
@@ -791,9 +801,9 @@ sub determine_coverage_threshold {
 #              
 # Arguments: 
 #   $FH:        file handle to output to
-#   $type:      'sensor', 'ribotyper', 'hcombined', or 'mcombined'
 #   $width_HR:  ref to hash, keys include "model" and "target", 
 #               value is width (maximum length) of any target/model
+#   $FH_HR:     ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -801,16 +811,16 @@ sub determine_coverage_threshold {
 #
 ################################################################# 
 sub output_headers_without_fails_to { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_headers_without_fails_to";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $width_HR) = (@_);
+  my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
-  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-");
-  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-");
+  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
+  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-", $FH_HR);
+  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %-*s  %4s  %s\n", 
               $width_HR->{"index"},    "#idx", 
@@ -833,6 +843,7 @@ sub output_headers_without_fails_to {
 #   $FH:        file handle to output to
 #   $width_HR:  ref to hash, keys include "model" and "target", 
 #               value is width (maximum length) of any target/model
+#   $FH_HR:     ref to hash of file handles, including "cmd"
 #
 # Returns:     Nothing.
 # 
@@ -840,16 +851,16 @@ sub output_headers_without_fails_to {
 #
 ################################################################# 
 sub output_headers_with_fails_to { 
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   my $sub_name = "output_headers_with_fails_to";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $width_HR) = (@_);
+  my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-");
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-");
-  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-");
-  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-");
+  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
+  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-", $FH_HR);
+  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %-*s  %4s  %9s  %s\n", 
               $width_HR->{"index"},    "#idx", 
@@ -969,7 +980,7 @@ sub output_errors_explanation {
 #  print $FH ("#\n");
 #  print $FH ("# This column will include a '-' if none of the error(s) listed below are detected.\n");
 #  print $FH ("# Or it will contain one or more of the following types of messages. There are no\n");
-#  print $FH ("# whitespace characters in this field. Errors from 16S_sensor begin with \'sensor\'.\n");
+#  print $FH ("# whitespace characters in this field. Errors from rRNA_sensor begin with \'sensor\'.\n");
 #  print $FH ("# Errors from ribotyper begin with 'ribotyper'.\n");
 #  print $FH ("#\n");
 
@@ -1612,6 +1623,7 @@ sub determine_fails_to_string_May15_meeting {
 # Arguments:
 #   $FH:             output file handle
 #   $outcome_ct_HHR: ref to the outcome count 2D hash
+#   $FH_HR:          ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -1620,10 +1632,10 @@ sub determine_fails_to_string_May15_meeting {
 #################################################################
 sub output_outcome_counts { 
   my $sub_name = "output_outcome_counts";
-  my $nargs_expected = 2;
+  my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $outcome_ct_HHR) = (@_);
+  my ($FH, $outcome_ct_HHR, $FH_HR) = (@_);
 
   # determine max width of each column
   my %width_H = ();  # key: name of column, value max width for column
@@ -1662,12 +1674,12 @@ sub output_outcome_counts {
                   $width_H{"unmapped"},  "unmapped");
   # line 2
   printf $FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n", 
-                  $width_H{"type"},      ribo_GetMonoCharacterString($width_H{"type"}, "-"),
-                  $width_H{"total"},     ribo_GetMonoCharacterString($width_H{"total"}, "-"),
-                  $width_H{"pass"},      ribo_GetMonoCharacterString($width_H{"pass"}, "-"),
-                  $width_H{"indexer"},   ribo_GetMonoCharacterString($width_H{"indexer"}, "-"),
-                  $width_H{"submitter"}, ribo_GetMonoCharacterString($width_H{"submitter"}, "-"),
-                  $width_H{"unmapped"},  ribo_GetMonoCharacterString($width_H{"unmapped"}, "-"));
+                  $width_H{"type"},      ribo_GetMonoCharacterString($width_H{"type"}, "-", $FH_HR),
+                  $width_H{"total"},     ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR),
+                  $width_H{"pass"},      ribo_GetMonoCharacterString($width_H{"pass"}, "-", $FH_HR),
+                  $width_H{"indexer"},   ribo_GetMonoCharacterString($width_H{"indexer"}, "-", $FH_HR),
+                  $width_H{"submitter"}, ribo_GetMonoCharacterString($width_H{"submitter"}, "-", $FH_HR),
+                  $width_H{"unmapped"},  ribo_GetMonoCharacterString($width_H{"unmapped"}, "-", $FH_HR));
   
   foreach $type ("RPSP", "RPSF", "RFSP", "RFSF", "*all*") { 
     if($type eq "*all*") { print $FH "#\n"; }
@@ -1696,6 +1708,7 @@ sub output_outcome_counts {
 #   $tot_nseq: total number of sequences in input
 #   $ct_HR:    ref to the count 2D hash
 #   $key_AR:   ref to array of 1D keys
+#   $FH_HR:    ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -1704,10 +1717,10 @@ sub output_outcome_counts {
 #################################################################
 sub output_error_counts { 
   my $sub_name = "output_error_counts";
-  my $nargs_expected = 5;
+  my $nargs_expected = 6;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $title, $tot_nseq, $ct_HR, $key_AR) = (@_);
+  my ($FH, $title, $tot_nseq, $ct_HR, $key_AR, $FH_HR) = (@_);
 
   # determine max width of each column
   my %width_H = ();  # key: name of column, value max width for column
@@ -1744,9 +1757,9 @@ sub output_error_counts {
 
   # line 3
   printf $FH ("# %-*s  %-*s  %*s\n", 
-                  $width_H{"error"},    ribo_GetMonoCharacterString($width_H{"error"}, "-"),
-                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-"),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-"));
+                  $width_H{"error"},    ribo_GetMonoCharacterString($width_H{"error"}, "-", $FH_HR),
+                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-", $FH_HR),
+                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR));
 
   foreach $error (@{$key_AR}) { 
     if(($ct_HR->{$error} > 0) || ($error eq "CLEAN")) { 
@@ -1844,14 +1857,15 @@ sub update_error_count_hash {
 # Purpose:    Output timing statistics in units of seconds. 
 #
 # Arguments:
-#   $FH:              output file handle
-#   $tot_nseq:        number of sequences in input file
-#   $tot_nnt:         number of nucleotides in input file
-#   $ncpu:            number of CPUs used to do searches
-#   $ribo_secs:       number of seconds required for ribotyper
-#   $sensor_secs:     number of seconds required for sensor
-#   $tot_secs:        number of seconds required for entire script
-#   $opt_HHR:         ref to 2D hash of cmdline options
+#   $FH:          output file handle
+#   $tot_nseq:    number of sequences in input file
+#   $tot_nnt:     number of nucleotides in input file
+#   $ncpu:        number of CPUs used to do searches
+#   $ribo_secs:   number of seconds required for ribotyper
+#   $sensor_secs: number of seconds required for sensor
+#   $tot_secs:    number of seconds required for entire script
+#   $opt_HHR:     ref to 2D hash of cmdline options
+#   $FH_HR:       ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -1860,10 +1874,10 @@ sub update_error_count_hash {
 #################################################################
 sub output_timing_statistics { 
   my $sub_name = "output_timing_statistics";
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $tot_secs, $opt_HHR) = (@_);
+  my ($FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -1896,12 +1910,12 @@ sub output_timing_statistics {
   
   # line 2
   printf $FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
-                  $width_H{"stage"},    ribo_GetMonoCharacterString($width_H{"stage"}, "-"),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-"),
-                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"}, "-"),
-                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"}, "-"),
-                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-"),
-                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-"));
+                  $width_H{"stage"},    ribo_GetMonoCharacterString($width_H{"stage"},    "-", $FH_HR),
+                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"},     "-", $FH_HR),
+                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"},   "-", $FH_HR),
+                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"},    "-", $FH_HR),
+                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
+                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"},    "-", $FH_HR));
   
   $stage = "ribotyper";
   if(opt_Get("--skipsearch", $opt_HHR)) { 
@@ -1987,6 +2001,7 @@ sub output_timing_statistics {
 #   $sfetch_file: the sfetch file to create for fetching purposes 
 #   $subseq_file: the sequence file to create
 #   $opt_HHR:     ref to 2D hash of cmdline options
+#   $FH_HR:       ref to hash of file handles, including "cmd"
 #
 # Returns:  Two values:
 #           Number of sequences fetched.
@@ -1998,10 +2013,10 @@ sub output_timing_statistics {
 #################################################################
 sub fetch_seqs_given_gpipe_file { 
   my $sub_name = "fetch_seqs_given_gpipe_file()";
-  my $nargs_expected = 10;
+  my $nargs_expected = 11;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sfetch_exec, $seq_file, $gpipe_file, $string, $column, $do_revcomp, $sfetch_file, $subseq_file, $seqlen_HR, $opt_HHR) = (@_);
+  my ($sfetch_exec, $seq_file, $gpipe_file, $string, $column, $do_revcomp, $sfetch_file, $subseq_file, $seqlen_HR, $opt_HHR, $FH_HR) = (@_);
 
   my @el_A           = ();    # array of the space delimited tokens in a line
   my $nseq           = 0;     # number of sequences fetched
@@ -2064,7 +2079,7 @@ sub fetch_seqs_given_gpipe_file {
     else { 
       $sfetch_cmd = $sfetch_exec . " -f $seq_file $sfetch_file > $subseq_file"; 
     }
-    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR));
+    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
   }
 
   return ($nseq, $nseq_revcomped);
