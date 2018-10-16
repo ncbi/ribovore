@@ -1,0 +1,15 @@
+# Model info file for ribosensor.
+# Contains information on name of modelinfo file and accept
+# file to use with ribotyper and BLAST database to use 
+# with rRNA_sensor.
+# 
+# Each non-# prefixed line has 4 tokens, separated by a space.
+# First token is a shorthand name for a mode, these are acceptable
+#   arguments to the ribosensor.pl -m option.
+# Second token is the rRNA_sensor BLAST DB name for that mode.
+# Third token is the ribotyper.pl modelinfo file name for that mode.
+# Fourth token is the ribotyper.pl accept file name for that mode.
+16S 16S_centroids      ribo.0p20.modelinfo ribosensor.0p30.ssu-arc-bac.accept
+18S 18S_centroids.1091 ribo.0p20.modelinfo ribosensor.0p30.ssu-euk.accept
+
+
