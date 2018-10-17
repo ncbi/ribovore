@@ -1,0 +1,27 @@
+#idx  sequence                                       taxonomy               strand              p/f  error(s)
+#---  ---------------------------------------------  ---------------------  -----------------  ----  --------
+1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus               RPSP  -
+2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus               RPSP  -
+3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus               RPSF  -
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus               RFSF  SEQ_HOM_LowSimilarity;SEQ_HOM_LowCoverage;
+5     random                                         -                      NA                 RFSF  SEQ_HOM_NotSSUOrLSUrRNA;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus              RPSP  -
+7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus               RPSP  -
+8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus               RPSP  -
+9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus               RPSP  -
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus              RPSP  -
+11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus               RPSP  -
+12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus              RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus               RFSF  SEQ_HOM_LengthLong;SEQ_HOM_TaxNotExpectedSSUrRNA;
+#
+# Explanation of columns:
+#
+# Column 1 [idx]:      index of sequence in input sequence file
+# Column 2 [target]:   name of target sequence
+# Column 3 [taxonomy]: inferred taxonomy of sequence
+# Column 4 [strnd]:    strand ('plus' or 'minus') of best-scoring hit
+# Column 5 [type]:     "R<1>S<2>" <1> is 'P' if passes ribotyper, 'F' if fails; <2> is same, but for sensor
+# Column 6 [error(s)]: reason(s) for failure (see 00README.txt)

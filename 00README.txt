@@ -60,11 +60,13 @@ export RIBOEASELDIR="/usr/local/infernal/1.1.2/bin"
 export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
 export RIBOTAXDIR="/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
 export RIBOBLASTDIR="/usr/bin"
+export SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor"
 export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
 export EPNTESTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-test"
 export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB"
 export PATH="$RIBODIR:$PATH"
+export BLASTDB="$SENSORDIR:$BLASTDB"
 -----------
 
 The lines to add to your .cshrc file:
@@ -75,11 +77,13 @@ setenv RIBOEASELDIR "/usr/local/infernal/1.1.2/bin"
 setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
 setenv RIBOTAXDIR "/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
 setenv RIBOBLASTDIR "/usr/bin"
+setenv SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor"
 setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
 setenv EPNTESTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-test"
 setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
+setenv BLASTDB="$SENSORDIR":"$BLASTDB"
 -----------
 
 The full path starts with a / and does not include the angle brackets <>.
@@ -99,11 +103,22 @@ After adding the lines specified above, execute the command:
 or
 > source ~/.cshrc
 
-If you get an error about PERL5LIB being undefined, change the second
+If you get an error about PERL5LIB being undefined, change the PERL5LIB
 line to add to:
-export PERL5LIB="$RIBODIR"
+export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR"
 for .bashrc, OR
-setenv PERL5LIB "$RIBODIR"
+setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR"
+for .cshrc. And then do
+> source ~/.bashrc
+or
+> source ~/.cshrc
+again.
+
+Similarly, if you get an error about BLASTDB being undefined, 
+change the BLASTDB line to add to:
+export BLASTDB="$SENSORDIR"
+for .bashrc, OR
+setenv BLASTDB="$SENSORDIR"
 for .cshrc. And then do
 > source ~/.bashrc
 or
@@ -155,11 +170,21 @@ Should return:
 Should return:
 /panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
 
+> echo $SENSORDIR
+
+Should return:
+/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor
+
+> echo $BLASTDB 
+
+Should return a potentially longer string that
+begins with:
+/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor
+
 And finally, 
 > echo $RIBOBLASTDIR
 
 Should return:
-
 /usr/bin
 
 
