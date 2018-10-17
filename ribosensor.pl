@@ -25,6 +25,7 @@ $execs_H{"sensor"}      = $env_sensor_dir    . "/rRNA_sensor_script";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir . "/esl-sfetch";
 $execs_H{"blastn"}      = $env_riboblast_dir . "/blastn";
+$execs_H{"blastdbcmd"}  = $env_riboblast_dir . "/blastdbcmd";
 ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
@@ -286,7 +287,7 @@ open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailu
 open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
-my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
+my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
 
 ###################################################################
 # Step 1: Split up input sequence file into 3 files based on length
@@ -2377,11 +2378,13 @@ sub human_to_gpipe_fail_message {
 # Incept:      EPN, Tue Oct 16 14:54:17 2018
 #
 # Purpose:     Parse a model info input file and verify all 
-#              required files exist. We do not check that the
+#              required files exist, and that the blast DB 
+#              is in the 
 #              BLAST DB exists.
 #              
 # Arguments: 
 #   $modelinfo_file:    file to parse
+#   $blastdbcmd:        path to 'blastdbcmd' executable
 #   $in_mode:           mode we are running, default is "16S"
 #   $df_ribo_model_dir: default $RIBODIR/models directory, where default models should be
 #   $df_sensor_dir:     default $SENSORDIR directory, where default blast DBs should be
@@ -2394,17 +2397,18 @@ sub human_to_gpipe_fail_message {
 #              $ribo_accept_file:    path to ribotyper accept file to supply to ribotyper
 # 
 # Dies:        - If $modelinfo_file cannot be opened.
+#              - If BLAST DB read from relevant line of $modelinfo_file is not in $BLASTDB path
 #              - If $mode doesn't exist in $modelinfo_file
 #              - If ribo model info file listed in $modelinfo_file does not exist              
 #              - If ribo accept file listed in $modelinfo_file does not exist              
 #
 ################################################################# 
 sub parse_modelinfo_file { 
-  my $nargs_expected = 6;
+  my $nargs_expected = 7;
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $in_mode, $df_ribo_model_dir, $df_sensor_dir, $opt_HHR, $FH_HR) = @_;
+  my ($modelinfo_file, $blastdbcmd, $in_mode, $df_ribo_model_dir, $df_sensor_dir, $opt_HHR, $FH_HR) = @_;
 
   my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
   my $modelinfo_in_df;     # flag for whether we found model info file in default dir or not
@@ -2444,6 +2448,9 @@ sub parse_modelinfo_file {
         }
         $found_mode = 1;
         $ret_sensor_blastdb = $sensor_blastdb; # we don't verify that this exists
+        # make sure this blastdb exists, if this command does not fail, then it does
+        ribo_RunCommand("$blastdbcmd -info -db $ret_sensor_blastdb > /dev/null", opt_Get("-v", $opt_HHR), $ofile_info_HH{"FH"});
+
         # make sure that the ribotyper modelinfo file exists, either in $df_ribo_model_dir or, if
         # -i was used, in the same directory that $modelinfo_file is in
         my $df_ribo_modelinfo_file = $df_ribo_model_dir . $ribo_modelinfo_file;
