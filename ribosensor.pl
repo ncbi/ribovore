@@ -596,11 +596,17 @@ if(opt_Get("--psave", \%opt_HH)) {
 }
 
 output_outcome_counts(*STDOUT, \%outcome_ct_HH, $ofile_info_HH{"FH"});
+output_outcome_counts($log_FH, \%outcome_ct_HH, $ofile_info_HH{"FH"});
+
 output_error_counts(*STDOUT, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
+output_error_counts($log_FH, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
+
 output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
+output_error_counts($log_FH, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
 $total_seconds += ribo_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
 printf("#\n# Human readable error-based output saved to file $combined_out_file\n");
 printf("# GPIPE error-based output saved to file $combined_gpipe_file\n");
