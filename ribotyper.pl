@@ -208,7 +208,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.29";
+my $version           = "0.30";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
 my $releasedate       = "Oct 2018";
 my $package_name      = "ribotyper";
@@ -1259,7 +1259,7 @@ sub parse_modelinfo_file {
   }
 
   return $master_cmfile;
-  }
+}
 
 #################################################################
 # Subroutine : parse_inaccept_file()
