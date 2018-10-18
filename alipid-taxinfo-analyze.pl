@@ -322,13 +322,13 @@ push(@column_explanation_A, "#           'I1': avgpid-in-group (col X) >= avgpid
 push(@column_explanation_A, "#           'I2': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group >= maxpid-other-group\n");
 push(@column_explanation_A, "#           'I3': avgpid-in-group (col X) >= avgpid-other-group and maxpid-in-group <  maxpid-other-group\n");
 push(@column_explanation_A, "#           'O1': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
-push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group >  $prt_o1avgthresh% (changeable with --o1avg <f>)and\n"); 
+push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group >  $prt_o1avgthresh% (changeable with --o1avg <f>) and\n"); 
 push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group >  $prt_o1maxthresh% (changeable with --o1max <f>)\n");
 push(@column_explanation_A, "#           'O2': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
-push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group >  $prt_o2avgthresh% (changeable with --o2avg <f>)and\n"); 
+push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group >  $prt_o2avgthresh% (changeable with --o2avg <f>) and\n"); 
 push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group >  $prt_o2maxthresh% (changeable with --o2max <f>)\n");
 push(@column_explanation_A, "#           'O3': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
-push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group <= $prt_o2avgthresh% (changeable with --o2avg <f>)and\n"); 
+push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group <= $prt_o2avgthresh% (changeable with --o2avg <f>) OR\n"); 
 push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group <= $prt_o2maxthresh% (changeable with --o2max <f>)\n");
 push(@column_explanation_A, "#           'NA': if sequence's group (in-group column) equals 1 or has fewer than $min_grp_size sequences\n");
 push(@column_explanation_A, "# 5.  p/f:        'PASS' if sequence is of type $pass_type_str\n");
@@ -618,8 +618,8 @@ foreach my $seq (@seq_order_A) {
                   (defined $prt_avg_diff) ? $prt_avg_diff : "-", 
                   (defined $prt_max_diff) ? $prt_max_diff : "-");
       printf TAB ("%s\t%s\n", 
-                  (defined $avg_diff) ? $avg_diff : "-", 
-                  (defined $max_diff) ? $max_diff : "-");
+                  (defined $prt_avg_diff) ? $prt_avg_diff : "-", 
+                  (defined $prt_max_diff) ? $prt_max_diff : "-");
     }
   }
 }
