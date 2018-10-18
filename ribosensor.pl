@@ -20,12 +20,12 @@ my $env_riboblast_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
 my $df_model_dir       = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"ribo"}        = $env_ribotyper_dir . "/ribotyper.pl";
-$execs_H{"sensor"}      = $env_sensor_dir    . "/rRNA_sensor_script";
-$execs_H{"esl-seqstat"} = $env_riboeasel_dir . "/esl-seqstat";
-$execs_H{"esl-sfetch"}  = $env_riboeasel_dir . "/esl-sfetch";
-$execs_H{"blastn"}      = $env_riboblast_dir . "/blastn";
-$execs_H{"blastdbcmd"}  = $env_riboblast_dir . "/blastdbcmd";
+$execs_H{"ribo"}               = $env_ribotyper_dir . "/ribotyper.pl";
+$execs_H{"rRNA_sensor_script"} = $env_sensor_dir    . "/rRNA_sensor_script";
+$execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
+$execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
+$execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
+$execs_H{"blastdbcmd"}         = $env_riboblast_dir . "/blastdbcmd";
 ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
@@ -63,7 +63,7 @@ opt_Add("-h",           "boolean", 0,                        0,    undef, undef,
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                       "force; if <output directory> exists, overwrite it",       \%opt_HH, \@opt_order_A);
 opt_Add("-m",           "string",  "16S",                    1,    undef, undef,      "set mode to <s>",                                   "set mode to <s>, possible <s> values are \"16S\" and \"18S\"", \%opt_HH, \@opt_order_A);
 opt_Add("-c",           "boolean", 0,                        1,    undef, undef,      "assert that sequences are from cultured organisms", "assert that sequences are from cultured organisms",            \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 0,                        1,    undef, undef,      "use <n> CPUs",                                      "use <n> CPUs",                                            \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                      "use <n> CPUs",                                            \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                        "be verbose; output commands to stdout as they're run",    \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",        "use model info file <s> instead of default",              \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
@@ -80,6 +80,13 @@ opt_Add("--Smincov1",   "integer", 80,                       2,    undef, undef,
 opt_Add("--Smincov2",   "integer", 86,                       2,    undef, undef,      "set rRNA_sensor min percent coverage for seqs  > 350 nt to <n>", "set rRNA_sensor minimum coverage for seqs  > 350 nt to <n>", \%opt_HH, \@opt_order_A);
 $opt_group_desc_H{"3"} = "options for saving sequence subsets to files";
 opt_Add("--psave",       "boolean",0,                        3,    undef, undef,      "save passing sequences to a file",                              "save passing sequences to a file", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"4"} = "options for parallelizing cmsearch on a compute farm";
+#     option            type       default                group   requires incompat    preamble-output                                                help-output    
+opt_Add("-p",           "boolean", 0,                         4,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
+opt_Add("-q",           "string",  undef,                     4,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 10,                        4,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                       4,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--errcheck",   "boolean", 0,                         4,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -105,16 +112,23 @@ my $options_okay =
                 'Smincovall=s' => \$GetOptions_H{"--Smincovall"},
                 'Smincov1=s'   => \$GetOptions_H{"--Smincov1"},
                 'Smincov2=s'   => \$GetOptions_H{"--Smincov2"},
-                'psave'        => \$GetOptions_H{"--psave"});
+                'psave'        => \$GetOptions_H{"--psave"},
+# options for parallelization
+                'p'            => \$GetOptions_H{"-p"},
+                'q=s'          => \$GetOptions_H{"-q"},
+                'nkb=s'        => \$GetOptions_H{"--nkb"},
+                'wait=s'       => \$GetOptions_H{"--wait"},
+                'errcheck'     => \$GetOptions_H{"--errcheck"});
 
-my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
-my $executable        = $0;
-my $date              = scalar localtime();
-my $version           = "0.30";
-my $model_version_str = "0p30"; # model info file unchanged since version 0.30
-my $releasedate       = "Oct 2018";
-my $package_name      = "ribotyper";
-my $pkgstr            = "RIBO";
+my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $executable             = $0;
+my $date                   = scalar localtime();
+my $version                = "0.30";
+my $model_version_str      = "0p30"; # model info file unchanged since version 0.30
+my $ribo_model_version_str = "0p20"; # for qsubinfo file only
+my $releasedate            = "Oct 2018";
+my $package_name           = "ribotyper";
+my $pkgstr                 = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -242,11 +256,17 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
-# make sure the sequence and modelinfo files exist
+# make sure the sequence, modelinfo, and qsubinfo (if -q) files exist
 my $df_modelinfo_file = $df_model_dir . "ribosensor." . $model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
+
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $ribo_model_version_str . ".qsubinfo";
+my $qsubinfo_file = undef;
+# if -p, check for existence of qsub info file
+if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
+else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
 ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
@@ -254,6 +274,12 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 }
 else { # -i used on the command line
   ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+}
+if(! opt_IsUsed("-q", \%opt_HH)) {
+  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+}
+else { # -q used on the command line
+  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model file after we parse the model info file
 
@@ -288,6 +314,12 @@ open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailu
 
 # parse the model info file
 my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
+
+my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
+my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
+if(opt_IsUsed("-p", \%opt_HH)) { 
+  ($qsub_prefix, $qsub_suffix) = ribo_ParseQsubFile($qsubinfo_file, $ofile_info_HH{"FH"});
+}
 
 ###################################################################
 # Step 1: Split up input sequence file into 3 files based on length
@@ -375,8 +407,16 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # It's important that we run ribotyper only once on the full file so that E-values are accurate. 
 my $ribo_dir_out    = $dir_out . "/ribo-out";
 my $ribo_stdoutfile = $out_root . ".ribotyper.stdout";
-my $keep_opt        = (opt_Get("--keep", \%opt_HH)) ? "--keep" : "";
-my $ribotyper_cmd   = $execs_H{"ribo"} . " -f $keep_opt -n $ncpu -i $ribo_modelinfo_file --inaccept $ribo_accept_file --scfail --covfail --tshortcov 0.80 --tshortlen 350 $seq_file $ribo_dir_out > $ribo_stdoutfile";
+# determine ribotyper options
+my $ribotyper_options = " -f -i $ribo_modelinfo_file --inaccept $ribo_accept_file --scfail --covfail --tshortcov 0.80 --tshortlen 350 ";
+if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
+if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
+if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
+if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
+my $ribotyper_cmd   = $execs_H{"ribo"} . " $ribotyper_options $seq_file $ribo_dir_out > $ribo_stdoutfile";
 my $ribo_secs       = 0.; # total number of seconds required for ribotyper command
 my $ribo_shortfile  = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
@@ -386,9 +426,9 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "ribostdout",  $ribo_stdoutfile, 0, "ribotyper stdout output");
 }  
 
-###########################################################################
+##############################################################################
 # Step 3: Run rRNA_sensor on the (up to 3) length-partitioned sequence files
-###########################################################################
+##############################################################################
 my @sensor_dir_out_A             = (); # [0..$i..$nseq_parts-1], directory created for sensor run on partition $i
 my @sensor_stdoutfile_A          = (); # [0..$i..$nseq_parts-1], standard output file for sensor run on partition $i
 my @sensor_classfile_argument_A  = (); # [0..$i..$nseq_parts-1], sensor script argument for classification output file for partition $i
@@ -411,6 +451,22 @@ for($i = 0; $i < $nseq_parts; $i++) {
     $sensor_classfile_fullpath_A[$i]  = $sensor_dir_out_A[$i] . "/sensor-class." . ($i+1) . ".out";
     $sensor_cmd = $execs_H{"sensor"} . " $sensor_minlen $sensor_maxlen $subseq_file_A[$i] $sensor_classfile_argument_A[$i] $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu $sensor_dir_out_A[$i] $sensor_blastdb > $sensor_stdoutfile_A[$i]";
     if(! opt_Get("--skipsearch", \%opt_HH)) { 
+      my %outfile_H = (); 
+      $info_H{"p:seqfile"}     = $subseq_file_A[$i];
+      $info_H{"minlen"}        = $sensor_minlen;
+      $info_H{"maxlen"}        = $sensor_maxlen;
+      $info_H{"minid"}         = $sensor_minid_A[$i];
+      $info_H{"maxevalue"}     = $sensor_maxevalue;
+      $info_H{"ncpu"}          = $sensor_ncpu;
+      $info_H{"class"}         = $sensor_classfile_argument_A[$i];
+      $info_H{"p:outdir"}      = $sensor_dir_out_A[$i];
+      $info_H{"blastdb"}       = $sensor_blastdb;
+      $info_H{"p:c:stdout"}    = $sensor_stdoutfile_A[$i];
+      $info_H{"p:c:classpath"} = $sensor_classfile_fullpath_A[$i];
+      my $sensor_args = "$sensor_minlen $sensor_maxlen |SEQFILE| $sensor_classfile_argument_A[$i] |CLASS| $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu |DIR| $sensor_blastdb";
+      # ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper will replace |SEQFILE| |DIR| as appropriate, depending on -p or not
+
+
       $start_secs = ofile_OutputProgressPrior("Running rRNA_sensor on seqs of length $spart_desc_A[$i]", $progress_w, $log_FH, *STDOUT);
       $sensor_secs += ribo_RunCommand($sensor_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);

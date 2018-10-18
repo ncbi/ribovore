@@ -624,10 +624,9 @@ my $r1_opt_p_sum_cpu_secs = 0.;
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
-  my %outfile_H = (); 
-  $outfile_H{"tblout"}   = $r1_tblout_file;
-  $outfile_H{"cmsearch"} = $r1_searchout_file;
-  ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+  my %info_HH = (); 
+  ribo_RunCmsearchSetInfoHashOfHashes(\%info_HH, $seq_file, $master_model_file, $r1_tblout_file, $r1_searchout_file, \%opt_HH, $ofile_info_HH{"FH"});
+  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_HH, \%opt_HH, \%ofile_info_HH);
   $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
 }
 else { 
@@ -801,10 +800,9 @@ if(defined $alg2) {
       push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        my %outfile_H = (); 
-        $outfile_H{"tblout"}   = $r2_tblout_file_A[$midx];
-        $outfile_H{"cmsearch"} = $r2_searchout_file_A[$midx];
-        ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+        my %info_HH = (); 
+        ribo_RunCmsearchSetInfoHashOfHashes(\%info_HH, $seqfile_H{$model}, $indi_cmfile_H{$model}, $r2_tblout_file_A[$midx], $r2_searchout_file_A[$midx], \%opt_HH, $ofile_info_HH{"FH"});
+        ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_HH, \%opt_HH, \%ofile_info_HH);
         $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 

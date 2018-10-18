@@ -1387,7 +1387,7 @@ sub ribo_ConvertFetchedNameToAccVersion {
 #   $model_file:     path to model file to use 
 #   $seq_file:       sequence file to search against
 #   $opts:           options to provide to cmsearch or cmalign
-#   $file_HR:        ref to hash, 
+#   $info_HR:        ref to hash, 
 #                    if $executable eq "cmsearch", keys must be "tblout" and "cmsearch"
 #                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", "cmalign", and "seqlist"
 #   $opt_HHR:        ref to 2D hash of cmdline options
@@ -1403,31 +1403,31 @@ sub ribo_RunCmsearchOrCmalign {
   my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($executable, $qsub_prefix, $qsub_suffix, $model_file, $seq_file, $opts, $file_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($executable, $qsub_prefix, $qsub_suffix, $model_file, $seq_file, $opts, $info_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   # we can only pass $FH_HR to ofile_FAIL if that hash already exists
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
-  my @reqd_file_keys = (); # array of required outfile_HR keys for this executable program
-  my $file_key = undef;    # a single outfile key
+  my @reqd_info_keys = (); # array of required info_HR keys for this executable program
+  my $info_key = undef;    # a single info key
 
   ribo_CheckIfFileExistsAndIsNonEmpty($seq_file,   undef, $sub_name, 1, $FH_HR); 
   ribo_CheckIfFileExistsAndIsNonEmpty($model_file, undef, $sub_name, 1, $FH_HR); 
 
-  # determine if we have the appropriate paths defined in %{$file_HR} 
+  # determine if we have the appropriate paths defined in %{$info_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
   if($executable =~ /cmsearch$/) { 
-    @reqd_file_keys = ("cmsearch", "tblout");
+    @reqd_info_keys = ("cmsearch", "tblout");
   }
   elsif($executable =~ /cmalign$/) { 
-    @reqd_file_keys = ("cmalign", "stk", "ifile", "elfile", "seqlist");
+    @reqd_info_keys = ("cmalign", "stk", "ifile", "elfile", "seqlist");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
   }
-  foreach $file_key (@reqd_file_keys) { 
-    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable, $file_key file not set", "RIBO", 1, $FH_HR); }
+  foreach $info_key (@reqd_info_keys) { 
+    if(! exists $info_HR->{$info_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable, $info_key file not set", "RIBO", 1, $FH_HR); }
     # remove this file if it already exists
-    if(($file_HR->{$file_key} ne "/dev/null") && (-e $file_HR->{$file_key})) { ribo_RemoveFileUsingSystemRm($file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    if(($info_HR->{$info_key} ne "/dev/null") && (-e $info_HR->{$info_key})) { ribo_RemoveFileUsingSystemRm($info_HR->{$info_key}, $sub_name, $opt_HHR, $ofile_info_HHR); }
   } 
 
   # determine if we are running on the farm or locally
@@ -1447,24 +1447,118 @@ sub ribo_RunCmsearchOrCmalign {
     $do_local = 0;
   }
 
-  # determine if we have the appropriate paths defined in %{$file_HR} 
+  # determine if we have the appropriate paths defined in %{$info_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
   # and run the program
   if($executable =~ /cmsearch$/) { 
     if(opt_Get("--keep", $opt_HHR)) { 
-      $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+      $cmd .= "$executable $opts --verbose --tblout " . $info_HR->{"tblout"} . " $model_file $seq_file > " . $info_HR->{"cmsearch"} . $cmd_suffix;
     }
     else { # only save the Total CPU line output, otherwise output files get big for large inputs
       if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-        $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \\\"Total CPU time\\\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+        $cmd .= "$executable $opts --verbose --tblout " . $info_HR->{"tblout"} . " $model_file $seq_file | grep \\\"Total CPU time\\\" > " . $info_HR->{"cmsearch"} . $cmd_suffix;
       }
       else { 
-        $cmd .= "$executable $opts --verbose --tblout " . $file_HR->{"tblout"} . " $model_file $seq_file | grep \"Total CPU time\" > " . $file_HR->{"cmsearch"} . $cmd_suffix;
+        $cmd .= "$executable $opts --verbose --tblout " . $info_HR->{"tblout"} . " $model_file $seq_file | grep \"Total CPU time\" > " . $info_HR->{"cmsearch"} . $cmd_suffix;
       }
     }
   }
   elsif($executable =~ /cmalign$/) { 
-    $cmd .= "$executable $opts --ifile " . $file_HR->{"ifile"} . " --elfile " . $file_HR->{"elfile"} . " -o " . $file_HR->{"stk"} . " $model_file $seq_file > " . $file_HR->{"cmalign"} . $cmd_suffix;
+    $cmd .= "$executable $opts --ifile " . $info_HR->{"ifile"} . " --elfile " . $info_HR->{"elfile"} . " -o " . $info_HR->{"stk"} . " $model_file $seq_file > " . $info_HR->{"cmalign"} . $cmd_suffix;
+  }
+
+  # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
+  # else submit it to the farm and return, caller will deal with monitoring it
+  ribo_RunCommand($cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+
+  return;
+}
+
+#################################################################
+# Subroutine: ribo_RunCmsearchOrCmalignOrRRnaSensor
+# Incept:     EPN, Thu Jul  5 15:05:53 2018
+#             EPN, Wed Oct 17 20:45:53 2018 [rRNA_sensor added]
+#
+# Purpose:    Run cmsearch, cmalign or rRNA_sensor either locally
+#             or on the farm.
+#
+# Arguments:
+#   $executable:     path to cmsearch or cmalign or rRNA_sensor executable
+#   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
+#   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
+#   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor arguments to use 
+#   $info_HHR:       ref to hash with output files and arguments for running 
+#                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
+#                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+#                    see comments for that subroutine for more details.
+#   $opt_HHR:        ref to 2D hash of cmdline options
+#   $ofile_info_HHR: ref to the ofile info 2D hash
+#
+# Returns:  void
+# 
+# Dies:     Never
+#
+#################################################################
+sub ribo_RunCmsearchOrCmalignOrRRnaSensor { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensor()";
+  my $nargs_expected = 7;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($executable, $qsub_prefix, $qsub_suffix, $opts, $info_HHR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  # we can only pass $FH_HR to ofile_FAIL if that hash already exists
+  my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
+
+  # validate %{$info_HHR}
+  my $program_choice = ribo_RemoveDirPath($executable);
+  ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HHR, $opt_HHR, $ofile_info_HHR);
+
+  # seqfile is a required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
+  my $seq_file = $info_HHR->{"seqfile"}{"value"};
+
+  # determine if we are running on the farm or locally
+  my $cmd = "";
+  my $do_local = 1;
+  my $cmd_suffix = "";
+  if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
+    $cmd = $qsub_prefix;
+    $cmd_suffix = $qsub_suffix;
+    # replace ![errfile]! with $errfile
+    # replace ![jobname]! with $jobname
+    my $jobname = "j" . ribo_RemoveDirPath($seq_file);
+    my $errfile = $seq_file . ".err";
+    if(-e $errfile) { ribo_RemoveFileUsingSystemRm($errfile, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    $cmd =~ s/\!\[errfile\]\!/$errfile/g;
+    $cmd =~ s/\!\[jobname\]\!/$jobname/g;
+    $do_local = 0;
+  }
+
+  # determine if we have the appropriate paths defined in %{$info_HR} 
+  # depending on if $executable is "cmalign" or "cmsearch" or "rRNA_sensor_script"
+  # and run the program
+  if($executable =~ /cmsearch$/) { 
+    my $model_file     = $info_HHR->{"modelfile"}{"value"};
+    my $tblout_file    = $info_HHR->{"tblout"}{"value"};
+    my $searchout_file = $info_HHR->{"cmsearch"}{"value"};
+    if(opt_Get("--keep", $opt_HHR)) { 
+      $cmd .= "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $searchout_file" . $cmd_suffix;
+    }
+    else { # only save the Total CPU line output, otherwise output files get big for large inputs
+      if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
+        $cmd .= "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \\\"Total CPU time\\\" > $searchout_file" . $cmd_suffix;
+      }
+      else { 
+        $cmd .= "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \"Total CPU time\" > $searchout_file" . $cmd_suffix;
+      }
+    }
+  }
+  elsif($executable =~ /cmalign$/) { 
+    die "ERROR trying to run cmalign in $sub_name, need to set up command";
+    #$cmd .= "$executable $opts --ifile " . $info_HR->{"ifile"} . " --elfile " . $info_HR->{"elfile"} . " -o " . $info_HR->{"stk"} . " $model_file $seq_file > " . $info_HR->{"cmalign"} . $cmd_suffix;
+  }
+  elsif($executable =~ /rRNA_sensor_script$/) { 
+    die "ERROR trying to run sensor script in $sub_name, need to set up command";
+    #$cmd .= "$executable $opts --ifile " . $info_HR->{"ifile"} . " --elfile " . $info_HR->{"elfile"} . " -o " . $info_HR->{"stk"} . " $model_file $seq_file > " . $info_HR->{"cmalign"} . $cmd_suffix;
   }
 
   # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
@@ -1498,7 +1592,7 @@ sub ribo_RunCmsearchOrCmalign {
 #  $tot_nseq:        number of sequences in $seq_file
 #  $tot_len_nt:      total length of all nucleotides in $seq_file
 #  $opts:            string of cmsearch or cmalign options
-#  $file_HR:         ref to hash, 
+#  $info_HR:         ref to hash, 
 #                    if $executable eq "cmsearch", keys must be "tblout" and "cmsearch"
 #                    if $executable eq "cmalign",  keys must be "ifile", "elfile", "stk", "cmalign", and "seqlist"
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
@@ -1518,67 +1612,67 @@ sub ribo_RunCmsearchOrCmalignWrapper {
   my $nargs_expected = 15;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($execs_HR, $program_choice, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $file_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($execs_HR, $program_choice, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $model_file, $seq_file, $tot_nseq, $tot_len_nt, $opts, $info_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
   my $out_dir = ribo_GetDirPath($out_root);
   my $executable = undef;     # path to the cmsearch or cmalign executable
-  my @reqd_file_keys = (); # array of required file_HR keys for this executable program
-  my $file_key = undef;    # a single outfile key
+  my @reqd_info_keys = (); # array of required file_HR keys for this executable program
+  my $info_key = undef;    # a single outfile key
   my $wait_key = undef;       # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
   my $wait_str = undef;       # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
   my $sum_cpu_plus_wait_secs = 0; # will be returned as '0' unless -p used
   my $njobs_finished = 0; 
 
-  # determine if we have the appropriate paths defined in %{$file_HR} 
+  # determine if we have the appropriate paths defined in %{$info_HR} 
   # depending on if $executable is "cmalign" or "cmsearch"
   if($program_choice eq "cmsearch") { 
     $executable = $execs_HR->{"cmsearch"};
-    @reqd_file_keys = ("cmsearch", "tblout");
+    @reqd_info_keys = ("cmsearch", "tblout");
     $wait_key = "tblout";
     $wait_str = "[ok]";
   }
   elsif($program_choice eq "cmalign") { 
     $executable = $execs_HR->{"cmalign"};
-    @reqd_file_keys = ("cmalign", "stk", "ifile", "elfile", "seqlist");
+    @reqd_info_keys = ("cmalign", "stk", "ifile", "elfile", "seqlist");
     $wait_key = "cmalign";
     $wait_str = "# CPU time:";
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $executable is not cmsearch or cmalign", "RIBO", 1, $FH_HR);
   }
-  foreach $file_key (@reqd_file_keys) { 
-    if(! exists $file_HR->{$file_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $file_key file not set", "RIBO", 1, $FH_HR); }
+  foreach $info_key (@reqd_info_keys) { 
+    if(! exists $info_HR->{$info_key})  { ofile_FAIL("ERROR in $sub_name, executable is $executable but $info_key file not set", "RIBO", 1, $FH_HR); }
   } 
 
   if(! opt_Get("-p", $opt_HHR)) { 
     # run job locally
-    ribo_RunCmsearchOrCmalign($executable, undef, undef, $model_file, $seq_file, $opts, $file_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+    ribo_RunCmsearchOrCmalign($executable, undef, undef, $model_file, $seq_file, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
   }
   else { 
-    my %tmp_outfile_HA = (); # hash of arrays of temporary files for all jobs to concatenate or otherwise combine, and then remove
-    my %tmp_outfile_H  = (); # hash of temporary files for one job
+    my %tmp_info_HA = (); # hash of arrays of temporary files for all jobs to concatenate or otherwise combine, and then remove
+    my %tmp_info_H  = (); # hash of temporary files for one job
 
     # we need to split up the sequence file, and submit a separate set of cmsearch/cmalign jobs for each file
     my $nfasta_created = ribo_FastaFileSplitRandomly($seq_file, $seqlen_HR, $out_dir, $tot_nseq, $tot_len_nt, opt_Get("--nkb", $opt_HHR) * 1000, opt_Get("-s", $opt_HHR), $ofile_info_HHR->{"FH"});
 
     # submit all jobs to the farm
     for(my $f = 1; $f <= $nfasta_created; $f++) { 
-      %tmp_outfile_H = ();
+      %tmp_info_H = ();
       my $seq_file_tail = ribo_RemoveDirPath($seq_file);
       my $tmp_seq_file  = $out_dir . "/" . $seq_file_tail . "." . $f;
-      push(@{$tmp_outfile_HA{"fafile"}}, $tmp_seq_file);
-      foreach $file_key ((@reqd_file_keys), "err") { 
-        if((exists $file_HR->{$file_key}) && ($file_HR->{$file_key} eq "/dev/null")) { 
-          $tmp_outfile_H{$file_key} = "/dev/null"; 
+      push(@{$tmp_info_HA{"fafile"}}, $tmp_seq_file);
+      foreach $info_key ((@reqd_info_keys), "err") { 
+        if((exists $info_HR->{$info_key}) && ($info_HR->{$info_key} eq "/dev/null")) { 
+          $tmp_info_H{$info_key} = "/dev/null"; 
         }
         else { 
-          $tmp_outfile_H{$file_key} = $tmp_seq_file . "." . $file_key;
+          $tmp_info_H{$info_key} = $tmp_seq_file . "." . $info_key;
         }
-        push(@{$tmp_outfile_HA{$file_key}}, $tmp_outfile_H{$file_key});
+        push(@{$tmp_info_HA{$info_key}}, $tmp_info_H{$info_key});
       }
-      ribo_RunCmsearchOrCmalign($executable, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, \%tmp_outfile_H, $opt_HHR, $ofile_info_HHR); 
+      ribo_RunCmsearchOrCmalign($executable, $qsub_prefix, $qsub_suffix, $model_file, $tmp_seq_file, $opts, \%tmp_info_H, $opt_HHR, $ofile_info_HHR); 
     }
     
     # wait for the jobs to finish
@@ -1586,30 +1680,367 @@ sub ribo_RunCmsearchOrCmalignWrapper {
     print STDERR "\n";
     ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", opt_Get("--wait", $opt_HHR)), 
                                            $progress_w, $log_FH, *STDERR);
-    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($tmp_outfile_HA{$wait_key}, $tmp_outfile_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($tmp_info_HA{$wait_key}, $tmp_info_HA{"err"}, $wait_str, opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
     }
     ofile_OutputString($log_FH, 1, "# "); # necessary because waitForFarmJobsToFinish() creates lines that summarize wait time and so we need a '#' before 'done' printed by outputProgressComplete()
 
     # concatenate/merge files into one 
-    foreach $file_key (@reqd_file_keys) { 
-      if($file_key eq "stk") { # special case
-        ribo_MergeAlignmentsAndReorder($execs_HR, $tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $file_HR->{"seqlist"}, $opt_HHR, $ofile_info_HHR);
+    foreach $info_key (@reqd_info_keys) { 
+      if($info_key eq "stk") { # special case
+        ribo_MergeAlignmentsAndReorder($execs_HR, $tmp_info_HA{$info_key}, $info_HR->{$info_key}, $info_HR->{"seqlist"}, $opt_HHR, $ofile_info_HHR);
       }
-      elsif(($file_key ne "seqlist") && ($file_HR->{$file_key} ne "/dev/null")) { 
+      elsif(($info_key ne "seqlist") && ($info_HR->{$info_key} ne "/dev/null")) { 
         # two more special cases, don't concatenate seqlist files and no need to create a file if /dev/null 
-        ribo_ConcatenateListOfFiles($tmp_outfile_HA{$file_key}, $file_HR->{$file_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+        ribo_ConcatenateListOfFiles($tmp_info_HA{$info_key}, $info_HR->{$info_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
     }
 
     # remove temporary files if --keep not enabled
     if(! opt_Get("--keep", $opt_HHR)) { 
-      foreach $file_key ((@reqd_file_keys), "err", "fafile") { 
-        foreach my $tmp_file (@{$tmp_outfile_HA{$file_key}}) {
+      foreach $info_key ((@reqd_info_keys), "err", "fafile") { 
+        foreach my $tmp_file (@{$tmp_info_HA{$info_key}}) {
           if(($tmp_file ne "/dev/null") && (-e $tmp_file)) { 
             ribo_RemoveFileUsingSystemRm($tmp_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
           }
+        }
+      }
+    }
+  } # end of 'else' entered if -p used
+
+  return $sum_cpu_plus_wait_secs; # will be '0' unless -p used
+}
+
+#################################################################
+# Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+# Incept:      EPN, Thu Oct 18 12:32:18 2018
+#
+# Purpose:     Run one or more cmsearch, cmalign or rRNA_sensor jobs 
+#              on the farm or locally, after possibly splitting up the input
+#              sequence file. 
+#              The following must all be valid options in opt_HHR:
+#              -p, --nkb, -s, --wait, --errcheck, --keep, -v
+#              See ribotyper.pl for examples of these options.
+#
+# Arguments: 
+#  $program_choice:  "cmalign" or "cmsearch" or "rRNA_sensor_script"
+#  $info_HHR:        ref to 2D hash with output files and arguments for running 
+#                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
+#
+#                    if "cmsearch":  1D keys must be: 
+#                       "seqfile":   name of master sequence file
+#                       "modelfile": name of model (CM) file 
+#                       "tblout":    name of tblout output file (--tblout)
+#                       "cmsearch":  name of stdout output file
+#                       "error":     path to error file (created only if -p)
+#
+#                    if "cmalign",   1D keys must be:
+#                       "seqfile":   name of master sequence file
+#                       "modelfile": name of model (CM) file 
+#                       "ifile":     name of ifile output file (--ifile)
+#                       "elfile":    name of elfile output file (--elfile)
+#                       "stk":       name of alignment output file (-o)
+#                       "cmalign":   name of stdout output file
+#                       "seqlist":   name of file listing all sequences in "p:seqfile";
+#                       "error":     path to error file (created only if -p)
+#
+#                    if "rRNA_sensor_script", 1D keys must be:
+#                      "seqfile":   name of master sequence file
+#                      "minlen":    minimum length of sequence to allow (cmdline arg 1)
+#                      "maxlen":    maximum length of sequence to allow (cmdline arg 2)
+#                      "class":     output file with class definitions  (cmdline arg 4)
+#                      "minid":     min blast %id to allow              (cmdline arg 5)
+#                      "maxevalue": max blast E-value to allow          (cmdline arg 6)
+#                      "ncpu":      number of CPUs to use               (cmdline arg 7)
+#                      "outdir"     name of output diretory             (cmdline arg 8)
+#                      "blastdb":   name of blast db                    (cmdline arg 9)
+#                      "stdout":    name of stdout output file
+#                      "classpath": full path to class output file
+#                      "error":     path to error file (created only if -p)
+#
+#              2D keys for all 1D keys must be:
+#                "value":   file name, or relevant value if not a file
+#                "psplit": '1' if file will be split if -p (parallelized)
+#                "concat": '1' if file will be created by concatenating others together, if -p
+#                "type":   'input', 'output' or 'none'
+#
+#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns: 2 values: 
+#          $wait_key:   1D key in $info_HHR for which $info_HHR->{$wait_key}{"value"} is the file
+#                       to look for $wait_str in to indicate the job is finished
+#          $wait_str:   string in the final line of $info_HHR->{$wait_key}{"value"} that indicates
+#                       a job is finished.
+# 
+# Dies: If program_choice is invalid, a required info_key is not set, or an input file does not exist
+#
+################################################################# 
+sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorValidation";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($program_choice, $info_HHR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  my $wait_key   = undef;
+  my $wait_str   = undef;
+  my @reqd_1D_keys_A = ();
+  my @reqd_2D_keys_A = ("value", "psplit", "concat", "type");
+  my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
+
+  # determine if we have the appropriate paths defined in %{$info_HR} 
+  # depending on if $program_choice is "cmalign" or "cmsearch" or "rRNA_sensor_script"
+  if($program_choice eq "cmsearch") { 
+    $wait_key = "tblout";
+    $wait_str = "[ok]";
+    @reqd_1D_keys_A = ("seqfile", "modelfile", "cmsearch", "tblout", "error");
+  }
+  elsif($program_choice eq "cmalign") { 
+    $wait_key = "cmalign";
+    $wait_str = "# CPU time:";
+    @reqd_1D_keys_A = ("seqfile", "modelfile", "cmalign", "stk", "ifile", "elfile", "seqlist", "error");
+  }
+  elsif($program_choice eq "rRNA_sensor_script") { 
+    $wait_key = "stdout";
+    $wait_str = "Final output saved as";
+    @reqd_1D_keys_A = ("seqfile", "minlen", "maxlen", "class", "minid", "maxevalue", "ncpu", "outdir", "blastdb", "stdout", "classpath", "error");
+  }
+  else { 
+    ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", "RIBO", 1, $FH_HR);
+  }
+  # verify all 1D and 2D keys exists, and input files exist and are non-empty
+  foreach my $key1D (@reqd_1D_keys_A) { 
+    if(! exists $info_HHR->{$key1D}) { 
+      ofile_FAIL("ERROR in $sub_name, executable is $program_choice but $key1D file not set", "RIBO", 1, $FH_HR); 
+      # each 1D key has 4 required 2D keys: "value", "psplit", "concat", "type"
+    }
+    for my $key2D (@reqd_2D_keys_A) { 
+      if(! exists $info_HHR->{$key1D}{$key2D}) { 
+        ofile_FAIL("ERROR in $sub_name, executable is $program_choice, info_HHR->{$key1D}{$key2D} not set", "RIBO", 1, $FH_HR);         
+      }
+    }
+    # if it is an input file, make sure it exists
+    if($info_HHR->{$key1D}{"type"} eq "input") { 
+      ribo_CheckIfFileExistsAndIsNonEmpty($info_HHR->{$key1D}{"value"}, undef, $sub_name, 1, $FH_HR); 
+    }
+  }
+  
+  return($wait_key, $wait_str);
+}
+
+#################################################################
+# Subroutine:  ribo_RunCmsearchSetInfoHashOfHashes()
+# Incept:      EPN, Thu Oct 18 12:32:12 2018
+#              EPN, Wed Oct 17 20:46:10 2018 [rRNA_sensor added]
+#
+# Purpose:     Define the 2D hash, %{$info_HHR} for a cmsearch run.
+#              1D keys will be:
+#                "seqfile":   name of master sequence file
+#                "modelfile": name of model (CM) file 
+#                "tblout":    name of tblout output file (--tblout)
+#                "cmsearch":  name of stdout output file
+#                "error":     name for error output, if -p
+#              2D keys will be:
+#                "value":   file name, or relevant value if not a file
+#                "psplit": '1' if file will be split if -p (parallelized)
+#                "concat": '1' if file will be created by concatenating others together, if -p
+#                "type":   'input', 'output' or 'none'
+#
+# Arguments: 
+#  $info_HHR:        ref to 2D info hash to fill here
+#  $seq_file:        name of sequence file with all sequences to run against
+#  $model_file:      path to model file to use 
+#  $tblout_file:     name of output tblout file 
+#  $searchout_file:  name of output searchout file
+#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns: void, fills %{$info_HHR}.
+# 
+# Dies: Never
+#
+################################################################# 
+sub ribo_RunCmsearchSetInfoHashOfHashes { 
+  my $sub_name = "ribo_RunCmsearchSetInfoHashOfHashes";
+  my $nargs_expected = 7;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($info_HHR, $seq_file, $model_file, $tblout_file, $searchout_file, $opt_HHR, $ofile_info_HHR) = @_;
+  
+  %{$info_HHR} = ();
+
+  foreach my $key1 ("seqfile", "modelfile", "tblout", "cmsearch", "error") { 
+    %{$info_HHR->{$key1}} = ();
+  }
+
+  $info_HHR->{"seqfile"}{"value"}  = $seq_file;
+  $info_HHR->{"seqfile"}{"psplit"} = 1;
+  $info_HHR->{"seqfile"}{"concat"} = 0;
+  $info_HHR->{"seqfile"}{"type"}   = "input";
+
+  $info_HHR->{"modelfile"}{"value"}  = $model_file;
+  $info_HHR->{"modelfile"}{"psplit"} = 0;
+  $info_HHR->{"modelfile"}{"concat"} = 0;
+  $info_HHR->{"modelfile"}{"type"}   = "input";
+
+  $info_HHR->{"tblout"}{"value"}  = $tblout_file;
+  $info_HHR->{"tblout"}{"psplit"} = 0;
+  $info_HHR->{"tblout"}{"concat"} = 1;
+  $info_HHR->{"tblout"}{"type"}   = "output";
+
+  $info_HHR->{"cmsearch"}{"value"}  = $searchout_file;
+  $info_HHR->{"cmsearch"}{"psplit"} = 0;
+  $info_HHR->{"cmsearch"}{"concat"} = 1;
+  $info_HHR->{"cmsearch"}{"type"}   = "output";
+
+  $info_HHR->{"error"}{"value"}  = $searchout_file . ".err";
+  $info_HHR->{"error"}{"psplit"} = 0;
+  $info_HHR->{"error"}{"concat"} = 1;
+  $info_HHR->{"error"}{"type"}   = "output";
+
+  return;
+}
+
+#################################################################
+# Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper()
+# Incept:      EPN, Thu Jul  5 15:24:19 2018
+#              EPN, Wed Oct 17 20:46:10 2018 [rRNA_sensor added]
+#
+# Purpose:     Run one or more cmsearch, cmalign or rRNA_sensor jobs 
+#              on the farm or locally, after possibly splitting up the input
+#              sequence file. 
+#              The following must all be valid options in opt_HHR:
+#              -p, --nkb, -s, --wait, --errcheck, --keep, -v
+#              See ribotyper.pl for examples of these options.
+#
+# Arguments: 
+#  $execs_HR:        ref to hash with paths to executables
+#  $program_choice:  "cmalign" or "cmsearch" or "rRNA_sensor_script"
+#  $qsub_prefix:     qsub command prefix to use when submitting to farm, if -p
+#  $qsub_suffix:     qsub command suffix to use when submitting to farm, if -p
+#  $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
+#  $progress_w:      width for outputProgressPrior output
+#  $out_root:        output root for naming sequence files
+#  $tot_nseq:        number of sequences in $seq_file
+#  $tot_len_nt:      total length of all nucleotides in $seq_file
+#  $opts:            string of cmsearch or cmalign options or rRNA_sensor arguments
+#  $info_HHR:        ref to hash with output files and arguments for running 
+#                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
+#                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+#                    see comments for that subroutine for more details.
+#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns: $sum_cpu_plus_wait_secs:   '0' unless -p used.
+#                           If -p used: this is an estimate on total number CPU
+#                           seconds used required by all jobs summed together. This is
+#                           more than actual CPU seconds, because, for example, if a
+#                           job takes 1 seconds and we didn't check on until 10 
+#                           seconds elapsed, then it will contribute 10 seconds to this total.
+# 
+# Dies: If an executable doesn't exist, or cmsearch command fails if we're running locally
+################################################################# 
+sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper";
+  my $nargs_expected = 13;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($execs_HR, $program_choice, $qsub_prefix, $qsub_suffix, $seqlen_HR, $progress_w, $out_root, $tot_nseq, $tot_len_nt, $opts, $info_HHR, $opt_HHR, $ofile_info_HHR) = @_;
+
+  my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
+  my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
+  my $out_dir = ribo_GetDirPath($out_root);
+  my $executable  = undef; # path to the cmsearch or cmalign executable
+  my $info_1D_key = undef; # a single info_HH 1D key
+  my $wait_str    = undef; # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
+  my $wait_key    = undef; # outfile key that ribo_WaitForFarmJobsToFinish will use to check if jobs are done
+  my $sum_cpu_plus_wait_secs = 0; # will be returned as '0' unless -p used
+  my $njobs_finished = 0; 
+
+  # validate %{$info_HHR}
+  ($wait_key, $wait_str) = ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HHR, $opt_HHR, $ofile_info_HHR);
+  $executable = $execs_HR->{$program_choice};
+
+  if(! opt_Get("-p", $opt_HHR)) { 
+    # run job locally
+    ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, undef, undef, $opts, $info_HHR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+  }
+  else { 
+    my %wkr_outfiles_HA = (); # hash of arrays of output file names for all jobs, 
+                              # these are files to concatenate or otherwise combine after all jobs are finished
+    my %wkr_info_HH = (); # 2D hash of info for one worker's job
+
+    # we need to split up the sequence file, and submit a separate set of cmsearch/cmalign/rRNA_sensor jobs for each file
+    my $seq_file = $info_HHR->{"seqfile"}{"value"};
+    my $nfasta_created = ribo_FastaFileSplitRandomly($seq_file, $seqlen_HR, $out_dir, $tot_nseq, $tot_len_nt, opt_Get("--nkb", $opt_HHR) * 1000, opt_Get("-s", $opt_HHR), $ofile_info_HHR->{"FH"});
+
+    # submit all jobs to the farm
+    my @info_1D_keys_A = sort keys (%{$info_HHR});
+    my $info_1D_key;
+    for(my $f = 1; $f <= $nfasta_created; $f++) { 
+      my %wkr_info_HH = ();
+      my $seq_file_tail = ribo_RemoveDirPath($seq_file);
+      my $wkr_seq_file  = $out_dir . "/" . $seq_file_tail . "." . $f;
+      foreach $info_1D_key (@info_1D_keys_A) { 
+        if($info_1D_key eq "seqfile") { # special case
+          $wkr_info_HH{$info_1D_key}{"value"} = $wkr_seq_file;
+        }
+        elsif($info_HHR->{$info_1D_key}{"psplit"}) { 
+          $wkr_info_HH{$info_1D_key}{"value"} = $out_dir . "/" . $info_HHR->{$info_1D_key}{"value"} . "." . $f;
+        }
+        else { # value is not modified for each job
+          $wkr_info_HH{$info_1D_key}{"value"} = $info_HHR->{$info_1D_key}{"value"};
+        }
+        # copy remaining info from %info_HH
+        $wkr_info_HH{$info_1D_key}{"psplit"} = $info_HHR->{$info_1D_key}{"psplit"};
+        $wkr_info_HH{$info_1D_key}{"concat"} = $info_HHR->{$info_1D_key}{"concat"};
+        $wkr_info_HH{$info_1D_key}{"type"}   = $info_HHR->{$info_1D_key}{"type"};
+        
+        # and keep a list of all output files we are going to create
+        if($info_HHR->{$info_1D_key}{"type"} eq "output") { 
+          push(@{$wkr_outfiles_HA{$info_1D_key}}, $wkr_info_HH{$info_1D_key}{"value"});
+        }
+      }
+      ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_HH, $opt_HHR, $ofile_info_HHR); 
+    }
+    
+    # wait for the jobs to finish
+    ofile_OutputString($log_FH, 0, sprintf("\n"));
+    print STDERR "\n";
+    ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", 
+                                      opt_Get("--wait", $opt_HHR)), $progress_w, $log_FH, *STDERR);
+    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($wkr_outfiles_HA{$wait_key}, $wkr_outfiles_HA{"error"}, $wait_str, 
+                                                                              opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
+    if($njobs_finished != $nfasta_created) { 
+      ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", 
+                         opt_Get("--wait", $opt_HHR)), 1, $ofile_info_HHR->{"FH"});
+    }
+    ofile_OutputString($log_FH, 1, "# "); # necessary because waitForFarmJobsToFinish() creates lines that summarize wait time and so we need a '#' before 'done' printed by outputProgressComplete()
+
+    # concatenate/merge files into one 
+    foreach my $outfiles_key (sort keys %wkr_outfiles_HA) { 
+      if($outfiles_key eq "stk") { # special case
+        ribo_MergeAlignmentsAndReorder($execs_HR, $wkr_outfiles_HA{$outfiles_key}, $info_HHR->{$outfiles_key}{"value"}, $info_HHR->{"seqlist"}{"value"}, $opt_HHR, $ofile_info_HHR);
+      }
+      elsif($info_HHR->{$outfiles_key}{"concat"}) { 
+        ribo_ConcatenateListOfFiles($wkr_outfiles_HA{$outfiles_key}, $info_HHR->{$outfiles_key}{"value"}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+      }
+    }
+    # remove files if --keep not enabled
+    if(! opt_Get("--keep", $opt_HHR)) { 
+      foreach my $outfiles_key (sort keys %wkr_outfiles_HA) { 
+        if($outfiles_key ne "outdir") { # can't remove directories yet, they may contain other files we want to remove first
+          printf("in $sub_name, removing $outfiles_key\n");
+          # remove files WRITE NEW SUBROUTINE THAT REMOVES A LIST OF FILES USING SYSTEM RM, instead of one at a time
+        }
+      }
+      # second pass through to see if "p:outdir" is a key, if so, remove those dirs
+      foreach my $outfiles_key (sort keys %wkr_outfiles_HA) { 
+        if($outfiles_key eq "outdir") { # can't remove directories yet, they may contain other files we want to remove first
+          printf("in $sub_name, removing $outfiles_key\n");
+          # remove directories
         }
       }
     }
