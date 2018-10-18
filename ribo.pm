@@ -704,7 +704,7 @@ sub ribo_ConcatenateListOfFiles {
 
   if(ribo_FindNonNumericValueInArray($file_AR, $outfile, $FH_HR) != -1) { 
     ofile_FAIL(sprintf("ERROR in $sub_name%s, output file name $outfile exists in list of files to concatenate", 
-                       (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), 1, $FH_HR);
+                       (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), "RIBO", 1, $FH_HR);
   }
 
   # as a special case, check if output file names are /dev/null, in that case
@@ -718,7 +718,7 @@ sub ribo_ConcatenateListOfFiles {
   if($nfiles > ($max_nfiles * $max_nfiles)) { 
     ofile_FAIL(sprintf("ERROR in $sub_name%s, trying to concatenate %d files, our limit is %d", 
                        (defined $caller_sub_name) ? " called by $caller_sub_name" : "", $nfiles, $max_nfiles * $max_nfiles), 
-               1, $FH_HR);
+               "RIBO", 1, $FH_HR);
   }
     
   my ($idx1, $idx2); # indices in @{$file_AR}, and of secondary files
@@ -1513,8 +1513,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   my $program_choice = ribo_RemoveDirPath($executable);
   ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HHR, $opt_HHR, $ofile_info_HHR);
 
-  # seqfile is a required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
+  # seqfile and errfile is a required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
   my $seq_file = $info_HHR->{"seqfile"}{"value"};
+  my $err_file = $info_HHR->{"errfile"}{"value"};
 
   # determine if we are running on the farm or locally
   my $cmd = "";
@@ -1526,9 +1527,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     # replace ![errfile]! with $errfile
     # replace ![jobname]! with $jobname
     my $jobname = "j" . ribo_RemoveDirPath($seq_file);
-    my $errfile = $seq_file . ".err";
-    if(-e $errfile) { ribo_RemoveFileUsingSystemRm($errfile, $sub_name, $opt_HHR, $ofile_info_HHR); }
-    $cmd =~ s/\!\[errfile\]\!/$errfile/g;
+    if(-e $err_file) { ribo_RemoveFileUsingSystemRm($err_file, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    $cmd =~ s/\!\[errfile\]\!/$err_file/g;
     $cmd =~ s/\!\[jobname\]\!/$jobname/g;
     $do_local = 0;
   }
@@ -1553,8 +1553,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     }
   }
   elsif($executable =~ /cmalign$/) { 
-    die "ERROR trying to run cmalign in $sub_name, need to set up command";
-    #$cmd .= "$executable $opts --ifile " . $info_HR->{"ifile"} . " --elfile " . $info_HR->{"elfile"} . " -o " . $info_HR->{"stk"} . " $model_file $seq_file > " . $info_HR->{"cmalign"} . $cmd_suffix;
+    my $model_file    = $info_HHR->{"modelfile"}{"value"};
+    my $i_file        = $info_HHR->{"ifile"}{"value"};
+    my $el_file       = $info_HHR->{"elfile"}{"value"};
+    my $stk_file      = $info_HHR->{"stk"}{"value"};
+    my $alignout_file = $info_HHR->{"cmalign"}{"value"};
+    $cmd .= "$executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $alignout_file" . $cmd_suffix;
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
     die "ERROR trying to run sensor script in $sub_name, need to set up command";
@@ -1733,7 +1737,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 #                       "modelfile": name of model (CM) file 
 #                       "tblout":    name of tblout output file (--tblout)
 #                       "cmsearch":  name of stdout output file
-#                       "error":     path to error file (created only if -p)
+#                       "errfile":   path to error file (created only if -p)
 #
 #                    if "cmalign",   1D keys must be:
 #                       "seqfile":   name of master sequence file
@@ -1743,7 +1747,7 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 #                       "stk":       name of alignment output file (-o)
 #                       "cmalign":   name of stdout output file
 #                       "seqlist":   name of file listing all sequences in "p:seqfile";
-#                       "error":     path to error file (created only if -p)
+#                       "errfile":   path to error file (created only if -p)
 #
 #                    if "rRNA_sensor_script", 1D keys must be:
 #                      "seqfile":   name of master sequence file
@@ -1757,11 +1761,10 @@ sub ribo_RunCmsearchOrCmalignWrapper {
 #                      "blastdb":   name of blast db                    (cmdline arg 9)
 #                      "stdout":    name of stdout output file
 #                      "classpath": full path to class output file
-#                      "error":     path to error file (created only if -p)
+#                      "errfile":   path to error file (created only if -p)
 #
 #              2D keys for all 1D keys must be:
 #                "value":   file name, or relevant value if not a file
-#                "psplit": '1' if file will be split if -p (parallelized)
 #                "concat": '1' if file will be created by concatenating others together, if -p
 #                "type":   'input', 'output' or 'none'
 #
@@ -1787,7 +1790,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   my $wait_key   = undef;
   my $wait_str   = undef;
   my @reqd_1D_keys_A = ();
-  my @reqd_2D_keys_A = ("value", "psplit", "concat", "type");
+  my @reqd_2D_keys_A = ("value", "concat", "type");
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
 
   # determine if we have the appropriate paths defined in %{$info_HR} 
@@ -1795,17 +1798,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   if($program_choice eq "cmsearch") { 
     $wait_key = "tblout";
     $wait_str = "[ok]";
-    @reqd_1D_keys_A = ("seqfile", "modelfile", "cmsearch", "tblout", "error");
+    @reqd_1D_keys_A = ("seqfile", "modelfile", "cmsearch", "tblout", "errfile");
   }
   elsif($program_choice eq "cmalign") { 
     $wait_key = "cmalign";
     $wait_str = "# CPU time:";
-    @reqd_1D_keys_A = ("seqfile", "modelfile", "cmalign", "stk", "ifile", "elfile", "seqlist", "error");
+    @reqd_1D_keys_A = ("seqfile", "modelfile", "cmalign", "stk", "ifile", "elfile", "seqlist", "errfile");
   }
   elsif($program_choice eq "rRNA_sensor_script") { 
     $wait_key = "stdout";
     $wait_str = "Final output saved as";
-    @reqd_1D_keys_A = ("seqfile", "minlen", "maxlen", "class", "minid", "maxevalue", "ncpu", "outdir", "blastdb", "stdout", "classpath", "error");
+    @reqd_1D_keys_A = ("seqfile", "minlen", "maxlen", "class", "minid", "maxevalue", "ncpu", "outdir", "blastdb", "stdout", "classpath", "errfile");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", "RIBO", 1, $FH_HR);
@@ -1814,7 +1817,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   foreach my $key1D (@reqd_1D_keys_A) { 
     if(! exists $info_HHR->{$key1D}) { 
       ofile_FAIL("ERROR in $sub_name, executable is $program_choice but $key1D file not set", "RIBO", 1, $FH_HR); 
-      # each 1D key has 4 required 2D keys: "value", "psplit", "concat", "type"
+      # each 1D key has 4 required 2D keys: "value", "concat", "type"
     }
     for my $key2D (@reqd_2D_keys_A) { 
       if(! exists $info_HHR->{$key1D}{$key2D}) { 
@@ -1833,7 +1836,6 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 #################################################################
 # Subroutine:  ribo_RunCmsearchSetInfoHashOfHashes()
 # Incept:      EPN, Thu Oct 18 12:32:12 2018
-#              EPN, Wed Oct 17 20:46:10 2018 [rRNA_sensor added]
 #
 # Purpose:     Define the 2D hash, %{$info_HHR} for a cmsearch run.
 #              1D keys will be:
@@ -1841,10 +1843,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 #                "modelfile": name of model (CM) file 
 #                "tblout":    name of tblout output file (--tblout)
 #                "cmsearch":  name of stdout output file
-#                "error":     name for error output, if -p
+#                "errfile":   name for error output, if -p
 #              2D keys will be:
 #                "value":   file name, or relevant value if not a file
-#                "psplit": '1' if file will be split if -p (parallelized)
 #                "concat": '1' if file will be created by concatenating others together, if -p
 #                "type":   'input', 'output' or 'none'
 #
@@ -1871,34 +1872,114 @@ sub ribo_RunCmsearchSetInfoHashOfHashes {
   
   %{$info_HHR} = ();
 
-  foreach my $key1 ("seqfile", "modelfile", "tblout", "cmsearch", "error") { 
+  foreach my $key1 ("seqfile", "modelfile", "tblout", "cmsearch", "errfile") { 
     %{$info_HHR->{$key1}} = ();
   }
 
   $info_HHR->{"seqfile"}{"value"}  = $seq_file;
-  $info_HHR->{"seqfile"}{"psplit"} = 1;
   $info_HHR->{"seqfile"}{"concat"} = 0;
   $info_HHR->{"seqfile"}{"type"}   = "input";
 
   $info_HHR->{"modelfile"}{"value"}  = $model_file;
-  $info_HHR->{"modelfile"}{"psplit"} = 0;
   $info_HHR->{"modelfile"}{"concat"} = 0;
   $info_HHR->{"modelfile"}{"type"}   = "input";
 
   $info_HHR->{"tblout"}{"value"}  = $tblout_file;
-  $info_HHR->{"tblout"}{"psplit"} = 0;
   $info_HHR->{"tblout"}{"concat"} = 1;
   $info_HHR->{"tblout"}{"type"}   = "output";
 
   $info_HHR->{"cmsearch"}{"value"}  = $searchout_file;
-  $info_HHR->{"cmsearch"}{"psplit"} = 0;
   $info_HHR->{"cmsearch"}{"concat"} = 1;
   $info_HHR->{"cmsearch"}{"type"}   = "output";
 
-  $info_HHR->{"error"}{"value"}  = $searchout_file . ".err";
-  $info_HHR->{"error"}{"psplit"} = 0;
-  $info_HHR->{"error"}{"concat"} = 1;
-  $info_HHR->{"error"}{"type"}   = "output";
+  $info_HHR->{"errfile"}{"value"}  = $searchout_file . ".err";
+  $info_HHR->{"errfile"}{"concat"} = 1;
+  $info_HHR->{"errfile"}{"type"}   = "output";
+
+  return;
+}
+
+#################################################################
+# Subroutine:  ribo_RunCmalignSetInfoHashOfHashes()
+# Incept:      EPN, Thu Oct 18 14:13:38 2018
+#
+# Purpose:     Define the 2D hash, %{$info_HHR} for a cmalign run.
+#              1D keys will be:
+#                "seqfile":   name of master sequence file
+#                "modelfile": name of model (CM) file 
+#                "ifile":     name of ifile output file (--ifile)
+#                "elfile":    name of elfile output file (--elfile)
+#                "stk":       name of alignment output file (-o)
+#                "cmalign":   name of stdout output file
+#                "seqlist":   name of file listing all sequences
+#                "errfile":   path to error file (created only if -p)
+#
+#              2D keys will be:
+#                "value":   file name, or relevant value if not a file
+#                "concat": '1' if file will be created by concatenating others together, if -p
+#                "type":   'input', 'output' or 'none'
+#
+# Arguments: 
+#  $info_HHR:        ref to 2D info hash to fill here
+#  $seq_file:        name of sequence file with all sequences to run against
+#  $model_file:      path to model file to use 
+#  $i_file:          path to output --ifile file
+#  $el_file:         path to output --elfile file
+#  $stk_file:        path to output alignment (-o) file
+#  $alignout_file:   name of stdout output
+#  $seqlist_file:    name of file listing all sequences
+#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $ofile_info_HHR:  REF to 2D hash of output file information
+#
+# Returns: void, fills %{$info_HHR}.
+# 
+# Dies: Never
+#
+################################################################# 
+sub ribo_RunCmalignSetInfoHashOfHashes { 
+  my $sub_name = "ribo_RunCmalignSetInfoHashOfHashes";
+  my $nargs_expected = 10;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($info_HHR, $seq_file, $model_file, $i_file, $el_file, $stk_file, $alignout_file, $seqlist_file, $opt_HHR, $ofile_info_HHR) = @_;
+  
+  %{$info_HHR} = ();
+
+  foreach my $key1 ("seqfile", "modelfile", "ifile", "elfile", "stk", "cmalign", "seqlist", "errfile") { 
+    %{$info_HHR->{$key1}} = ();
+  }
+
+  $info_HHR->{"seqfile"}{"value"}  = $seq_file;
+  $info_HHR->{"seqfile"}{"concat"} = 0;
+  $info_HHR->{"seqfile"}{"type"}   = "input";
+
+  $info_HHR->{"modelfile"}{"value"}  = $model_file;
+  $info_HHR->{"modelfile"}{"concat"} = 0;
+  $info_HHR->{"modelfile"}{"type"}   = "input";
+
+  $info_HHR->{"ifile"}{"value"}  = $i_file;
+  $info_HHR->{"ifile"}{"concat"} = 1;
+  $info_HHR->{"ifile"}{"type"}   = "output";
+
+  $info_HHR->{"elfile"}{"value"}  = $el_file;
+  $info_HHR->{"elfile"}{"concat"} = 1;
+  $info_HHR->{"elfile"}{"type"}   = "output";
+
+  $info_HHR->{"stk"}{"value"}  = $stk_file;
+  $info_HHR->{"stk"}{"concat"} = 0; # we take special care to merge the alignments, we don't concat them
+  $info_HHR->{"stk"}{"type"}   = "output";
+
+  $info_HHR->{"cmalign"}{"value"}  = $alignout_file;
+  $info_HHR->{"cmalign"}{"concat"} = 1;
+  $info_HHR->{"cmalign"}{"type"}   = "output";
+
+  $info_HHR->{"seqlist"}{"value"}  = $seqlist_file;
+  $info_HHR->{"seqlist"}{"concat"} = 0;
+  $info_HHR->{"seqlist"}{"type"}   = "input";
+
+  $info_HHR->{"errfile"}{"value"}  = $alignout_file . ".err";
+  $info_HHR->{"errfile"}{"concat"} = 1;
+  $info_HHR->{"errfile"}{"type"}   = "output";
 
   return;
 }
@@ -1987,14 +2068,13 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
         if($info_1D_key eq "seqfile") { # special case
           $wkr_info_HH{$info_1D_key}{"value"} = $wkr_seq_file;
         }
-        elsif($info_HHR->{$info_1D_key}{"psplit"}) { 
-          $wkr_info_HH{$info_1D_key}{"value"} = $out_dir . "/" . $info_HHR->{$info_1D_key}{"value"} . "." . $f;
+        elsif($info_HHR->{$info_1D_key}{"type"} eq "output") { 
+          $wkr_info_HH{$info_1D_key}{"value"} = $info_HHR->{$info_1D_key}{"value"} . "." . $f;
         }
         else { # value is not modified for each job
           $wkr_info_HH{$info_1D_key}{"value"} = $info_HHR->{$info_1D_key}{"value"};
         }
         # copy remaining info from %info_HH
-        $wkr_info_HH{$info_1D_key}{"psplit"} = $info_HHR->{$info_1D_key}{"psplit"};
         $wkr_info_HH{$info_1D_key}{"concat"} = $info_HHR->{$info_1D_key}{"concat"};
         $wkr_info_HH{$info_1D_key}{"type"}   = $info_HHR->{$info_1D_key}{"type"};
         
@@ -2011,7 +2091,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
     print STDERR "\n";
     ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", 
                                       opt_Get("--wait", $opt_HHR)), $progress_w, $log_FH, *STDERR);
-    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($wkr_outfiles_HA{$wait_key}, $wkr_outfiles_HA{"error"}, $wait_str, 
+    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($wkr_outfiles_HA{$wait_key}, $wkr_outfiles_HA{"errfile"}, $wait_str, 
                                                                               opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", 
@@ -2036,7 +2116,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           # remove files WRITE NEW SUBROUTINE THAT REMOVES A LIST OF FILES USING SYSTEM RM, instead of one at a time
         }
       }
-      # second pass through to see if "p:outdir" is a key, if so, remove those dirs
+      # second pass through to see if "outdir" is a key, if so, remove those dirs
       foreach my $outfiles_key (sort keys %wkr_outfiles_HA) { 
         if($outfiles_key eq "outdir") { # can't remove directories yet, they may contain other files we want to remove first
           printf("in $sub_name, removing $outfiles_key\n");

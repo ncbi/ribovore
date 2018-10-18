@@ -457,7 +457,11 @@ foreach $family (@family_order_A) {
     $outfile_H{"elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
     $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
     $outfile_H{"seqlist"} = $family_sfetch_filename_H{$family};
-    ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
+    my %info_HH = ();
+    ribo_RunCmalignSetInfoHashOfHashes(\%info_HH, $family_seqfile_H{$family}, $family_modelfile_H{$family}, 
+                                       $outfile_H{"ifile"}, $outfile_H{"elfile"}, $outfile_H{"stk"}, $outfile_H{"cmalign"}, $outfile_H{"seqlist"}, 
+                                       \%opt_HH, \%ofile_info_HH);
+    ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_HH, \%opt_HH, \%ofile_info_HH);
     $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($outfile_H{"cmalign"}, $ofile_info_HH{"FH"});
 
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   1, "insert file for $family");
