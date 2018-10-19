@@ -58,7 +58,6 @@ opt_Add("-b",           "integer", 10,                       1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                        1,    undef, "-p",       "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                      "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # options related to the ribotyper call
@@ -71,7 +70,8 @@ $opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a co
 #     option            type       default                group   requires incompat    preamble-output                                          help-output    
 opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>", "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                       3,     "-p", undef,      "seed for random number generator is <n>",               "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
@@ -87,7 +87,6 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
                 'i=s'          => \$GetOptions_H{"-i"},
-                's=s'          => \$GetOptions_H{"-s"},
                 'keep'         => \$GetOptions_H{"--keep"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
@@ -95,6 +94,7 @@ my $options_okay =
                 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
+                's=s'          => \$GetOptions_H{"-s"},
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'maxnjobs=s'   => \$GetOptions_H{"--maxnjobs"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
@@ -361,6 +361,7 @@ if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; 
 if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
 if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
 if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+if(opt_IsUsed("-s",            \%opt_HH)) { $ribotyper_options .= " -s " . opt_Get("-s", \%opt_HH); }
 if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
 if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
