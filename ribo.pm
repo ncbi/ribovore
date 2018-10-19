@@ -25,6 +25,8 @@ use warnings;
 # ribo_VerifyEnvVariableIsValidDir
 # ribo_CheckIfFileExistsAndIsNonEmpty
 # ribo_ConcatenateListOfFiles
+# ribo_RemoveListOfFiles
+# ribo_RemoveListOfDirsWithRmrf
 # ribo_WriteArrayToFile
 # ribo_ReadFileToArray
 # ribo_RemoveFileUsingSystemRm
@@ -771,13 +773,96 @@ sub ribo_ConcatenateListOfFiles {
   if(! opt_Get("--keep", $opt_HHR)) { 
     # remove all of the original files, be careful to not remove @tmp_outfile_A
     # because the recursive call will handle that
-    foreach my $file_to_remove (@{$file_AR}) { 
-      ribo_RemoveFileUsingSystemRm($file_to_remove, 
-                                   (defined $caller_sub_name) ? $caller_sub_name . ":" . $sub_name : $sub_name, 
-                                   $opt_HHR, $FH_HR);
-    }
+    ribo_RemoveListOfFiles($file_AR, (defined $caller_sub_name) ? $caller_sub_name . ":" . $sub_name : $sub_name, 
+                           $opt_HHR, $FH_HR);
   }
 
+  return;
+}
+
+#################################################################
+# Subroutine : ribo_RemoveListOfFiles()
+# Incept:      EPN, Fri Oct 19 12:44:05 2018
+#
+# Purpose:     Remove each file in an array of file
+#              names. If there are more than 100 files, then
+#              remove 100 at a time.
+# 
+# Arguments: 
+#   $files2remove_AR:  REF to array with list of files to remove
+#   $caller_sub_name:  name of calling subroutine (can be undef)
+#   $opt_HHR:          REF to 2D hash of option values, see top of epn-options.pm for description
+#   $FH_HR:            ref to hash of file handles
+# 
+# Returns:     Nothing.
+# 
+# Dies:        If one of the rm -rf commands fails.
+#
+################################################################# 
+sub ribo_RemoveListOfFiles { 
+  my $nargs_expected = 4;
+  my $sub_name = "ribo_RemoveListOfFiles()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($files2remove_AR, $caller_sub_name, $opt_HHR, $FH_HR) = @_;
+
+  my $i = 0; 
+  my $nfiles = scalar(@{$files2remove_AR});
+
+  while($i < $nfiles) { 
+    my $file_list = "";
+    my $up = $i+100;
+    if($up > $nfiles) { $up = $nfiles; }
+    for(my $j = $i; $j < $up; $j++) { 
+      $file_list .= " " . $files2remove_AR->[$j];
+    }
+    my $rm_cmd = "rm $file_list"; 
+    ribo_RunCommand($rm_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    $i += $up;
+  }
+  
+  return;
+}
+
+#################################################################
+# Subroutine : ribo_RemoveListOfDirsWithRmrf()
+# Incept:      EPN, Fri Oct 19 12:35:33 2018
+#
+# Purpose:     Remove each directory in an array of directory
+#              names with 'rm -rf'. If there are more than 
+#              100 directories, then remove 100 at a time.
+# 
+# Arguments: 
+#   $dirs2remove_AR:    REF to array with list of directories to remove
+#   $caller_sub_name:  name of calling subroutine (can be undef)
+#   $opt_HHR:          REF to 2D hash of option values, see top of epn-options.pm for description
+#   $FH_HR:            ref to hash of file handles
+# 
+# Returns:     Nothing.
+# 
+# Dies:        If one of the rm -rf commands fails.
+#
+################################################################# 
+sub ribo_RemoveListOfDirsWithRmrf { 
+  my $nargs_expected = 4;
+  my $sub_name = "ribo_RemoveListOfDirsWithRmrf()";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+  my ($dirs2remove_AR, $caller_sub_name, $opt_HHR, $FH_HR) = @_;
+
+  my $i = 0; 
+  my $ndir = scalar(@{$dirs2remove_AR});
+
+  while($i < $ndir) { 
+    my $dir_list = "";
+    my $up = $i+100;
+    if($up > $ndir) { $up = $ndir; }
+    for(my $j = $i; $j < $up; $j++) { 
+      $dir_list .= " " . $dirs2remove_AR->[$j];
+    }
+    my $rm_cmd = "rm -rf $dir_list"; 
+    ribo_RunCommand($rm_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    $i += $up;
+  }
+  
   return;
 }
 
@@ -1684,6 +1769,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
       foreach $info_key (@info_keys_A) { 
         if($info_key eq "IN:seqfile") { # special case
           $wkr_info_H{$info_key} = $wkr_seq_file;
+          # keep a list of these files, we'll remove them later
+          push(@{$wkr_outfiles_HA{$info_key}}, $wkr_info_H{$info_key});
         }
         elsif($info_key =~ m/^OUT/) { 
           if($info_key =~ m/^OUT-NAME/) { 
@@ -1741,13 +1828,21 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
       }
     }
 
-    # remove directories, if nec
+    # remove sequence file partition files, and directories, if nec
     if(! opt_Get("--keep", $opt_HHR)) { 
       # if "OUT-NAME:outdir" is a key, remove those dirs
       if(exists $wkr_outfiles_HA{"OUT-NAME:outdir"}) { 
-        printf("HEYA in $sub_name, removing dir OUT-NAME:outdir\n");
-        # remove directories
+        ribo_RemoveListOfDirsWithRmrf($wkr_outfiles_HA{"OUT-NAME:outdir"}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
+      if(exists $wkr_outfiles_HA{"IN:seqfile"}) { 
+        ribo_RemoveListOfFiles($wkr_outfiles_HA{"IN:seqfile"}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+      }
+    }
+    # remove the error file if it's empty
+    if((exists $info_HR->{"OUT-NAME:errfile"}) && 
+       (-e $info_HR->{"OUT-NAME:errfile"}) && 
+       (! -s $info_HR->{"OUT-NAME:errfile"})) { 
+      ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:errfile"}, $sub_name, $opt_HHR, $FH_HR);
     }
   } # end of 'else' entered if -p used
 

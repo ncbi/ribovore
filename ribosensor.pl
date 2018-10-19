@@ -476,12 +476,12 @@ for($i = 0; $i < $nseq_parts; $i++) {
 
       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, "rRNA_sensor stdout output for length class" . ($i+1));
-#      if(! opt_IsUsed("--keep", \%opt_HH)) { # remove the fasta files that rRNA_sensor created
-#        my $sensor_mid_fafile = $sensor_dir_out_A[$i] . "/middle_queries.fsa";
-#        my $sensor_out_fafile = $sensor_dir_out_A[$i] . "/outlier_queries.fsa";
-#        push(@to_remove_A, $sensor_mid_fafile);
-#        push(@to_remove_A, $sensor_out_fafile);
-#      }
+      if(! opt_IsUsed("--keep", \%opt_HH)) { # remove the fasta files that rRNA_sensor created
+        my $sensor_mid_fafile = $sensor_dir_out_A[$i] . "/middle_queries.fsa";
+        my $sensor_out_fafile = $sensor_dir_out_A[$i] . "/outlier_queries.fsa";
+        push(@to_remove_A, $sensor_mid_fafile);
+        push(@to_remove_A, $sensor_out_fafile);
+      }
     }
   }
   else { 
