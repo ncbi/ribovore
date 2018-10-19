@@ -456,11 +456,20 @@ for($i = 0; $i < $nseq_parts; $i++) {
     #$sensor_cmd = $execs_H{"sensor"} . " $sensor_minlen $sensor_maxlen $subseq_file_A[$i] $sensor_classfile_argument_A[$i] $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu $sensor_dir_out_A[$i] $sensor_blastdb > $sensor_stdoutfile_A[$i]";
     if(! opt_Get("--skipsearch", \%opt_HH)) { 
       $start_secs = ofile_OutputProgressPrior("Running rRNA_sensor on seqs of length $spart_desc_A[$i]", $progress_w, $log_FH, *STDOUT);
-      my %info_HH = (); 
-      ribo_RunRRnaSensorSetInfoHashOfHashes(\%info_HH, $subseq_file_A[$i], $sensor_minlen, $sensor_maxlen, $sensor_classfile_fullpath_A[$i], 
-                                            $sensor_minid_A[$i], $sensor_maxevalue, $sensor_ncpu, $sensor_dir_out_A[$i], $sensor_blastdb, 
-                                            $sensor_stdoutfile_A[$i], \%opt_HH, $ofile_info_HH{"FH"});
-      ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_HH, \%opt_HH, \%ofile_info_HH);
+      my %info_H = (); 
+      $info_H{"IN:seqfile"}        = $subseq_file_A[$i];
+      $info_H{"minlen"}            = $sensor_minlen;
+      $info_H{"maxlen"}            = $sensor_maxlen;
+      $info_H{"OUT-DIR:classpath"} = $sensor_classfile_fullpath_A[$i];
+      $info_H{"minid"}             = $sensor_minid_A[$i];
+      $info_H{"maxevalue"}         = $sensor_maxevalue;
+      $info_H{"ncpu"}              = $sensor_ncpu;
+      $info_H{"OUT-NAME:outdir"}   = $sensor_dir_out_A[$i];
+      $info_H{"blastdb"}           = $sensor_blastdb;
+      $info_H{"OUT-NAME:stdout"}   = $sensor_stdoutfile_A[$i];
+      $info_H{"OUT-NAME:errfile"}  = $sensor_stdoutfile_A[$i] . ".err";
+      ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, 
+                                                   $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_H, \%opt_HH, \%ofile_info_HH);
       $sensor_secs++;
 
       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);

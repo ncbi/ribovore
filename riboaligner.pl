@@ -452,33 +452,33 @@ foreach $family (@family_order_A) {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " fasta file", $family_seqfile_H{$family}, 0, "sequence file for $family");
 
     # align the sequences
-    my %outfile_H = (); # for storing output file names
-    $outfile_H{"stk"}     = $out_root . "." . $family . ".cmalign.stk";
-    $outfile_H{"ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
-    $outfile_H{"elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
-    $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
-    $outfile_H{"seqlist"} = $family_sfetch_filename_H{$family};
-    my %info_HH = ();
-    ribo_RunCmalignSetInfoHashOfHashes(\%info_HH, $family_seqfile_H{$family}, $family_modelfile_H{$family}, 
-                                       $outfile_H{"ifile"}, $outfile_H{"elfile"}, $outfile_H{"stk"}, $outfile_H{"cmalign"}, $outfile_H{"seqlist"}, 
-                                       \%opt_HH, \%ofile_info_HH);
-    ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_HH, \%opt_HH, \%ofile_info_HH);
-    $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($outfile_H{"cmalign"}, $ofile_info_HH{"FH"});
+    my %info_H = ();
+    $info_H{"IN:seqfile"}       = $family_seqfile_H{$family};
+    $info_H{"IN:modelfile"}     = $family_modelfile_H{$family}; 
+    $info_H{"OUT-NAME:ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
+    $info_H{"OUT-NAME:elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
+    $info_H{"OUT-NAME:stk"}     = $out_root . "." . $family . ".cmalign.stk";
+    $info_H{"OUT-NAME:cmalign"} = $out_root . "." . $family . ".cmalign.out";
+    $info_H{"IN:seqlist"}       = $family_sfetch_filename_H{$family};
+    $info_H{"OUT-NAME:errfile"} = $out_root . "." . $family . ".cmalign.out.err";
 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   1, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"},  1, "EL file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},     1, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"}, 1, "cmalign output file for $family");
+    ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+    $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($info_H{"OUT-NAME:cmalign"}, $ofile_info_HH{"FH"});
+
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $info_H{"OUT-NAME:cmalign"}, 1, "cmalign output file for $family");
 
     # parse cmalign file
-    parse_cmalign_file($outfile_H{"cmalign"}, \%out_tbl_HH, $FH_HR);
+    parse_cmalign_file($info_H{"OUT-NAME:cmalign"}, \%out_tbl_HH, $FH_HR);
 
     # parse alignment file
-    parse_stk_file($outfile_H{"stk"}, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
+    parse_stk_file($info_H{"OUT-NAME:stk"}, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
 
     # if we have no more than 100K seqs, convert to stockholm now that we're done parsing it
     if($family_nseq_H{$family} <= 100000) { 
-      my $reformat_cmd = $execs_H{"esl-reformat"} . " stockholm " . $outfile_H{"stk"} . " > " . $outfile_H{"stk"} . ".reformat; mv " . $outfile_H{"stk"} . ".reformat " . $outfile_H{"stk"};
+      my $reformat_cmd = $execs_H{"esl-reformat"} . " stockholm " . $info_H{"OUT-NAME:stk"} . " > " . $info_H{"OUT-NAME:stk"} . ".reformat; mv " . $info_H{"OUT-NAME:stk"} . ".reformat " . $info_H{"OUT-NAME:stk"};
       ribo_RunCommand($reformat_cmd, opt_Get("-v", \%opt_HH), $FH_HR);
     }
   }

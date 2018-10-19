@@ -59,7 +59,6 @@ opt_Add("-f",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
@@ -115,6 +114,7 @@ $opt_group_desc_H{"9"} = "options for parallelizing cmsearch on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
 opt_Add("-p",           "boolean", 0,                         9,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     9,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                       9,     "-p", undef,      "seed for random number generator is <n>",                     "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--nkb",        "integer", 10,                        9,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       9,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         9,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
@@ -148,7 +148,6 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
-                's=s'          => \$GetOptions_H{"-s"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
@@ -188,6 +187,7 @@ my $options_okay =
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
+                's=s'          => \$GetOptions_H{"-s"},
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"},
@@ -624,9 +624,13 @@ my $r1_opt_p_sum_cpu_secs = 0.;
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
-  my %info_HH = (); 
-  ribo_RunCmsearchSetInfoHashOfHashes(\%info_HH, $seq_file, $master_model_file, $r1_tblout_file, $r1_searchout_file, \%opt_HH, $ofile_info_HH{"FH"});
-  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_HH, \%opt_HH, \%ofile_info_HH);
+  my %info_H = (); 
+  $info_H{"IN:seqfile"}        = $seq_file;
+  $info_H{"IN:modelfile"}      = $master_model_file;
+  $info_H{"OUT-NAME:tblout"}   = $r1_tblout_file;
+  $info_H{"OUT-NAME:cmsearch"} = $r1_searchout_file;
+  $info_H{"OUT-NAME:errfile"}  = $r1_searchout_file . ".err";
+  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
 }
 else { 
@@ -800,9 +804,13 @@ if(defined $alg2) {
       push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        my %info_HH = (); 
-        ribo_RunCmsearchSetInfoHashOfHashes(\%info_HH, $seqfile_H{$model}, $indi_cmfile_H{$model}, $r2_tblout_file_A[$midx], $r2_searchout_file_A[$midx], \%opt_HH, $ofile_info_HH{"FH"});
-        ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_HH, \%opt_HH, \%ofile_info_HH);
+        my %info_H = (); 
+        $info_H{"IN:seqfile"}        = $seqfile_H{$model};
+        $info_H{"IN:modelfile"}      = $indi_cmfile_H{$model};
+        $info_H{"OUT-NAME:tblout"}   = $r2_tblout_file_A[$midx];
+        $info_H{"OUT-NAME:cmsearch"} = $r2_searchout_file_A[$midx];
+        $info_H{"OUT-NAME:errfile"}  = $r2_searchout_file_A[$midx] . ".err";
+        ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
         $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
