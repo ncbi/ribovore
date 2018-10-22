@@ -9,6 +9,6 @@ SSU.Archaea riboaligner.0p15.RF01959.cm 1477 SSU_rRNA_archaea
 SSU.Eukarya riboaligner.0p15.RF01960.cm 1851 SSU_rRNA_eukarya
 LSU.Archaea riboaligner.0p15.RF02540.cm 2990 LSU_rRNA_archaea
 LSU.Bacteria riboaligner.0p15.RF02541.cm 2925 LSU_rRNA_bacteria
-SSU.Microsporidia riboaligner.0p15.RF02542.cm 1312 SSU_rRNA_microsporidia
+SSU.Euk-Microsporidia riboaligner.0p15.RF02542.cm 1312 SSU_rRNA_microsporidia
 LSU.Eukarya riboaligner.0p15.RF02543.cm 3401 LSU_rRNA_eukarya 
 
