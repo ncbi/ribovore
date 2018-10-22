@@ -458,10 +458,12 @@ foreach $family (@family_order_A) {
     $info_H{"OUT-NAME:ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
     $info_H{"OUT-NAME:elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
     $info_H{"OUT-NAME:stk"}     = $out_root . "." . $family . ".cmalign.stk";
-    $info_H{"OUT-NAME:cmalign"} = $out_root . "." . $family . ".cmalign.out";
     $info_H{"IN:seqlist"}       = $family_sfetch_filename_H{$family};
-    $info_H{"OUT-NAME:errfile"} = $out_root . "." . $family . ".cmalign.out.err";
-
+    $info_H{"OUT-NAME:stdout"}  = $out_root . "." . $family . ".cmalign.out";
+    $info_H{"OUT-NAME:time"}    = $out_root . "." . $family . ".cmalign.time";
+    $info_H{"OUT-NAME:stderr"}  = $out_root . "." . $family . ".cmalign.out.err";
+    $info_H{"OUT-NAME:qstderr"} = $out_root . "." . $family . ".cmalign.out.qerr";
+ 
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($info_H{"OUT-NAME:cmalign"}, $ofile_info_HH{"FH"});
 

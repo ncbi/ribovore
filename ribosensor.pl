@@ -469,7 +469,9 @@ for($i = 0; $i < $nseq_parts; $i++) {
       $info_H{"OUT-NAME:outdir"}   = $sensor_dir_out_A[$i];
       $info_H{"blastdb"}           = $sensor_blastdb;
       $info_H{"OUT-NAME:stdout"}   = $sensor_stdoutfile_A[$i];
-      $info_H{"OUT-NAME:errfile"}  = $sensor_stdoutfile_A[$i] . ".err";
+      $info_H{"OUT-NAME:time"}     = $sensor_stdoutfile_A[$i] . ".time";;
+      $info_H{"OUT-NAME:stderr"}   = $sensor_stdoutfile_A[$i] . ".err";
+      $info_H{"OUT-NAME:qstderr"}  = $sensor_stdoutfile_A[$i] . ".qerr";
       ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, 
                                                    $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_H, \%opt_HH, \%ofile_info_HH);
       $sensor_secs++;

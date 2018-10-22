@@ -817,7 +817,7 @@ sub ribo_RemoveListOfFiles {
     }
     my $rm_cmd = "rm $file_list"; 
     ribo_RunCommand($rm_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
-    $i += $up;
+    $i = $up;
   }
   
   return;
@@ -860,7 +860,7 @@ sub ribo_RemoveListOfDirsWithRmrf {
     }
     my $rm_cmd = "rm -rf $dir_list"; 
     ribo_RunCommand($rm_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
-    $i += $up;
+    $i = $up;
   }
   
   return;
@@ -1497,9 +1497,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   my $program_choice = ribo_RemoveDirPath($executable);
   ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
 
-  # seqfile and errfile is a required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
-  my $seq_file = $info_HR->{"IN:seqfile"};
-  my $err_file = $info_HR->{"OUT-NAME:errfile"};
+  # IN:seqfile, OUT-NAME:stdout, OUT-NAME:time, OUT-NAME:stderr and OUT-NAME:qstderr are required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
+  my $seq_file     = $info_HR->{"IN:seqfile"};
+  my $stdout_file  = $info_HR->{"OUT-NAME:stdout"};
+  my $time_file    = $info_HR->{"OUT-NAME:time"};
+  my $stderr_file  = $info_HR->{"OUT-NAME:stderr"};
+  my $qstderr_file = $info_HR->{"OUT-NAME:qstderr"};
 
   # determine if we are running on the farm or locally
   my $cmd = "";
@@ -1511,8 +1514,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     # replace ![errfile]! with $errfile
     # replace ![jobname]! with $jobname
     my $jobname = "j" . ribo_RemoveDirPath($seq_file);
-    if(-e $err_file) { ribo_RemoveFileUsingSystemRm($err_file, $sub_name, $opt_HHR, $ofile_info_HHR); }
-    $cmd =~ s/\!\[errfile\]\!/$err_file/g;
+    if(-e $stderr_file) { ribo_RemoveFileUsingSystemRm($stderr_file, $sub_name, $opt_HHR, $ofile_info_HHR); }
+    $cmd =~ s/\!\[errfile\]\!/$qstderr_file/g;
     $cmd =~ s/\!\[jobname\]\!/$jobname/g;
     $do_local = 0;
   }
@@ -1523,16 +1526,15 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   if($executable =~ /cmsearch$/) { 
     my $model_file     = $info_HR->{"IN:modelfile"};
     my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
-    my $searchout_file = $info_HR->{"OUT-NAME:cmsearch"};
     if(opt_Get("--keep", $opt_HHR)) { 
-      $cmd .= "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $searchout_file" . $cmd_suffix;
+      $cmd .= "( time $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
     }
     else { # only save the Total CPU line output, otherwise output files get big for large inputs
       if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-        $cmd .= "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \\\"Total CPU time\\\" > $searchout_file" . $cmd_suffix;
+        $cmd .= "( time $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \\\"Total CPU time\\\" > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
       }
       else { 
-        $cmd .= "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \"Total CPU time\" > $searchout_file" . $cmd_suffix;
+        $cmd .= "( time $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \"Total CPU time\" > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
       }
     }
   }
@@ -1541,8 +1543,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $i_file        = $info_HR->{"OUT-NAME:ifile"};
     my $el_file       = $info_HR->{"OUT-NAME:elfile"};
     my $stk_file      = $info_HR->{"OUT-NAME:stk"};
-    my $alignout_file = $info_HR->{"OUT-NAME:cmalign"};
-    $cmd .= "$executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $alignout_file" . $cmd_suffix;
+    $cmd .= "( time $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
     my $minlen     = $info_HR->{"minlen"};
@@ -1554,8 +1555,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $ncpu       = $info_HR->{"ncpu"};
     my $outdir     = $info_HR->{"OUT-NAME:outdir"};
     my $blastdb    = $info_HR->{"blastdb"};
-    my $stdout     = $info_HR->{"OUT-NAME:stdout"};
-    $cmd .= "$executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout" . $cmd_suffix;
+    $cmd .= "( time $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
   }
 
   # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
@@ -1597,11 +1597,13 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
 #
 #                    if "cmsearch", keys must be: 
-#                       "IN:seqfile":        name of input master sequence file
-#                       "IN:modelfile":      name of input model (CM) file 
-#                       "OUT-NAME:tblout":   name of tblout output file (--tblout)
-#                       "OUT-NAME:cmsearch": name of stdout output file
-#                       "OUT-NAME:errfile":  path to error file (created only if -p)
+#                       "IN:seqfile":       name of input master sequence file
+#                       "IN:modelfile":     name of input model (CM) file 
+#                       "OUT-NAME:tblout":  name of tblout output file (--tblout)
+#                       "OUT-NAME:stdout":  name of stdout output file
+#                       "OUT-NAME:time":    path to time output file
+#                       "OUT-NAME:stderr":  path to stderr output file
+#                       "OUT-NAME:qstderr": path to qsub error file (created only if -p)
 #
 #                    if "cmalign", keys must be:
 #                       "IN:seqfile":       name of input master sequence file
@@ -1609,9 +1611,11 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:ifile":   name of ifile output file (--ifile)
 #                       "OUT-NAME:elfile":  name of elfile output file (--elfile)
 #                       "OUT-NAME:stk":     name of alignment output file (-o)
-#                       "OUT-NAME:cmalign": name of stdout output file
 #                       "IN:seqlist":       name of file listing all sequences in "IN:seqfile";
-#                       "OUT-NAME:errfile": path to error file (created only if -p)
+#                       "OUT-NAME:stdout":  name of stdout output file
+#                       "OUT-NAME:time":    path to time output file
+#                       "OUT-NAME:stderr":  path to stderr output file
+#                       "OUT-NAME:qstderr": path to qsub error file (created only if -p)
 #
 #                    if "rRNA_sensor_script", keys must be:
 #                       "IN:seqfile":        name of master sequence file
@@ -1626,7 +1630,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:outdir"    name of output diretory             (cmdline arg 8)
 #                       "blastdb":           name of blast db                    (cmdline arg 9)
 #                       "OUT-NAME:stdout":   name of stdout output file
-#                       "OUT-NAME:errfile":  path to error file (created only if -p)
+#                       "OUT-NAME:time":     path to time output file
+#                       "OUT-NAME:stderr":   path to stderr output file
+#                       "OUT-NAME:qstderr":  path to qsub error file (created only if -p)
 #
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
@@ -1657,17 +1663,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   if($program_choice eq "cmsearch") { 
     $wait_key = "OUT-NAME:tblout";
     $wait_str = "[ok]";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:tblout", "OUT-NAME:cmsearch", "OUT-NAME:errfile");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:tblout", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qstderr");
   }
   elsif($program_choice eq "cmalign") { 
-    $wait_key = "OUT-NAME:cmalign";
+    $wait_key = "OUT-NAME:stdout";
     $wait_str = "# CPU time:";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:cmalign", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:errfile");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qstderr");
   }
   elsif($program_choice eq "rRNA_sensor_script") { 
     $wait_key = "OUT-NAME:stdout";
     $wait_str = "Final output saved as";
-    @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:errfile");
+    @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qstderr");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", "RIBO", 1, $FH_HR);
@@ -1801,7 +1807,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
     print STDERR "\n";
     ofile_OutputProgressPrior(sprintf("Waiting a maximum of %d minutes for all $nfasta_created $program_choice farm jobs to finish", 
                                       opt_Get("--wait", $opt_HHR)), $progress_w, $log_FH, *STDERR);
-    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($wkr_outfiles_HA{$wait_key}, $wkr_outfiles_HA{"OUT-NAME:errfile"}, $wait_str, 
+    ($njobs_finished, $sum_cpu_plus_wait_secs) = ribo_WaitForFarmJobsToFinish($wkr_outfiles_HA{$wait_key}, $wkr_outfiles_HA{"OUT-NAME:stderr"}, $wait_str, 
                                                                               opt_Get("--wait", $opt_HHR), opt_Get("--errcheck", $opt_HHR), $ofile_info_HHR->{"FH"});
     if($njobs_finished != $nfasta_created) { 
       ofile_FAIL(sprintf("ERROR in $sub_name only $njobs_finished of the $nfasta_created are finished after %d minutes. Increase wait time limit with --wait", 
@@ -1838,13 +1844,26 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
         ribo_RemoveListOfFiles($wkr_outfiles_HA{"IN:seqfile"}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
     }
-    # remove the error file if it's empty
-    if((exists $info_HR->{"OUT-NAME:errfile"}) && 
-       (-e $info_HR->{"OUT-NAME:errfile"}) && 
-       (! -s $info_HR->{"OUT-NAME:errfile"})) { 
-      ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:errfile"}, $sub_name, $opt_HHR, $FH_HR);
+    # remove the qsub error files if it exists and is empty
+    if((exists $info_HR->{"OUT-NAME:qstderr"}) && 
+       (-e $info_HR->{"OUT-NAME:qstderr"}) && 
+       (! -s $info_HR->{"OUT-NAME:qstderr"})) { 
+      ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:qstderr"}, $sub_name, $opt_HHR, $FH_HR);
+    }
+    if((exists $info_HR->{"OUT-NAME:stderr"}) && 
+       (-e $info_HR->{"OUT-NAME:stderr"}) && 
+       (! -s $info_HR->{"OUT-NAME:stderr"})) { 
+      ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:stderr"}, $sub_name, $opt_HHR, $FH_HR);
     }
   } # end of 'else' entered if -p used
+
+  # for both -p and not -p
+  # remove the stderr files if it exists and is empty
+  if((exists $info_HR->{"OUT-NAME:stderr"}) && 
+     (-e $info_HR->{"OUT-NAME:stderr"}) && 
+     (! -s $info_HR->{"OUT-NAME:stderr"})) { 
+    ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:stderr"}, $sub_name, $opt_HHR, $FH_HR);
+  }
 
   return $sum_cpu_plus_wait_secs; # will be '0' unless -p used
 }
@@ -1929,7 +1948,7 @@ sub ribo_MergeAlignmentsAndReorder {
 #
 # Arguments: 
 #  $outfile_AR:      ref to array of output files that will be created by jobs we are waiting for
-#  $errfile_AR:      ref to array of err files that will be created by jobs we are waiting for if 
+#  $stderrfile_AR:   ref to array of err files that will be created by jobs we are waiting for if 
 #                    any stderr output is created
 #  $finished_str:    string that indicates a job is finished e.g. "[ok]"
 #  $nmin:            number of minutes to wait
@@ -1951,13 +1970,13 @@ sub ribo_WaitForFarmJobsToFinish {
   my $nargs_expected = 6;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($outfile_AR, $errfile_AR, $finished_str, $nmin, $do_errcheck, $FH_HR) = @_;
+  my ($outfile_AR, $stderrfile_AR, $finished_str, $nmin, $do_errcheck, $FH_HR) = @_;
 
   my $log_FH = $FH_HR->{"log"};
 
   my $njobs = scalar(@{$outfile_AR});
-  if($njobs != scalar(@{$errfile_AR})) { 
-    ofile_FAIL(sprintf("ERROR in $sub_name, number of elements in outfile array ($njobs) differ from number of jobs in errfile array (%d)", scalar(@{$errfile_AR})), 1, $FH_HR);
+  if($njobs != scalar(@{$stderrfile_AR})) { 
+    ofile_FAIL(sprintf("ERROR in $sub_name, number of elements in outfile array ($njobs) differ from number of jobs in stderrfile array (%d)", scalar(@{$stderrfile_AR})), 1, $FH_HR);
   }
   my @is_finished_A  = ();  # $is_finished_A[$i] is 1 if job $i is finished (either successfully or having failed), else 0
   my @is_failed_A    = ();  # $is_failed_A[$i] is 1 if job $i has finished and failed (all failed jobs are considered 
@@ -2006,7 +2025,7 @@ sub ribo_WaitForFarmJobsToFinish {
             $sum_cpu_secs += $secs_waited;
           }
         }
-        if(($do_errcheck) && (-s $errfile_AR->[$i])) { # errfile exists and is non-empty, this is a failure, even if we saw $finished_str above
+        if(($do_errcheck) && (-s $stderrfile_AR->[$i])) { # stderrfile exists and is non-empty, this is a failure, even if we saw $finished_str above
           if(! $is_finished_A[$i]) { 
             $nfinished++;
           }
@@ -2033,7 +2052,7 @@ sub ribo_WaitForFarmJobsToFinish {
     $errmsg .= "Specifically the jobs that were supposed to create the following output and err files:\n";
     for(my $i = 0; $i < $njobs; $i++) { 
       if($is_failed_A[$i]) { 
-        $errmsg .= "\t$outfile_AR->[$i]\t$errfile_AR->[$i]\n";
+        $errmsg .= "\t$outfile_AR->[$i]\t$stderrfile_AR->[$i]\n";
       }
     }
     ofile_FAIL($errmsg, 1, $FH_HR);

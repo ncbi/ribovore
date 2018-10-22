@@ -625,11 +625,13 @@ my $r1_opt_p_sum_cpu_secs = 0.;
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   my %info_H = (); 
-  $info_H{"IN:seqfile"}        = $seq_file;
-  $info_H{"IN:modelfile"}      = $master_model_file;
-  $info_H{"OUT-NAME:tblout"}   = $r1_tblout_file;
-  $info_H{"OUT-NAME:cmsearch"} = $r1_searchout_file;
-  $info_H{"OUT-NAME:errfile"}  = $r1_searchout_file . ".err";
+  $info_H{"IN:seqfile"}       = $seq_file;
+  $info_H{"IN:modelfile"}     = $master_model_file;
+  $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
+  $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
+  $info_H{"OUT-NAME:time"}    = $r1_searchout_file . ".time";
+  $info_H{"OUT-NAME:stderr"}  = $r1_searchout_file . ".err";
+  $info_H{"OUT-NAME:qstderr"} = $r1_searchout_file . ".qerr";
   ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
 }
@@ -805,11 +807,13 @@ if(defined $alg2) {
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
         my %info_H = (); 
-        $info_H{"IN:seqfile"}        = $seqfile_H{$model};
-        $info_H{"IN:modelfile"}      = $indi_cmfile_H{$model};
-        $info_H{"OUT-NAME:tblout"}   = $r2_tblout_file_A[$midx];
-        $info_H{"OUT-NAME:cmsearch"} = $r2_searchout_file_A[$midx];
-        $info_H{"OUT-NAME:errfile"}  = $r2_searchout_file_A[$midx] . ".err";
+        $info_H{"IN:seqfile"}       = $seqfile_H{$model};
+        $info_H{"IN:modelfile"}     = $indi_cmfile_H{$model};
+        $info_H{"OUT-NAME:tblout"}  = $r2_tblout_file_A[$midx];
+        $info_H{"OUT-NAME:stdout"}  = $r2_searchout_file_A[$midx];
+        $info_H{"OUT-NAME:time"}    = $r2_searchout_file_A[$midx] . ".time";
+        $info_H{"OUT-NAME:stderr"}  = $r2_searchout_file_A[$midx] . ".err";
+        $info_H{"OUT-NAME:qstderr"} = $r2_searchout_file_A[$midx] . ".qerr";
         ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
         $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
       }
