@@ -12,6 +12,7 @@ require "ribo.pm";
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -21,6 +22,7 @@ $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
 $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
 $execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
+$execs_H{"time"}         = $env_ribotime_dir  . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
@@ -108,6 +110,7 @@ my $releasedate       = "Oct 2018";
 my $package_name      = "ribotyper";
 my $ribotyper_model_version_str   = "0p20"; 
 my $riboaligner_model_version_str = "0p15";
+my $qsub_version_str  = "0p32"; 
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -216,7 +219,7 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence,qsubinfo and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "riboaligner." . $riboaligner_model_version_str . ".modelinfo";
+my $df_modelinfo_file = $df_model_dir . "riboaligner." . $qsub_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
   $modelinfo_file = $df_modelinfo_file;
@@ -462,8 +465,6 @@ foreach $family (@family_order_A) {
     $info_H{"OUT-NAME:stdout"}  = $out_root . "." . $family . ".cmalign.out";
     $info_H{"OUT-NAME:time"}    = $out_root . "." . $family . ".cmalign.time";
     $info_H{"OUT-NAME:stderr"}  = $out_root . "." . $family . ".cmalign.out.err";
-    $info_H{"OUT-NAME:qstderr"} = $out_root . "." . $family . ".cmalign.out.qerr";
- 
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($info_H{"OUT-NAME:cmalign"}, $ofile_info_HH{"FH"});
 

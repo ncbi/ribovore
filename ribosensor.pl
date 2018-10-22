@@ -17,7 +17,8 @@ my $env_sensor_dir       = ribo_VerifyEnvVariableIsValidDir("SENSORDIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $env_riboblast_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
-my $df_model_dir       = $env_ribotyper_dir . "/models/";
+my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
+my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"ribo"}               = $env_ribotyper_dir . "/ribotyper.pl";
@@ -26,8 +27,10 @@ $execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
 $execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
 $execs_H{"blastdbcmd"}         = $env_riboblast_dir . "/blastdbcmd";
+$execs_H{"time"}               = $env_ribotime_dir  . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
- 
+
+
 #########################################################
 # Command line and option processing using epn-options.pm
 #
@@ -88,6 +91,7 @@ opt_Add("-s",           "integer", 181,                       4,     "-p", undef
 opt_Add("--nkb",        "integer", 10,                        4,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       4,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         4,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"5"} = "additional options";
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -123,14 +127,14 @@ my $options_okay =
                 'errcheck'     => \$GetOptions_H{"--errcheck"});
 
 my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
-my $executable             = $0;
-my $date                   = scalar localtime();
-my $version                = "0.31";
-my $model_version_str      = "0p30"; # model info file unchanged since version 0.30
-my $ribo_model_version_str = "0p20"; # for qsubinfo file only
-my $releasedate            = "Oct 2018";
-my $package_name           = "ribotyper";
-my $pkgstr                 = "RIBO";
+my $executable        = $0;
+my $date              = scalar localtime();
+my $version           = "0.31";
+my $model_version_str = "0p30"; # model info file unchanged since version 0.30
+my $qsub_version_str  = "0p32"; # for qsubinfo file only
+my $releasedate       = "Oct 2018";
+my $package_name      = "ribotyper";
+my $pkgstr            = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -163,6 +167,8 @@ my $cmd  = undef;                    # a command to be run by ribo_RunCommand()
 my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = (); # array of files to remove at end
+
+
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -225,6 +231,7 @@ $extra_H{"\$SENSORDIR"}       = $env_sensor_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 $extra_H{"\$RIBOBLASTDIR"}    = $env_riboblast_dir;
+$extra_H{"\$RIBOTIMEDIR"}     = $env_ribotime_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -264,7 +271,7 @@ my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
 
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $ribo_model_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
@@ -420,15 +427,20 @@ if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . op
 if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
 if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
-my $ribotyper_cmd   = $execs_H{"ribo"} . " $ribotyper_options $seq_file $ribo_dir_out > $ribo_stdoutfile";
-my $ribo_secs       = 0.; # total number of seconds required for ribotyper command
-my $ribo_shortfile  = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
+my $ribotyper_cmd  = $execs_H{"ribo"} . " $ribotyper_options $seq_file $ribo_dir_out > $ribo_stdoutfile";
+my $ribo_secs      = 0.; # total number of seconds required for ribotyper command
+my $ribo_shortfile = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
+my $ribo_logfile   = $ribo_dir_out . "/ribo-out.ribotyper.log";
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, $log_FH, *STDOUT);
   $ribo_secs = ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "ribostdout",  $ribo_stdoutfile, 0, "ribotyper stdout output");
 }  
+# if -p used, overwrite ribo_secs with summed seconds
+if(opt_Get("-p", \%opt_HH)) { 
+  $ribo_secs = ribo_ParseLogFileForParallelTime($ribo_logfile, $ofile_info_HH{"FH"});
+}
 
 ##############################################################################
 # Step 3: Run rRNA_sensor on the (up to 3) length-partitioned sequence files
@@ -471,10 +483,9 @@ for($i = 0; $i < $nseq_parts; $i++) {
       $info_H{"OUT-NAME:stdout"}   = $sensor_stdoutfile_A[$i];
       $info_H{"OUT-NAME:time"}     = $sensor_stdoutfile_A[$i] . ".time";;
       $info_H{"OUT-NAME:stderr"}   = $sensor_stdoutfile_A[$i] . ".err";
-      $info_H{"OUT-NAME:qstderr"}  = $sensor_stdoutfile_A[$i] . ".qerr";
       ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, 
                                                    $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_H, \%opt_HH, \%ofile_info_HH);
-      $sensor_secs++;
+      $sensor_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, "rRNA_sensor stdout output for length class" . ($i+1));

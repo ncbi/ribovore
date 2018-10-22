@@ -449,6 +449,7 @@ sub ribo_ParseCmsearchFileForTotalCpuTime {
   return $tot_secs;
 }
 
+
 #################################################################
 # Subroutine : ribo_ParseCmalignFileForCpuTime()
 # Incept:      EPN, Wed Oct 10 09:20:32 2018
@@ -486,6 +487,60 @@ sub ribo_ParseCmalignFileForCpuTime {
   return $tot_secs;
 }
 
+#################################################################
+# Subroutine : ribo_ParseUnixTimeOutput()
+# Incept:      EPN, Mon Oct 22 14:58:18 2018
+#
+# Purpose:     Parse the output of 1 or more runs of Unix's 'time -p' 
+#              (NOT THE 'time' SHELL BUILTIN, which has output 
+#              that varies depending on the shell being run).
+#              With -p, 'time' is supposed to output in a portable
+#              format:
+#              
+#              From:
+#              http://man7.org/linux/man-pages/man1/time.1.html
+#              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#              -p     When in the POSIX locale, use the precise traditional format
+#                 "real %f\nuser %f\nsys %f\n"
+#
+#              (with numbers in seconds) where the number of decimals in the
+#              output for %f is unspecified but is sufficient to express the
+#              clock tick accuracy, and at least one.
+#              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+#              So for example:
+# 
+#              real 0.52
+#              user 0.04
+#              sys 0.08
+#              
+# Arguments: 
+#   $out_file:  file to parse
+#   $FH_HR:     REF to hash of file handles
+#
+# Returns:     Summed number of elapsed seconds read from all 'real' lines.
+#
+################################################################# 
+sub ribo_ParseUnixTimeOutput { 
+  my $nargs_expected = 2;
+  my $sub_name = "ribo_ParseUnixTimeOutput";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $FH_HR) = @_;
+
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+
+  my $tot_secs = 0.;
+  while(my $line = <IN>) { 
+    # Total CPU time:1.43u 0.19s 00:00:01.62 Elapsed: 00:00:01.70
+    if($line =~ /^real\s+(\d+\.\d+)/) { 
+      my ($seconds) = ($1, $2);
+      $tot_secs += $seconds;
+    }
+  }
+  close(IN);
+
+  return $tot_secs;
+}
 
 #################################################################
 # Subroutine : ribo_ProcessSequenceFile()
@@ -1468,6 +1523,7 @@ sub ribo_ConvertFetchedNameToAccVersion {
 #
 # Arguments:
 #   $executable:     path to cmsearch or cmalign or rRNA_sensor executable
+#   $time_path:      path to Unix time command (e.g. /usr/bin/time)
 #   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
 #   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
 #   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor arguments to use 
@@ -1485,10 +1541,10 @@ sub ribo_ConvertFetchedNameToAccVersion {
 #################################################################
 sub ribo_RunCmsearchOrCmalignOrRRnaSensor { 
   my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensor()";
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($executable, $qsub_prefix, $qsub_suffix, $opts, $info_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($executable, $time_path, $qsub_prefix, $qsub_suffix, $opts, $info_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   # we can only pass $FH_HR to ofile_FAIL if that hash already exists
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
@@ -1497,12 +1553,11 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   my $program_choice = ribo_RemoveDirPath($executable);
   ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
 
-  # IN:seqfile, OUT-NAME:stdout, OUT-NAME:time, OUT-NAME:stderr and OUT-NAME:qstderr are required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
+  # IN:seqfile, OUT-NAME:stdout, OUT-NAME:time and OUT-NAME:stderr are required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
   my $seq_file     = $info_HR->{"IN:seqfile"};
   my $stdout_file  = $info_HR->{"OUT-NAME:stdout"};
   my $time_file    = $info_HR->{"OUT-NAME:time"};
   my $stderr_file  = $info_HR->{"OUT-NAME:stderr"};
-  my $qstderr_file = $info_HR->{"OUT-NAME:qstderr"};
 
   # determine if we are running on the farm or locally
   my $cmd = "";
@@ -1511,11 +1566,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
     $cmd = $qsub_prefix;
     $cmd_suffix = $qsub_suffix;
-    # replace ![errfile]! with $errfile
     # replace ![jobname]! with $jobname
     my $jobname = "j" . ribo_RemoveDirPath($seq_file);
-    if(-e $stderr_file) { ribo_RemoveFileUsingSystemRm($stderr_file, $sub_name, $opt_HHR, $ofile_info_HHR); }
-    $cmd =~ s/\!\[errfile\]\!/$qstderr_file/g;
     $cmd =~ s/\!\[jobname\]\!/$jobname/g;
     $do_local = 0;
   }
@@ -1527,14 +1579,14 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $model_file     = $info_HR->{"IN:modelfile"};
     my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
     if(opt_Get("--keep", $opt_HHR)) { 
-      $cmd .= "( time $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
+      $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file" . $cmd_suffix;
     }
     else { # only save the Total CPU line output, otherwise output files get big for large inputs
       if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-        $cmd .= "( time $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \\\"Total CPU time\\\" > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
+        $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \\\"Total CPU time\\\" > $stdout_file 2> $stderr_file" . $cmd_suffix;
       }
       else { 
-        $cmd .= "( time $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \"Total CPU time\" > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
+        $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \"Total CPU time\" > $stdout_file 2> $stderr_file" . $cmd_suffix;
       }
     }
   }
@@ -1543,7 +1595,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $i_file        = $info_HR->{"OUT-NAME:ifile"};
     my $el_file       = $info_HR->{"OUT-NAME:elfile"};
     my $stk_file      = $info_HR->{"OUT-NAME:stk"};
-    $cmd .= "( time $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
+    $cmd .= "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file" . $cmd_suffix;
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
     my $minlen     = $info_HR->{"minlen"};
@@ -1555,7 +1607,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $ncpu       = $info_HR->{"ncpu"};
     my $outdir     = $info_HR->{"OUT-NAME:outdir"};
     my $blastdb    = $info_HR->{"blastdb"};
-    $cmd .= "( time $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file ) 2> $time_file" . $cmd_suffix;
+    $cmd .= "$time_path -p -o $time_file $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file" . $cmd_suffix;
   }
 
   # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
@@ -1603,7 +1655,6 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stdout":  name of stdout output file
 #                       "OUT-NAME:time":    path to time output file
 #                       "OUT-NAME:stderr":  path to stderr output file
-#                       "OUT-NAME:qstderr": path to qsub error file (created only if -p)
 #
 #                    if "cmalign", keys must be:
 #                       "IN:seqfile":       name of input master sequence file
@@ -1615,7 +1666,6 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stdout":  name of stdout output file
 #                       "OUT-NAME:time":    path to time output file
 #                       "OUT-NAME:stderr":  path to stderr output file
-#                       "OUT-NAME:qstderr": path to qsub error file (created only if -p)
 #
 #                    if "rRNA_sensor_script", keys must be:
 #                       "IN:seqfile":        name of master sequence file
@@ -1632,7 +1682,6 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stdout":   name of stdout output file
 #                       "OUT-NAME:time":     path to time output file
 #                       "OUT-NAME:stderr":   path to stderr output file
-#                       "OUT-NAME:qstderr":  path to qsub error file (created only if -p)
 #
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
@@ -1663,17 +1712,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   if($program_choice eq "cmsearch") { 
     $wait_key = "OUT-NAME:tblout";
     $wait_str = "[ok]";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:tblout", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qstderr");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:tblout", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr");
   }
   elsif($program_choice eq "cmalign") { 
     $wait_key = "OUT-NAME:stdout";
     $wait_str = "# CPU time:";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qstderr");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr");
   }
   elsif($program_choice eq "rRNA_sensor_script") { 
     $wait_key = "OUT-NAME:stdout";
     $wait_str = "Final output saved as";
-    @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qstderr");
+    @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", "RIBO", 1, $FH_HR);
@@ -1748,13 +1797,18 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
   my $sum_cpu_plus_wait_secs = 0; # will be returned as '0' unless -p used
   my $njobs_finished = 0; 
 
+  if(! defined $execs_HR->{"time"}) { 
+    ofile_FAIL("ERROR in $sub_name execs_HR->{time} not set", 1, $ofile_info_HHR->{"FH"});
+  }
+  my $timepath = $execs_HR->{"time"};
+
   # validate %{$info_HR}
   ($wait_key, $wait_str) = ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
   $executable = $execs_HR->{$program_choice};
 
   if(! opt_Get("-p", $opt_HHR)) { 
     # run job locally
-    ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+    ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $timepath, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
   }
   else { 
     my %wkr_outfiles_HA = (); # hash of arrays of output file names for all jobs, 
@@ -1799,7 +1853,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           $wkr_info_H{$info_key} = $info_HR->{$info_key};
         }
       }
-      ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
+      ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $timepath, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
     }
     
     # wait for the jobs to finish
@@ -1843,17 +1897,6 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
       if(exists $wkr_outfiles_HA{"IN:seqfile"}) { 
         ribo_RemoveListOfFiles($wkr_outfiles_HA{"IN:seqfile"}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }
-    }
-    # remove the qsub error files if it exists and is empty
-    if((exists $info_HR->{"OUT-NAME:qstderr"}) && 
-       (-e $info_HR->{"OUT-NAME:qstderr"}) && 
-       (! -s $info_HR->{"OUT-NAME:qstderr"})) { 
-      ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:qstderr"}, $sub_name, $opt_HHR, $FH_HR);
-    }
-    if((exists $info_HR->{"OUT-NAME:stderr"}) && 
-       (-e $info_HR->{"OUT-NAME:stderr"}) && 
-       (! -s $info_HR->{"OUT-NAME:stderr"})) { 
-      ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:stderr"}, $sub_name, $opt_HHR, $FH_HR);
     }
   } # end of 'else' entered if -p used
 

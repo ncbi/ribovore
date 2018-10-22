@@ -16,6 +16,7 @@ require "ribo.pm";
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -23,7 +24,9 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"time"}        = $env_ribotime_dir  . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
+
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -210,6 +213,7 @@ my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.31";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
+my $qsub_version_str  = "0p32"; # qsub command file unchanged since version 0.32
 my $releasedate       = "Oct 2018";
 my $package_name      = "ribotyper";
 
@@ -404,7 +408,7 @@ my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
 
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $model_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
@@ -631,7 +635,6 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
   $info_H{"OUT-NAME:time"}    = $r1_searchout_file . ".time";
   $info_H{"OUT-NAME:stderr"}  = $r1_searchout_file . ".err";
-  $info_H{"OUT-NAME:qstderr"} = $r1_searchout_file . ".qerr";
   ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
 }
@@ -813,7 +816,6 @@ if(defined $alg2) {
         $info_H{"OUT-NAME:stdout"}  = $r2_searchout_file_A[$midx];
         $info_H{"OUT-NAME:time"}    = $r2_searchout_file_A[$midx] . ".time";
         $info_H{"OUT-NAME:stderr"}  = $r2_searchout_file_A[$midx] . ".err";
-        $info_H{"OUT-NAME:qstderr"} = $r2_searchout_file_A[$midx] . ".qerr";
         ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
         $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
       }
