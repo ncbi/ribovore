@@ -28,5 +28,12 @@ exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.tbl
 exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.list
 exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.stk
 rmdir: r100-2
+command: perl $RIBODIR/ribosensor.pl -p -m 18S -f $RIBODIR/testfiles/fungi-ssu.r100.fa rs-r100 > /dev/null
+desc: ribosensor-2-p-100
+out: rs-r100/rs-r100.ribosensor.out
+out: rs-r100/rs-r100.ribosensor.gpipe
+exp: @RIBODIR@/testfiles/expected-files/rs-r100.ribosensor.out
+exp: @RIBODIR@/testfiles/expected-files/rs-r100.ribosensor.gpipe
+rmdir: rs-r100
 
 

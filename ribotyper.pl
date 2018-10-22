@@ -619,8 +619,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # as the command for sorting the output and parsing the output
 ###########################################################################
 # set up defaults
-#my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
-my $r1_searchout_file = $out_root . ".r1.cmsearch.out";
+my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
 my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
 my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
 my $sum_cpu_secs = undef; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
@@ -633,10 +632,10 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $info_H{"IN:modelfile"}     = $master_model_file;
   $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
   $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
-  $info_H{"OUT-NAME:time"}    = $r1_searchout_file . ".time";
-  $info_H{"OUT-NAME:stderr"}  = $r1_searchout_file . ".err";
+  $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
+  $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
   ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-  $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
+  $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
 }
 else { 
   $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
@@ -646,7 +645,6 @@ else {
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
-  push(@to_remove_A, $r1_searchout_file);
 }
 else { 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
@@ -805,7 +803,7 @@ if(defined $alg2) {
     if(defined $sfetchfile_H{$model}) { 
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,    $out_root . ".r2.$model.cmsearch.tbl");
-      push(@r2_searchout_file_A, $out_root . ".r2.$model.cmsearch.out");
+      push(@r2_searchout_file_A, ((opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null"));
       push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
@@ -814,17 +812,16 @@ if(defined $alg2) {
         $info_H{"IN:modelfile"}     = $indi_cmfile_H{$model};
         $info_H{"OUT-NAME:tblout"}  = $r2_tblout_file_A[$midx];
         $info_H{"OUT-NAME:stdout"}  = $r2_searchout_file_A[$midx];
-        $info_H{"OUT-NAME:time"}    = $r2_searchout_file_A[$midx] . ".time";
-        $info_H{"OUT-NAME:stderr"}  = $r2_searchout_file_A[$midx] . ".err";
+        $info_H{"OUT-NAME:time"}    = $r2_tblout_file_A[$midx] . ".time";
+        $info_H{"OUT-NAME:stderr"}  = $r2_tblout_file_A[$midx] . ".err";
         ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-        $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
+        $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
         ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
       }
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_tblout_file_A[$midx]);
-        push(@to_remove_A, $r2_searchout_file_A[$midx]);
       }
       else { 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");

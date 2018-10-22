@@ -1578,17 +1578,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   if($executable =~ /cmsearch$/) { 
     my $model_file     = $info_HR->{"IN:modelfile"};
     my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
-    if(opt_Get("--keep", $opt_HHR)) { 
-      $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file" . $cmd_suffix;
-    }
-    else { # only save the Total CPU line output, otherwise output files get big for large inputs
-      if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-        $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \\\"Total CPU time\\\" > $stdout_file 2> $stderr_file" . $cmd_suffix;
-      }
-      else { 
-        $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file | grep \"Total CPU time\" > $stdout_file 2> $stderr_file" . $cmd_suffix;
-      }
-    }
+    $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file" . $cmd_suffix;
   }
   elsif($executable =~ /cmalign$/) { 
     my $model_file    = $info_HR->{"IN:modelfile"};
@@ -1833,7 +1823,10 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           push(@{$wkr_outfiles_HA{$info_key}}, $wkr_info_H{$info_key});
         }
         elsif($info_key =~ m/^OUT/) { 
-          if($info_key =~ m/^OUT-NAME/) { 
+          if($info_HR->{$info_key} eq "/dev/null") { 
+            $wkr_info_H{$info_key} = "/dev/null";
+          }
+          elsif($info_key =~ m/^OUT-NAME/) { 
             $wkr_info_H{$info_key} = $info_HR->{$info_key} . "." . $f;
           }
           elsif($info_key =~ m/^OUT-DIR/) { 
@@ -1882,7 +1875,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
       if($outfiles_key eq "OUT-NAME:stk") { # special case
         ribo_MergeAlignmentsAndReorder($execs_HR, $wkr_outfiles_HA{$outfiles_key}, $info_HR->{$outfiles_key}, $info_HR->{"IN:seqlist"}, $opt_HHR, $ofile_info_HHR);
       }
-      elsif(($outfiles_key =~ m/^OUT/) && ($outfiles_key ne "OUT-NAME:outdir")) { 
+      elsif(($outfiles_key =~ m/^OUT/) && 
+            ($outfiles_key ne "OUT-NAME:outdir") && 
+            ($info_HR->{$outfiles_key} ne "/dev/null")) { 
         # this function will remove files after concatenating them, unless --keep enabled
         ribo_ConcatenateListOfFiles($wkr_outfiles_HA{$outfiles_key}, $info_HR->{$outfiles_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
       }

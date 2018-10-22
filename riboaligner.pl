@@ -219,7 +219,7 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence,qsubinfo and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "riboaligner." . $qsub_version_str . ".modelinfo";
+my $df_modelinfo_file = $df_model_dir . "riboaligner." . $riboaligner_model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
   $modelinfo_file = $df_modelinfo_file;
@@ -227,7 +227,7 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { 
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $ribotyper_model_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
@@ -466,15 +466,15 @@ foreach $family (@family_order_A) {
     $info_H{"OUT-NAME:time"}    = $out_root . "." . $family . ".cmalign.time";
     $info_H{"OUT-NAME:stderr"}  = $out_root . "." . $family . ".cmalign.out.err";
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-    $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($info_H{"OUT-NAME:cmalign"}, $ofile_info_HH{"FH"});
+    $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, "insert file for $family");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, "EL file for $family");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $info_H{"OUT-NAME:cmalign"}, 1, "cmalign output file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, "cmalign output file for $family");
 
     # parse cmalign file
-    parse_cmalign_file($info_H{"OUT-NAME:cmalign"}, \%out_tbl_HH, $FH_HR);
+    parse_cmalign_file($info_H{"OUT-NAME:stdout"}, \%out_tbl_HH, $FH_HR);
 
     # parse alignment file
     parse_stk_file($info_H{"OUT-NAME:stk"}, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
