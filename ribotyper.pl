@@ -803,7 +803,7 @@ if(defined $alg2) {
     if(defined $sfetchfile_H{$model}) { 
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,    $out_root . ".r2.$model.cmsearch.tbl");
-      push(@r2_searchout_file_A, ((opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null"));
+      push(@r2_searchout_file_A, ((opt_Get("--keep", \%opt_HH)) ? $out_root . ".r2.cmsearch.out" : "/dev/null"));
       push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
