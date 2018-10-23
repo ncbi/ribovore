@@ -487,10 +487,10 @@ foreach $family (@family_order_A) {
   }
 }
 
-# add in -p time from ribotyper run
-$opt_p_sum_cpu_secs += $rt_opt_p_sum_cpu_secs;
 $extra_desc = ((opt_Get("-p", \%opt_HH)) && ($opt_p_sum_cpu_secs > 0.)) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $opt_p_sum_cpu_secs) : undef;
 ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
+# add in -p time from ribotyper run
+$opt_p_sum_cpu_secs += $rt_opt_p_sum_cpu_secs;
 
 ##########################################################
 # Step 5: Extract class subsets from cmalign output files

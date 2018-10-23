@@ -24,7 +24,7 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
-$execs_H{"time"}        = $env_ribotime_dir  . "/time";
+$execs_H{"time"}        = $env_ribotime_dir     . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
 
  
@@ -3251,16 +3251,16 @@ sub output_summary_statistics {
 # Purpose:    Output timing statistics.
 #
 # Arguments:
-#   $out_FH:             output file handle
-#   $class_stats_HHR:    ref to the class statistics 2D hash
-#   $ncpu:               number of CPUs used to do searches
-#   $r1_secs:            number of seconds required for round 1 searches
-#   $r1_opt_p_secs:      if -p: summed total CPU secs required for all round 1 jobs
-#   $r2_secs:            number of seconds required for round 2 searches
-#   $r2_opt_p_secs:      if -p: summed total CPU secs required for all round 2 jobs
-#   $tot_secs:           number of seconds required for entire script
-#   $opt_HHR:            ref to options 2D hash
-#   $FH_HR:              ref to hash of file handles, including "cmd"
+#   $out_FH:          output file handle
+#   $class_stats_HHR: ref to the class statistics 2D hash
+#   $ncpu:            number of CPUs used to do searches
+#   $r1_secs:         number of seconds elapsed for round 1 searches
+#   $r1_p_secs:       if -p: summed total elapsed secs required for all round 1 jobs
+#   $r2_secs:         number of seconds elapsed for round 2 searches
+#   $r2_p_secs:       if -p: summed total elapsed secs required for all round 2 jobs
+#   $tot_secs:        number of seconds required for entire script
+#   $opt_HHR:         ref to options 2D hash
+#   $FH_HR:           ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -3272,7 +3272,7 @@ sub output_timing_statistics {
   my $nargs_expected = 10;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r1_opt_p_secs, $r2_secs, $r2_opt_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r1_p_secs, $r2_secs, $r2_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -3294,6 +3294,20 @@ sub output_timing_statistics {
   $width_H{"ntsec"}    = 10;
   $width_H{"ntseccpu"} = 10;
   $width_H{"total"}    = 23;
+
+  my $r1_secs2print   = undef;
+  my $r2_secs2print = undef;
+  if(opt_Get("-p", $opt_HHR)) { 
+    $tot_secs     += $r1_p_secs;
+    $tot_secs     += $r2_p_secs;
+    $r1_secs2print = $r1_p_secs;
+    $r2_secs2print = $r2_p_secs;
+  }
+  else { 
+    $r1_secs2print = $r1_secs;
+    $r2_secs2print = $r2_secs;
+  }
+
   
   printf $out_FH ("#\n");
   printf $out_FH ("# Timing statistics:\n");
@@ -3317,34 +3331,24 @@ sub output_timing_statistics {
                   $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
                   $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR));
   
-  if(opt_Get("-p", $opt_HHR)) { 
-    $r1_secs  += $r1_opt_p_secs;
-    $tot_secs += $r1_opt_p_secs;
-  }
-
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
-                  $width_H{"seqsec"},   $r1_nseq / $r1_secs,
-                  $width_H{"ntsec"},    $r1_nnt / $r1_secs, 
-                  $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
-                  $width_H{"total"},    ribo_GetTimeString($r1_secs));
-
-  if(opt_Get("-p", $opt_HHR)) { 
-    $r2_secs  += $r2_opt_p_secs;
-    $tot_secs += $r2_opt_p_secs;
-  }
+                  $width_H{"seqsec"},   $r1_nseq / $r1_secs2print,
+                  $width_H{"ntsec"},    $r1_nnt / $r1_secs2print, 
+                  $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs2print) / $ncpu, 
+                  $width_H{"total"},    ribo_GetTimeString($r1_secs2print));
 
   $class = "search";
   if(defined $alg2) { 
     printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                     $width_H{"class"},    $class,
                     $width_H{"nseq"},     $r2_nseq,
-                    $width_H{"seqsec"},   $r2_nseq / $r2_secs,
-                    $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
-                    $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
-                    $width_H{"total"},    ribo_GetTimeString($r2_secs));
+                    $width_H{"seqsec"},   $r2_nseq / $r2_secs2print,
+                    $width_H{"ntsec"},    $r2_nnt  / $r2_secs2print, 
+                    $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs2print) / $ncpu, 
+                    $width_H{"total"},    ribo_GetTimeString($r2_secs2print));
   }
   
   $class = "total";
@@ -3358,7 +3362,8 @@ sub output_timing_statistics {
                   
   printf $out_FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
-    printf $out_FH ("# Timing statistics above include summed elapsed time of multiple jobs [-p]\n");
+    printf $out_FH ("# Timing statistics are summed elapsed time of multiple jobs [-p]\n");
+    printf $out_FH ("# and do not include time elapsed time spent waiting for those jobs, totalling %s\n", ribo_GetTimeString($r1_secs + $r2_secs));
     printf $out_FH ("#\n");
   }
   

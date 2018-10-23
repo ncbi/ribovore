@@ -2055,21 +2055,23 @@ sub ribo_WaitForFarmJobsToFinish {
       if(! $is_finished_A[$i]) { 
         if(-s $outfile_AR->[$i]) { 
           my $final_line = `tail -n 1 $outfile_AR->[$i]`;
-          chomp $final_line;
-          if($final_line =~ m/\r$/) { chop $final_line; } # remove ^M if it exists
-          if($final_line =~ m/\Q$finished_str\E/) { 
+          if(defined $final_line) { 
+            chomp $final_line;
+            if($final_line =~ m/\r$/) { chop $final_line; } # remove ^M if it exists
+            if($final_line =~ m/\Q$finished_str\E/) { 
+              $is_finished_A[$i] = 1;
+              $nfinished++;
+              $sum_cpu_secs += $secs_waited;
+            }
+          }
+          if(($do_errcheck) && (-s $stderrfile_AR->[$i])) { # stderrfile exists and is non-empty, this is a failure, even if we saw $finished_str above
+            if(! $is_finished_A[$i]) { 
+              $nfinished++;
+            }
             $is_finished_A[$i] = 1;
-            $nfinished++;
-            $sum_cpu_secs += $secs_waited;
+            $is_failed_A[$i] = 1;
+            $nfail++;
           }
-        }
-        if(($do_errcheck) && (-s $stderrfile_AR->[$i])) { # stderrfile exists and is non-empty, this is a failure, even if we saw $finished_str above
-          if(! $is_finished_A[$i]) { 
-            $nfinished++;
-          }
-          $is_finished_A[$i] = 1;
-          $is_failed_A[$i] = 1;
-          $nfail++;
         }
       }
     }
