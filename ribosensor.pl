@@ -2118,9 +2118,10 @@ sub output_timing_statistics {
 
   printf $FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
-    printf $out_FH ("# Timing statistics are summed elapsed time of multiple jobs [-p]\n");
-    printf $out_FH ("# and do not include time elapsed time spent waiting for those jobs, totalling %s\n", ribo_GetTimeString($ribo_secs + $sensor_secs));
-    printf $out_FH ("#\n");
+    printf $FH ("# 'ribotyper' and 'sensor' timing statistics are summed elapsed time of multiple jobs [-p]\n");
+    printf $FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ribo_GetTimeString($ribo_secs + $sensor_secs));
+    printf $FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
+    printf $FH ("#\n");
   }
   
   return;
