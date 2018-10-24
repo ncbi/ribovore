@@ -73,7 +73,7 @@ $opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a co
 opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-s",           "integer", 181,                       3,     "-p", undef,      "seed for random number generator is <n>",               "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                       3,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
