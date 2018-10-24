@@ -70,7 +70,7 @@ opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,
 
 $opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
+opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize ribotyper and cmalign on a compute farm",   "parallelize ribotyper and cmalign on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-s",           "integer", 181,                       3,     "-p", undef,      "seed for random number generator is <n>",               "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--nkb",        "integer", 100,                       3,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
