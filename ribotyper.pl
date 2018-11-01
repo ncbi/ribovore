@@ -16,6 +16,7 @@ require "ribo.pm";
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -23,7 +24,9 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"time"}        = $env_ribotime_dir     . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
+
  
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -59,7 +62,6 @@ opt_Add("-f",           "boolean", 0,                        1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                            help-output    
@@ -115,7 +117,8 @@ $opt_group_desc_H{"9"} = "options for parallelizing cmsearch on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
 opt_Add("-p",           "boolean", 0,                         9,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     9,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                        9,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                       9,     "-p", undef,      "seed for random number generator is <n>",                     "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                       9,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       9,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         9,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
@@ -148,7 +151,6 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
-                's=s'          => \$GetOptions_H{"-s"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
@@ -188,6 +190,7 @@ my $options_okay =
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
+                's=s'          => \$GetOptions_H{"-s"},
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"},
@@ -208,9 +211,10 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.31";
+my $version           = "0.32";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
-my $releasedate       = "Oct 2018";
+my $qsub_version_str  = "0p32"; # qsub command file unchanged since version 0.32
+my $releasedate       = "Nov 2018";
 my $package_name      = "ribotyper";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -404,7 +408,7 @@ my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
 
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $model_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
@@ -615,8 +619,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # as the command for sorting the output and parsing the output
 ###########################################################################
 # set up defaults
-#my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
-my $r1_searchout_file = $out_root . ".r1.cmsearch.out";
+my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
 my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
 my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
 my $sum_cpu_secs = undef; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
@@ -624,11 +627,15 @@ my $r1_opt_p_sum_cpu_secs = 0.;
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
-  my %outfile_H = (); 
-  $outfile_H{"tblout"}   = $r1_tblout_file;
-  $outfile_H{"cmsearch"} = $r1_searchout_file;
-  ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $master_model_file, $seq_file, $nseq, $tot_nnt, $alg1_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
-  $r1_opt_p_sum_cpu_secs = ribo_ParseCmsearchFileForTotalCpuTime($r1_searchout_file, $ofile_info_HH{"FH"});
+  my %info_H = (); 
+  $info_H{"IN:seqfile"}       = $seq_file;
+  $info_H{"IN:modelfile"}     = $master_model_file;
+  $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
+  $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
+  $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
+  $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
+  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+  $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
 }
 else { 
   $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
@@ -638,7 +645,6 @@ else {
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
-  push(@to_remove_A, $r1_searchout_file);
 }
 else { 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
@@ -797,22 +803,25 @@ if(defined $alg2) {
     if(defined $sfetchfile_H{$model}) { 
       push(@r2_model_A, $model);
       push(@r2_tblout_file_A,    $out_root . ".r2.$model.cmsearch.tbl");
-      push(@r2_searchout_file_A, $out_root . ".r2.$model.cmsearch.out");
+      push(@r2_searchout_file_A, ((opt_Get("--keep", \%opt_HH)) ? $out_root . ".r2.cmsearch.out" : "/dev/null"));
       push(@r2_search_cmd_A,     $execs_H{"cmsearch"} . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu");
 
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        my %outfile_H = (); 
-        $outfile_H{"tblout"}   = $r2_tblout_file_A[$midx];
-        $outfile_H{"cmsearch"} = $r2_searchout_file_A[$midx];
-        ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $indi_cmfile_H{$model}, $seqfile_H{$model}, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
-        $r2_opt_p_sum_cpu_secs += ribo_ParseCmsearchFileForTotalCpuTime($r2_searchout_file_A[$midx], $ofile_info_HH{"FH"});
+        my %info_H = (); 
+        $info_H{"IN:seqfile"}       = $seqfile_H{$model};
+        $info_H{"IN:modelfile"}     = $indi_cmfile_H{$model};
+        $info_H{"OUT-NAME:tblout"}  = $r2_tblout_file_A[$midx];
+        $info_H{"OUT-NAME:stdout"}  = $r2_searchout_file_A[$midx];
+        $info_H{"OUT-NAME:time"}    = $r2_tblout_file_A[$midx] . ".time";
+        $info_H{"OUT-NAME:stderr"}  = $r2_tblout_file_A[$midx] . ".err";
+        ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+        $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
         ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", "RIBO", 1, $ofile_info_HH{"FH"});
       }
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_tblout_file_A[$midx]);
-        push(@to_remove_A, $r2_searchout_file_A[$midx]);
       }
       else { 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");
@@ -3242,16 +3251,16 @@ sub output_summary_statistics {
 # Purpose:    Output timing statistics.
 #
 # Arguments:
-#   $out_FH:             output file handle
-#   $class_stats_HHR:    ref to the class statistics 2D hash
-#   $ncpu:               number of CPUs used to do searches
-#   $r1_secs:            number of seconds required for round 1 searches
-#   $r1_opt_p_secs:      if -p: summed total CPU secs required for all round 1 jobs
-#   $r2_secs:            number of seconds required for round 2 searches
-#   $r2_opt_p_secs:      if -p: summed total CPU secs required for all round 2 jobs
-#   $tot_secs:           number of seconds required for entire script
-#   $opt_HHR:            ref to options 2D hash
-#   $FH_HR:              ref to hash of file handles, including "cmd"
+#   $out_FH:          output file handle
+#   $class_stats_HHR: ref to the class statistics 2D hash
+#   $ncpu:            number of CPUs used to do searches
+#   $r1_secs:         number of seconds elapsed for round 1 searches
+#   $r1_p_secs:       if -p: summed total elapsed secs required for all round 1 jobs
+#   $r2_secs:         number of seconds elapsed for round 2 searches
+#   $r2_p_secs:       if -p: summed total elapsed secs required for all round 2 jobs
+#   $tot_secs:        number of seconds required for entire script
+#   $opt_HHR:         ref to options 2D hash
+#   $FH_HR:           ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -3263,7 +3272,7 @@ sub output_timing_statistics {
   my $nargs_expected = 10;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r1_opt_p_secs, $r2_secs, $r2_opt_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
+  my ($out_FH, $class_stats_HHR, $ncpu, $r1_secs, $r1_p_secs, $r2_secs, $r2_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -3285,6 +3294,20 @@ sub output_timing_statistics {
   $width_H{"ntsec"}    = 10;
   $width_H{"ntseccpu"} = 10;
   $width_H{"total"}    = 23;
+
+  my $r1_secs2print   = undef;
+  my $r2_secs2print = undef;
+  if(opt_Get("-p", $opt_HHR)) { 
+    $tot_secs     += $r1_p_secs;
+    $tot_secs     += $r2_p_secs;
+    $r1_secs2print = $r1_p_secs;
+    $r2_secs2print = $r2_p_secs;
+  }
+  else { 
+    $r1_secs2print = $r1_secs;
+    $r2_secs2print = $r2_secs;
+  }
+
   
   printf $out_FH ("#\n");
   printf $out_FH ("# Timing statistics:\n");
@@ -3308,34 +3331,24 @@ sub output_timing_statistics {
                   $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
                   $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR));
   
-  if(opt_Get("-p", $opt_HHR)) { 
-    $r1_secs  += $r1_opt_p_secs;
-    $tot_secs += $r1_opt_p_secs;
-  }
-
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                   $width_H{"class"},    $class,
                   $width_H{"nseq"},     $r1_nseq,
-                  $width_H{"seqsec"},   $r1_nseq / $r1_secs,
-                  $width_H{"ntsec"},    $r1_nnt / $r1_secs, 
-                  $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs) / $ncpu, 
-                  $width_H{"total"},    ribo_GetTimeString($r1_secs));
-
-  if(opt_Get("-p", $opt_HHR)) { 
-    $r2_secs  += $r2_opt_p_secs;
-    $tot_secs += $r2_opt_p_secs;
-  }
+                  $width_H{"seqsec"},   $r1_nseq / $r1_secs2print,
+                  $width_H{"ntsec"},    $r1_nnt / $r1_secs2print, 
+                  $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs2print) / $ncpu, 
+                  $width_H{"total"},    ribo_GetTimeString($r1_secs2print));
 
   $class = "search";
   if(defined $alg2) { 
     printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                     $width_H{"class"},    $class,
                     $width_H{"nseq"},     $r2_nseq,
-                    $width_H{"seqsec"},   $r2_nseq / $r2_secs,
-                    $width_H{"ntsec"},    $r2_nnt  / $r2_secs, 
-                    $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs) / $ncpu, 
-                    $width_H{"total"},    ribo_GetTimeString($r2_secs));
+                    $width_H{"seqsec"},   $r2_nseq / $r2_secs2print,
+                    $width_H{"ntsec"},    $r2_nnt  / $r2_secs2print, 
+                    $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs2print) / $ncpu, 
+                    $width_H{"total"},    ribo_GetTimeString($r2_secs2print));
   }
   
   $class = "total";
@@ -3349,7 +3362,9 @@ sub output_timing_statistics {
                   
   printf $out_FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
-    printf $out_FH ("# Timing statistics above include summed elapsed time of multiple jobs [-p]\n");
+    printf $out_FH ("# 'classification' and 'search' timing statistics are summed elapsed time of multiple jobs [-p]\n");
+    printf $out_FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ribo_GetTimeString($r1_secs + $r2_secs));
+    printf $out_FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
     printf $out_FH ("#\n");
   }
   

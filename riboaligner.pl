@@ -12,6 +12,7 @@ require "ribo.pm";
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -21,6 +22,7 @@ $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
 $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
 $execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
+$execs_H{"time"}         = $env_ribotime_dir  . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
@@ -58,7 +60,6 @@ opt_Add("-b",           "integer", 10,                       1,    undef, undef,
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                       "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 1,                        1,    undef, "-p",       "use <n> CPUs",                                     "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",       "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-s",           "integer", 181,                      1,    undef, undef,      "seed for random number generator is <n>",        "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                      "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # options related to the ribotyper call
@@ -69,9 +70,10 @@ opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,
 
 $opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",        "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
+opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize ribotyper and cmalign on a compute farm",   "parallelize ribotyper and cmalign on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                        3,     "-p", undef,      "number of KB of seq for each farm job is <n>", "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                       3,     "-p", undef,      "seed for random number generator is <n>",               "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                       3,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
@@ -87,7 +89,6 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'v'            => \$GetOptions_H{"-v"},
                 'i=s'          => \$GetOptions_H{"-i"},
-                's=s'          => \$GetOptions_H{"-s"},
                 'keep'         => \$GetOptions_H{"--keep"},
                 'riboopts=s'   => \$GetOptions_H{"--riboopts"},
                 'noscfail'     => \$GetOptions_H{"--noscfail"},
@@ -95,6 +96,7 @@ my $options_okay =
                 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
+                's=s'          => \$GetOptions_H{"-s"},
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'maxnjobs=s'   => \$GetOptions_H{"--maxnjobs"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
@@ -103,11 +105,12 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.31";
-my $releasedate       = "Oct 2018";
+my $version           = "0.32";
+my $releasedate       = "Nov 2018";
 my $package_name      = "ribotyper";
 my $ribotyper_model_version_str   = "0p20"; 
 my $riboaligner_model_version_str = "0p15";
+my $qsub_version_str  = "0p32"; 
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -224,7 +227,7 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { 
   $modelinfo_file = opt_Get("-i", \%opt_HH);
 }
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $ribotyper_model_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
@@ -361,6 +364,7 @@ if(! opt_IsUsed("--nocovfail", \%opt_HH)) { $ribotyper_options .= " --covfail"; 
 if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
 if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
 if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+if(opt_IsUsed("-s",            \%opt_HH)) { $ribotyper_options .= " -s " . opt_Get("-s", \%opt_HH); }
 if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
 if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
@@ -451,38 +455,42 @@ foreach $family (@family_order_A) {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " fasta file", $family_seqfile_H{$family}, 0, "sequence file for $family");
 
     # align the sequences
-    my %outfile_H = (); # for storing output file names
-    $outfile_H{"stk"}     = $out_root . "." . $family . ".cmalign.stk";
-    $outfile_H{"ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
-    $outfile_H{"elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
-    $outfile_H{"cmalign"} = $out_root . "." . $family . ".cmalign.out";
-    $outfile_H{"seqlist"} = $family_sfetch_filename_H{$family};
-    ribo_RunCmsearchOrCmalignWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_modelfile_H{$family}, $family_seqfile_H{$family}, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%outfile_H, \%opt_HH, \%ofile_info_HH);
-    $opt_p_sum_cpu_secs = ribo_ParseCmalignFileForCpuTime($outfile_H{"cmalign"}, $ofile_info_HH{"FH"});
+    my %info_H = ();
+    $info_H{"IN:seqfile"}       = $family_seqfile_H{$family};
+    $info_H{"IN:modelfile"}     = $family_modelfile_H{$family}; 
+    $info_H{"OUT-NAME:ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
+    $info_H{"OUT-NAME:elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
+    $info_H{"OUT-NAME:stk"}     = $out_root . "." . $family . ".cmalign.stk";
+    $info_H{"IN:seqlist"}       = $family_sfetch_filename_H{$family};
+    $info_H{"OUT-NAME:stdout"}  = $out_root . "." . $family . ".cmalign.out";
+    $info_H{"OUT-NAME:time"}    = $out_root . "." . $family . ".cmalign.time";
+    $info_H{"OUT-NAME:stderr"}  = $out_root . "." . $family . ".cmalign.out.err";
+    ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+    $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $outfile_H{"ifile"},   1, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $outfile_H{"elfile"},  1, "EL file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $outfile_H{"stk"},     1, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $outfile_H{"cmalign"}, 1, "cmalign output file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, "cmalign output file for $family");
 
     # parse cmalign file
-    parse_cmalign_file($outfile_H{"cmalign"}, \%out_tbl_HH, $FH_HR);
+    parse_cmalign_file($info_H{"OUT-NAME:stdout"}, \%out_tbl_HH, $FH_HR);
 
     # parse alignment file
-    parse_stk_file($outfile_H{"stk"}, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
+    parse_stk_file($info_H{"OUT-NAME:stk"}, $family_modellen_H{$family}, $nbound, \%out_tbl_HH, \%{$family_length_class_HHA{$family}}, $FH_HR);
 
     # if we have no more than 100K seqs, convert to stockholm now that we're done parsing it
     if($family_nseq_H{$family} <= 100000) { 
-      my $reformat_cmd = $execs_H{"esl-reformat"} . " stockholm " . $outfile_H{"stk"} . " > " . $outfile_H{"stk"} . ".reformat; mv " . $outfile_H{"stk"} . ".reformat " . $outfile_H{"stk"};
+      my $reformat_cmd = $execs_H{"esl-reformat"} . " stockholm " . $info_H{"OUT-NAME:stk"} . " > " . $info_H{"OUT-NAME:stk"} . ".reformat; mv " . $info_H{"OUT-NAME:stk"} . ".reformat " . $info_H{"OUT-NAME:stk"};
       ribo_RunCommand($reformat_cmd, opt_Get("-v", \%opt_HH), $FH_HR);
     }
   }
 }
 
-# add in -p time from ribotyper run
-$opt_p_sum_cpu_secs += $rt_opt_p_sum_cpu_secs;
 $extra_desc = ((opt_Get("-p", \%opt_HH)) && ($opt_p_sum_cpu_secs > 0.)) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $opt_p_sum_cpu_secs) : undef;
 ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
+# add in -p time from ribotyper run
+$opt_p_sum_cpu_secs += $rt_opt_p_sum_cpu_secs;
 
 ##########################################################
 # Step 5: Extract class subsets from cmalign output files

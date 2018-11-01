@@ -151,9 +151,10 @@ opt_Add("--def",         "boolean",  0,                     $g, undef, "--skipft
 
 $opt_group_desc_H{++$g} = "options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
-opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize cmsearch/cmalign on a compute farm",              "parallelize cmsearch on a compute farm",    \%opt_HH, \@opt_order_A);
+opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize ribotyper and riboaligner on a compute farm",     "parallelize ribotyper and riboaligner on a compute farm",    \%opt_HH, \@opt_order_A);
 opt_Add("-q",           "string",  undef,                    $g,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 10,                       $g,     "-p", undef,      "number of KB of seq for each farm job is <n>",                "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                      $g,     "-p", undef,      "seed for random number generator is <n>",                     "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                      $g,     "-p", undef,      "number of KB of seq for each farm job is <n>",                "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
 opt_Add("--wait",       "integer", 1440,                     $g,     "-p", undef,      "allow <n> minutes for jobs on farm",                          "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                        $g,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
@@ -234,6 +235,7 @@ my $options_okay =
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
+                's=s'          => \$GetOptions_H{"-s"},
                 'nkb=s'        => \$GetOptions_H{"--nkb"},
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"},
@@ -243,9 +245,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.31";
+my $version           = "0.32";
 my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "Oct 2018";
+my $releasedate       = "Nov 2018";
 my $package_name      = "ribotyper";
 my $pkgstr            = "RIBO";
 
@@ -323,6 +325,7 @@ if((! $do_fribo1) && (! $do_fribo2)) {
   if(opt_IsUsed("--lowppossc",  \%opt_HH)) { die "ERROR, --lowppossc does not make sense in combination with --skipfribo1 and --skipfribo2"; }
   if(opt_IsUsed("-p",           \%opt_HH)) { die "ERROR, -p does not make sense in combination with --skipfribo1 and --skipfribo2"; }
   if(opt_IsUsed("-q",           \%opt_HH)) { die "ERROR, -q does not make sense in combination with --skipfribo1 and --skipfribo2"; }
+  if(opt_IsUsed("-s",           \%opt_HH)) { die "ERROR, -s does not make sense in combination with --skipfribo1 and --skipfribo2"; }
   if(opt_IsUsed("--nkb",        \%opt_HH)) { die "ERROR, --nkb does not make sense in combination with --skipfribo1 and --skipfribo2"; }
   if(opt_IsUsed("--wait",       \%opt_HH)) { die "ERROR, --wait does not make sense in combination with --skipfribo1 and --skipfribo2"; }
   if(opt_IsUsed("--errcheck",   \%opt_HH)) { die "ERROR, --errcheck does not make sense in combination with --skipfribo1 and --skipfribo2"; }
@@ -957,6 +960,7 @@ if($do_fribo1) {
   if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
   if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
   if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+  if(opt_IsUsed("-s",            \%opt_HH)) { $ribotyper_options .= " -s " . opt_Get("-s", \%opt_HH); }
   if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
   if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
   if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
@@ -1005,6 +1009,7 @@ if($do_fribo2) {
   if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $ra_options .= " --nocovfail "; }
   if(opt_IsUsed("-p",            \%opt_HH)) { $ra_options .= " -p"; }
   if(opt_IsUsed("-q",            \%opt_HH)) { $ra_options .= " -q " . opt_Get("-q", \%opt_HH); }
+  if(opt_IsUsed("-s",            \%opt_HH)) { $ra_options .= " -s " . opt_Get("-s", \%opt_HH); }
   if(opt_IsUsed("--nkb",         \%opt_HH)) { $ra_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
   if(opt_IsUsed("--wait",        \%opt_HH)) { $ra_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
   if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }

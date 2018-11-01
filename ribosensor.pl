@@ -17,17 +17,20 @@ my $env_sensor_dir       = ribo_VerifyEnvVariableIsValidDir("SENSORDIR");
 my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $env_riboblast_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
-my $df_model_dir       = $env_ribotyper_dir . "/models/";
+my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
+my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"ribo"}        = $env_ribotyper_dir . "/ribotyper.pl";
-$execs_H{"sensor"}      = $env_sensor_dir    . "/rRNA_sensor_script";
-$execs_H{"esl-seqstat"} = $env_riboeasel_dir . "/esl-seqstat";
-$execs_H{"esl-sfetch"}  = $env_riboeasel_dir . "/esl-sfetch";
-$execs_H{"blastn"}      = $env_riboblast_dir . "/blastn";
-$execs_H{"blastdbcmd"}  = $env_riboblast_dir . "/blastdbcmd";
+$execs_H{"ribo"}               = $env_ribotyper_dir . "/ribotyper.pl";
+$execs_H{"rRNA_sensor_script"} = $env_sensor_dir    . "/rRNA_sensor_script";
+$execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
+$execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
+$execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
+$execs_H{"blastdbcmd"}         = $env_riboblast_dir . "/blastdbcmd";
+$execs_H{"time"}               = $env_ribotime_dir  . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
- 
+
+
 #########################################################
 # Command line and option processing using epn-options.pm
 #
@@ -63,7 +66,7 @@ opt_Add("-h",           "boolean", 0,                        0,    undef, undef,
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                       "force; if <output directory> exists, overwrite it",       \%opt_HH, \@opt_order_A);
 opt_Add("-m",           "string",  "16S",                    1,    undef, undef,      "set mode to <s>",                                   "set mode to <s>, possible <s> values are \"16S\" and \"18S\"", \%opt_HH, \@opt_order_A);
 opt_Add("-c",           "boolean", 0,                        1,    undef, undef,      "assert that sequences are from cultured organisms", "assert that sequences are from cultured organisms",            \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 0,                        1,    undef, undef,      "use <n> CPUs",                                      "use <n> CPUs",                                            \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                      "use <n> CPUs",                                            \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                        "be verbose; output commands to stdout as they're run",    \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",        "use model info file <s> instead of default",              \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
@@ -80,6 +83,14 @@ opt_Add("--Smincov1",   "integer", 80,                       2,    undef, undef,
 opt_Add("--Smincov2",   "integer", 86,                       2,    undef, undef,      "set rRNA_sensor min percent coverage for seqs  > 350 nt to <n>", "set rRNA_sensor minimum coverage for seqs  > 350 nt to <n>", \%opt_HH, \@opt_order_A);
 $opt_group_desc_H{"3"} = "options for saving sequence subsets to files";
 opt_Add("--psave",       "boolean",0,                        3,    undef, undef,      "save passing sequences to a file",                              "save passing sequences to a file", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{"4"} = "options for parallelizing cmsearch on a compute farm";
+#     option            type       default                group   requires incompat    preamble-output                                                help-output    
+opt_Add("-p",           "boolean", 0,                         4,    undef, undef,      "parallelize ribotyper and rRNA_sensor on a compute farm",     "parallelize ribotyper and rRNA_sensor on a compute farm",              \%opt_HH, \@opt_order_A);
+opt_Add("-q",           "string",  undef,                     4,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                       4,     "-p", undef,      "seed for random number generator is <n>",                     "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                       4,     "-p", undef,      "number of KB of seq for each farm job is <n>",                "number of KB of sequence for each farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                       4,     "-p", undef,      "allow <n> minutes for jobs on farm",                          "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--errcheck",   "boolean", 0,                         4,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -105,14 +116,22 @@ my $options_okay =
                 'Smincovall=s' => \$GetOptions_H{"--Smincovall"},
                 'Smincov1=s'   => \$GetOptions_H{"--Smincov1"},
                 'Smincov2=s'   => \$GetOptions_H{"--Smincov2"},
-                'psave'        => \$GetOptions_H{"--psave"});
+                'psave'        => \$GetOptions_H{"--psave"},
+# options for parallelization
+                'p'            => \$GetOptions_H{"-p"},
+                'q=s'          => \$GetOptions_H{"-q"},
+                's=s'          => \$GetOptions_H{"-s"},
+                'nkb=s'        => \$GetOptions_H{"--nkb"},
+                'wait=s'       => \$GetOptions_H{"--wait"},
+                'errcheck'     => \$GetOptions_H{"--errcheck"});
 
-my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.31";
+my $version           = "0.32";
 my $model_version_str = "0p30"; # model info file unchanged since version 0.30
-my $releasedate       = "Oct 2018";
+my $qsub_version_str  = "0p32"; # for qsubinfo file only
+my $releasedate       = "Nov 2018";
 my $package_name      = "ribotyper";
 my $pkgstr            = "RIBO";
 
@@ -147,6 +166,8 @@ my $cmd  = undef;                    # a command to be run by ribo_RunCommand()
 my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = (); # array of files to remove at end
+
+
 
 # the way we handle the $dir_out differs markedly if we have --skipsearch enabled
 # so we handle that separately
@@ -209,6 +230,7 @@ $extra_H{"\$SENSORDIR"}       = $env_sensor_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 $extra_H{"\$RIBOBLASTDIR"}    = $env_riboblast_dir;
+$extra_H{"\$RIBOTIMEDIR"}     = $env_ribotime_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -242,11 +264,17 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
-# make sure the sequence and modelinfo files exist
+# make sure the sequence, modelinfo, and qsubinfo (if -q) files exist
 my $df_modelinfo_file = $df_model_dir . "ribosensor." . $model_version_str . ".modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
+
+my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
+my $qsubinfo_file = undef;
+# if -p, check for existence of qsub info file
+if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
+else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
 ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
@@ -254,6 +282,12 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 }
 else { # -i used on the command line
   ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+}
+if(! opt_IsUsed("-q", \%opt_HH)) {
+  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+}
+else { # -q used on the command line
+  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model file after we parse the model info file
 
@@ -288,6 +322,12 @@ open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailu
 
 # parse the model info file
 my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
+
+my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
+my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
+if(opt_IsUsed("-p", \%opt_HH)) { 
+  ($qsub_prefix, $qsub_suffix) = ribo_ParseQsubFile($qsubinfo_file, $ofile_info_HH{"FH"});
+}
 
 ###################################################################
 # Step 1: Split up input sequence file into 3 files based on length
@@ -325,7 +365,8 @@ my @cpart_maxlen_A = (350, -1);       # hard-coded, maximum length for each cove
 
 my @subseq_file_A   = (); # array of fasta files that we fetch into
 my @subseq_sfetch_A = (); # array of sfetch input files that we created
-my @subseq_nseq_A   = (); # array of number of sequences in each sequence
+my @subseq_nseq_A   = (); # array of number of sequences in each length range
+my @subseq_nnt_A    = (); # array of summed length of sequences in each length range
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Partitioning sequence file based on sequence lengths", $progress_w, $log_FH, *STDOUT);
@@ -356,7 +397,7 @@ my $do_fetch = (opt_Get("--skipsearch", \%opt_HH)) ? 0 : 1; # do not fetch the s
 for($i = 0; $i < $nseq_parts; $i++) { 
   $subseq_sfetch_A[$i] = $out_root . "." . ($i+1) . ".sfetch";
   $subseq_file_A[$i]   = $out_root . "." . ($i+1) . ".fa";
-  $subseq_nseq_A[$i]   = fetch_seqs_in_length_range("esl-sfetch", $seq_file, $do_fetch, $spart_minlen_A[$i], $spart_maxlen_A[$i], \%seqlen_H, $subseq_sfetch_A[$i], $subseq_file_A[$i], \%opt_HH, $ofile_info_HH{"FH"});
+  ($subseq_nseq_A[$i], $subseq_nnt_A[$i]) = fetch_seqs_in_length_range("esl-sfetch", $seq_file, $do_fetch, $spart_minlen_A[$i], $spart_maxlen_A[$i], \%seqlen_H, $subseq_sfetch_A[$i], $subseq_file_A[$i], \%opt_HH, $ofile_info_HH{"FH"});
 
   # files are marked for removal at this step, but not actually 
   # removed until the rRNA_sensor analysis has been completed
@@ -375,20 +416,35 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # It's important that we run ribotyper only once on the full file so that E-values are accurate. 
 my $ribo_dir_out    = $dir_out . "/ribo-out";
 my $ribo_stdoutfile = $out_root . ".ribotyper.stdout";
-my $keep_opt        = (opt_Get("--keep", \%opt_HH)) ? "--keep" : "";
-my $ribotyper_cmd   = $execs_H{"ribo"} . " -f $keep_opt -n $ncpu -i $ribo_modelinfo_file --inaccept $ribo_accept_file --scfail --covfail --tshortcov 0.80 --tshortlen 350 $seq_file $ribo_dir_out > $ribo_stdoutfile";
-my $ribo_secs       = 0.; # total number of seconds required for ribotyper command
-my $ribo_shortfile  = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
+# determine ribotyper options
+my $ribotyper_options = " -f -i $ribo_modelinfo_file --inaccept $ribo_accept_file --scfail --covfail --tshortcov 0.80 --tshortlen 350 ";
+if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
+if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
+if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+if(opt_IsUsed("-s",            \%opt_HH)) { $ribotyper_options .= " -s " . opt_Get("-s", \%opt_HH); }
+if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
+if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
+my $ribotyper_cmd  = $execs_H{"ribo"} . " $ribotyper_options $seq_file $ribo_dir_out > $ribo_stdoutfile";
+my $ribo_secs      = 0.; # total number of seconds elapsed for ribotyper stage
+my $ribo_p_secs    = 0.; # if -p: summed number of seconds elapsed for all ribotyper jobs
+my $ribo_shortfile = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
+my $ribo_logfile   = $ribo_dir_out . "/ribo-out.ribotyper.log";
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, $log_FH, *STDOUT);
-  $ribo_secs = ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  $ribo_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "ribostdout",  $ribo_stdoutfile, 0, "ribotyper stdout output");
 }  
+# if -p used, overwrite ribo_secs with summed seconds
+if(opt_Get("-p", \%opt_HH)) { 
+  $ribo_p_secs = ribo_ParseLogFileForParallelTime($ribo_logfile, $ofile_info_HH{"FH"});
+}
 
-###########################################################################
+##############################################################################
 # Step 3: Run rRNA_sensor on the (up to 3) length-partitioned sequence files
-###########################################################################
+##############################################################################
 my @sensor_dir_out_A             = (); # [0..$i..$nseq_parts-1], directory created for sensor run on partition $i
 my @sensor_stdoutfile_A          = (); # [0..$i..$nseq_parts-1], standard output file for sensor run on partition $i
 my @sensor_classfile_argument_A  = (); # [0..$i..$nseq_parts-1], sensor script argument for classification output file for partition $i
@@ -399,7 +455,8 @@ my $sensor_cmd = undef;                # command used to run sensor
 my $sensor_minlen    = opt_Get("--Sminlen",    \%opt_HH);
 my $sensor_maxlen    = opt_Get("--Smaxlen",    \%opt_HH);
 my $sensor_maxevalue = opt_Get("--Smaxevalue", \%opt_HH);
-my $sensor_secs      = 0.; # total number of seconds required for sensor commands
+my $sensor_secs      = 0.; # total number of seconds elapsed for rRNA_sensor stage
+my $sensor_p_secs    = 0.; # if -p: summed number of seconds elapsed for all rRNA_sensor jobs
 my $sensor_ncpu      = ($ncpu == 0) ? 1 : $ncpu;
 
 for($i = 0; $i < $nseq_parts; $i++) { 
@@ -409,11 +466,29 @@ for($i = 0; $i < $nseq_parts; $i++) {
     $sensor_stdoutfile_A[$i]          = $out_root . ".sensor-" . ($i+1) . ".stdout";
     $sensor_classfile_argument_A[$i]  = "sensor-class." . ($i+1) . ".out";
     $sensor_classfile_fullpath_A[$i]  = $sensor_dir_out_A[$i] . "/sensor-class." . ($i+1) . ".out";
-    $sensor_cmd = $execs_H{"sensor"} . " $sensor_minlen $sensor_maxlen $subseq_file_A[$i] $sensor_classfile_argument_A[$i] $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu $sensor_dir_out_A[$i] $sensor_blastdb > $sensor_stdoutfile_A[$i]";
+    #$sensor_cmd = $execs_H{"sensor"} . " $sensor_minlen $sensor_maxlen $subseq_file_A[$i] $sensor_classfile_argument_A[$i] $sensor_minid_A[$i] $sensor_maxevalue $sensor_ncpu $sensor_dir_out_A[$i] $sensor_blastdb > $sensor_stdoutfile_A[$i]";
     if(! opt_Get("--skipsearch", \%opt_HH)) { 
       $start_secs = ofile_OutputProgressPrior("Running rRNA_sensor on seqs of length $spart_desc_A[$i]", $progress_w, $log_FH, *STDOUT);
-      $sensor_secs += ribo_RunCommand($sensor_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-      ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+      my %info_H = (); 
+      $info_H{"IN:seqfile"}        = $subseq_file_A[$i];
+      $info_H{"minlen"}            = $sensor_minlen;
+      $info_H{"maxlen"}            = $sensor_maxlen;
+      $info_H{"OUT-DIR:classpath"} = $sensor_classfile_fullpath_A[$i];
+      $info_H{"OUT-DIR:lensum"}    = $sensor_dir_out_A[$i] . "/length_summary1.txt";
+      $info_H{"OUT-DIR:blastout"}  = $sensor_dir_out_A[$i] . "/middle_out_" . $sensor_blastdb . "_blastn_fmt6.txt";
+      $info_H{"minid"}             = $sensor_minid_A[$i];
+      $info_H{"maxevalue"}         = $sensor_maxevalue;
+      $info_H{"ncpu"}              = $sensor_ncpu;
+      $info_H{"OUT-NAME:outdir"}   = $sensor_dir_out_A[$i];
+      $info_H{"blastdb"}           = $sensor_blastdb;
+      $info_H{"OUT-NAME:stdout"}   = $sensor_stdoutfile_A[$i];
+      $info_H{"OUT-NAME:time"}     = $sensor_stdoutfile_A[$i] . ".time";;
+      $info_H{"OUT-NAME:stderr"}   = $sensor_stdoutfile_A[$i] . ".err";
+      ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, 
+                                                   $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_H, \%opt_HH, \%ofile_info_HH);
+      $sensor_p_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
+
+      $sensor_secs += ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, "rRNA_sensor stdout output for length class" . ($i+1));
       if(! opt_IsUsed("--keep", \%opt_HH)) { # remove the fasta files that rRNA_sensor created
         my $sensor_mid_fafile = $sensor_dir_out_A[$i] . "/middle_queries.fsa";
@@ -596,11 +671,17 @@ if(opt_Get("--psave", \%opt_HH)) {
 }
 
 output_outcome_counts(*STDOUT, \%outcome_ct_HH, $ofile_info_HH{"FH"});
+output_outcome_counts($log_FH, \%outcome_ct_HH, $ofile_info_HH{"FH"});
+
 output_error_counts(*STDOUT, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
+output_error_counts($log_FH, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
+
 output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
+output_error_counts($log_FH, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
 $total_seconds += ribo_SecondsSinceEpoch();
-output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
 printf("#\n# Human readable error-based output saved to file $combined_out_file\n");
 printf("# GPIPE error-based output saved to file $combined_gpipe_file\n");
@@ -633,7 +714,9 @@ ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_in
 #   $opt_HHR:      reference to 2D hash of cmdline options
 #   $FH_HR:        ref to hash of file handles, including "cmd"
 # 
-# Returns:     Number of sequences fetched.
+# Returns:     Two values: 
+#              $nseq_fetched: number of sequences fetched.
+#              $nnt_fetched:  summed length of all seqs fetched.
 #
 # Dies:        If the esl-sfetch command fails.
 #
@@ -646,6 +729,7 @@ sub fetch_seqs_in_length_range {
 
   my $target;   # name of a target sequence
   my $nseq = 0; # number of sequences fetched
+  my $nnt  = 0; # summed length of sequences fetched
 
   open(SFETCH, ">", $sfetch_file) || die "ERROR unable to open $sfetch_file for writing";
 
@@ -657,6 +741,7 @@ sub fetch_seqs_in_length_range {
        (($maxlen == -1) || ($seqlen_HR->{$target} <= $maxlen))) {  
       print SFETCH $target . "\n";
       $nseq++;
+      $nnt += $seqlen_HR->{$target};
     }
   }
   close(SFETCH);
@@ -666,7 +751,7 @@ sub fetch_seqs_in_length_range {
     ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
   }
 
-  return $nseq;
+  return ($nseq, $nnt);
 }
 
 #################################################################
@@ -1894,15 +1979,17 @@ sub update_error_count_hash {
 # Purpose:    Output timing statistics in units of seconds. 
 #
 # Arguments:
-#   $FH:          output file handle
-#   $tot_nseq:    number of sequences in input file
-#   $tot_nnt:     number of nucleotides in input file
-#   $ncpu:        number of CPUs used to do searches
-#   $ribo_secs:   number of seconds required for ribotyper
-#   $sensor_secs: number of seconds required for sensor
-#   $tot_secs:    number of seconds required for entire script
-#   $opt_HHR:     ref to 2D hash of cmdline options
-#   $FH_HR:       ref to hash of file handles, including "cmd"
+#   $FH:            output file handle
+#   $tot_nseq:      number of sequences in input file
+#   $tot_nnt:       number of nucleotides in input file
+#   $ncpu:          number of CPUs used to do searches
+#   $ribo_secs:     number of seconds elapased for ribotyper stage
+#   $ribo_p_secs:   if -p: summed total elapsed secs required for all ribotyper jobs
+#   $sensor_secs:   number of seconds required for sensor
+#   $sensor_p_secs: if -p: summed total elapsed secs required for all rRNA_sensor jobs
+#   $tot_secs:      number of total seconds for script
+#   $opt_HHR:       ref to 2D hash of cmdline options
+#   $FH_HR:         ref to hash of file handles, including "cmd"
 #
 # Returns:  Nothing.
 # 
@@ -1911,10 +1998,10 @@ sub update_error_count_hash {
 #################################################################
 sub output_timing_statistics { 
   my $sub_name = "output_timing_statistics";
-  my $nargs_expected = 9;
+  my $nargs_expected = 11;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $sensor_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
+  my ($FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $tot_secs, $opt_HHR, $FH_HR) = (@_);
 
   if($ncpu == 0) { $ncpu = 1; } 
 
@@ -1931,6 +2018,19 @@ sub output_timing_statistics {
   $width_H{"ntseccpu"} = 10;
   $width_H{"total"}    = 23;
   
+  my $ribo_secs2print   = undef;
+  my $sensor_secs2print = undef;
+  if(opt_Get("-p", $opt_HHR)) { 
+    $tot_secs         += $ribo_p_secs;
+    $tot_secs         += $sensor_p_secs;
+    $ribo_secs2print   = $ribo_p_secs;
+    $sensor_secs2print = $sensor_p_secs;
+  }
+  else { 
+    $ribo_secs2print   = $ribo_secs;
+    $sensor_secs2print = $sensor_secs;
+  }
+
   printf $FH ("#\n");
   printf $FH ("# Timing statistics:\n");
   printf $FH ("#\n");
@@ -1954,6 +2054,8 @@ sub output_timing_statistics {
                   $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
                   $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"},    "-", $FH_HR));
   
+  
+
   $stage = "ribotyper";
   if(opt_Get("--skipsearch", $opt_HHR)) { 
     printf $FH ("  %-*s  %*d  %*s  %*s  %*s  %*s\n", 
@@ -1968,10 +2070,10 @@ sub output_timing_statistics {
     printf $FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                 $width_H{"stage"},    $stage,
                 $width_H{"nseq"},     $tot_nseq,
-                $width_H{"seqsec"},   $tot_nseq / $ribo_secs,
-                $width_H{"ntsec"},    $tot_nnt  / $ribo_secs, 
-                $width_H{"ntseccpu"}, ($tot_nnt  / $ribo_secs) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($ribo_secs));
+                $width_H{"seqsec"},   $tot_nseq / $ribo_secs2print,
+                $width_H{"ntsec"},    $tot_nnt  / $ribo_secs2print, 
+                $width_H{"ntseccpu"}, ($tot_nnt  / $ribo_secs2print) / $ncpu, 
+                $width_H{"total"},    ribo_GetTimeString($ribo_secs2print));
   }
      
   $stage = "sensor";
@@ -1988,10 +2090,10 @@ sub output_timing_statistics {
     printf $FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
                 $width_H{"stage"},    $stage,
                 $width_H{"nseq"},     $tot_nseq,
-                $width_H{"seqsec"},   $tot_nseq / $sensor_secs,
-                $width_H{"ntsec"},    $tot_nnt  / $sensor_secs, 
-                $width_H{"ntseccpu"}, ($tot_nnt  / $sensor_secs) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($sensor_secs));
+                $width_H{"seqsec"},   $tot_nseq / $sensor_secs2print,
+                $width_H{"ntsec"},    $tot_nnt  / $sensor_secs2print, 
+                $width_H{"ntseccpu"}, ($tot_nnt  / $sensor_secs2print) / $ncpu, 
+                $width_H{"total"},    ribo_GetTimeString($sensor_secs2print));
   }
 
   $stage = "total";
@@ -2015,6 +2117,12 @@ sub output_timing_statistics {
   }
 
   printf $FH ("#\n");
+  if(opt_Get("-p", $opt_HHR)) { 
+    printf $FH ("# 'ribotyper' and 'sensor' timing statistics are summed elapsed time of multiple jobs [-p]\n");
+    printf $FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ribo_GetTimeString($ribo_secs + $sensor_secs));
+    printf $FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
+    printf $FH ("#\n");
+  }
   
   return;
 
