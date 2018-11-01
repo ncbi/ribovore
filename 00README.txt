@@ -1,6 +1,7 @@
-EPN, Mon Oct 22 12:54:37 2018
+EPN, Thu Nov  1 10:59:49 2018
 
-Ribotyper v0.31 README
+Ribotyper v0.32 README
+(commands/examples not updated since v0.31)
 
 Organization of this file:
 
