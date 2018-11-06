@@ -1033,8 +1033,8 @@ if($do_fribo2) {
     $ra_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ra_log_file, $ofile_info_HH{"FH"});
   }
 
-  if(! $do_prvcmd) { ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  if(! $do_prvcmd) { ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ralpos", "$ra_uapos_lpos_tbl_file", 0, "unaligned position info that align at model position $max_lpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rarpos", "$ra_uapos_rpos_tbl_file", 0, "unaligned position info that align at model position $min_rpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rauapos", "$ra_uapos_tbl_file", 0, "unaligned position info that align at model positions $max_lpos and $min_rpos");
@@ -1103,7 +1103,7 @@ my $def_fasta_file = $out_root . ".def.fa"; # need to define this here so it's i
 if($do_def) { 
   my $tmp_fasta_file = $out_root . ".tmp.def.fa";
   my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $full_fasta_file $npass_filters_list > $tmp_fasta_file";
-  if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 
   fasta_rewrite_sequence_descriptions($tmp_fasta_file, $def_fasta_file, $family, \%seqlenclass_H, \%seqorgn_H, \%seqstrain_H, \%opt_HH, \%ofile_info_HH);
 
@@ -1111,7 +1111,7 @@ if($do_def) {
   ribo_RemoveFileUsingSystemRm($tmp_fasta_file, "ribodbmaker.pl:main", \%opt_HH, $ofile_info_HH{"FH"});
 
   # index the new sequence file
-  if(! $do_prvcmd) { ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $def_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $def_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "defssi", $def_fasta_file . ".ssi", 0, ".ssi index file for def-rewritten fasta file");
 }
 
@@ -1186,7 +1186,7 @@ else {
     # an array of them here
     my @survfilters_seqorder_A = ();
     ribo_ReadFileToArray($rfonly_list_file, \@survfilters_seqorder_A, $ofile_info_HH{"FH"});
-    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@survfilters_seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
+    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@survfilters_seqorder_A, \%seqlen_H, $out_root, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", scalar(@survfilters_seqorder_A) - $cur_nfail, $cur_nfail), $log_FH, *STDOUT);
 
     # determine how many sequences at for each taxonomic group at each level $level are still left
@@ -1352,7 +1352,7 @@ if($npass_final > 0) {
   # create the fasta file of the final sequences
   my $fa_fetch_file = ($do_def) ? $def_fasta_file : $full_fasta_file;
   my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $fa_fetch_file $final_list_file > $final_fasta_file";
-  if(! $do_prvcmd) { ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "final.fa", "$final_fasta_file", 1, "fasta file with final set of surviving sequences");
 }
 
@@ -2466,6 +2466,7 @@ sub parse_blast_output_for_self_hits {
 #   $level_AR:       ref to array of level keys in %{$in_file_HR}
 #   $seqfailstr_HR:  ref to hash of failure string to add to here
 #   $seqorder_AR:    ref to array of sequences in order, ONLY seqs that 
+#   $seqlen_HR:      ref to hash of sequence lengths
 #   $out_root:       for naming output files
 #   $opt_HHR:        reference to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
@@ -2476,18 +2477,19 @@ sub parse_blast_output_for_self_hits {
 #################################################################
 sub parse_alipid_analyze_tab_files { 
   my $sub_name = "parse_alipid_analyze_tab_files";
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $seqlen_HR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
   my $do_one     = (opt_Get   ("--fione", $opt_HHR)) ? 1 : 0;
   my $do_one_min = (opt_IsUsed("--fimin", $opt_HHR)) ? 1 : 0; # --fimin requires --fione
   my $one_min    = opt_Get   ("--fimin", $opt_HHR);
-  my %max_pid_per_taxid_HH    = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
-  my %argmax_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
-                                    # lowest level in @{$level_AR}
+  my %max_pid_per_taxid_HH        = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
+  my %argmax_pid_per_taxid_HH     = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
+                                        # lowest level in @{$level_AR}
+  my %argmax_len_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is length of $argmax_pid_per_taxid_HH()
   my %do_one_taxid_H   = (); # 1D key is $seqname, value is species taxid if seqname is candidate for failing b/c not max avg id in species
   my %do_one_avgpid_HH = (); # 1D key is taxonomic level, 2D key is $seqname, value is average pid at order level for seqname
   my %do_one_lowest_level_H = (); # 1D key is a species taxid, value is lowest taxonomic level $level for which that seq_taxid has a valid $level
@@ -2522,6 +2524,7 @@ sub parse_alipid_analyze_tab_files {
         if(scalar(@el_A) != 30) { ofile_FAIL(sprintf("ERROR in $sub_name, tab file line had %d tab-delimited tokens, but expected 30: $line\n", scalar(@el_A)), "RIBO", $?, $FH_HR); }
         my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
         if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+        if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
         if($pf eq "FAIL") { 
           $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later
         }
@@ -2547,6 +2550,7 @@ sub parse_alipid_analyze_tab_files {
           my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
 
           if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+          if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
           if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
             # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
             # so it is a candidate for being the max avg pid for its species taxid
@@ -2554,9 +2558,30 @@ sub parse_alipid_analyze_tab_files {
             $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
             $do_one_taxid_H{$seqname}           = $seq_taxid;
             $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
-            if((! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) || ($avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid})) { 
-              $max_pid_per_taxid_HH{$level}{$seq_taxid}    = $avgpid;
-              $argmax_pid_per_taxid_HH{$level}{$seq_taxid} = $seqname;
+            # 3 cases in which we want to overwrite the max:
+            # 1) we don't yet have a max for this species id
+            # 2) this sequence has a higher average percent id than the current max
+            # 3) this sequence has an equal average percent id to the current max, and is a longer sequence
+            my $overwrite_max = 0; # set to 1 below, if nec
+            if(! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) { 
+              $overwrite_max = 1; 
+            }
+            else { 
+              my $avgdiff = $avgpid - $max_pid_per_taxid_HH{$level}{$seq_taxid};
+              if($avgdiff > 0.0001) { # this will be true if $avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use 0.0001 for precision reasons
+                $overwrite_max = 1;
+              }
+              elsif($avgdiff > (-0.0001)) { # this will be true if $avgpid == $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use -0.0001 for precision reasons
+                if($seqlen_HR->{$seqname} > $argmax_len_pid_per_taxid_HH{$level}{$seq_taxid}) { # this will be true if new sequence is longer than old maximum
+
+                  $overwrite_max = 1;
+                }
+              }
+            }
+            if($overwrite_max) { 
+              $max_pid_per_taxid_HH{$level}{$seq_taxid}        = $avgpid;
+              $argmax_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
+              $argmax_len_pid_per_taxid_HH{$level}{$seq_taxid} = $seqlen_HR->{$seqname};
             }
           }
           # keep track of number of sequences per taxid, if the --fimin option was used
@@ -2576,7 +2601,7 @@ sub parse_alipid_analyze_tab_files {
       }
       close(TAB);      
     } # end of foreach $level
-    # $do_one is TRUE, so ffor all sequences that could be max avg pid for their species, 
+    # $do_one is TRUE, so for all sequences that could be max avg pid for their species, 
     # determine those that are not and fail them
     foreach $seqname (sort keys %do_one_taxid_H) { 
       my $seq_taxid   = $do_one_taxid_H{$seqname};
