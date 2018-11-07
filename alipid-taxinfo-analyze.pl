@@ -12,17 +12,21 @@ my $o1maxthresh = 3;
 my $o2avgthresh = 0.5;
 my $o2maxthresh = 1.0; 
 my $do_o3fail   = 0;    # set to '1' if --o3fail used;
+my $do_o4       = 0;    # set to '1' if --o4on is used;
+my $o4avgthresh = 3.5;  
 
 my $usage = "perl alipid-taxinfo-analyze4.pl [OPTIONS]\n\t<alipid file>\n\t<seqlist file with seqs expected in alipid file>\n\t<tax_info file with group as 4th column>\n\t<output root>\n\n";
 
 $usage .= "\tOPTIONS:\n";
-$usage .= sprintf("\t\t--gs <n>:    minimum number of sequences in a group to include group in analysis [df: %d]\n", $min_grp_size);
+$usage .= sprintf("\t\t--gs <n>   : minimum number of sequences in a group to include group in analysis [df: %d]\n", $min_grp_size);
 $usage .= sprintf("\t\t--olist <s>: read sequences to output information on from <s> [df: output all listed in seqlist]\n");
-$usage .= sprintf("\t\t--o1avg <s>: O1 threshold for percent difference between averages of best and assigned group to create a O1 [df: %.1f%%]\n",   $o1avgthresh);
-$usage .= sprintf("\t\t--o1max <s>: O1 threshold for percent difference between maxes of best and assigned group to create a O1    [df: %.1f%%]\n",   $o1maxthresh);
-$usage .= sprintf("\t\t--o2avg <s>: O2 threshold for percent difference between averages of best and assigned group to create a O2 [df: %.1f%%]\n",   $o2avgthresh);
-$usage .= sprintf("\t\t--o2max <s>: O2 threshold for percent difference between maxes of best and assigned group to create a O2    [df: %.1f%%]\n", $o2maxthresh);
-$usage .= sprintf("\t\t--o3fail<s>: fail O3 seqs (seqs w/maxavg and maxmax groups != assigned but w/diffs below O2 threshold)      [df: PASS O3 seqs]\n\n");
+$usage .= sprintf("\t\t--o1avg <f>: O1 threshold for percent difference between averages of best and assigned group to create a O1       [df: %.1f%%]\n",   $o1avgthresh);
+$usage .= sprintf("\t\t--o1max <f>: O1 threshold for percent difference between maxes of best and assigned group to create a O1          [df: %.1f%%]\n",   $o1maxthresh);
+$usage .= sprintf("\t\t--o2avg <f>: O2 threshold for percent difference between averages of best and assigned group to create a O2       [df: %.1f%%]\n",   $o2avgthresh);
+$usage .= sprintf("\t\t--o2max <f>: O2 threshold for percent difference between maxes of best and assigned group to create a O2          [df: %.1f%%]\n",   $o2maxthresh);
+$usage .= sprintf("\t\t--o3fail   : fail O3 seqs (seqs w/maxavg and maxmax groups != assigned but w/diffs below O2 threshold)            [df: PASS O3 seqs]\n\n");
+$usage .= sprintf("\t\t--o4on     : identify O4 seqs as non-O1,O2 seqs with (avg best group - avg assigned group) > <f> from --o4avg <f> [df: do not identify O4 seqs]\n");
+$usage .= sprintf("\t\t--o4avg <f>: O4 threshold for percent difference between averages of best and assigned group, requires --o4on     [df: %.1f%%]\n", $o4avgthresh);
 
 # values filled when we call &GetOptions
 my $opt_gs     = undef;     
@@ -33,6 +37,8 @@ my $opt_o1max  = undef;
 my $opt_o2avg  = undef;
 my $opt_o2max  = undef;
 my $opt_o3fail = undef;
+my $opt_o4on   = undef;
+my $opt_o4avg  = undef;
 
 &GetOptions( "gs=s"    => \$opt_gs,
              "olist=s" => \$opt_olist, 
@@ -40,7 +46,9 @@ my $opt_o3fail = undef;
              "o1max=s" => \$opt_o1max,
              "o2avg=s" => \$opt_o2avg,
              "o2max=s" => \$opt_o2max, 
-             "o3fail"  => \$opt_o3fail);
+             "o3fail"  => \$opt_o3fail, 
+             "o4on"    => \$opt_o4on,
+             "o4avg=s" => \$opt_o4avg);
 
 if(scalar(@ARGV) != 4) { die $usage; }
 
@@ -52,7 +60,9 @@ if(defined $opt_o1avg)  { $o1avgthresh = $opt_o1avg; }
 if(defined $opt_o1max)  { $o1maxthresh = $opt_o1max; }
 if(defined $opt_o2avg)  { $o2avgthresh = $opt_o2avg; }
 if(defined $opt_o2max)  { $o2maxthresh = $opt_o2max; }
-if(defined $opt_o3fail) { $do_o3fail = 1; }
+if(defined $opt_o3fail) { $do_o3fail   = 1; }
+if(defined $opt_o4on)   { $do_o4       = 1; }
+if(defined $opt_o4avg)  { $o4avgthresh = $opt_o4avg; }
 if(defined $opt_olist) { 
   open(IN, $opt_olist) || die "ERROR unable to open $opt_olist for reading"; 
   while(my $line = <IN>) { 
@@ -309,8 +319,15 @@ my $prt_o1avgthresh = sprintf("%.2f", $o1avgthresh);
 my $prt_o2avgthresh = sprintf("%.2f", $o2avgthresh);
 my $prt_o1maxthresh = sprintf("%.2f", $o1maxthresh);
 my $prt_o2maxthresh = sprintf("%.2f", $o2maxthresh);
-my $pass_type_str = ($do_o3fail) ? "{I1,I2,I3,NA}" : "{I1,I2,I3,O3,NA}";
-my $fail_type_str = ($do_o3fail) ? "{O1,O2,O3}"    : "{O1,O2}";
+my $prt_o4avgthresh = sprintf("%.2f", $o4avgthresh);
+my $pass_type_str = ($do_o3fail) ? "{I1,I2,I3,NA}" : "{I1,I2,I3,O3,O4NA}";
+my $fail_type_str = "";
+if($do_o4) { 
+  $fail_type_str = ($do_o3fail) ? "{O1,O2,O3,O4}" : "{O1,O2,O4}";
+}
+else { 
+  $fail_type_str = ($do_o3fail) ? "{O1,O2,O3}" : "{O1,O2}";
+}
 
 my @column_explanation_A = (); # array of strings that explain columns to write to output files and stdout
 push(@column_explanation_A, "# Explanation of columns [RIBO v0.32]:\n");
@@ -330,6 +347,12 @@ push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-gr
 push(@column_explanation_A, "#           'O3': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
 push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group <= $prt_o2avgthresh% (changeable with --o2avg <f>) OR\n"); 
 push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group <= $prt_o2maxthresh% (changeable with --o2max <f>)\n");
+if($do_o4) { 
+  push(@column_explanation_A, "#           'O4': sequence is not O1 or O2 and\n");
+  push(@column_explanation_A, "#                 avgpid-in-group (col X) <  avgpid-other-group and\n");
+  push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group <= $prt_o4avgthresh% (changeable with --o4avg <f>)\n");
+  push(@column_explanation_A, "#                 maxpid-in-group and maxpid-other-group values are irrelevant\n");
+}
 push(@column_explanation_A, "#           'NA': if sequence's group (in-group column) equals 1 or has fewer than $min_grp_size sequences\n");
 push(@column_explanation_A, "# 5.  p/f:        'PASS' if sequence is of type $pass_type_str\n");
 push(@column_explanation_A, "#                 'FAIL' if sequence is of type $fail_type_str\n");
@@ -513,6 +536,13 @@ foreach my $seq (@seq_order_A) {
       my $prt_avg_diff = undef;
       my $prt_max_diff = undef;
       
+      # if --o4on used, determine if this could be an O4 sequence
+      my $satisfies_o4 = 0;
+      if(($do_o4) && 
+         (($seq_grp_pid_avg_HH{$seq}{$win_avg_group} - $seq_grp_pid_avg_HH{$seq}{$cur_group}) > $o4avgthresh)) { 
+        $satisfies_o4 = 1;
+      }
+
       # determine type
       if(($cur_group eq $win_avg_group) && 
          ($cur_group eq $win_max_group)) { 
@@ -531,6 +561,11 @@ foreach my $seq (@seq_order_A) {
         $prt_max_group = (scalar(@sorted_grp_max_A) > 1) ? $sorted_grp_max_A[1] : undef;
         $avg_str = "avg:diff";
         $max_str = "max:same";
+        # special case, check if this really should be an O4
+        if($satisfies_o4) { 
+          $type = "O4";
+          $pf = "FAIL";
+        }
       }
       elsif(($cur_group eq $win_avg_group) && 
             ($cur_group ne $win_max_group)) { 
@@ -553,8 +588,14 @@ foreach my $seq (@seq_order_A) {
           $pf = "FAIL";
         }
         else { 
-          $type = "O3";
-          $pf = $do_o3fail ? "FAIL" : "PASS";
+          if($satisfies_o4) { 
+            $type = "O4";
+            $pf = "FAIL";
+          }
+          else { 
+            $type = "O3";
+            $pf = $do_o3fail ? "FAIL" : "PASS";
+          }
         }
         $prt_avg_group  = $win_avg_group;
         $prt_max_group = $win_max_group;
