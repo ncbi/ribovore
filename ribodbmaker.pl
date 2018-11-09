@@ -135,6 +135,10 @@ opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--ski
 opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--skipingrup",       "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid",  "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid", \%opt_HH, \@opt_order_A);
 opt_Add("--fithresh",    "real",     "0.3",                 $g,"--fione", "--skipingrup",       "w/--fione, winning seq is longest seq within <x> percent id of max percent id",    "w/--fione, winning seq is longest seq within <x> percent id of max percent id", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for modifying the ingroup stage:";
+#       option           type        default             group  requires  incompat              preamble-output                                                                        help-output    
+opt_Add("--indiffseqtax","boolean",  0,                     $g,    undef, "--skipingrup",       "only consider sequences from different seq taxids when computing averages and maxes", "only consider sequences from different seq taxids when computing averages and maxes", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
 #       option          type       default        group       requires incompat                            preamble-output                                                 help-output    
 opt_Add("--msstep",     "integer", 10,            $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
@@ -226,6 +230,7 @@ my $options_okay =
                 'fimin'        => \$GetOptions_H{"--fimin"},
                 'figroup'      => \$GetOptions_H{"--figroup"},
                 'fithresh=s'   => \$GetOptions_H{"--fithresh"},
+                'indiffseqtax' => \$GetOptions_H{"--indiffseqtax"},
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
                 'msminlen=s'   => \$GetOptions_H{"--msminlen"},
                 'msminstart=s' => \$GetOptions_H{"--msminstart"},
@@ -1165,8 +1170,9 @@ else {
     # passed up to this point (using esl-alimanip --seq-k)
     my $alistat_cmd = $execs_H{"esl-alistat"} . " --list $rfonly_list_file $rfonly_stk_file > /dev/null";
     my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
+    my $alipid_opts = opt_Get("--indiffseqtax", \%opt_HH) ? "--diffseqtax" : ""; 
     foreach $level (@level_A) { 
-      $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
+      $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $alipid_opts $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
     }
       
     if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
