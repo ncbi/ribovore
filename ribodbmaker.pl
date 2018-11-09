@@ -126,13 +126,14 @@ $opt_group_desc_H{++$g} = "options that affect the alignment from which percent 
 opt_Add("--fullaln",   "boolean",  0,                    $g,     undef, undef,                "do not trim alnment to min reqd span before pid calcs",        "do not trim alignment to minimum required span before pid calculations", \%opt_HH, \@opt_order_A);
 opt_Add("--noprob",    "boolean",  0,                    $g,    undef,  undef,                "do not trim alnment based on post probs before pid calcs",     "do not trim alignment based on post probs before pid calculations", \%opt_HH, \@opt_order_A);
 opt_Add("--pthresh",   "real",     0.95,                 $g,    undef,"--noprob",             "posterior probability threshold for alnment trimming is <x>",  "posterior probability threshold for alnment trimming is <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--pfract",   "real",      0.95,                 $g,    undef,"--noprob",             "seq fraction threshold for post prob alnment trimming is <x>", "seq fraction threshold for post prob alnment trimming is <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--pfract",    "real",     0.95,                 $g,    undef,"--noprob",             "seq fraction threshold for post prob alnment trimming is <x>", "seq fraction threshold for post prob alnment trimming is <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
-#       option           type        default             group  requires  incompat              preamble-output                                                              help-output    
-opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",       "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
-opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",         "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
-opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--skipingrup",       "w/--fione, keep seq w/max pid in group (order,class,phyla), not in taxid",  "w/--fione, keep seq w/max pid in group (order,class,phyla), not in taxid", \%opt_HH, \@opt_order_A);
+#       option           type        default             group  requires  incompat              preamble-output                                                                     help-output    
+opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",              "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
+opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",                "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
+opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--skipingrup",       "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid",  "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid", \%opt_HH, \@opt_order_A);
+opt_Add("--fithresh",    "real",     "0.3",                 $g,"--fione", "--skipingrup",       "w/--fione, winning seq is longest seq within <x> percent id of max percent id",    "w/--fione, winning seq is longest seq within <x> percent id of max percent id", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
 #       option          type       default        group       requires incompat                            preamble-output                                                 help-output    
@@ -224,6 +225,7 @@ my $options_okay =
                 'fione'        => \$GetOptions_H{"--fione"},
                 'fimin'        => \$GetOptions_H{"--fimin"},
                 'figroup'      => \$GetOptions_H{"--figroup"},
+                'fithresh=s'   => \$GetOptions_H{"--fithresh"},
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
                 'msminlen=s'   => \$GetOptions_H{"--msminlen"},
                 'msminstart=s' => \$GetOptions_H{"--msminstart"},
@@ -1486,16 +1488,15 @@ if($do_ingrup) {
   push(@column_explanation_A, "#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>\n");
   push(@column_explanation_A, "#                          see " . $alipid_analyze_out_file_H{"order"} . " for explanation of types\n");
   if(opt_Get("--fione", \%opt_HH)) { 
-    push(@column_explanation_A, "#                          if <s> includes 'not-max-avg-pid', a different sequence with the\n");
-    push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
+    push(@column_explanation_A, "#                          if <s> includes 'not-win-len-and-avg-pid', this is not the sequence with this taxid that\n");
+    push(@column_explanation_A, sprintf("#                          is longest and within %s of the maximum average percent id to all\n", opt_Get("--fithresh", \%opt_HH)));
     if(opt_Get("--figroup", \%opt_HH)) { 
-      push(@column_explanation_A, "#                          other sequences in its taxonomic group than this one did\n");
-      push(@column_explanation_A, "#                          at the most specific level that is defined out of order/class/phylum\n");
+      push(@column_explanation_A, "#                          other sequences in its taxonomic group at the most specific\n");
+      push(@column_explanation_A, "#                          level that is defined out of order/class/phylum\n");
     }
     else {
       push(@column_explanation_A, "#                          other sequences with the same taxid.\n");
     }
-    push(@column_explanation_A, "#                          In case of tie: the longer sequence is kept.\n");
     if(opt_IsUsed("--fimin", \%opt_HH)) { 
       push(@column_explanation_A, "#                          if <s> includes 'too-few-in-species-taxid', there were fewer than\n");
       push(@column_explanation_A, sprintf("#                          %d sequences with the species taxid of this sequence (that were not\n", opt_Get("--fimin", \%opt_HH)));
@@ -2492,14 +2493,18 @@ sub parse_alipid_analyze_tab_files {
   my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $seqlen_HR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
-  my $do_one       = (opt_Get   ("--fione", $opt_HHR))   ? 1 : 0;
-  my $do_one_min   = (opt_IsUsed("--fimin", $opt_HHR))   ? 1 : 0; # --fimin requires --fione
-  my $do_one_group = (opt_IsUsed("--figroup", $opt_HHR)) ? 1 : 0; # --figroup requires --fione
-  my $one_min      = opt_Get    ("--fimin", $opt_HHR);
-  my %max_pid_per_taxid_HH        = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
-  my %argmax_pid_per_taxid_HH     = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
-                                        # lowest level in @{$level_AR}
-  my %argmax_len_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is length of $argmax_pid_per_taxid_HH()
+  my $do_one          = (opt_Get   ("--fione", $opt_HHR))   ? 1 : 0;
+  my $do_one_min      = (opt_IsUsed("--fimin", $opt_HHR))   ? 1 : 0; # --fimin requires --fione
+  my $do_one_group    = (opt_IsUsed("--figroup", $opt_HHR)) ? 1 : 0; # --figroup requires --fione
+  my $one_min         = opt_Get    ("--fimin", $opt_HHR);
+  my $one_diff_thresh = opt_Get    ("--fithresh", $opt_HHR);
+  my %actual_max_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid of sequence with actual maximum average percent id
+                                        # this may differ from winner_max_pid_per_taxid_HH because we allow winner to be within $fione_thresh percent of the maximum and win
+  my %winner_max_pid_per_taxid_HH = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid of winning sequence, which is the longest
+                                        # sequence with average percent id within $fione_thresh of $actual_max_pid_per_taxid_HH
+  my %winner_pid_per_taxid_HH     = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that gives $winner_max_pid_per_taxid_HH
+                                        # for lowest level in @{$level_AR}
+  my %winner_len_per_taxid_HH     = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is length of $winner_pid_per_taxid_HH()
   my %do_one_taxid_H   = (); # 1D key is $seqname, value is species taxid if seqname is candidate for failing b/c not max avg id in species
   my %do_one_avgpid_HH = (); # 1D key is taxonomic level, 2D key is $seqname, value is average pid at order level for seqname
   my %do_one_lowest_level_H = (); # 1D key is a species taxid, value is lowest taxonomic level $level for which that seq_taxid has a valid $level
@@ -2515,9 +2520,13 @@ sub parse_alipid_analyze_tab_files {
   my $seqname;
   my $seq_taxid; 
 
+  # small values to use when dealing with precision of floats
+  my $small_value     =  0.0001;
+  my $neg_small_value = -0.0001;
+
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
 
-  # go through each alipid file and determine which sequences should 
+  # go through each alipid_analyze file and determine which sequences should 
   # fail due to their type (any type that begins with O at any level fails)
   foreach my $level (@{$level_AR}) { 
     open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
@@ -2543,16 +2552,19 @@ sub parse_alipid_analyze_tab_files {
   }
 
   # if $do_one: 
-  # go back through the order alipid file a second time to determine
-  # for all seqs with a species taxid that are not in an O type, the
-  # average pid to all other seqs in the same species taxid
+  # go back through each alipid_analyze output file two more times.
+  # In the first pass, determine
+  # - for all seqs with a species taxid that are not in an O type, the
+  #    the sequence with the max average pid to all other seqs in the same species taxid (or group if --figroup)
+  # In the second pass, determine
+  # - the longest sequence that is within $fione_thresh average percent id to the maximum, and use
+  #   that as the one we choose for that taxid
   if($do_one) { 
     my @cur_level_A = ($level_AR->[0]); # we only need to parse one of the alipid files, unless $do_one_group 
     if($do_one_group) { @cur_level_A = @{$level_AR}; }
     foreach my $level (@cur_level_A) { 
       open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
-      # first line is header
-      my $line = <TAB>;
+      my $line;
       while($line = <TAB>) { 
         chomp $line;
         if($line !~ m/^\#/) { 
@@ -2575,25 +2587,26 @@ sub parse_alipid_analyze_tab_files {
             # 2) this sequence has a higher average percent id than the current max
             # 3) this sequence has an equal average percent id to the current max, and is a longer sequence
             my $overwrite_max = 0; # set to 1 below, if nec
-            if(! exists $max_pid_per_taxid_HH{$level}{$seq_taxid}) { 
+            if(! exists $actual_max_pid_per_taxid_HH{$level}{$seq_taxid}) { 
               $overwrite_max = 1; 
             }
             else { 
-              my $avgdiff = $avgpid2use - $max_pid_per_taxid_HH{$level}{$seq_taxid};
-              if($avgdiff > 0.0001) { # this will be true if $avgpid2use > $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use 0.0001 for precision reasons
+              my $avgdiff = $avgpid2use - $actual_max_pid_per_taxid_HH{$level}{$seq_taxid};
+              if($avgdiff > $small_value) { # this will be true if $avgpid2use > $actual_max_pid_per_taxid_HH{$level}{$seq_taxid}, we use $small_value for precision reasons
                 $overwrite_max = 1;
               }
-              elsif($avgdiff > (-0.0001)) { # this will be true if $avgpid2use == $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use -0.0001 for precision reasons
-                if($seqlen_HR->{$seqname} > $argmax_len_pid_per_taxid_HH{$level}{$seq_taxid}) { # this will be true if new sequence is longer than old maximum
+              elsif($avgdiff > ($neg_small_value)) { # this will be true if $avgpid2use == $actual_max_pid_per_taxid_HH{$level}{$seq_taxid}, we use $neg_small_value for precision reasons
+                if($seqlen_HR->{$seqname} > $winner_len_per_taxid_HH{$level}{$seq_taxid}) { # this will be true if new sequence is longer than old maximum
 
                   $overwrite_max = 1;
                 }
               }
             }
             if($overwrite_max) { 
-              $max_pid_per_taxid_HH{$level}{$seq_taxid}        = $avgpid2use;
-              $argmax_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
-              $argmax_len_pid_per_taxid_HH{$level}{$seq_taxid} = $seqlen_HR->{$seqname};
+              $actual_max_pid_per_taxid_HH{$level}{$seq_taxid} = $avgpid2use;
+              $winner_max_pid_per_taxid_HH{$level}{$seq_taxid} = $avgpid2use;
+              $winner_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
+              $winner_len_per_taxid_HH{$level}{$seq_taxid}     = $seqlen_HR->{$seqname};
             }
           }
           # keep track of number of sequences per taxid, if the --fimin option was used
@@ -2612,15 +2625,50 @@ sub parse_alipid_analyze_tab_files {
         }
       }
       close(TAB);      
+      # now we know the maximum avg percent id per sequence, go back through a second time
+      # and find the sequence with the maximum length that has 
+      # avg percent id to its taxid/group that is within $fimin_thresh of the max avg percent id
+      # of all seqs for the group
+      open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
+      # first line is header
+      $line = <TAB>;
+      while($line = <TAB>) { 
+        chomp $line;
+        if($line !~ m/^\#/) { 
+          my @el_A = split(/\t/, $line);
+          if(scalar(@el_A) != 32) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 32 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
+          my ($seqname, $seq_taxid, $taxid_avgpid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[9]);
+          
+          my $avgpid2use = ($do_one_group) ? $avgpid : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
+          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid2use ne "-")) { 
+            # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
+            # so it is a candidate for being the max avg pid for its species taxid
+            # and also a candidate for failing if it is not max avg pid for its species
+            # we want to overwrite the winner if
+            # 1) percent identity is within $one_diff_thresh of max for this species id
+            # 2) this sequence is longer than current winner
+            my $avgdiff = $actual_max_pid_per_taxid_HH{$level}{$seq_taxid} - $avgpid2use;
+            if(($avgdiff < ($one_diff_thresh + $small_value)) && # this will be true if $avgpid2use is within $one_diff_thresh to $actual_max_pid_per_taxid_HH{$level}{$seq_taxid}, with a precision tolerance of $small_value
+               ($seqlen_HR->{$seqname} > $winner_len_per_taxid_HH{$level}{$seq_taxid})) { 
+              # DO NOT overwrite $actual_max_pid_per_taxid_HH{$level}{$seq_taxid} we need to refer to it for the remainder of this loop/file parse
+              $winner_max_pid_per_taxid_HH{$level}{$seq_taxid} = $avgpid2use;
+              $winner_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
+              $winner_len_per_taxid_HH{$level}{$seq_taxid}     = $seqlen_HR->{$seqname};
+            }
+          }
+        }
+      }
     } # end of foreach $level
+
     # $do_one is TRUE, so for all sequences that could be max avg pid for their species, 
     # determine those that are not and fail them
     foreach $seqname (sort keys %do_one_taxid_H) { 
       my $seq_taxid   = $do_one_taxid_H{$seqname};
       my $level       = $do_one_lowest_level_H{$seq_taxid};
-      my $max_seqname = $argmax_pid_per_taxid_HH{$level}{$seq_taxid};
-      if($seqname ne $max_seqname) { 
-        $curfailstr_H{$seqname} .= sprintf("not-max-avg-pid(%.3f<%.3f);", $do_one_avgpid_HH{$level}{$seqname}, $max_pid_per_taxid_HH{$level}{$seq_taxid});
+      my $win_seqname = $winner_pid_per_taxid_HH{$level}{$seq_taxid};
+      my $cur_seqlen  = $seqlen_HR->{$seqname};
+      if($seqname ne $win_seqname) { 
+        $curfailstr_H{$seqname} .= sprintf("not-win-len-avg-pid(this:%d,%.3f,win:%d,%.3f);", $cur_seqlen, $do_one_avgpid_HH{$level}{$seqname}, $winner_len_per_taxid_HH{$level}{$seq_taxid}, $winner_max_pid_per_taxid_HH{$level}{$seq_taxid});
       }
     }
     if($do_one_min) { 
