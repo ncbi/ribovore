@@ -1170,7 +1170,7 @@ else {
     # passed up to this point (using esl-alimanip --seq-k)
     my $alistat_cmd = $execs_H{"esl-alistat"} . " --list $rfonly_list_file $rfonly_stk_file > /dev/null";
     my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
-    my $alipid_opts = opt_Get("--indiffseqtax", \%opt_HH) ? "--diffseqtax" : ""; 
+    my $alipid_opts = opt_Get("--indiffseqtax", \%opt_HH) ? "--o4on --diffseqtax" : "--o4on"; 
     foreach $level (@level_A) { 
       $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $alipid_opts $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
     }
