@@ -116,6 +116,10 @@ my %seq_taxid_H = (); # key: sequence name, value is taxid for the sequence
 my %seq_spec_H  = (); # key: sequence name, value is genus species information for the sequence
 my %grp_ct_H    = (); # key: group name, value is number of seqs in the group
 my %tax_ct_H    = (); # key: species name, value is number of seqs in the genus species
+# per-taxid average, 
+my %seq_taxid_pid_avg_H   = (); # key is sequence name, value is percent identity between this sequence and all other sequences in its sequence tax id
+my %seq_taxid_pid_denom_H = (); # key is sequence name, value is number of sequences in the taxid for this sequence that we are computing average for
+
 
 open(TAXINFO, $taxinfo_file) || die "ERROR unable to open $taxinfo_file";
 ##seq        seq-taxid  seq-genus-species               seq-group-taxid
@@ -142,6 +146,10 @@ while($line = <TAXINFO>) {
     $seq_grp_H{$seq} = $group_taxid;
     $seq_taxid_H{$seq} = $seq_taxid;
     $seq_spec_H{$seq}  = $seq_spec;
+
+    # initialize average pid between this seq and every other one in its taxid 
+    $seq_taxid_pid_avg_H{$seq}   = 0.;
+    $seq_taxid_pid_denom_H{$seq} = 0;
     
     if(length($seq) > $max_seqname_length) { 
       $max_seqname_length = length($seq);
@@ -221,6 +229,14 @@ while($line = <ALIPID>) {
     $tax1 = $seq_taxid_H{$seq1};
     $tax2 = $seq_taxid_H{$seq2};
 
+    # update intra-taxid average percent identity values
+    if($tax1 eq $tax2) { 
+      $seq_taxid_pid_avg_H{$seq1} += $pid;
+      $seq_taxid_pid_avg_H{$seq2} += $pid;
+      $seq_taxid_pid_denom_H{$seq1}++;
+      $seq_taxid_pid_denom_H{$seq2}++;
+    }      
+          
     # first deal with small (< $min_grp_size) groups with at least 2 seqs that are not group '1':
     # count pairs that are in groups that are in grp_not1_H but are not in
     # grp_bigenough_H, we only care about within group avg, max and min for
@@ -324,6 +340,10 @@ foreach my $seq (@seq_order_A) {
   if(! exists $seq_grp_H{$seq}) { 
     die "ERROR no group for seq $seq";
   }
+  if($seq_taxid_pid_denom_H{$seq} > 0) { 
+    $seq_taxid_pid_avg_H{$seq} /= $seq_taxid_pid_denom_H{$seq};
+  }
+
   my $cur_group = $seq_grp_H{$seq};
   my $cur_tax   = $seq_taxid_H{$seq};
   if((exists $grp_bigenough_H{$cur_group}) && 
@@ -354,69 +374,70 @@ else {
 
 my @column_explanation_A = (); # array of strings that explain columns to write to output files and stdout
 push(@column_explanation_A, "# Explanation of columns [RIBO v0.32]:\n");
-push(@column_explanation_A, "# 1.  sequence:   sequence accession.version\n");
-push(@column_explanation_A, "# 2.  seq-taxid:  sequence taxid read from input file: $taxinfo_file\n");
-push(@column_explanation_A, "# 3.  nseq-taxid: number of sequences with seq-taxid\n");
-push(@column_explanation_A, "# 4.  species: sequence genus and species\n");
-push(@column_explanation_A, "# 5.  type: type of sequence\n");
-push(@column_explanation_A, "#           'I1': avgpid-in-group (col X) >= avgpid-other-group and maxpid-in-group >= maxpid-other-group\n");
-push(@column_explanation_A, "#           'I2': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group >= maxpid-other-group\n");
-push(@column_explanation_A, "#           'I3': avgpid-in-group (col X) >= avgpid-other-group and maxpid-in-group <  maxpid-other-group\n");
-push(@column_explanation_A, "#           'O1': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
-push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group >  $prt_o1avgthresh% (changeable with --o1avg <f>) and\n"); 
-push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group >  $prt_o1maxthresh% (changeable with --o1max <f>)\n");
-push(@column_explanation_A, "#           'O2': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
-push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group >  $prt_o2avgthresh% (changeable with --o2avg <f>) and\n"); 
-push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group >  $prt_o2maxthresh% (changeable with --o2max <f>)\n");
-push(@column_explanation_A, "#           'O3': avgpid-in-group (col X) <  avgpid-other-group and maxpid-in-group <  maxpid-other-group and\n");
-push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group <= $prt_o2avgthresh% (changeable with --o2avg <f>) OR\n"); 
-push(@column_explanation_A, "#                 maxpid-other-group - maxpid-in-group <= $prt_o2maxthresh% (changeable with --o2max <f>)\n");
+push(@column_explanation_A, "# 1.  sequence:    sequence accession.version\n");
+push(@column_explanation_A, "# 2.  seq-taxid:   sequence taxid read from input file: $taxinfo_file\n");
+push(@column_explanation_A, "# 3.  taxid-nseq:  number of sequences with seq-taxid\n");
+push(@column_explanation_A, "# 4.  taxid-avgid: average percent identity between this sequence and all other sequences with same seq-taxid (or '-' if seqtaxid is '1' or taxid-nseq is 1)\n");
+push(@column_explanation_A, "# 5.  species: sequence genus and species\n");
+push(@column_explanation_A, "# 6.  type: type of sequence\n");
+push(@column_explanation_A, "#           'I1': in-avgid (col 10) >= avgpid-other-group and in-maxid >= maxpid-other-group\n");
+push(@column_explanation_A, "#           'I2': in-avgid (col 10) <  avgpid-other-group and in-maxid >= maxpid-other-group\n");
+push(@column_explanation_A, "#           'I3': in-avgid (col 10) >= avgpid-other-group and in-maxid <  maxpid-other-group\n");
+push(@column_explanation_A, "#           'O1': in-avgid (col 10) <  avgpid-other-group and in-maxid <  maxpid-other-group and\n");
+push(@column_explanation_A, "#                 avgpid-other-group - in-avgid >  $prt_o1avgthresh% (changeable with --o1avg <f>) and\n"); 
+push(@column_explanation_A, "#                 maxpid-other-group - in-maxid >  $prt_o1maxthresh% (changeable with --o1max <f>)\n");
+push(@column_explanation_A, "#           'O2': in-avgpid (col 10) <  avgpid-other-group and in-maxid <  maxpid-other-group and\n");
+push(@column_explanation_A, "#                 avgpid-other-group - in-avgid >  $prt_o2avgthresh% (changeable with --o2avg <f>) and\n"); 
+push(@column_explanation_A, "#                 maxpid-other-group - in-maxid >  $prt_o2maxthresh% (changeable with --o2max <f>)\n");
+push(@column_explanation_A, "#           'O3': in-avgpid (col 10) <  avgpid-other-group and in-maxid <  maxpid-other-group and\n");
+push(@column_explanation_A, "#                 avgpid-other-group - in-avgid <= $prt_o2avgthresh% (changeable with --o2avg <f>) OR\n"); 
+push(@column_explanation_A, "#                 maxpid-other-group - in-maxid <= $prt_o2maxthresh% (changeable with --o2max <f>)\n");
 if($do_o4) { 
   push(@column_explanation_A, "#           'O4': sequence is not O1 or O2 and\n");
-  push(@column_explanation_A, "#                 avgpid-in-group (col X) <  avgpid-other-group and\n");
-  push(@column_explanation_A, "#                 avgpid-other-group - avgpid-in-group <= $prt_o4avgthresh% (changeable with --o4avg <f>)\n");
-  push(@column_explanation_A, "#                 maxpid-in-group and maxpid-other-group values are irrelevant\n");
+  push(@column_explanation_A, "#                 in-avgid (col 10) <  avgpid-other-group and\n");
+  push(@column_explanation_A, "#                 avgpid-other-group - in-avgid <= $prt_o4avgthresh% (changeable with --o4avg <f>)\n");
+  push(@column_explanation_A, "#                 in-maxid and maxpid-other-group values are irrelevant\n");
 }
 push(@column_explanation_A, "#           'NA': if sequence's group (in-group column) equals 1 or has fewer than $min_grp_size sequences\n");
-push(@column_explanation_A, "# 6.  p/f:        'PASS' if sequence is of type $pass_type_str\n");
+push(@column_explanation_A, "# 7.  p/f:        'PASS' if sequence is of type $pass_type_str\n");
 push(@column_explanation_A, "#                 'FAIL' if sequence is of type $fail_type_str\n");
-push(@column_explanation_A, "# 7.  in-group:   taxid of group this sequence belongs to, read from input file: $taxinfo_file\n");
-push(@column_explanation_A, "# 8.  in-gnseq:   number of sequences in group in-group\n");
-push(@column_explanation_A, "# 9.  in-avgid:   average percent identity b/t this sequence and all other sequences in its group\n");
-push(@column_explanation_A, "# 10. in-maxid:   maximum percent identity b/t this sequence and all other sequences in its group\n");
-push(@column_explanation_A, "# 11. in-maxseq:  sequence in group 'in-group' with max id (of 'in-maxid') to this sequence\n");
-push(@column_explanation_A, "# 12. in-minid:   minimum percent identity b/t this sequence and all other sequences in its group\n");
-push(@column_explanation_A, "# 13. in-minseq:  sequence in group 'in-group' with min id (of 'in-minid') to this sequence\n");
-push(@column_explanation_A, "# 14. maxavg-string: 'avg:same' if group to which this sequence has maximum average percent identity is assigned group (col 5)\n");
+push(@column_explanation_A, "# 8.  in-group:   taxid of group this sequence belongs to, read from input file: $taxinfo_file\n");
+push(@column_explanation_A, "# 9.  in-gnseq:   number of sequences in group in-group\n");
+push(@column_explanation_A, "# 10. in-avgid:   average percent identity b/t this sequence and all other sequences in its group\n");
+push(@column_explanation_A, "# 11. in-maxid:   maximum percent identity b/t this sequence and all other sequences in its group\n");
+push(@column_explanation_A, "# 12. in-maxseq:  sequence in group 'in-group' with max id (of 'in-maxid') to this sequence\n");
+push(@column_explanation_A, "# 13. in-minid:   minimum percent identity b/t this sequence and all other sequences in its group\n");
+push(@column_explanation_A, "# 14. in-minseq:  sequence in group 'in-group' with min id (of 'in-minid') to this sequence\n");
+push(@column_explanation_A, "# 15. maxavg-string: 'avg:same' if group to which this sequence has maximum average percent identity is assigned group (col 5)\n");
 push(@column_explanation_A, "#                    'avg:diff' if group to which this sequence has maximum average percent identity is another group (col 12)\n");
-push(@column_explanation_A, "# 15. maxavg-group:  if col 11 is 'avg:same': group to which this sequence has 2nd highest average percent identity\n");
-push(@column_explanation_A, "#                    if col 11 is 'avg:diff': group to which this sequence has maximum average percent identity\n");
-push(@column_explanation_A, "# 16. maxavg-nseq:   number of sequences in group 'maxavg-group' (listed in col 12)\n");
-push(@column_explanation_A, "# 17. maxavg-avgid:  average percent identity b/t this sequence and all other sequences in group 'maxavg-group'\n");
-push(@column_explanation_A, "# 18. maxavg-maxid:  maximum percent identity b/t this sequence and all other sequences in group 'maxavg-group'\n");
-push(@column_explanation_A, "# 19. maxavg-maxseq: sequence in group 'maxavg-group' with max id (of 'maxavg-max') to this sequence\n");
-push(@column_explanation_A, "# 20. maxavg-minid:  minimum percent identity b/t this sequence and all other sequences in group 'maxavg-group'\n");
-push(@column_explanation_A, "# 21. maxavg-minseq: sequence in group 'maxavg-group' with min id (of 'maxavg-min') to this sequence\n");
-push(@column_explanation_A, "# 22. maxmax-string: 'max:same' if group to which this sequence has maximum maximum percent identity is assigned group (col 5)\n");
+push(@column_explanation_A, "# 16. maxavg-group:  if col 15 is 'avg:same': group to which this sequence has 2nd highest average percent identity\n");
+push(@column_explanation_A, "#                    if col 15 is 'avg:diff': group to which this sequence has maximum average percent identity\n");
+push(@column_explanation_A, "# 17. maxavg-nseq:   number of sequences in group 'maxavg-group' (listed in col 16)\n");
+push(@column_explanation_A, "# 18. maxavg-avgid:  average percent identity b/t this sequence and all other sequences in group 'maxavg-group'\n");
+push(@column_explanation_A, "# 19. maxavg-maxid:  maximum percent identity b/t this sequence and all other sequences in group 'maxavg-group'\n");
+push(@column_explanation_A, "# 20. maxavg-maxseq: sequence in group 'maxavg-group' with max id (of 'maxavg-max') to this sequence\n");
+push(@column_explanation_A, "# 21. maxavg-minid:  minimum percent identity b/t this sequence and all other sequences in group 'maxavg-group'\n");
+push(@column_explanation_A, "# 22. maxavg-minseq: sequence in group 'maxavg-group' with min id (of 'maxavg-min') to this sequence\n");
+push(@column_explanation_A, "# 23. maxmax-string: 'max:same' if group to which this sequence has maximum maximum percent identity is assigned group (col 5)\n");
 push(@column_explanation_A, "#                    'max:diff' if group to which this sequence has maximum maximum percent identity is another group (col 12)\n");
-push(@column_explanation_A, "# 23. maxmax-group:  if col 19 is 'max:same': group to which this sequence has 2nd maximum maximum percent identity\n");
-push(@column_explanation_A, "#                    if col 19 is 'max:diff': group to which this sequence has maximum maximum percent identity\n");
-push(@column_explanation_A, "# 24. maxmax-nseq:   number of sequences in group 'maxavg-group' (listed in col 20)\n");
-push(@column_explanation_A, "# 25. maxmax-avgid:  average percent identity b/t this sequence and all other sequences in group 'maxmax-group'\n");
-push(@column_explanation_A, "# 26. maxmax-maxid:  maximum percent identity b/t this sequence and all other sequences in group 'maxmax-group'\n");
-push(@column_explanation_A, "# 27. maxmax-maxseq: sequence in group 'maxmax-group' with max id (of 'maxmax-maxid') to this sequence\n");
-push(@column_explanation_A, "# 28. maxmax-minid:  minimum percent identity b/t this sequence and all other sequences in group 'maxmax-group' (listed in col 12)\n");
-push(@column_explanation_A, "# 29. maxavg-minseq: sequence in group 'maxmax-group' with min id (of 'maxmax-minid' to this sequence\n");
-push(@column_explanation_A, "# 30. avgdiff:       difference in this sequence's average percent id to sequences in assigned group and group 'maxavg-group'\n");
+push(@column_explanation_A, "# 24. maxmax-group:  if col 23 is 'max:same': group to which this sequence has 2nd maximum maximum percent identity\n");
+push(@column_explanation_A, "#                    if col 23 is 'max:diff': group to which this sequence has maximum maximum percent identity\n");
+push(@column_explanation_A, "# 25. maxmax-nseq:   number of sequences in group 'maxmax-group' (listed in col 24)\n");
+push(@column_explanation_A, "# 26. maxmax-avgid:  average percent identity b/t this sequence and all other sequences in group 'maxmax-group'\n");
+push(@column_explanation_A, "# 27. maxmax-maxid:  maximum percent identity b/t this sequence and all other sequences in group 'maxmax-group'\n");
+push(@column_explanation_A, "# 28. maxmax-maxseq: sequence in group 'maxmax-group' with max id (of 'maxmax-maxid') to this sequence\n");
+push(@column_explanation_A, "# 29. maxmax-minid:  minimum percent identity b/t this sequence and all other sequences in group 'maxmax-group' (listed in col 12)\n");
+push(@column_explanation_A, "# 30. maxavg-minseq: sequence in group 'maxmax-group' with min id (of 'maxmax-minid' to this sequence\n");
+push(@column_explanation_A, "# 31. avgdiff:       difference in this sequence's average percent id to sequences in assigned group and group 'maxavg-group'\n");
 push(@column_explanation_A, "#                    value in 'in-avgid' column minus value in maxavg-avgid (negative for O types)\n");
-push(@column_explanation_A, "# 31. maxdiff:       difference in this sequence's maximum percent id to sequences in assigned group and group 'maxmax-group'\n");
+push(@column_explanation_A, "# 32. maxdiff:       difference in this sequence's maximum percent id to sequences in assigned group and group 'maxmax-group'\n");
 push(@column_explanation_A, "#                    value in 'in-maxid' column minus value in maxmax-maxid (negative for O types)\n");
-push(@column_explanation_A, "# Columns  9-31 will be '-' for sequences that have group-taxid (column 7) of '1' OR in-gnseq (column 8) of '1'\n");
+push(@column_explanation_A, "# Columns 10-32 will be '-' for sequences that have in-group-taxid (column 8) of '1' OR in-gnseq (column 9) of '1'\n");
 if($do_diffseqtax) { 
   push(@column_explanation_A, "#                           OR (due to --diffseqtax) have all sequences in their group in the same sequence taxid,\n");
-  push(@column_explanation_A, "#                              which occurs if nseq-taxid (column 3) is equal to in-gnseq (column 8)\n");
+  push(@column_explanation_A, "#                              which occurs if taxid-nseq (column 3) is equal to in-gnseq (column 9)\n");
 }
-push(@column_explanation_A, "# Columns 14-31 will be '-' for sequences that have in-gnseq (column 8) of < $min_grp_size and\n");
+push(@column_explanation_A, "# Columns 15-32 will be '-' for sequences that have in-gnseq (column 9) of < $min_grp_size and\n");
 push(@column_explanation_A, "#                           for sequences that have in-gnseq equal to total number of sequences (no sequences outside of group)\n");
 # output headers to both files
 my $column_explanation_line = "";
@@ -438,12 +459,12 @@ printf RDB ("%-*s  %-*s  %-*s\n",
 
 my $in_category_uline  = ""; for(my $i = 0; $i < $in_category_length; $i++)  { $in_category_uline .= "-"; }
 my $oth_category_uline = ""; for(my $i = 0; $i < $oth_category_length; $i++) { $oth_category_uline .= "-"; }
-printf RDB ("%-*s  %7s  %6s  %-*s  %4s  %4s  ", 
-            $max_seqname_length, "#", "seq", "", $max_spec_length, "", "", "");
+printf RDB ("%-*s  %7s  %6s  %6s  %-*s  %4s  %4s  ", 
+            $max_seqname_length, "#", "seq", "", "taxid", $max_spec_length, "", "", "");
 printf RDB ("%s  %s  %s\n", $in_category_uline, $oth_category_uline, $oth_category_uline);
 
-printf RDB ("%-*s  %7s  %6s  %-*s  %4s  %4s  ",
-            $max_seqname_length, "#sequence", "taxid", "ntaxid", $max_spec_length, "species", "type", "p/f");
+printf RDB ("%-*s  %7s  %6s  %6s  %-*s  %4s  %4s  ",
+            $max_seqname_length, "#sequence", "taxid", "ntaxid", "avgid", $max_spec_length, "species", "type", "p/f");
 printf RDB ("%7s  %6s  %6s  %6s  %-*s  %6s  %-*s  ", 
             "group", "nseq", "avgid", "maxid", $max_seqname_length, "maxseq", "minid", $max_seqname_length, "minseq");
 printf RDB ("%8s  %7s  %6s  %6s  %6s  %-*s  %6s  %-*s  ", 
@@ -457,8 +478,8 @@ printf RDB ("%6s  %6s\n",
 my $seqname_uline        = "";  for(my $i = 0; $i < $max_seqname_length;     $i++) { $seqname_uline .= "-"; }
 my $seqname_uline_minus1 = "#"; for(my $i = 0; $i < ($max_seqname_length-1); $i++) { $seqname_uline_minus1 .= "-"; }
 my $spec_uline           = "";  for(my $i = 0; $i < $max_spec_length;        $i++) { $spec_uline .= "-"; }
-printf RDB ("%s  %7s  %6s  %s  %4s  %4s  ",
-            $seqname_uline_minus1, "-------", "------", $spec_uline, "----", "----");
+printf RDB ("%s  %7s  %6s  %6s  %s  %4s  %4s  ",
+            $seqname_uline_minus1, "-------", "------", "------", $spec_uline, "----", "----");
 printf RDB ("%7s  %6s  %6s  %6s  %s  %6s  %s  ", 
             "-------", "------", "------", "------", $seqname_uline, "------", $seqname_uline);
 printf RDB ("%8s  %7s  %6s  %6s  %6s  %s  %6s  %s  ", 
@@ -468,8 +489,8 @@ printf RDB ("%8s  %7s  %6s  %6s  %6s  %s  %6s  %s  ",
 printf RDB ("%6s  %6s\n", 
             "------", "------"); 
 
-printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-            "sequence", "seq-taxid", "ntaxid", "species", "type", "p/f", 
+printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            "sequence", "seq-taxid", "ntaxid", "taxid-avgid","species", "type", "p/f", 
             "in-group", "in-nseq", "in-avgid", "in-maxid", "in-maxseq", "in-minid", "in-minseq", 
             "maxavg-string", "maxavg-group", "maxavg-nseq", "maxavg-avgid", "maxavg-maxid", "maxavg-maxseq", "maxavg-minid", "maxavg-minseq", 
             "maxmax-string", "maxmax-group", "maxmax-nseq", "maxmax-avgid", "maxmax-maxid", "maxmax-maxseq", "maxmax-minid", "maxmax-minseq", 
@@ -486,15 +507,16 @@ foreach my $seq (@seq_order_A) {
     my $cur_tax   = $seq_taxid_H{$seq};
     my $pf = undef;
     my $type = undef;
-    my $rdb_oth_blank_str = sprintf ("%8s  %7s  %6s  %6s  %6s  %6s  %-*s  %6s  %-*s  ", 
-                                     "-", "-", "-", "-", "-", 
+    my $rdb_oth_blank_str = sprintf ("%8s  %7s  %6s  %6s  %6s  %-*s  %6s  %-*s  ", 
+                                     "-", "-", "-", "-", 
                                      "-", $max_seqname_length, "-", 
                                      "-", $max_seqname_length, "-");
-    my $tab_oth_blank_str = sprintf ("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t", 
-                                     "-", "-", "-", "-", "-", 
+    my $tab_oth_blank_str = sprintf ("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t", 
+                                     "-", "-", "-", "-", 
                                      "-", "-", 
                                      "-", "-");
-
+    my $taxid_avgid2print_rdb = sprintf("%6s", ($seq_taxid_pid_denom_H{$seq} > 0) ? sprintf("%6.2f", $seq_taxid_pid_avg_H{$seq}) : "-");
+    my $taxid_avgid2print_tab = sprintf("%s",  ($seq_taxid_pid_denom_H{$seq} > 0) ? sprintf("%.2f",  $seq_taxid_pid_avg_H{$seq}) : "-");
 
     # first deal with seqs in groups that are not big enough
     if((! exists $grp_bigenough_H{$cur_group}) || 
@@ -503,10 +525,10 @@ foreach my $seq (@seq_order_A) {
       # not enough sequences to do a comparison, automatic PASS
       $pf = "PASS";
       
-      printf RDB ("%-*s  %7d  %6s  %-*s  %4s  $pf  ", 
-                  $max_seqname_length, $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $max_spec_length, $seq_spec_H{$seq}, $type);
-      printf TAB ("%s\t%s\t%s\t%s\t%s\t$pf\t", 
-                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $max_spec_length, $seq_spec_H{$seq}, $type);
+      printf RDB ("%-*s  %7d  %6s  %6s  %-*s  %4s  $pf  ", 
+                  $max_seqname_length, $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_rdb, $max_spec_length, $seq_spec_H{$seq}, $type);
+      printf TAB ("%s\t%s\t%s\t%s\t%s\t%s\t$pf\t", 
+                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_tab, $max_spec_length, $seq_spec_H{$seq}, $type);
 
       if((! exists $grp_not1_H{$cur_group}) || # sequence is in group 1
          (($do_diffseqtax) && (($grp_ct_H{$cur_group} - $tax_ct_H{$cur_tax}) == 0))) { # --diffseqtax was used and all seqs in this group are same taxid
@@ -633,10 +655,10 @@ foreach my $seq (@seq_order_A) {
         $max_str = "max:diff";
       }
 
-      printf RDB ("%-*s  %7d  %6d  %-*s  %4s  $pf  ", 
-                  $max_seqname_length, $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $max_spec_length, $seq_spec_H{$seq}, $type);
-      printf TAB ("%s\t\%s\t%s\t%s\t%s\t$pf\t", 
-                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $seq_spec_H{$seq}, $type);
+      printf RDB ("%-*s  %7d  %6d  %6s  %-*s  %4s  $pf  ", 
+                  $max_seqname_length, $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_rdb, $max_spec_length, $seq_spec_H{$seq}, $type);
+      printf TAB ("%s\t\%s\t%s\t%s\t%s\t%s\t$pf\t", 
+                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_tab, $seq_spec_H{$seq}, $type);
       
       printf RDB ("%7s  %6s  %6.2f  %6.2f  %-*s  %6.2f  %-*s  ", 
                   $cur_group, $grp_ct_H{$cur_group}, $seq_grp_pid_avg_HH{$seq}{$cur_group}, 

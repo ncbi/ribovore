@@ -60,7 +60,7 @@ opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,       
 opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                       "skip stage that filters based on VecScreen",                       \%opt_HH, \@opt_order_A);
 opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",              "skip stage that filters based on BLAST hits to self",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipfribo1", "boolean", 0,                       $g,    undef,                   undef,  "skip 1st stage that filters based on ribotyper",                   "skip 1st stage that filters based on ribotyper",                   \%opt_HH, \@opt_order_A);
- opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup,--skipclustr", undef,  "skip 2nd stage that filters based on ribotyper/riboaligner", "skip 2nd stage that filters based on ribotyper/riboaligner", \%opt_HH, \@opt_order_A);
+opt_Add("--skipfribo2", "boolean", 0,                       $g,"--skipfmspan,--skipingrup,--skipclustr", undef,  "skip 2nd stage that filters based on ribotyper/riboaligner", "skip 2nd stage that filters based on ribotyper/riboaligner", \%opt_HH, \@opt_order_A);
 opt_Add("--skipfmspan", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on model span of hits",              "skip stage that filters based on model span of hits",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipingrup", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ingroup analysis",                "skip stage that performs ingroup analysis",                        \%opt_HH, \@opt_order_A);
 opt_Add("--skipclustr", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that clusters surviving sequences",                     "skip stage that clusters sequences surviving all filters",         \%opt_HH, \@opt_order_A);
@@ -129,9 +129,10 @@ opt_Add("--pthresh",   "real",     0.95,                 $g,    undef,"--noprob"
 opt_Add("--pfract",   "real",      0.95,                 $g,    undef,"--noprob",             "seq fraction threshold for post prob alnment trimming is <x>", "seq fraction threshold for post prob alnment trimming is <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
-#       option           type        default             group  requires  incompat              preamble-output                                               help-output    
-opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",  "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
-opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",    "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
+#       option           type        default             group  requires  incompat              preamble-output                                                              help-output    
+opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",       "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
+opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",         "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
+opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--skipingrup",       "w/--fione, keep seq w/max pid in group (order,class,phyla), not in taxid",  "w/--fione, keep seq w/max pid in group (order,class,phyla), not in taxid", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
 #       option          type       default        group       requires incompat                            preamble-output                                                 help-output    
@@ -222,6 +223,7 @@ my $options_okay =
                 'fmnogap'      => \$GetOptions_H{"--fmnogap"},
                 'fione'        => \$GetOptions_H{"--fione"},
                 'fimin'        => \$GetOptions_H{"--fimin"},
+                'figroup'      => \$GetOptions_H{"--figroup"},
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
                 'msminlen=s'   => \$GetOptions_H{"--msminlen"},
                 'msminstart=s' => \$GetOptions_H{"--msminstart"},
@@ -1178,7 +1180,8 @@ else {
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Performing ingroup analysis", $progress_w, $log_FH, *STDOUT);
     foreach $level (@level_A) {
-      if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+      #if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+      ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "alipid.analyze.$level", $alipid_analyze_out_file_H{$level}, 0, "$level output file from alipid-taxinfo-analyze.pl");
     }
     # we need an array that has only the sequences that PASS all filters and will be listed
@@ -1485,8 +1488,14 @@ if($do_ingrup) {
   if(opt_Get("--fione", \%opt_HH)) { 
     push(@column_explanation_A, "#                          if <s> includes 'not-max-avg-pid', a different sequence with the\n");
     push(@column_explanation_A, "#                          same taxid (species) had a higher average percent identity to all\n");
-    push(@column_explanation_A, "#                          other sequences in its taxonomic group than this one did\n");
-    push(@column_explanation_A, "#                          at the most specific level that is defined out of order/class/phylum\n");
+    if(opt_Get("--figroup", \%opt_HH)) { 
+      push(@column_explanation_A, "#                          other sequences in its taxonomic group than this one did\n");
+      push(@column_explanation_A, "#                          at the most specific level that is defined out of order/class/phylum\n");
+    }
+    else {
+      push(@column_explanation_A, "#                          other sequences with the same taxid.\n");
+    }
+    push(@column_explanation_A, "#                          In case of tie: the longer sequence is kept.\n");
     if(opt_IsUsed("--fimin", \%opt_HH)) { 
       push(@column_explanation_A, "#                          if <s> includes 'too-few-in-species-taxid', there were fewer than\n");
       push(@column_explanation_A, sprintf("#                          %d sequences with the species taxid of this sequence (that were not\n", opt_Get("--fimin", \%opt_HH)));
@@ -2483,9 +2492,10 @@ sub parse_alipid_analyze_tab_files {
   my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $seqlen_HR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
-  my $do_one     = (opt_Get   ("--fione", $opt_HHR)) ? 1 : 0;
-  my $do_one_min = (opt_IsUsed("--fimin", $opt_HHR)) ? 1 : 0; # --fimin requires --fione
-  my $one_min    = opt_Get   ("--fimin", $opt_HHR);
+  my $do_one       = (opt_Get   ("--fione", $opt_HHR))   ? 1 : 0;
+  my $do_one_min   = (opt_IsUsed("--fimin", $opt_HHR))   ? 1 : 0; # --fimin requires --fione
+  my $do_one_group = (opt_IsUsed("--figroup", $opt_HHR)) ? 1 : 0; # --figroup requires --fione
+  my $one_min      = opt_Get    ("--fimin", $opt_HHR);
   my %max_pid_per_taxid_HH        = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $avgpid for $argmax_pid_per_taxid_H{$seq_taxid}
   my %argmax_pid_per_taxid_HH     = (); # 1D key is taxonomic level; 2D key is $seq_taxid (species level taxid), value is $accver that has max $avgpid for all seqs in 
                                         # lowest level in @{$level_AR}
@@ -2514,15 +2524,14 @@ sub parse_alipid_analyze_tab_files {
     # first line is header
     my $line = <TAB>;
     while($line = <TAB>) { 
-      ##sequence	seq-taxid	species	type	p/f	in-group	in-nseq	in-avgid	in-maxid	in-maxseq	in-minid	in-minseq	maxavg-string	maxavg-group	maxavg-nseq	maxavg-avgid	maxavg-maxid	maxavg-maxseq	maxavg-minid	maxavg-minseq	maxmax-string	maxmax-group	maxmax-nseq	maxmax-avgid	maxmax-maxid	maxmax-maxseq	maxmax-minid	maxmax-minseq	avgdiff	maxdiff
-      #AY761090.2	312317	Xylomelasma sordida	I1	PASS   4890	2074	96.04	99.01	MF077540.1	76.57	AB053251.1	avg:same	4761	27	93.07	94.72	AY601711.1	88.45	AF164253.2	max:same	5204	441	89.49	98.35	KJ708419.1	57.76	DQ898689.1	2.9665557163529	0.660000000000011
-      #KY368137.1	1116880	Wickerhamiella infanticola	I1	PASS   4890	2074	94.60	99.68	AB018151.1	76.62	AB053253.1	avg:same	4761	27	91.82	93.53	HQ901742.1	88.31	AF164253.2	max:same	5204	441	88.66	95.79	KJ708419.1	58.12	DQ898689.1	2.77972825213143	3.89
-      #MH201386.1	1195475	Benjaminiella youngii	I1	PASS   1913637	161	88.74	99.68	MH201385.1	78.50	GU559979.1	avg:same	4761	27	83.86	86.41	KY350147.1	81.55	GU358605.1	max:same	4761	27	83.86	86.41	KY350147.1	81.55	GU358605.1	4.87068055555551	13.27
+     ###sequence	seq-taxid	ntaxid	taxid-avgid	species	type	p/f	in-group	in-nseq	in-avgid	in-maxid	in-maxseq	in-minid	in-minseq	maxavg-string	maxavg-group	maxavg-nseq	maxavg-avgid	maxavg-maxid	maxavg-maxseq	maxavg-minid	maxavg-minseq	maxmax-string	maxmax-group	maxmax-nseq	maxmax-avgid	maxmax-maxid	maxmax-maxseq	maxmax-minid	maxmax-minseq	avgdiff	maxdiff
+      #AY761090.2	312317	1	     -	45	Xylomelasma sordida	PASS	1	101	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
+      #KY368137.1	1116880	1	     -	Wickerhamiella infanticola	I2	PASS	4892	737	94.26	99.68	AB018151.1	76.62	AB053253.1	avg:diff	1775898	12	96.44	96.44	EU128061.1	96.43	AY179959.1	max:same	37989	23	95.96	96.76	MG829155.1	91.23	HF937360.1	 -2.18	  2.92
       if($line !~ m/^\#/) { 
         chomp $line;
         my @el_A = split(/\t/, $line);
-        if(scalar(@el_A) != 30) { ofile_FAIL(sprintf("ERROR in $sub_name, tab file line had %d tab-delimited tokens, but expected 30: $line\n", scalar(@el_A)), "RIBO", $?, $FH_HR); }
-        my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
+        if(scalar(@el_A) != 32) { ofile_FAIL(sprintf("ERROR in $sub_name, tab file line had %d tab-delimited tokens, but expected 32: $line\n", scalar(@el_A)), "RIBO", $?, $FH_HR); }
+        my ($seqname, $seq_taxid, $taxid_avgpid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[9]);
         if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
         if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
         if($pf eq "FAIL") { 
@@ -2538,7 +2547,9 @@ sub parse_alipid_analyze_tab_files {
   # for all seqs with a species taxid that are not in an O type, the
   # average pid to all other seqs in the same species taxid
   if($do_one) { 
-    foreach my $level (@{$level_AR}) { 
+    my @cur_level_A = ($level_AR->[0]); # we only need to parse one of the alipid files, unless $do_one_group 
+    if($do_one_group) { @cur_level_A = @{$level_AR}; }
+    foreach my $level (@cur_level_A) { 
       open(TAB, $in_file_HR->{$level})  || ofile_FileOpenFailure($in_file_HR->{$level},  "RIBO", $sub_name, $!, "reading", $FH_HR);
       # first line is header
       my $line = <TAB>;
@@ -2546,18 +2557,19 @@ sub parse_alipid_analyze_tab_files {
         chomp $line;
         if($line !~ m/^\#/) { 
           my @el_A = split(/\t/, $line);
-          if(scalar(@el_A) != 30) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 30 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
-          my ($seqname, $seq_taxid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[4], $el_A[5], $el_A[7]);
+          if(scalar(@el_A) != 32) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 32 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
+          my ($seqname, $seq_taxid, $taxid_avgpid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[9]);
 
+          my $avgpid2use = ($do_one_group) ? $avgpid : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
           if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
           if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
-          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid ne "-")) { 
+          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid2use ne "-")) { 
             # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
             # so it is a candidate for being the max avg pid for its species taxid
             # and also a candidate for failing if it is not max avg pid for its species
             $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
             $do_one_taxid_H{$seqname}           = $seq_taxid;
-            $do_one_avgpid_HH{$level}{$seqname} = $avgpid;
+            $do_one_avgpid_HH{$level}{$seqname} = $avgpid2use;
             # 3 cases in which we want to overwrite the max:
             # 1) we don't yet have a max for this species id
             # 2) this sequence has a higher average percent id than the current max
@@ -2567,11 +2579,11 @@ sub parse_alipid_analyze_tab_files {
               $overwrite_max = 1; 
             }
             else { 
-              my $avgdiff = $avgpid - $max_pid_per_taxid_HH{$level}{$seq_taxid};
-              if($avgdiff > 0.0001) { # this will be true if $avgpid > $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use 0.0001 for precision reasons
+              my $avgdiff = $avgpid2use - $max_pid_per_taxid_HH{$level}{$seq_taxid};
+              if($avgdiff > 0.0001) { # this will be true if $avgpid2use > $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use 0.0001 for precision reasons
                 $overwrite_max = 1;
               }
-              elsif($avgdiff > (-0.0001)) { # this will be true if $avgpid == $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use -0.0001 for precision reasons
+              elsif($avgdiff > (-0.0001)) { # this will be true if $avgpid2use == $max_pid_per_taxid_HH{$level}{$seq_taxid}, we use -0.0001 for precision reasons
                 if($seqlen_HR->{$seqname} > $argmax_len_pid_per_taxid_HH{$level}{$seq_taxid}) { # this will be true if new sequence is longer than old maximum
 
                   $overwrite_max = 1;
@@ -2579,7 +2591,7 @@ sub parse_alipid_analyze_tab_files {
               }
             }
             if($overwrite_max) { 
-              $max_pid_per_taxid_HH{$level}{$seq_taxid}        = $avgpid;
+              $max_pid_per_taxid_HH{$level}{$seq_taxid}        = $avgpid2use;
               $argmax_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
               $argmax_len_pid_per_taxid_HH{$level}{$seq_taxid} = $seqlen_HR->{$seqname};
             }
