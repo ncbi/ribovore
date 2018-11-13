@@ -97,8 +97,9 @@ opt_Add("--noscfail",   "boolean", 0,                       $g,    undef, undef,
 opt_Add("--lowppossc",  "real",    0.50,                    $g,    undef, undef,          "set --lowppossc <x> option for ribotyper to <x>",               "set --lowppossc <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the first stage that filters based on ribotyper";
-#       option          type       default               group  requires  incompat        preamble-output                                                 help-output    
-opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--skipfribo1", "use ribotyper options listed in <s> for round 1",              "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+#       option          type       default               group  requires  incompat                   preamble-output                                                 help-output    
+opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--skipfribo1,--ribodir1", "use ribotyper options listed in <s> for round 1",              "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--ribodir1",   "string",  undef,                   $g,    undef, "--skipfribo1",            "use pre-computed ribotyper dir <s>",                           "use pre-computed ribotyper dir <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/riboaligner";
 #       option          type       default        group       requires incompat         preamble-output                                                 help-output    
@@ -219,6 +220,7 @@ my $options_okay =
                 'lowpposs=s'   => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'       => \$GetOptions_H{"--tcov"},
                 'riboopts1=s'  => \$GetOptions_H{"--riboopts1"},
+                'ribodir1=s'   => \$GetOptions_H{"--ribodir1"},
                 'rainfo=s'     => \$GetOptions_H{"--rainfo"},
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
@@ -958,43 +960,63 @@ if($do_fblast) {
 my $rt_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in ribotyper call, filled only if -p
 if($do_fribo1) { 
   $stage_key = "fribo1";
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
-  
-  my $ribotyper_accept_file  = $out_root . ".ribotyper.accept";
   my $ribotyper_outdir       = $out_root . "-rt";
   my $ribotyper_outdir_tail  = $dir_tail . ".ribodbmaker-rt";
   my $ribotyper_outfile      = $out_root . ".ribotyper.out";
   my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
   my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
   my $ribotyper_log_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.log";
+  if(! opt_IsUsed("--ribodir1", \%opt_HH)) { 
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
 
-  # first we need to create the acceptable models file
-  ribo_WriteAcceptFile($tmp_family_rtname_HA{$family}, $ribotyper_accept_file, $ofile_info_HH{"FH"});
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
+    # first we need to create the acceptable models file
+    my $ribotyper_accept_file  = $out_root . ".ribotyper.accept";
+    ribo_WriteAcceptFile($tmp_family_rtname_HA{$family}, $ribotyper_accept_file, $ofile_info_HH{"FH"});
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
 
-  $ribotyper_options .= " -f --inaccept $ribotyper_accept_file "; 
-  if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
-  if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
-  if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
-  if(opt_IsUsed("-s",            \%opt_HH)) { $ribotyper_options .= " -s " . opt_Get("-s", \%opt_HH); }
-  if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
-  if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
-  if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
-  if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
+    $ribotyper_options .= " -f --inaccept $ribotyper_accept_file "; 
+    if(opt_IsUsed("-n",            \%opt_HH)) { $ribotyper_options .= " -n " . opt_Get("-n", \%opt_HH); }
+    if(opt_IsUsed("-p",            \%opt_HH)) { $ribotyper_options .= " -p"; }
+    if(opt_IsUsed("-q",            \%opt_HH)) { $ribotyper_options .= " -q " . opt_Get("-q", \%opt_HH); }
+    if(opt_IsUsed("-s",            \%opt_HH)) { $ribotyper_options .= " -s " . opt_Get("-s", \%opt_HH); }
+    if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+    if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+    if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
+    if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
 
-  my $ribotyper_command = $execs_H{"ribotyper"} . " $ribotyper_options $full_fasta_file $ribotyper_outdir > $ribotyper_outfile";
-  if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$ribotyper_outfile", 0, "output of ribotyper");
-  
-  # if -p: parse the ribotyper log file to get CPU+wait time for parallel
-  if(opt_Get("-p", \%opt_HH)) { 
-    $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $ofile_info_HH{"FH"});
-  }
+    my $ribotyper_command = $execs_H{"ribotyper"} . " $ribotyper_options $full_fasta_file $ribotyper_outdir > $ribotyper_outfile";
+    if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rtout", "$ribotyper_outfile", 0, "output of ribotyper");
+    
+    # if -p: parse the ribotyper log file to get CPU+wait time for parallel
+    if(opt_Get("-p", \%opt_HH)) { 
+      $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $ofile_info_HH{"FH"});
+    }
+  } # end of if entered if option --ribodir1 is NOT used
+  else { # --ribodir1 option was used
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Copying relevant ribotyper.pl output files [--ribodir1]", $progress_w, $log_FH, *STDOUT);
 
+    my $src_ribotyper_outdir      = opt_Get("--ribodir1", \%opt_HH); 
+    my $src_ribotyper_outdir_tail = ribo_RemoveDirPath($src_ribotyper_outdir);
+    my $src_ribotyper_out_root    = $src_ribotyper_outdir . "/" . $src_ribotyper_outdir_tail . ".ribotyper";
+    my $src_ribotyper_short_file  = $src_ribotyper_out_root . ".short.out";
+    my $src_ribotyper_long_file   = $src_ribotyper_out_root . ".long.out";
+    my $src_ribotyper_cmd_file    = $src_ribotyper_out_root . ".cmd";
+    my $src_ribotyper_log_file    = $src_ribotyper_out_root . ".log";
+
+    ribo_RunCommand("mkdir $ribotyper_outdir",                            opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ribotyper_short_file $ribotyper_short_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ribotyper_long_file $ribotyper_long_file",   opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ribotyper_cmd_file $ribotyper_cmd_file",     opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ribotyper_log_file $ribotyper_log_file",     opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  } # end of 'else' entered if 
   # parse ribotyper short file
   $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
-  if((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) { 
+  if(opt_IsUsed("--ribodir1", \%opt_HH)) { # don't worry -p and --ribodir1 
+    $extra_desc = sprintf("%6d pass; %6d fail; (files copied from dir %s)", $npass, $nseq-$npass, opt_Get("--ribodir1", \%opt_HH));
+  }
+  elsif((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) { 
     $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $npass, $nseq-$npass, $rt_opt_p_sum_cpu_secs);
   }
   else { 
