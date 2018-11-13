@@ -102,14 +102,15 @@ opt_Add("--riboopts1",  "string",  undef,                   $g,    undef, "--ski
 opt_Add("--ribodir1",   "string",  undef,                   $g,    undef, "--skipfribo1",            "use pre-computed ribotyper dir <s>",                           "use pre-computed ribotyper dir <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the second stage that filters based on ribotyper/riboaligner";
-#       option          type       default        group       requires incompat         preamble-output                                                 help-output    
-opt_Add("--rainfo",    "string",  undef,            $g,        undef, "--skipfribo2",   "use ra model info file <s> instead of default",               "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
-opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
-opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2",  "do not fail sequences in ribotyper with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2",  "set --tcov <x> option for ribotyper to <x>",                    "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1", "--skipfribo2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",  "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
-opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2",  "use ribotyper options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+#       option          type       default        group       requires incompat                   preamble-output                                                 help-output    
+opt_Add("--rainfo",    "string",  undef,            $g,         undef, "--skipfribo2,--ribodir2", "use ra model info file <s> instead of default",                        "use riboaligner.pl model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("--nomultfail", "boolean", 0,                $g,        undef, "--skipfribo2,--ribodir2", "do not fail sequences in ribotyper stage 2 with multiple hits",        "do not fail sequences in ribotyper with multiple hits", \%opt_HH, \@opt_order_A);
+opt_Add("--nocovfail",  "boolean", 0,                $g,        undef, "--skipfribo2,--ribodir2", "do not fail sequences in ribotyper stage 2 with low coverage",         "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
+opt_Add("--nodifffail", "boolean", 0,                $g,        undef, "--skipfribo2,--ribodir2", "do not fail sequences in ribotyper stage 2 with low score difference", "do not fail sequences in ribotyper with low score difference", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfribo2,--ribodir2", "set --tcov <x> option for ribotyper stage 2 to <x>",                   "set --tcov <x> option for ribotyper to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1","--skipfribo2,--ribodir2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",          "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
+opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2,--ribodir2", "use ribotyper stage 2 options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--ribodir2",   "string",  undef,            $g,        undef, "--skipfribo2",            "use pre-computed riboaligner dir <s>",                                 "use pre-computed riboaligner dir <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits:";
 #       option           type        default             group  requires  incompat                 preamble-output                                          help-output    
@@ -224,6 +225,7 @@ my $options_okay =
                 'rainfo=s'     => \$GetOptions_H{"--rainfo"},
                 'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
+                'ribodir2=s'   => \$GetOptions_H{"--ribodir2"},
                 'cfid'         => \$GetOptions_H{"--cfid"},
                 "fullaln"      => \$GetOptions_H{"--fullaln"},
                 "noprob"       => \$GetOptions_H{"--noprob"},
@@ -965,8 +967,9 @@ if($do_fribo1) {
   my $ribotyper_outfile      = $out_root . ".ribotyper.out";
   my $ribotyper_short_file   = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.short.out";
   my $ribotyper_long_file    = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.long.out";
+  my $ribotyper_cmd_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.cmd";
   my $ribotyper_log_file     = $ribotyper_outdir . "/" . $ribotyper_outdir_tail . ".ribotyper.log";
-  if(! opt_IsUsed("--ribodir1", \%opt_HH)) { 
+  if(! opt_IsUsed("--ribodir1", \%opt_HH)) { # if this option is used, we're just going to copy the relevant ribotyper output files from a precomputed dir
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running ribotyper.pl", $progress_w, $log_FH, *STDOUT);
 
     # first we need to create the acceptable models file
@@ -994,7 +997,7 @@ if($do_fribo1) {
     }
   } # end of if entered if option --ribodir1 is NOT used
   else { # --ribodir1 option was used
-    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Copying relevant ribotyper.pl output files [--ribodir1]", $progress_w, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Copying relevant ribotyper.pl output files (--ribodir1)", $progress_w, $log_FH, *STDOUT);
 
     my $src_ribotyper_outdir      = opt_Get("--ribodir1", \%opt_HH); 
     my $src_ribotyper_outdir_tail = ribo_RemoveDirPath($src_ribotyper_outdir);
@@ -1013,7 +1016,7 @@ if($do_fribo1) {
   # parse ribotyper short file
   $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
-  if(opt_IsUsed("--ribodir1", \%opt_HH)) { # don't worry -p and --ribodir1 
+  if(opt_IsUsed("--ribodir1", \%opt_HH)) { # -p is irrelevant here if --ribodir1 used
     $extra_desc = sprintf("%6d pass; %6d fail; (files copied from dir %s)", $npass, $nseq-$npass, opt_Get("--ribodir1", \%opt_HH));
   }
   elsif((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) { 
@@ -1039,48 +1042,76 @@ my $ra_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in riboaligner call, 
 
 if($do_fribo2) { 
   $stage_key = "fribo2";
-  $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
+
+  # names of riboaligner.pl output files we need
+  my $ra_outdir      = $out_root . "-ra";        
+  my $ra_outdir_tail = $dir_tail . ".ribodbmaker-ra";
+  my $ra_out_file    = $out_root . ".riboaligner.out";
+  $ra_full_stk_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
+  $ra_tbl_out_file   = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
+  my $ra_cmd_file    = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.cmd";
+  my $ra_log_file    = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.log";
+
+  if(! opt_IsUsed("--ribodir2", \%opt_HH)) { # if this option is used, we're just going to copy the relevant ribotyper output files from a precomputed dir
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Running riboaligner.pl", $progress_w, $log_FH, *STDOUT);
     
-  my $ra_options = " -i $local_ra_modelinfo_file ";
-  if(opt_IsUsed("-n",            \%opt_HH)) { $ra_options .= " -n " . opt_Get("-n", \%opt_HH); }
-  if(opt_IsUsed("--noscfail",    \%opt_HH)) { $ra_options .= " --noscfail "; }
-  if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $ra_options .= " --nocovfail "; }
-  if(opt_IsUsed("-p",            \%opt_HH)) { $ra_options .= " -p"; }
-  if(opt_IsUsed("-q",            \%opt_HH)) { $ra_options .= " -q " . opt_Get("-q", \%opt_HH); }
-  if(opt_IsUsed("-s",            \%opt_HH)) { $ra_options .= " -s " . opt_Get("-s", \%opt_HH); }
-  if(opt_IsUsed("--nkb",         \%opt_HH)) { $ra_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
-  if(opt_IsUsed("--wait",        \%opt_HH)) { $ra_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
-  if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }
-  my $ra_outdir_tail   = $dir_tail . ".ribodbmaker-ra";
-  my $ra_out_file      = $out_root . ".riboaligner.out";
-  $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";
-  $ra_tbl_out_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.tbl";
-  $ra_full_stk_file = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner." . $family . ".cmalign.stk";  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
-  my $ra_log_file  = $ra_outdir . "/" . $ra_outdir_tail . ".riboaligner.log";
-  my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
-  my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
-  my $uapos_lpos_cmd  = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir $ra_full_stk_file $max_lpos > $ra_uapos_lpos_tbl_file";
-  my $uapos_rpos_cmd  = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir --after $ra_full_stk_file $min_rpos > $ra_uapos_rpos_tbl_file";
+    my $ra_options = " -i $local_ra_modelinfo_file ";
+    if(opt_IsUsed("-n",            \%opt_HH)) { $ra_options .= " -n " . opt_Get("-n", \%opt_HH); }
+    if(opt_IsUsed("--noscfail",    \%opt_HH)) { $ra_options .= " --noscfail "; }
+    if(opt_IsUsed("--nocovfail",   \%opt_HH)) { $ra_options .= " --nocovfail "; }
+    if(opt_IsUsed("-p",            \%opt_HH)) { $ra_options .= " -p"; }
+    if(opt_IsUsed("-q",            \%opt_HH)) { $ra_options .= " -q " . opt_Get("-q", \%opt_HH); }
+    if(opt_IsUsed("-s",            \%opt_HH)) { $ra_options .= " -s " . opt_Get("-s", \%opt_HH); }
+    if(opt_IsUsed("--nkb",         \%opt_HH)) { $ra_options .= " --nkb " . opt_Get("--nkb", \%opt_HH); }
+    if(opt_IsUsed("--wait",        \%opt_HH)) { $ra_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
+    if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }
+    
+    my $ra_command = $execs_H{"riboaligner"} . " $ra_options --riboopts $local_ra_riboopts_file $full_fasta_file $ra_outdir > $ra_out_file";
+    if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "raout", "$ra_out_file", 0, "output of riboaligner");
+    
+    # if -p: parse the ribotyper log file to get CPU+wait time for parallel
+    if(opt_Get("-p", \%opt_HH)) { 
+      $ra_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ra_log_file, $ofile_info_HH{"FH"});
+    }
+  } # end of if entered if option --ribodir2 is NOT used
+  else { # --ribodir2 option was used
+    $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Copying relevant riboaligner.pl output files (--ribodir2)", $progress_w, $log_FH, *STDOUT);
 
-  my $ra_command = $execs_H{"riboaligner"} . " $ra_options --riboopts $local_ra_riboopts_file $full_fasta_file $ra_outdir > $ra_out_file";
-  if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "raout", "$ra_out_file", 0, "output of riboaligner");
+    my $src_ra_outdir         = opt_Get("--ribodir2", \%opt_HH); 
+    my $src_ra_outdir_tail    = ribo_RemoveDirPath($src_ra_outdir);
+    my $src_ra_out_root       = $src_ra_outdir . "/" . $src_ra_outdir_tail . ".riboaligner";
+    my $src_ra_full_stk_file  = $src_ra_out_root . "." . $family . ".cmalign.stk";
+    my $src_ra_tbl_out_file   = $src_ra_out_root . ".tbl";
+    my $src_ra_cmd_file       = $src_ra_out_root . ".cmd";
+    my $src_ra_log_file       = $src_ra_out_root . ".log";
 
-  # if -p: parse the ribotyper log file to get CPU+wait time for parallel
-  if(opt_Get("-p", \%opt_HH)) { 
-    $ra_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ra_log_file, $ofile_info_HH{"FH"});
+    ribo_RunCommand("mkdir $ra_outdir",                           opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ra_full_stk_file $ra_full_stk_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ra_tbl_out_file  $ra_tbl_out_file",  opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ra_cmd_file      $ra_cmd_file",      opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    ribo_RunCommand("cp $src_ra_log_file      $ra_log_file",      opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   }
 
+  # commands and output files for determining sequence positions that align to lpos and rpos
+  my $ra_uapos_lpos_tbl_file = $out_root . "." . $stage_key . ".uapos.lpos.tbl";
+  my $ra_uapos_rpos_tbl_file = $out_root . "." . $stage_key . ".uapos.rpos.tbl";
+  my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
+  my $uapos_lpos_cmd         = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir $ra_full_stk_file $max_lpos > $ra_uapos_lpos_tbl_file";
+  my $uapos_rpos_cmd         = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir --after $ra_full_stk_file $min_rpos > $ra_uapos_rpos_tbl_file";
   ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "ralpos", "$ra_uapos_lpos_tbl_file", 0, "unaligned position info that align at model position $max_lpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rarpos", "$ra_uapos_rpos_tbl_file", 0, "unaligned position info that align at model position $min_rpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rauapos", "$ra_uapos_tbl_file", 0, "unaligned position info that align at model positions $max_lpos and $min_rpos");
-
+    
   # parse riboaligner tbl file
   my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
-  if((opt_Get("-p", \%opt_HH)) && ($ra_opt_p_sum_cpu_secs > 0.)) { 
+  if(opt_IsUsed("--ribodir2", \%opt_HH)) { # -p is irrelevant here if --ribodir2 used
+    $extra_desc = sprintf("%6d pass; %6d fail; (files copied from dir %s)", $rt2_npass, $nseq-$rt2_npass, opt_Get("--ribodir2", \%opt_HH));
+  }
+  elsif((opt_Get("-p", \%opt_HH)) && ($ra_opt_p_sum_cpu_secs > 0.)) { 
     $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $rt2_npass, $nseq-$rt2_npass, $ra_opt_p_sum_cpu_secs);
   }
   else { 
