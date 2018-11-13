@@ -634,6 +634,8 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
   $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
   $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
+  $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
+  $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
   ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
 }
@@ -814,6 +816,7 @@ if(defined $alg2) {
         $info_H{"OUT-NAME:stdout"}  = $r2_searchout_file_A[$midx];
         $info_H{"OUT-NAME:time"}    = $r2_tblout_file_A[$midx] . ".time";
         $info_H{"OUT-NAME:stderr"}  = $r2_tblout_file_A[$midx] . ".err";
+        $info_H{"OUT-NAME:qcmd"}    = $r2_tblout_file_A[$midx] . ".qcmd";
         ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
         $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
       }
