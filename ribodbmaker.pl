@@ -149,6 +149,11 @@ $opt_group_desc_H{++$g} = "options for changing sequence descriptions (deflines)
 #       option           type        default             group  requires  incompat              preamble-output                                     help-output    
 opt_Add("--def",         "boolean",  0,                     $g, undef, "--skipftaxid,--skipfribo2,--prvcmd", "standardize sequence descriptions/deflines",       "standardize sequence descriptions/deflines", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options for controlling maximum number of sequences to calculate percent identities for:";
+#       option           type        default   group  requires  incompat             preamble-output                                                        help-output    
+opt_Add("--pidmax",      "integer",  40000,    $g,    undef, "--prvcmd,--pidforce",  "set max number of seqs to compute percent identities for to <n>",     "set maximum number of seqs to compute percent identities for to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--pidforce",    "boolean",  0,        $g,    undef, "--prvcmd",             "force calculation of percent identities for any number of sequences", "force calculation of percent identities for any number of sequences", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
 opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize ribotyper and riboaligner on a compute farm",     "parallelize ribotyper and riboaligner on a compute farm",    \%opt_HH, \@opt_order_A);
@@ -232,6 +237,8 @@ my $options_okay =
                 'msclass'      => \$GetOptions_H{"--msclass"},
                 'msphylum'     => \$GetOptions_H{"--msphylum"},
                 'def'          => \$GetOptions_H{"--def"},
+                'pidmax=s'     => \$GetOptions_H{"--pidmax"},
+                'pidforce'     => \$GetOptions_H{"--pidforce"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -1095,6 +1102,24 @@ $npass_filters = update_and_output_pass_fails(\%seqfailstr_H, undef, \@seqorder_
 $nfail_filters = $nseq - $npass_filters; 
 my $npass_filters_list = $out_root . ".surv_filters.pass.seqlist";
 ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail; ONLY PASSES ADVANCE", $npass_filters, $nfail_filters), $log_FH, *STDOUT);
+
+# now that all filter stages are finished, determine if we need to auto-turn-off
+# the ingrup and cluster stages because we had too many sequences survive all filters.
+# We do this because the ingrup and cluster stages require an expensive N^2 esl-alipid
+# call that creates very large files for large N. If N is 40K, the alipid output file
+# will be about 30Gb.
+if(! opt_Get("--pidforce", \%opt_HH)) { 
+  if($npass_filters > (opt_Get("--pidmax", \%opt_HH))) { 
+    if($do_ingrup) { 
+      $do_ingrup = 0;
+      ofile_OutputString($log_FH, 1, sprintf("# WARNING: TURNED OFF ingrup STAGE AUTOMATICALLY BECAUSE TOO MANY SEQUENCES PASSED ALL FILTERS (%d > maximum of %d (changeable with --pidmax or --pidforce))\n", $npass_filters, opt_Get("--pidmax", \%opt_HH)));
+    }
+    if($do_clustr) { 
+      $do_clustr = 0;
+      ofile_OutputString($log_FH, 1, sprintf("# WARNING: TURNED OFF clustr STAGE AUTOMATICALLY BECAUSE TOO MANY SEQUENCES PASSED ALL FILTERS (%d > maximum of %d (changeable with --pidmax or --pidforce))\n", $npass_filters, opt_Get("--pidmax", \%opt_HH)));
+    }
+  }
+}
 
 ###############################################################################################################
 # If --def, create the file with redefined sequence descriptions of sequences that survived all filter stages 
