@@ -1554,23 +1554,14 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
 
   # IN:seqfile, OUT-NAME:stdout, OUT-NAME:time and OUT-NAME:stderr are required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
-  my $seq_file     = $info_HR->{"IN:seqfile"};
-  my $stdout_file  = $info_HR->{"OUT-NAME:stdout"};
-  my $time_file    = $info_HR->{"OUT-NAME:time"};
-  my $stderr_file  = $info_HR->{"OUT-NAME:stderr"};
+  my $seq_file        = $info_HR->{"IN:seqfile"};
+  my $stdout_file     = $info_HR->{"OUT-NAME:stdout"};
+  my $time_file       = $info_HR->{"OUT-NAME:time"};
+  my $stderr_file     = $info_HR->{"OUT-NAME:stderr"};
+  my $qcmdscript_file = $info_HR->{"OUT-NAME:qcmd"};
 
   # determine if we are running on the farm or locally
-  my $cmd = "";
-  my $do_local = 1;
-  my $cmd_suffix = "";
-  if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-    $cmd = $qsub_prefix;
-    $cmd_suffix = $qsub_suffix;
-    # replace ![jobname]! with $jobname
-    my $jobname = "j" . ribo_RemoveDirPath($seq_file);
-    $cmd =~ s/\!\[jobname\]\!/$jobname/g;
-    $do_local = 0;
-  }
+  my $cmd      = ""; # the command that runs cmsearch, cmalign or rRNA_sensor
 
   # determine if we have the appropriate paths defined in %{$info_HR} 
   # depending on if $executable is "cmalign" or "cmsearch" or "rRNA_sensor_script"
@@ -1578,14 +1569,14 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   if($executable =~ /cmsearch$/) { 
     my $model_file     = $info_HR->{"IN:modelfile"};
     my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
-    $cmd .= "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file" . $cmd_suffix;
+    $cmd = "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file";
   }
   elsif($executable =~ /cmalign$/) { 
     my $model_file    = $info_HR->{"IN:modelfile"};
     my $i_file        = $info_HR->{"OUT-NAME:ifile"};
     my $el_file       = $info_HR->{"OUT-NAME:elfile"};
     my $stk_file      = $info_HR->{"OUT-NAME:stk"};
-    $cmd .= "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file" . $cmd_suffix;
+    $cmd = "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
     my $minlen     = $info_HR->{"minlen"};
@@ -1597,12 +1588,28 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $ncpu       = $info_HR->{"ncpu"};
     my $outdir     = $info_HR->{"OUT-NAME:outdir"};
     my $blastdb    = $info_HR->{"blastdb"};
-    $cmd .= "$time_path -p -o $time_file $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file" . $cmd_suffix;
+    $cmd = "$time_path -p -o $time_file $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file";
   }
 
-  # either run command locally and wait for it to complete (if ! defined $qsub_prefix)
-  # else submit it to the farm and return, caller will deal with monitoring it
-  ribo_RunCommand($cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+  if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
+    # run command on cluster
+
+    # replace ![jobname]! with $jobname
+    my $jobname = "j" . ribo_RemoveDirPath($seq_file);
+    my $qsub_cmd = $qsub_prefix . "sh $qcmdscript_file" . $qsub_suffix;
+    $qsub_cmd =~ s/\!\[jobname\]\!/$jobname/g;
+
+    # create the shell script file with the cmsearch/cmalign/rRNA_sensor command $cmd
+    ribo_WriteCommandScript($qcmdscript_file, $cmd, $FH_HR);
+    ribo_RunCommand($qsub_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+  }
+  else {
+    # run command locally and wait for it to complete
+    ribo_RunCommand($cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+  }
+  # else create the qsub cmd script file (the file with the actual cmsearch/cmalign/rRNA_sensor command)
+  # we will submit a job to the farm that will execute this qsub cmd script file (previously we just put the
+  # command 
 
   return;
 }
@@ -1639,12 +1646,13 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
 #
 #                    if "cmsearch", keys must be: 
-#                       "IN:seqfile":       name of input master sequence file
-#                       "IN:modelfile":     name of input model (CM) file 
-#                       "OUT-NAME:tblout":  name of tblout output file (--tblout)
-#                       "OUT-NAME:stdout":  name of stdout output file
-#                       "OUT-NAME:time":    path to time output file
-#                       "OUT-NAME:stderr":  path to stderr output file
+#                       "IN:seqfile":         name of input master sequence file
+#                       "IN:modelfile":       name of input model (CM) file 
+#                       "OUT-NAME:tblout":    name of tblout output file (--tblout)
+#                       "OUT-NAME:stdout":    name of stdout output file
+#                       "OUT-NAME:time":      path to time output file
+#                       "OUT-NAME:stderr":    path to stderr output file
+#                       "OUT-NAME:qcmd":      path to cmd script file for the qsub cmd
 #
 #                    if "cmalign", keys must be:
 #                       "IN:seqfile":       name of input master sequence file
@@ -1656,6 +1664,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stdout":  name of stdout output file
 #                       "OUT-NAME:time":    path to time output file
 #                       "OUT-NAME:stderr":  path to stderr output file
+#                       "OUT-NAME:qcmd":    path to cmd script file for the qsub cmd
 #
 #                    if "rRNA_sensor_script", keys must be:
 #                       "IN:seqfile":        name of master sequence file
@@ -1672,6 +1681,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stdout":   name of stdout output file
 #                       "OUT-NAME:time":     path to time output file
 #                       "OUT-NAME:stderr":   path to stderr output file
+#                       "OUT-NAME:qcmd":     path to cmd script file for the qsub cmd
 #
 #  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
@@ -1702,17 +1712,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   if($program_choice eq "cmsearch") { 
     $wait_key = "OUT-NAME:tblout";
     $wait_str = "[ok]";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:tblout", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:tblout", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
   elsif($program_choice eq "cmalign") { 
     $wait_key = "OUT-NAME:stdout";
     $wait_str = "# CPU time:";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
   elsif($program_choice eq "rRNA_sensor_script") { 
     $wait_key = "OUT-NAME:stdout";
     $wait_str = "Final output saved as";
-    @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr");
+    @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", "RIBO", 1, $FH_HR);
@@ -1896,11 +1906,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
   } # end of 'else' entered if -p used
 
   # for both -p and not -p
-  # remove the stderr files if it exists and is empty
+  # remove the stderr file if it exists and is empty
   if((exists $info_HR->{"OUT-NAME:stderr"}) && 
      (-e $info_HR->{"OUT-NAME:stderr"}) && 
      (! -s $info_HR->{"OUT-NAME:stderr"})) { 
     ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:stderr"}, $sub_name, $opt_HHR, $FH_HR);
+  }
+  # remove the cmd file if it exists and is empty
+  if((exists $info_HR->{"OUT-NAME:cmdscript"}) && 
+     (-e $info_HR->{"OUT-NAME:cmdscript"}) && 
+     (! -s $info_HR->{"OUT-NAME:cmdscript"})) { 
+    ribo_RemoveFileUsingSystemRm($info_HR->{"OUT-NAME:cmdscript"}, $sub_name, $opt_HHR, $FH_HR);
   }
 
   return $sum_cpu_plus_wait_secs; # will be '0' unless -p used
@@ -2351,6 +2367,47 @@ sub ribo_NseBreakdown {
     return (1, $n, $s, $e, $str);
   }
   return (0, "", 0, 0, 0); # if we get here, $sqname is not in name/start-end format
+}
+
+
+#################################################################
+# Subroutine : ribo_WriteCommandScript()
+# Incept:      EPN, Fri Nov  9 14:26:07 2018
+#
+# Purpose  : Create a new file to be executed as a job created by 
+#            a qsub call.
+# 
+# Arguments: 
+#   $file:  name of the file to create
+#   $cmd:   the command to put in the file
+#   $FH_HR:       ref to hash of file handles, including "cmd"
+
+# Returns:     5 values:
+#              '1' if seqname was of "name/start-end" format, else '0'
+#              $n:   name ("" if seqname does not match "name/start-end")
+#              $s:   start, maybe <= or > than $e (0 if seqname does not match "name/start-end")
+#              $e:   end,   maybe <= or > than $s (0 if seqname does not match "name/start-end")
+#              $str: strand, "+" if $s <= $e, else "-"
+# 
+# Dies:        Never
+#
+################################################################# 
+sub ribo_WriteCommandScript {
+  my $nargs_expected = 3;
+  my $sub_name = "ribo_WriteArrayToFile";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($file, $cmd, $FH_HR) = @_;
+
+  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "writing", $FH_HR);
+
+  print OUT ("#!/bin/bash\n");
+  print OUT ("#filename: $file\n");
+  print OUT $cmd . "\n";
+
+  close(OUT);
+
+  return;
 }
 
 ###########################################################################

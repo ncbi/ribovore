@@ -105,7 +105,7 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.32";
+my $version           = "0.33";
 my $releasedate       = "Nov 2018";
 my $package_name      = "ribotyper";
 my $ribotyper_model_version_str   = "0p20"; 
@@ -456,15 +456,16 @@ foreach $family (@family_order_A) {
 
     # align the sequences
     my %info_H = ();
-    $info_H{"IN:seqfile"}       = $family_seqfile_H{$family};
-    $info_H{"IN:modelfile"}     = $family_modelfile_H{$family}; 
-    $info_H{"OUT-NAME:ifile"}   = $out_root . "." . $family . ".cmalign.ifile";
-    $info_H{"OUT-NAME:elfile"}  = $out_root . "." . $family . ".cmalign.elfile";
-    $info_H{"OUT-NAME:stk"}     = $out_root . "." . $family . ".cmalign.stk";
-    $info_H{"IN:seqlist"}       = $family_sfetch_filename_H{$family};
-    $info_H{"OUT-NAME:stdout"}  = $out_root . "." . $family . ".cmalign.out";
-    $info_H{"OUT-NAME:time"}    = $out_root . "." . $family . ".cmalign.time";
-    $info_H{"OUT-NAME:stderr"}  = $out_root . "." . $family . ".cmalign.out.err";
+    $info_H{"IN:seqfile"}         = $family_seqfile_H{$family};
+    $info_H{"IN:modelfile"}       = $family_modelfile_H{$family}; 
+    $info_H{"OUT-NAME:ifile"}     = $out_root . "." . $family . ".cmalign.ifile";
+    $info_H{"OUT-NAME:elfile"}    = $out_root . "." . $family . ".cmalign.elfile";
+    $info_H{"OUT-NAME:stk"}       = $out_root . "." . $family . ".cmalign.stk";
+    $info_H{"IN:seqlist"}         = $family_sfetch_filename_H{$family};
+    $info_H{"OUT-NAME:stdout"}    = $out_root . "." . $family . ".cmalign.out";
+    $info_H{"OUT-NAME:time"}      = $out_root . "." . $family . ".cmalign.time";
+    $info_H{"OUT-NAME:stderr"}    = $out_root . "." . $family . ".cmalign.out.err";
+    $info_H{"OUT-NAME:qcmd"}      = $out_root . "." . $family . ".cmalign.qcmd";
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 

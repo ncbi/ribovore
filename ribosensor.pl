@@ -128,7 +128,7 @@ my $options_okay =
 my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.32";
+my $version           = "0.33";
 my $model_version_str = "0p30"; # model info file unchanged since version 0.30
 my $qsub_version_str  = "0p32"; # for qsubinfo file only
 my $releasedate       = "Nov 2018";
@@ -484,6 +484,7 @@ for($i = 0; $i < $nseq_parts; $i++) {
       $info_H{"OUT-NAME:stdout"}   = $sensor_stdoutfile_A[$i];
       $info_H{"OUT-NAME:time"}     = $sensor_stdoutfile_A[$i] . ".time";;
       $info_H{"OUT-NAME:stderr"}   = $sensor_stdoutfile_A[$i] . ".err";
+      $info_H{"OUT-NAME:qcmd"}     = $sensor_stdoutfile_A[$i] . ".qcmd";
       ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, 
                                                    $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_H, \%opt_HH, \%ofile_info_HH);
       $sensor_p_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
