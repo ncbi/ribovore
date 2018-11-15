@@ -2026,6 +2026,8 @@ sub parse_riboaligner_tbl_and_uapos_files {
       my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
       $nlines++;
 
+      if(! exists $rt_curfailstr_H{$target}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $target", "RIBO", 1, $FH_HR); }
+
       # add to failstr if necessary
       if($passfail eq "FAIL") { 
         $rt_curfailstr_H{$target} = "ribotyper2[" . $ufeatures . "];;";
