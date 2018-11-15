@@ -158,7 +158,7 @@ my $options_okay =
                 '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
                 'minpsc=s'    => \$GetOptions_H{"--minpsc"},
-n                'minssc=s'    => \$GetOptions_H{"--minssc"},
+                'minssc=s'    => \$GetOptions_H{"--minssc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
                 'scfail'       => \$GetOptions_H{"--scfail"},
@@ -211,7 +211,7 @@ n                'minssc=s'    => \$GetOptions_H{"--minssc"},
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.33";
+my $version           = "0.34";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
 my $qsub_version_str  = "0p32"; # qsub command file unchanged since version 0.32
 my $releasedate       = "Nov 2018";
