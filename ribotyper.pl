@@ -158,7 +158,7 @@ my $options_okay =
                 '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
                 'minpsc=s'    => \$GetOptions_H{"--minpsc"},
-n                'minssc=s'    => \$GetOptions_H{"--minssc"},
+                'minssc=s'    => \$GetOptions_H{"--minssc"},
 # options controlling which sequences pass/fail
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
                 'scfail'       => \$GetOptions_H{"--scfail"},
