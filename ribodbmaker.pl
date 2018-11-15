@@ -492,8 +492,8 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
   ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
 
   $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
-  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/alipid-taxinfo-analyze.pl";
-  $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribotyper_dir . "/ali-apos-to-uapos.pl";
+  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
+  $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribotyper_dir . "/miniscripts/ali-apos-to-uapos.pl";
 }
 
 if($do_fblast) { 
@@ -540,7 +540,7 @@ if($do_fribo1 || $do_fribo2) {
   $execs_H{"riboaligner"} = $env_ribotyper_dir  . "/riboaligner.pl";
 }
 if(opt_IsUsed("--mslist", \%opt_HH)) { 
-  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribotyper_dir . "/mdlspan-survtbl-sort.pl";
+  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribotyper_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
 }
 
 ribo_ValidateExecutableHash(\%execs_H);
@@ -2387,13 +2387,13 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   print OUT ("# using the --mslist, --msclass, and/or --msphylum options. Do 'ribodbmaker.pl -h' for more information.\n");
   print OUT ("#\n");
   print OUT ("# Finally, you can create that additional file that prioritizes certain orders, classes or phyla outside of\n");
-  print OUT ("# ribodbmaker.pl using the script mdlspan-survtbl-sort.pl in the ribotyper-v1 directory that ribodbmaker.pl is in.\n");
+  print OUT ("# ribodbmaker.pl using the script mdlspan-survtbl-sort.pl in the ribotyper-v1/miniscripts directory that ribodbmaker.pl is in.\n");
   print OUT ("# Some example commands for that script are:\n");
-  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# perl \$RIBODIR/miniscripts/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
   print OUT ("# OR\n");
-  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl -c <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# perl \$RIBODIR/miniscripts/mdlspan-survtbl-sort.pl -c <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
   print OUT ("# OR\n");
-  print OUT ("# perl \$RIBODIR/mdlspan-survtbl-sort.pl -s <PATH-TO-THIS-FILE> <comma-delimited list of orders to prioritize>\n");
+  print OUT ("# perl \$RIBODIR/miniscripts/mdlspan-survtbl-sort.pl -s <PATH-TO-THIS-FILE> <comma-delimited list of orders to prioritize>\n");
   print OUT ("#\n");
   print OUT ("# Explanation of columns in this file:\n");
   print OUT ("#  1. 'length': length of model span\n");
