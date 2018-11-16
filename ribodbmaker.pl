@@ -1400,7 +1400,8 @@ else {
       
       if($nin_clustr > 1) { # can't cluster with 1 sequence 
         # create the .dist file that we'll use as input to esl-cluster
-        if((! $do_prvcmd) || ($do_pcreclustr)) { 
+        if((! $do_prvcmd) || 
+           (($do_pcreclustr) && (! -s $cluster_dist_file))) { # only create the dist file again if we don't already have it
           parse_alipid_output_to_create_dist_file($rfonly_alipid_file, \%not_centroid_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
         }
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cluster.dist", "$cluster_dist_file", 0, "distance file to use as input to esl-cluster");
