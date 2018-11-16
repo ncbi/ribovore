@@ -1400,7 +1400,7 @@ else {
       
       if($nin_clustr > 1) { # can't cluster with 1 sequence 
         # create the .dist file that we'll use as input to esl-cluster
-        if(! $do_prvcmd) { 
+        if((! $do_prvcmd) || ($do_pcreclustr)) { 
           parse_alipid_output_to_create_dist_file($rfonly_alipid_file, \%not_centroid_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
         }
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cluster.dist", "$cluster_dist_file", 0, "distance file to use as input to esl-cluster");
@@ -1599,7 +1599,7 @@ if($do_fmspan) {
 if($do_ingrup) { 
   push(@column_explanation_A, "# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis\n");
   push(@column_explanation_A, "#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>\n");
-  push(@column_explanation_A, "#                          see " . $alipid_analyze_out_file_H{"order"} . " for explanation of types\n");
+  push(@column_explanation_A, "#                          see " . $alipid_analyze_tab_file_H{"order"} . " for explanation of types\n");
   if(opt_Get("--fione", \%opt_HH)) { 
     push(@column_explanation_A, "#                          if <s> includes 'not-win-len-and-avg-pid', this is not the sequence with this taxid that\n");
     push(@column_explanation_A, sprintf("#                          is longest and within %s of the maximum average percent id to all\n", opt_Get("--fithresh", \%opt_HH)));
@@ -2690,11 +2690,12 @@ sub parse_alipid_analyze_tab_files {
           if(scalar(@el_A) != 32) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 32 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
           my ($seqname, $seq_taxid, $taxid_avgpid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[9]);
 
-          my $avgpid2use = ($do_one_group) ? $avgpid : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
+          my $avgpid2use = ($do_one_group) ? $avgpid      : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
+          my $taxid2use  = ($do_one_group) ? $group_taxid : $seq_taxid; # use sequence taxid, unless $do_one_group, in which case we use the group taxid
           if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
           if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
-          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid2use ne "-")) { 
-            # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
+          if(($curfailstr_H{$seqname} eq "") && ($taxid2use ne "-") && ($taxid2use ne "1") && ($avgpid2use ne "-")) { 
+            # sequence did not FAIL ingroup test, and has valid taxid2use at this level
             # so it is a candidate for being the max avg pid for its species taxid
             # and also a candidate for failing if it is not max avg pid for its species
             $do_one_lowest_level_H{$seq_taxid}  = $level; # records lowest level 
@@ -2757,9 +2758,10 @@ sub parse_alipid_analyze_tab_files {
           if(scalar(@el_A) != 32) { ofile_FAIL("ERROR in $sub_name, tab file line did not have exactly 32 tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR); }
           my ($seqname, $seq_taxid, $taxid_avgpid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[9]);
           
-          my $avgpid2use = ($do_one_group) ? $avgpid : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
-          if(($curfailstr_H{$seqname} eq "") && ($group_taxid ne "-") && ($group_taxid ne "1") && ($avgpid2use ne "-")) { 
-            # sequence did not FAIL ingroup test, and has valid group_taxid at this level (and so has valid seq_taxid too)
+          my $avgpid2use = ($do_one_group) ? $avgpid      : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
+          my $taxid2use  = ($do_one_group) ? $group_taxid : $seq_taxid; # use sequence taxid, unless $do_one_group, in which case we use the group taxid
+          if(($curfailstr_H{$seqname} eq "") && ($taxid2use ne "-") && ($taxid2use ne "1") && ($avgpid2use ne "-")) { 
+            # sequence did not FAIL ingroup test, and has valid taxid2use at this level
             # so it is a candidate for being the max avg pid for its species taxid
             # and also a candidate for failing if it is not max avg pid for its species
             # we want to overwrite the winner if
