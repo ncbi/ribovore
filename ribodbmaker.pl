@@ -1347,7 +1347,7 @@ else {
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     $start_secs = ofile_OutputProgressPrior("[***Checkpoint] Creating lists that survived optional exclusion stage [--exclist]", $progress_w, $log_FH, *STDOUT);
     $nfail_exc = exclude_seqs_based_on_taxid(\%exc_taxid_H, \%seqtaxid_H, \%seqfailstr_H, \@seqorder_A, $out_root, \%opt_HH, \%ofile_info_HH);
-    $npass_exc = $npass_filters - $nfail_exc;
+    $npass_exc = $npass_ingrup - $nfail_exc;
     ofile_OutputProgressComplete($start_secs, sprintf("%6d kept; %6d lost", $npass_exc, $nfail_exc), $log_FH, *STDOUT);
     $did_exc = 1;
   }
