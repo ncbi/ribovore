@@ -781,7 +781,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # reformat the names of the sequences, if necessary
 # gi|675602128|gb|KJ925573.1| becomes KJ925573.1
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Reformatting names of sequences ", $progress_w, $log_FH, *STDOUT);
-reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $ofile_info_HH{"FH"});
+if(! $do_prvcmd) { reformat_sequence_names_in_fasta_file($raw_fasta_file, $full_fasta_file, $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "fullfa", "$full_fasta_file", 0, "fasta file with names possibly updated to accession.version");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
