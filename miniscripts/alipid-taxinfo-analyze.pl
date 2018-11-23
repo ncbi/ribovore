@@ -528,7 +528,7 @@ foreach my $seq (@seq_order_A) {
       printf RDB ("%-*s  %7d  %6s  %6s  %-*s  %4s  $pf  ", 
                   $max_seqname_length, $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_rdb, $max_spec_length, $seq_spec_H{$seq}, $type);
       printf TAB ("%s\t%s\t%s\t%s\t%s\t%s\t$pf\t", 
-                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_tab, $max_spec_length, $seq_spec_H{$seq}, $type);
+                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_tab, $seq_spec_H{$seq}, $type);
 
       if((! exists $grp_not1_H{$cur_group}) || # sequence is in group 1
          (($do_diffseqtax) && (($grp_ct_H{$cur_group} - $tax_ct_H{$cur_tax}) == 0))) { # --diffseqtax was used and all seqs in this group are same taxid
