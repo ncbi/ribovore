@@ -142,8 +142,10 @@ opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--ski
 opt_Add("--fithresh",    "real",     "0.2",                 $g,"--fione", "--skipingrup",       "w/--fione, winning seq is longest seq within <x> percent id of max percent id",    "w/--fione, winning seq is longest seq within <x> percent id of max percent id", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for modifying the ingroup stage:";
-#       option           type        default             group  requires  incompat              preamble-output                                                                        help-output    
-opt_Add("--indiffseqtax","boolean",  0,                     $g,    undef, "--skipingrup",       "only consider sequences from different seq taxids when computing averages and maxes", "only consider sequences from different seq taxids when computing averages and maxes", \%opt_HH, \@opt_order_A);
+#       option           type        default             group  requires  incompat                     preamble-output                                                                        help-output    
+opt_Add("--indiffseqtax","boolean",  0,                     $g,    undef, "--skipingrup",              "only consider sequences from different seq taxids when computing averages and maxes", "only consider sequences from different seq taxids when computing averages and maxes", \%opt_HH, \@opt_order_A);
+opt_Add("--inminavgid",  "real",     "99.8",                $g,    undef, "--skipingrup",              "fail any sequence with average percent identity within species taxid below <f>",      "fail any sequence with average percent identity within species taxid below <f>", \%opt_HH, \@opt_order_A);
+opt_Add("--innominavgid","boolean",  0,                     $g,    undef, "--skipingrup,--inminavgid", "do not fail sequences with avg percent identity within species below a minimum",      "do not fail sequences with avg percent identity within species taxid below a minimum", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
 #       option          type       default        group       requires incompat                            preamble-output                                                 help-output    
@@ -246,6 +248,8 @@ my $options_okay =
                 'figroup'      => \$GetOptions_H{"--figroup"},
                 'fithresh=s'   => \$GetOptions_H{"--fithresh"},
                 'indiffseqtax' => \$GetOptions_H{"--indiffseqtax"},
+                'inminavgid'   => \$GetOptions_H{"--inminavgid"},
+                'innominavgid' => \$GetOptions_H{"--innominavgid"},
                 'msstep=s'     => \$GetOptions_H{"--msstep"},
                 'msminlen=s'   => \$GetOptions_H{"--msminlen"},
                 'msminstart=s' => \$GetOptions_H{"--msminstart"},
@@ -1250,7 +1254,17 @@ else {
     # passed up to this point (using esl-alimanip --seq-k)
     my $alistat_cmd = $execs_H{"esl-alistat"} . " --list $rfonly_list_file $rfonly_stk_file > /dev/null";
     my %alipid_analyze_cmd_H = (); # key is level from @level_A (e.g. "class")
-    my $alipid_opts = opt_Get("--indiffseqtax", \%opt_HH) ? "--o4on --diffseqtax" : "--o4on"; 
+    my $alipid_opts = "--o4on";
+    if(opt_Get ("--indiffseqtax", \%opt_HH)) { 
+      $alipid_opts .= " --diffseqtax"; 
+    }
+    if(opt_Get ("--innominavgid", \%opt_HH)) { 
+      $alipid_opts .= " --s1off"; 
+    }
+    else { 
+      $alipid_opts .= " --s1min " . opt_Get("--inminavgid", \%opt_HH);
+    }
+
     foreach $level (@level_A) { 
       $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $alipid_opts $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
     }
