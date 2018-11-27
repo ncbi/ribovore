@@ -144,7 +144,7 @@ opt_Add("--fithresh",    "real",     "0.2",                 $g,"--fione", "--ski
 $opt_group_desc_H{++$g} = "options for modifying the ingroup stage:";
 #       option           type        default             group  requires  incompat                     preamble-output                                                                        help-output    
 opt_Add("--indiffseqtax","boolean",  0,                     $g,    undef, "--skipingrup",              "only consider sequences from different seq taxids when computing averages and maxes", "only consider sequences from different seq taxids when computing averages and maxes", \%opt_HH, \@opt_order_A);
-opt_Add("--inminavgid",  "real",     "99.8",                $g,    undef, "--skipingrup",              "fail any sequence with average percent identity within species taxid below <f>",      "fail any sequence with average percent identity within species taxid below <f>", \%opt_HH, \@opt_order_A);
+opt_Add("--inminavgid",  "real",     "99.8",                $g,    undef, "--skipingrup",              "fail any sequence with average percent identity within species taxid below <x>",      "fail any sequence with average percent identity within species taxid below <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--innominavgid","boolean",  0,                     $g,    undef, "--skipingrup,--inminavgid", "do not fail sequences with avg percent identity within species below a minimum",      "do not fail sequences with avg percent identity within species taxid below a minimum", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
