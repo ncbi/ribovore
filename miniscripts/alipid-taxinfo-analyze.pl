@@ -53,7 +53,7 @@ my $opt_o4avg      = undef;
              "diffseqtax" => \$opt_diffseqtax,
              "olist=s"    => \$opt_olist, 
              "s1off"      => \$opt_s1off,
-             "s1min"      => \$opt_s1min,
+             "s1min=s"    => \$opt_s1min,
              "o1avg=s"    => \$opt_o1avg,
              "o1max=s"    => \$opt_o1max,
              "o2avg=s"    => \$opt_o2avg,
