@@ -124,8 +124,11 @@ opt_Add("--fmrpos",      "integer",  undef,                $g,  "--fmlpos","--sk
 opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skipfmspan",           "require sequences do not have a gap at lpos and rpos",  "require sequences do not have a gap at lpos and rpos", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
-#       option           type        default             group  requires  incompat                   preamble-output                                     help-output    
-opt_Add("--cfid",        "real",     0.97,                  $g,    undef, "--skipclustr",            "set esl-cluster fractional identity to cluster at to <x>", "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+#       option           type        default             group  requires  incompat                               preamble-output                                                          help-output    
+opt_Add("--cfid",        "real",     0.97,                  $g,    undef, "--skipclustr",                        "set esl-cluster fractional identity to cluster at to <x>",              "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--cdthresh",    "real",     0.02,                  $g,    undef, "--skipclustr,--ccentroid,--cmaxlen",  "representative is longest seq within <x> distance of min distance seq", "representative is longest seq within <x> distance of min distance seq", \%opt_HH, \@opt_order_A);
+opt_Add("--cmaxlen",     "boolean",  0,                     $g,    undef, "--skipclustr,--cdthresh,--ccentroid", "representative is longest seq in cluster",                              "representative is longest seq within cluster", \%opt_HH, \@opt_order_A);
+opt_Add("--ccentroid",   "boolean",  0,                     $g,    undef, "--skipclustr,--cdthresh,--cmaxlen",   "representative is centroid (min distance seq)",                         "representative is centroid (min distance seq)", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options that affect the alignment from which percent identities are calculated:";
 #            option         type   default            group   requires  incompat              preamble-output                                                 help-output    
@@ -139,12 +142,12 @@ $opt_group_desc_H{++$g} = "options for reducing the number of passing sequences 
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",              "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
 opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",                "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
 opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--skipingrup",       "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid",  "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid", \%opt_HH, \@opt_order_A);
-opt_Add("--fithresh",    "real",     "0.2",                 $g,"--fione", "--skipingrup",       "w/--fione, winning seq is longest seq within <x> percent id of max percent id",    "w/--fione, winning seq is longest seq within <x> percent id of max percent id", \%opt_HH, \@opt_order_A);
+opt_Add("--fithresh",    "real",     0.2,                  $g,"--fione", "--skipingrup",       "w/--fione, winning seq is longest seq within <x> percent id of max percent id",    "w/--fione, winning seq is longest seq within <x> percent id of max percent id", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for modifying the ingroup stage:";
 #       option           type        default             group  requires  incompat                     preamble-output                                                                        help-output    
 opt_Add("--indiffseqtax","boolean",  0,                     $g,    undef, "--skipingrup",              "only consider sequences from different seq taxids when computing averages and maxes", "only consider sequences from different seq taxids when computing averages and maxes", \%opt_HH, \@opt_order_A);
-opt_Add("--inminavgid",  "real",     "99.8",                $g,    undef, "--skipingrup",              "fail any sequence with average percent identity within species taxid below <x>",      "fail any sequence with average percent identity within species taxid below <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--inminavgid",  "real",     99.8,                  $g,    undef, "--skipingrup",              "fail any sequence with average percent identity within species taxid below <x>",      "fail any sequence with average percent identity within species taxid below <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--innominavgid","boolean",  0,                     $g,    undef, "--skipingrup,--inminavgid", "do not fail sequences with avg percent identity within species below a minimum",      "do not fail sequences with avg percent identity within species taxid below a minimum", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
@@ -178,9 +181,9 @@ opt_Add("--wait",       "integer", 1440,                     $g,     "-p", undef
 opt_Add("--errcheck",   "boolean", 0,                        $g,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "advanced options for debugging and testing:";
-#       option           type        default             group   requires        incompat               preamble-output                                          help-output    
-opt_Add("--prvcmd",      "boolean",  0,                     $g,     undef,        "-f,-p",              "do not execute commands; use output from previous run", "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
-opt_Add("--pcreclustr",  "boolean",  0,                     $g,"--prvcmd,--cfid", "-f,-p,--skipclustr", "w/--prvcmd, recluster sequences to new pid (--cfid)",   "w/--prvcmd, recluster sequences to new pid (--cfid)", \%opt_HH, \@opt_order_A);
+#       option           type        default             group   requires        incompat               preamble-output                                               help-output    
+opt_Add("--prvcmd",      "boolean",  0,                     $g,     undef,        "-f,-p",              "do not execute commands; use output from previous run",      "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
+opt_Add("--pcreclustr",  "boolean",  0,                     $g,"--prvcmd",        "-f,-p,--skipclustr", "w/--prvcmd, recluster seqs and/or rechoose representatives", "w/--prvcmd, recluster seqs (--cfid) and/or rechoose representatives (--cdthresh or --cmaxlen)", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -235,6 +238,9 @@ my $options_okay =
                 'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
                 'ribodir2=s'   => \$GetOptions_H{"--ribodir2"},
                 'cfid=s'       => \$GetOptions_H{"--cfid"},
+                'cdthresh=s'   => \$GetOptions_H{"--cdthresh"},
+                'cmaxlen'      => \$GetOptions_H{"--cmaxlen"},
+                'ccentroid'    => \$GetOptions_H{"--ccentroid"},
                 "fullaln"      => \$GetOptions_H{"--fullaln"},
                 "noprob"       => \$GetOptions_H{"--noprob"},
                 "pthresh=s"    => \$GetOptions_H{"--pthresh"},
@@ -367,7 +373,20 @@ if((! $do_fribo1) && (! $do_fribo2)) {
 
 if(opt_IsUsed("--cfid", \%opt_HH) && 
    ((opt_Get("--cfid", \%opt_HH) < 0.) || (opt_Get("--cfid", \%opt_HH) > 1.))) { 
-  die "ERROR, with --cfid <f>, <f> must be >= 0. and <= 1"; 
+  die "ERROR, with --cfid <x>, <x> must be >= 0. and <= 1"; 
+}
+if(opt_IsUsed("--cdthresh", \%opt_HH)) { 
+  if((1. - opt_Get("--cfid", \%opt_HH)) > (opt_Get("--cdthresh", \%opt_HH))) { 
+    die sprintf("ERROR, with --cdthresh <x1>, <x1> must be < %f (which is 1.0 - clustering fractional identity (from --cfid))", 1.0 - opt_Get("--cfid", \%opt_HH)); 
+  }
+}
+if(opt_IsUsed("--pcreclustr", \%opt_HH)) { 
+  # at least one of --cfid, --cdthresh, or --cmaxlen must also be used
+  if((! opt_IsUsed("--cfid",     \%opt_HH)) && 
+     (! opt_IsUsed("--cdthresh", \%opt_HH)) && 
+     (! opt_IsUsed("--cmaxlen", \%opt_HH))) { 
+    die "ERROR --prcreclustr only works in combination with at least one of: --cfid, --cdthresh, --cmaxlen"; 
+  }
 }
 
 # we don't allow user to skip ALL filter stages, they need to do at least one. 
@@ -810,8 +829,8 @@ my %seqlpos_H    = (); # key: sequence name, value is unaligned position that al
 my %seqrpos_H    = (); # key: sequence name, value is unaligned position that aligns to right model position we care about
 my %seqlenclass_H= (); # key: sequence name, value is length class from riboaligner
 my @seqorder_A   = (); # array of sequence names in order they appeared in the file
-my %is_centroid_H = (); # key is sequence name, value is 1 if sequence is a centroid, 0 if it is not, key does not exist if sequence did not survive to clustering
-my %not_centroid_H = (); # key is sequence name, value is 1 if sequence is NOT a centroid, "" if it is, key does not exist if sequence did not survive to clustering
+my %is_representative_H = (); # key is sequence name, value is 1 if sequence is a representative, 0 if it is not, key does not exist if sequence did not survive to clustering
+my %not_representative_H = (); # key is sequence name, value is 1 if sequence is NOT a representative, "" if it is, key does not exist if sequence did not survive to clustering
 my %in_cluster_H   = (); # key is sequence name, value is cluster index this sequence belongs to
 my %cluster_size_H = (); # key is a cluster index (value from %in_cluster_H), value is number of sequences in that cluster
 my %width_H       = (); # hash with max widths of "target", "length", "index"
@@ -1403,9 +1422,9 @@ else {
       foreach $seqname (@seqorder_A) { 
         if($seqfailstr_H{$seqname} eq "") { # sequence has survived to the clustering step if it has a blank string in %seqfailstr_H
           print LIST $seqname . "\n";
-          $is_centroid_H{$seqname}  = 0; #initialize to all seqs not centroids, then set values to 1 for those that are later after clustering
-          $not_centroid_H{$seqname} = 1; #initialize to all seqs not centroids, then set values to 0 for those that are later after clustering
-          $in_cluster_H{$seqname}   = -1; #initialize to all seqs not in a cluster, then set values in parse_alipid_to_choose_centroids
+          $is_representative_H{$seqname}  = 0; #initialize to all seqs not representatives, then set values to 1 for those that are later after clustering
+          $not_representative_H{$seqname} = 1; #initialize to all seqs not representatives, then set values to 0 for those that are later after clustering
+          $in_cluster_H{$seqname}   = -1; #initialize to all seqs not in a cluster, then set values in parse_alipid_to_choose_cluster_representatives
           $nin_clustr++;
         }
       }
@@ -1416,7 +1435,7 @@ else {
         # create the .dist file that we'll use as input to esl-cluster
         if((! $do_prvcmd) || 
            (($do_pcreclustr) && (! -s $cluster_dist_file))) { # only create the dist file again if we don't already have it
-          parse_alipid_output_to_create_dist_file($rfonly_alipid_file, \%not_centroid_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
+          parse_alipid_output_to_create_dist_file($rfonly_alipid_file, \%not_representative_H, $cluster_dist_file, $ofile_info_HH{"FH"}); 
         }
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cluster.dist", "$cluster_dist_file", 0, "distance file to use as input to esl-cluster");
         
@@ -1430,14 +1449,14 @@ else {
         # parse the esl-cluster output to get cluster assignments
         parse_esl_cluster_output($cluster_out_file, \%in_cluster_H, \%cluster_size_H, $ofile_info_HH{"FH"});
         
-        # determine centroids
-        parse_dist_file_to_choose_centroids($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%is_centroid_H, \%not_centroid_H, $ofile_info_HH{"FH"}); 
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as centroids by esl-cluster");
+        # determine representatives
+        parse_dist_file_to_choose_cluster_representatives($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%seqlen_H, \%is_representative_H, \%not_representative_H, \%opt_HH, $ofile_info_HH{"FH"}); 
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as representatives by esl-cluster");
       }
       else { # only 1 sequence to cluster, it is its own cluster
-        foreach $seqname (%is_centroid_H) { # only 1 of these guys
-          $is_centroid_H{$seqname} = 1;
-          $not_centroid_H{$seqname} = 0;
+        foreach $seqname (%is_representative_H) { # only 1 of these guys
+          $is_representative_H{$seqname} = 1;
+          $not_representative_H{$seqname} = 0;
           $in_cluster_H{$seqname} = 1;
         }
       }
@@ -1448,14 +1467,14 @@ else {
       # CHECKPOINT: save any sequences that survived the clustering stage
       #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       $start_secs = ofile_OutputProgressPrior("[***Checkpoint] Creating lists of seqs that survived clustering", $progress_w, $log_FH, *STDOUT);
-      $npass_clustr = update_and_output_pass_fails(\%not_centroid_H, undef, \@seqorder_A, 1, $out_root, "surv_clustr", \%ofile_info_HH); # 1: do output description of pass/fail lists to log file
+      $npass_clustr = update_and_output_pass_fails(\%not_representative_H, undef, \@seqorder_A, 1, $out_root, "surv_clustr", \%ofile_info_HH); # 1: do output description of pass/fail lists to log file
       $nfail_clustr = $nin_clustr - $npass_clustr; 
       ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", $npass_clustr, $nfail_clustr), $log_FH, *STDOUT);
       
       # determine how many sequences at for each taxonomic group are still left
       if($do_ftaxid || $do_ingrup || $do_special) { 
         foreach $level (@level_A) { 
-          parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%is_centroid_H, undef, $surv_clustr_level_ct_HH{$level}, $ofile_info_HH{"FH"});
+          parse_tax_level_file($taxinfo_wlevel_file_H{$level}, \%is_representative_H, undef, $surv_clustr_level_ct_HH{$level}, $ofile_info_HH{"FH"});
         }
       }
       $did_clustr = 1;
@@ -1464,12 +1483,12 @@ else {
 } # end of else entered if $npass_filters > 0
 # Define final set of sequences. 
 # If $do_clustr, we need to create a hash for this that combines
-# %seqfailstr_H and %is_centroid_H (b/c not being a centroid is not a
+# %seqfailstr_H and %is_representative_H (b/c not being a representative is not a
 # 'failure')
 my %not_final_H = ();
 if($do_clustr) { 
   foreach $seqname (@seqorder_A) { 
-    $not_final_H{$seqname} = (($seqfailstr_H{$seqname} eq "") && ($is_centroid_H{$seqname} eq "1")) ? 0 : 1;
+    $not_final_H{$seqname} = (($seqfailstr_H{$seqname} eq "") && ($is_representative_H{$seqname} eq "1")) ? 0 : 1;
   }
 }
 else { 
@@ -1553,7 +1572,7 @@ push(@column_explanation_A, "# Column  5: 'otaxid':  taxid of sequence (order le
 push(@column_explanation_A, "# Column  6: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped\n");
 push(@column_explanation_A, "# Column  7: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped\n");
 push(@column_explanation_A, sprintf("# Column  8: 'p/f':     PASS if sequence passed all filters%s else FAIL\n", ($did_ingrup) ? " and ingroup analysis" : ""));
-push(@column_explanation_A, sprintf("# Column  9: 'clust':   %s\n", ($did_clustr) ? "'C' if sequence selected as centroid of a cluster, 'NC' if not" : "'-' for all sequences due to --skipclustr or because 0 seqs survived clustering"));
+push(@column_explanation_A, sprintf("# Column  9: 'clust':   %s\n", ($did_clustr) ? "'R' if sequence selected as representative of a cluster, 'NR' if not" : "'-' for all sequences due to --skipclustr or because 0 seqs survived clustering"));
 push(@column_explanation_A, sprintf("# Column 10: 'special': %s\n", ($do_special) ? "*yes* if sequence belongs to special species taxid listed in --special input file, else '*no*'" : "'-' for all sequences because --special not used"));
 push(@column_explanation_A, sprintf("# Column 11: 'failstr': %s\n", "'-' for PASSing sequences, else list of reasons for FAILure, see below"));
 push(@column_explanation_A, "#\n");
@@ -1653,7 +1672,7 @@ foreach $seqname (@seqorder_A) {
   if($seqfailstr_H{$seqname} eq "") { 
     $pass_fail  = "PASS";
     $seqfailstr = "-";
-    if($did_clustr) { $cluststr = $is_centroid_H{$seqname} ? "C" : "NC"; }
+    if($did_clustr) { $cluststr = $is_representative_H{$seqname} ? "R" : "NR"; }
     else            { $cluststr = "-"; }
   }
   else { 
@@ -1719,7 +1738,7 @@ exit 0;
 # parse_blast_output_for_self_hits
 # parse_alipid_analyze_tab_files
 # parse_alipid_output_to_create_dist_file
-# parse_dist_file_to_choose_centroids
+# parse_dist_file_to_choose_cluster_representatives
 # parse_esl_cluster_output
 # parse_srcchk_file
 # parse_tax_level_file
@@ -2886,94 +2905,181 @@ sub parse_alipid_output_to_create_dist_file {
 }
 
 #################################################################
-# Subroutine:  parse_dist_file_to_choose_centroids()
+# Subroutine:  parse_dist_file_to_choose_cluster_representatives()
 # Incept:      EPN, Wed Jul 11 13:48:34 2018
 #
-# Purpose:     Given an esl-alipid output and information
-#              about which cluster those sequences belong
-#              to, choose a centroid for each cluster as
-#              the sequence with maximum similarity with
-#              all other sequences in its cluster. Write
-#              all centroids to a file.
+# Purpose: Given an esl-alipid output and information about which
+#          cluster those sequences belong to, choose a representative
+#          for each cluster as the sequence with maximum similarity
+#          with all other sequences in its cluster. Write all
+#          representatives to a file.
 #
 # Arguments:
-#   $dist_file:       name of esl-alipid output file to parse
-#   $out_list_file:   name of list file to create with centroid seqs
-#   $in_cluster_HR:   ref to hash, key is sequence name, value is cluster index ALREADY FILLED
-#   $cluster_size_HR: ref to hash, key is cluster index, value is size of the cluster ALREADY FILLED
-#   $is_centroid_HR:  ref to hash, key is sequence name, value is '1' if centroid, else '0' FILLED HERE
-#   $not_centroid_HR: ref to hash, key is sequence name, value is '0' if centroid, else '1' FILLED HERE
-#   $ofile_info_HHR:  ref to the ofile info 2D hash
+#   $dist_file:             name of esl-alipid output file to parse
+#   $out_list_file:         name of list file to create with representative seqs
+#   $in_cluster_HR:         ref to hash, key is sequence name, value is cluster index ALREADY FILLED
+#   $cluster_size_HR:       ref to hash, key is cluster index, value is size of the cluster ALREADY FILLED
+#   $seqlen_HR:             ref to hash of sequence lengths
+#   $is_representative_HR:  ref to hash, key is sequence name, value is '1' if representative, else '0' FILLED HERE
+#   $not_representative_HR: ref to hash, key is sequence name, value is '0' if representative, else '1' FILLED HERE
+#   $opt_HHR:               reference to 2D hash of cmdline options
+#   $ofile_info_HHR:        ref to the ofile info 2D hash
 #
 # Returns:    void
 #
 # Dies:       if we have trouble opening either file or parsing alipid file
 #################################################################
-sub parse_dist_file_to_choose_centroids { 
-  my $sub_name = "parse_dist_file_to_choose_centroids";
-  my $nargs_expected = 7;
+sub parse_dist_file_to_choose_cluster_representatives { 
+  my $sub_name = "parse_dist_file_to_choose_cluster_representatives";
+  my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($dist_file, $out_list_file, $in_cluster_HR, $cluster_size_HR, $is_centroid_HR, $not_centroid_HR, $ofile_info_HHR) = (@_);
+  my ($dist_file, $out_list_file, $in_cluster_HR, $cluster_size_HR, $seqlen_HR, $is_representative_HR, $not_representative_HR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
-  my %sumdist_H = (); # key sequence name, value is summed distance between this sequence and all other sequences in its cluster
 
-  open(DIST, $dist_file) || ofile_FileOpenFailure($dist_file, "RIBO", $sub_name, $!, "writing", $FH_HR);
-
-  while($line = <DIST>) { 
-    #AJ306437.1 JN941634.1 0.1474
-    #AJ306437.1 AJ496250.1 0.1375
-    #AJ306437.1 HF968784.1 0.0515
-    chomp $line;
-    if($line !~ m/^\#/) { 
-      my @el_A = split(/\s+/, $line);
-      my ($seq1, $seq2, $dist) = ($el_A[0], $el_A[1], $el_A[2]);
-      if(! exists $in_cluster_HR->{$seq1}) { 
-        ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seq1 in $dist_file\n", "RIBO", 1, $FH_HR);
-      }
-      if(! exists $in_cluster_HR->{$seq2}) { 
-        ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seq2 in $dist_file\n", "RIBO", 1, $FH_HR);
-      }
-      if($in_cluster_HR->{$seq1} eq $in_cluster_HR->{$seq2}) { 
-        $sumdist_H{$seq1} += $dist;
-        $sumdist_H{$seq2} += $dist;
-      }
-    }
-  }
-  close(DIST);
-
-  my %seq_mindist_H = (); # key is cluster index, value is sequence in that cluster with min summed distance to all other seqs in the cluster
-  my %mindist_H     = (); # key is cluster index, value is min summed distance of $seq_mindist_H{} to all other seqs in the cluster
-  my $cluster;
-  my $seqname;
-  # go back through all sequences to determine centroid of all clusters
-  foreach $seqname (sort keys %{$in_cluster_HR}) { 
-    $cluster = $in_cluster_HR->{$seqname};
-    if($cluster_size_HR->{$cluster} == 1) { # a singleton
-      $sumdist_H{$seqname} = 0.;
-    }
-    elsif(! exists $sumdist_H{$seqname}) { 
-      ofile_FAIL("ERROR in $sub_name, did not read any distance info for $seqname", "RIBO", 1, $FH_HR);
-    }
-    if((! exists $mindist_H{$cluster}) || 
-       ($sumdist_H{$seqname} < $mindist_H{$cluster})) { 
-      $seq_mindist_H{$cluster} = $seqname;
-      $mindist_H{$cluster} = $sumdist_H{$seqname};
-    }
+  # determine how we are going to choose our representatives based on %opt_HH
+  my $cdthresh    = opt_Get("--cdthresh", $opt_HHR);
+  my $do_default  = 1; # choose representative as longest sequence in cluster within $cdthresh of minimum average distance to all other seqs in the cluster
+  my $do_maxlen   = (opt_IsUsed("--cmaxlen",   $opt_HHR)) ? 1 : 0;
+  my $do_centroid = (opt_IsUsed("--ccentroid", $opt_HHR)) ? 1 : 0;
+  if($do_maxlen || $do_centroid) { 
+    $do_default = 0;
   }
 
-  # record centroid for each cluster
-  foreach $cluster (sort keys %mindist_H) { 
-    my $centroid = $seq_mindist_H{$cluster};
-    if(! exists $is_centroid_H{$centroid}) { 
-      ofile_FAIL("ERROR in $sub_name, $seqname does not exists in input %is_centroid_H", "RIBO", 1, $FH_HR);
+  my $cluster; # a cluster index
+  my @seqs_in_clusters_A = sort keys (%{$in_cluster_HR});   # all sequences assigned to a cluster
+  my @cluster_A          = sort keys (%{$cluster_size_HR}); # all clusters
+
+  # hashes used only if (! $do_maxlen)
+  my %avgdist_H = (); # key sequence name, value is average distance between this sequence and all other sequences in its cluster
+                      # well first it is summed, then we make it avg by dividing by denom_H{$seq}.
+  my %denom_H   = (); # denominator to divide avgdist_H to get avg
+  my %cluster_minavgdist_H    = (); # key is cluster index, value is minimum average distance to all other seqs for all seqs in the cluster
+  my %cluster_argminavgdist_H = (); # key is cluster index, value is sequence name that has minimum average distance (of $cluster_minavgdist_H{}) (centroid)
+  # hashes used only if $do_maxlen
+  my %cluster_maxlen_H        = (); # key is cluster index, value is minimum average distance to all other seqs for all seqs in the cluster
+  my %cluster_argmaxlen_H     = (); # key is cluster index, value is sequence name that has minimum average distance (of $cluster_minavgdist_H{})
+
+  my %cluster_rep_H     = (); # key is cluster index, value is name of representative for that cluster
+  my %cluster_rep_len_H = (); # key is cluster index, value is length of representative for that cluster
+
+  # parse dist file and fill avgdist values, 
+  # this is unnec if $do_maxlen
+  if($do_maxlen) { # easy case, find max length sequence in each cluster
+    foreach $seqname (@seqs_in_clusters_A) { 
+      $cluster = $in_cluster_HR->{$seqname};
+      if((! exists $cluster_maxlen_H{$cluster}) || 
+         ($seqlen_HR->{$seqname} > $cluster_maxlen_H{$cluster})) { 
+        $cluster_maxlen_H{$cluster}    = $seqlen_HR->{$seqname};
+        $cluster_argmaxlen_H{$cluster} = $seqname;
+      }
     }
-    if(! exists $not_centroid_H{$centroid}) { 
-      ofile_FAIL("ERROR in $sub_name, $seqname does not exists in input %not_centroid_H", "RIBO", 1, $FH_HR);
+    # record the representative
+    foreach $cluster (@cluster_A) { 
+      $cluster_rep_H{$cluster} = $cluster_argmaxlen_H{$cluster};
     }
-    $is_centroid_HR->{$centroid}  = 1;
-    $not_centroid_HR->{$centroid} = 0;
+  }    
+  else { 
+    # $do_maxlen is FALSE, more complicated case
+    # need to calucate average percentage identity between
+    # each sequence and every other sequence in its cluster
+
+    # initialize
+    foreach my $seqname (@seqs_in_clusters_A) { 
+      $avgdist_H{$seqname} = 0.;
+      $denom_H{$seqname} = 0; 
+    }
+    open(DIST, $dist_file) || ofile_FileOpenFailure($dist_file, "RIBO", $sub_name, $!, "writing", $FH_HR);
+    while($line = <DIST>) { 
+      #AJ306437.1 JN941634.1 0.1474
+      #AJ306437.1 AJ496250.1 0.1375
+      #AJ306437.1 HF968784.1 0.0515
+      chomp $line;
+      if($line !~ m/^\#/) { 
+        my @el_A = split(/\s+/, $line);
+        my ($seq1, $seq2, $dist) = ($el_A[0], $el_A[1], $el_A[2]);
+        if(! exists $in_cluster_HR->{$seq1}) { 
+          ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seq1 in $dist_file\n", "RIBO", 1, $FH_HR);
+        }
+        if(! exists $in_cluster_HR->{$seq2}) { 
+          ofile_FAIL("ERROR in $sub_name, read unexpected sequence $seq2 in $dist_file\n", "RIBO", 1, $FH_HR);
+        }
+        if($in_cluster_HR->{$seq1} eq $in_cluster_HR->{$seq2}) { 
+          $avgdist_H{$seq1} += $dist;
+          $avgdist_H{$seq2} += $dist;
+          $denom_H{$seq1}++;
+          $denom_H{$seq2}++;
+        }
+      }
+    }
+    close(DIST);
+    # go back through and calculate average distances
+    foreach $seqname (@seqs_in_clusters_A) { 
+      $cluster = $in_cluster_HR->{$seqname};
+      if($cluster_size_HR->{$cluster} == 1) { # a singleton
+        $avgdist_H{$seqname} = 0.;
+        $cluster_minavgdist_H{$cluster}    = $avgdist_H{$seqname};
+        $cluster_argminavgdist_H{$cluster} = $seqname;
+      }
+      elsif($denom_H{$seqname} == 0) { 
+        ofile_FAIL("ERROR in $sub_name, did not read any distance info for $seqname", "RIBO", 1, $FH_HR);
+      }
+
+      if($cluster_size_HR->{$cluster} > 1) { 
+        # make it an average
+        $avgdist_H{$seqname} /= $denom_H{$seqname};
+        
+        if((! exists $cluster_minavgdist_H{$cluster}) || 
+           ($avgdist_H{$seqname} < $cluster_minavgdist_H{$cluster})) { 
+          $cluster_minavgdist_H{$cluster}    = $avgdist_H{$seqname};
+          $cluster_argminavgdist_H{$cluster} = $seqname;
+        }
+      }
+    }
+    # now we have average distances, determine representative
+
+    if($do_centroid) { 
+      # representative is the sequence with min avg distance
+      foreach $cluster (@cluster_A) { 
+        $cluster_rep_H{$cluster} = $cluster_argminavgdist_H{$cluster};
+      }
+    } 
+    else { # $do_default
+      # go back through once more and find the longest sequence with 
+      # average distance with --cdthresh distance of minimum, 
+      # this will be our representative
+
+      # initialize to min average distance
+      foreach $cluster (@cluster_A) { 
+        $cluster_rep_H{$cluster} = $cluster_argminavgdist_H{$cluster};
+        $cluster_rep_len_H{$cluster} = $seqlen_HR->{$cluster_rep_H{$cluster}};
+      }
+
+      my $small_value =  0.0001; # small value to use when dealing with precision of floats
+      foreach $seqname (@seqs_in_clusters_A) { 
+        $cluster = $in_cluster_HR->{$seqname};
+        my $mindiff = $cluster_minavgdist_H{$cluster} - $avgdist_H{$seqname};
+        if(($mindiff < $cdthresh + $small_value) && # this will be true if $avgdist_H{$seqname} is within $cdthresh of $cluster_minavgdist_H{$cluster}, with a precision tolerance of small value
+           ($seqlen_HR->{$seqname} > $cluster_rep_len_H{$cluster})) { # seqlen is greater than current representative
+          $cluster_rep_H{$cluster}     = $seqname;
+          $cluster_rep_len_H{$cluster} = $seqlen_HR->{$seqname};
+        }
+      }
+    }
+  } # end of 'else' entered if $do_maxlen is FALSE
+  
+  # record representative for each cluster
+  foreach $cluster (@cluster_A) { 
+    my $representative = $cluster_rep_H{$cluster};
+    if(! exists $is_representative_H{$representative}) { 
+      ofile_FAIL("ERROR in $sub_name, $seqname does not exists in input %is_representative_H", "RIBO", 1, $FH_HR);
+    }
+    if(! exists $not_representative_H{$representative}) { 
+      ofile_FAIL("ERROR in $sub_name, $seqname does not exists in input %not_representative_H", "RIBO", 1, $FH_HR);
+    }
+    $is_representative_HR->{$representative}  = 1;
+    $not_representative_HR->{$representative} = 0;
   }
 
   return;
