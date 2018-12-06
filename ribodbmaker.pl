@@ -125,8 +125,8 @@ opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skip
 
 $opt_group_desc_H{++$g} = "options for controlling clustering stage:";
 #       option           type        default             group  requires  incompat                               preamble-output                                                          help-output    
-opt_Add("--cfid",        "real",     0.97,                  $g,    undef, "--skipclustr",                        "set esl-cluster fractional identity to cluster at to <x>",              "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--cdthresh",    "real",     0.02,                  $g,    undef, "--skipclustr,--ccentroid,--cmaxlen",  "representative is longest seq within <x> distance of min distance seq", "representative is longest seq within <x> distance of min distance seq", \%opt_HH, \@opt_order_A);
+opt_Add("--cfid",        "real",     0.995,                  $g,    undef, "--skipclustr",                        "set esl-cluster fractional identity to cluster at to <x>",              "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--cdthresh",    "real",     0.0025,                  $g,    undef, "--skipclustr,--ccentroid,--cmaxlen",  "representative is longest seq within <x> distance of min distance seq", "representative is longest seq within <x> distance of min distance seq", \%opt_HH, \@opt_order_A);
 opt_Add("--cmaxlen",     "boolean",  0,                     $g,    undef, "--skipclustr,--cdthresh,--ccentroid", "representative is longest seq in cluster",                              "representative is longest seq within cluster", \%opt_HH, \@opt_order_A);
 opt_Add("--ccentroid",   "boolean",  0,                     $g,    undef, "--skipclustr,--cdthresh,--cmaxlen",   "representative is centroid (min distance seq)",                         "representative is centroid (min distance seq)", \%opt_HH, \@opt_order_A);
 
