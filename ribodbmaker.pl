@@ -376,7 +376,7 @@ if(opt_IsUsed("--cfid", \%opt_HH) &&
   die "ERROR, with --cfid <x>, <x> must be >= 0. and <= 1"; 
 }
 if(opt_IsUsed("--cdthresh", \%opt_HH)) { 
-  if((1. - opt_Get("--cfid", \%opt_HH)) > (opt_Get("--cdthresh", \%opt_HH))) { 
+  if((1. - opt_Get("--cfid", \%opt_HH)) < (opt_Get("--cdthresh", \%opt_HH))) { 
     die sprintf("ERROR, with --cdthresh <x1>, <x1> must be < %f (which is 1.0 - clustering fractional identity (from --cfid))", 1.0 - opt_Get("--cfid", \%opt_HH)); 
   }
 }
@@ -829,6 +829,7 @@ my %seqlpos_H    = (); # key: sequence name, value is unaligned position that al
 my %seqrpos_H    = (); # key: sequence name, value is unaligned position that aligns to right model position we care about
 my %seqlenclass_H= (); # key: sequence name, value is length class from riboaligner
 my @seqorder_A   = (); # array of sequence names in order they appeared in the file
+my %seqmdllen_H  = (); # length of the model that aligns to the sequence
 my %is_representative_H = (); # key is sequence name, value is 1 if sequence is a representative, 0 if it is not, key does not exist if sequence did not survive to clustering
 my %not_representative_H = (); # key is sequence name, value is 1 if sequence is NOT a representative, "" if it is, key does not exist if sequence did not survive to clustering
 my %in_cluster_H   = (); # key is sequence name, value is cluster index this sequence belongs to
@@ -1131,7 +1132,7 @@ if($do_fribo2) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rauapos", "$ra_uapos_tbl_file", 0, "unaligned position info that align at model positions $max_lpos and $min_rpos");
     
   # parse riboaligner tbl file
-  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
+  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqmdllen_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
   if((! $do_prvcmd) && (opt_IsUsed("--ribodir2", \%opt_HH))) { # -p is irrelevant here if --ribodir2 used
     $extra_desc = sprintf("%6d pass; %6d fail; (files copied from dir %s)", $rt2_npass, $nseq-$rt2_npass, opt_Get("--ribodir2", \%opt_HH));
@@ -1310,7 +1311,7 @@ else {
     # an array of them here
     my @survfilters_seqorder_A = ();
     ribo_ReadFileToArray($rfonly_list_file, \@survfilters_seqorder_A, $ofile_info_HH{"FH"});
-    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@survfilters_seqorder_A, \%seqlen_H, $out_root, \%opt_HH, \%ofile_info_HH);
+    my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@survfilters_seqorder_A, \%seqmdllen_H, $out_root, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", scalar(@survfilters_seqorder_A) - $cur_nfail, $cur_nfail), $log_FH, *STDOUT);
 
     # determine how many sequences at for each taxonomic group at each level $level are still left
@@ -1450,7 +1451,7 @@ else {
         parse_esl_cluster_output($cluster_out_file, \%in_cluster_H, \%cluster_size_H, $ofile_info_HH{"FH"});
         
         # determine representatives
-        parse_dist_file_to_choose_cluster_representatives($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%seqlen_H, \%is_representative_H, \%not_representative_H, \%opt_HH, $ofile_info_HH{"FH"}); 
+        parse_dist_file_to_choose_cluster_representatives($cluster_dist_file, $cluster_out_list_file, \%in_cluster_H, \%cluster_size_H, \%seqmdllen_H, \%is_representative_H, \%not_representative_H, \%opt_HH, $ofile_info_HH{"FH"}); 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as representatives by esl-cluster");
       }
       else { # only 1 sequence to cluster, it is its own cluster
@@ -1635,8 +1636,8 @@ if($do_ingrup) {
   push(@column_explanation_A, "#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>\n");
   push(@column_explanation_A, "#                          see " . $alipid_analyze_tab_file_H{"order"} . " for explanation of types\n");
   if(opt_Get("--fione", \%opt_HH)) { 
-    push(@column_explanation_A, "#                          if <s> includes 'not-win-len-and-avg-pid', this is not the sequence with this taxid that\n");
-    push(@column_explanation_A, sprintf("#                          is longest and within %s of the maximum average percent id to all\n", opt_Get("--fithresh", \%opt_HH)));
+    push(@column_explanation_A, "#                          if <s> includes 'not-win-mdllen-and-avg-pid', this is not the sequence with this taxid that\n");
+    push(@column_explanation_A, sprintf("#                          aligns to the longest model range and within %s of the maximum average percent id to all\n", opt_Get("--fithresh", \%opt_HH)));
     if(opt_Get("--figroup", \%opt_HH)) { 
       push(@column_explanation_A, "#                          other sequences in its taxonomic group at the most specific\n");
       push(@column_explanation_A, "#                          level that is defined out of order/class/phylum\n");
@@ -1993,6 +1994,7 @@ sub parse_ribotyper_short_file {
 #   $rapass_seqorder_AR:     ref to array of sequences in order
 #   $seq_uapos_lpos_HR:      ref to hash of unaligned positions that align to left model span position
 #   $seq_uapos_rpos_HR:      ref to hash of unaligned positions that align to right model span position
+#   $seqmdllen_HR:           ref to hash of model lengths (model rpos - model lpos + 1) for each aligned sequence
 #   $seqlenclass_HR:         ref to hash of length classes, can be undef
 #   $opt_HHR:                ref to 2D hash of cmdline options
 #   $ofile_info_HHR:         ref to the ofile info 2D hash
@@ -2009,10 +2011,10 @@ sub parse_ribotyper_short_file {
 #################################################################
 sub parse_riboaligner_tbl_and_uapos_files { 
   my $sub_name = "parse_riboaligner_tbl_and_uapos_files()";
-  my $nargs_expected = 15;
+  my $nargs_expected = 16;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $seqlenclass_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $seqmdllen_HR, $seqlenclass_HR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %rt_curfailstr_H   = (); # holds fail strings for ribotyper
   my %ra_curfailstr_H   = (); # holds fail strings for riboaligner
@@ -2059,6 +2061,7 @@ sub parse_riboaligner_tbl_and_uapos_files {
       }
       my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
       $nlines++;
+      $seqmdllen_HR->{$target} = ($mstop - $mstart) + 1;
 
       if(! exists $rt_curfailstr_H{$target}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $target", "RIBO", 1, $FH_HR); }
 
@@ -2628,7 +2631,7 @@ sub parse_blast_output_for_self_hits {
 #   $level_AR:       ref to array of level keys in %{$in_file_HR}
 #   $seqfailstr_HR:  ref to hash of failure string to add to here
 #   $seqorder_AR:    ref to array of sequences in order, ONLY seqs that 
-#   $seqlen_HR:      ref to hash of sequence lengths
+#   $seqmdllen_HR:   ref to hash of model lengths for each aligned sequence
 #   $out_root:       for naming output files
 #   $opt_HHR:        reference to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
@@ -2642,7 +2645,7 @@ sub parse_alipid_analyze_tab_files {
   my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $seqlen_HR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($in_file_HR, $level_AR, $seqfailstr_HR, $seqorder_AR, $seqmdllen_HR, $out_root, $opt_HHR, $ofile_info_HHR) = (@_);
 
   # are we only allowing 1 hit per tax id to survive?
   my $do_one          = (opt_Get   ("--fione", $opt_HHR))   ? 1 : 0;
@@ -2693,8 +2696,8 @@ sub parse_alipid_analyze_tab_files {
         my @el_A = split(/\t/, $line);
         if(scalar(@el_A) != 32) { ofile_FAIL(sprintf("ERROR in $sub_name, tab file line had %d tab-delimited tokens, but expected 32: $line\n", scalar(@el_A)), "RIBO", $?, $FH_HR); }
         my ($seqname, $seq_taxid, $taxid_avgpid, $type, $pf, $group_taxid, $avgpid) = ($el_A[0], $el_A[1], $el_A[3], $el_A[5], $el_A[6], $el_A[7], $el_A[9]);
-        if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-        if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
+        if(! exists $curfailstr_H{$seqname})   { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+        if(! exists $seqmdllen_HR->{$seqname}) { ofile_FAIL("ERROR in $sub_name, no model length for sequence: $seqname", "RIBO", 1, $FH_HR); }
         if($pf eq "FAIL") { 
           $curfailstr_H{$seqname} = $level . ",type=" . $type . ";"; # we'll add the 'ingroup-analysis[];;' part later
         }
@@ -2726,8 +2729,8 @@ sub parse_alipid_analyze_tab_files {
 
           my $avgpid2use = ($do_one_group) ? $avgpid      : $taxid_avgpid; # use the avg pid per taxid, unless $do_one_group, in which case we use the group taxid
           my $taxid2use  = ($do_one_group) ? $group_taxid : $seq_taxid; # use sequence taxid, unless $do_one_group, in which case we use the group taxid
-          if(! exists $curfailstr_H{$seqname}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
-          if(! exists $seqlen_HR->{$seqname})  { ofile_FAIL("ERROR in $sub_name, no sequence length for sequence: $seqname", "RIBO", 1, $FH_HR); }
+          if(! exists $curfailstr_H{$seqname})   { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $seqname", "RIBO", 1, $FH_HR); }
+          if(! exists $seqmdllen_HR->{$seqname}) { ofile_FAIL("ERROR in $sub_name, no model length for sequence: $seqname", "RIBO", 1, $FH_HR); }
           if(($curfailstr_H{$seqname} eq "") && ($taxid2use ne "-") && ($taxid2use ne "1") && ($avgpid2use ne "-")) { 
             # sequence did not FAIL ingroup test, and has valid taxid2use at this level
             # so it is a candidate for being the max avg pid for its species taxid
@@ -2749,7 +2752,7 @@ sub parse_alipid_analyze_tab_files {
                 $overwrite_max = 1;
               }
               elsif($avgdiff > ($neg_small_value)) { # this will be true if $avgpid2use == $actual_max_pid_per_taxid_HH{$level}{$seq_taxid}, we use $neg_small_value for precision reasons
-                if($seqlen_HR->{$seqname} > $winner_len_per_taxid_HH{$level}{$seq_taxid}) { # this will be true if new sequence is longer than old maximum
+                if($seqmdllen_HR->{$seqname} > $winner_len_per_taxid_HH{$level}{$seq_taxid}) { # this will be true if new sequence is longer than old maximum
 
                   $overwrite_max = 1;
                 }
@@ -2759,7 +2762,7 @@ sub parse_alipid_analyze_tab_files {
               $actual_max_pid_per_taxid_HH{$level}{$seq_taxid} = $avgpid2use;
               $winner_max_pid_per_taxid_HH{$level}{$seq_taxid} = $avgpid2use;
               $winner_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
-              $winner_len_per_taxid_HH{$level}{$seq_taxid}     = $seqlen_HR->{$seqname};
+              $winner_len_per_taxid_HH{$level}{$seq_taxid}     = $seqmdllen_HR->{$seqname};
             }
           }
           # keep track of number of sequences per taxid, if the --fimin option was used
@@ -2803,11 +2806,11 @@ sub parse_alipid_analyze_tab_files {
             # 2) this sequence is longer than current winner
             my $avgdiff = $actual_max_pid_per_taxid_HH{$level}{$seq_taxid} - $avgpid2use;
             if(($avgdiff < ($one_diff_thresh + $small_value)) && # this will be true if $avgpid2use is within $one_diff_thresh to $actual_max_pid_per_taxid_HH{$level}{$seq_taxid}, with a precision tolerance of $small_value
-               ($seqlen_HR->{$seqname} > $winner_len_per_taxid_HH{$level}{$seq_taxid})) { 
+               ($seqmdllen_HR->{$seqname} > $winner_len_per_taxid_HH{$level}{$seq_taxid})) { 
               # DO NOT overwrite $actual_max_pid_per_taxid_HH{$level}{$seq_taxid} we need to refer to it for the remainder of this loop/file parse
               $winner_max_pid_per_taxid_HH{$level}{$seq_taxid} = $avgpid2use;
               $winner_pid_per_taxid_HH{$level}{$seq_taxid}     = $seqname;
-              $winner_len_per_taxid_HH{$level}{$seq_taxid}     = $seqlen_HR->{$seqname};
+              $winner_len_per_taxid_HH{$level}{$seq_taxid}     = $seqmdllen_HR->{$seqname};
             }
           }
         }
@@ -2817,12 +2820,12 @@ sub parse_alipid_analyze_tab_files {
     # $do_one is TRUE, so for all sequences that could be max avg pid for their species, 
     # determine those that are not and fail them
     foreach $seqname (sort keys %do_one_taxid_H) { 
-      my $seq_taxid   = $do_one_taxid_H{$seqname};
-      my $level       = $do_one_lowest_level_H{$seq_taxid};
-      my $win_seqname = $winner_pid_per_taxid_HH{$level}{$seq_taxid};
-      my $cur_seqlen  = $seqlen_HR->{$seqname};
+      my $seq_taxid     = $do_one_taxid_H{$seqname};
+      my $level         = $do_one_lowest_level_H{$seq_taxid};
+      my $win_seqname   = $winner_pid_per_taxid_HH{$level}{$seq_taxid};
+      my $cur_seqmdllen = $seqmdllen_HR->{$seqname};
       if($seqname ne $win_seqname) { 
-        $curfailstr_H{$seqname} .= sprintf("not-win-len-avg-pid(this:%d,%.3f,win:%d,%.3f);", $cur_seqlen, $do_one_avgpid_HH{$level}{$seqname}, $winner_len_per_taxid_HH{$level}{$seq_taxid}, $winner_max_pid_per_taxid_HH{$level}{$seq_taxid});
+        $curfailstr_H{$seqname} .= sprintf("not-win-mdllen-avg-pid(this:%d,%.3f,win:%d,%.3f);", $cur_seqmdllen, $do_one_avgpid_HH{$level}{$seqname}, $winner_len_per_taxid_HH{$level}{$seq_taxid}, $winner_max_pid_per_taxid_HH{$level}{$seq_taxid});
       }
     }
     if($do_one_min) { 
@@ -2919,7 +2922,7 @@ sub parse_alipid_output_to_create_dist_file {
 #   $out_list_file:         name of list file to create with representative seqs
 #   $in_cluster_HR:         ref to hash, key is sequence name, value is cluster index ALREADY FILLED
 #   $cluster_size_HR:       ref to hash, key is cluster index, value is size of the cluster ALREADY FILLED
-#   $seqlen_HR:             ref to hash of sequence lengths
+#   $seqmdllen_HR:          ref to hash of model lengths sequence aligns to
 #   $is_representative_HR:  ref to hash, key is sequence name, value is '1' if representative, else '0' FILLED HERE
 #   $not_representative_HR: ref to hash, key is sequence name, value is '0' if representative, else '1' FILLED HERE
 #   $opt_HHR:               reference to 2D hash of cmdline options
@@ -2934,7 +2937,7 @@ sub parse_dist_file_to_choose_cluster_representatives {
   my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($dist_file, $out_list_file, $in_cluster_HR, $cluster_size_HR, $seqlen_HR, $is_representative_HR, $not_representative_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($dist_file, $out_list_file, $in_cluster_HR, $cluster_size_HR, $seqmdllen_HR, $is_representative_HR, $not_representative_HR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
@@ -2970,8 +2973,8 @@ sub parse_dist_file_to_choose_cluster_representatives {
     foreach $seqname (@seqs_in_clusters_A) { 
       $cluster = $in_cluster_HR->{$seqname};
       if((! exists $cluster_maxlen_H{$cluster}) || 
-         ($seqlen_HR->{$seqname} > $cluster_maxlen_H{$cluster})) { 
-        $cluster_maxlen_H{$cluster}    = $seqlen_HR->{$seqname};
+         ($seqmdllen_HR->{$seqname} > $cluster_maxlen_H{$cluster})) { 
+        $cluster_maxlen_H{$cluster}    = $seqmdllen_HR->{$seqname};
         $cluster_argmaxlen_H{$cluster} = $seqname;
       }
     }
@@ -3053,17 +3056,18 @@ sub parse_dist_file_to_choose_cluster_representatives {
       # initialize to min average distance
       foreach $cluster (@cluster_A) { 
         $cluster_rep_H{$cluster} = $cluster_argminavgdist_H{$cluster};
-        $cluster_rep_len_H{$cluster} = $seqlen_HR->{$cluster_rep_H{$cluster}};
+        $cluster_rep_len_H{$cluster} = $seqmdllen_HR->{$cluster_rep_H{$cluster}};
       }
 
-      my $small_value =  0.0001; # small value to use when dealing with precision of floats
+      my $small_value =  0.00000001; # small value to use when dealing with precision of floats
       foreach $seqname (@seqs_in_clusters_A) { 
         $cluster = $in_cluster_HR->{$seqname};
-        my $mindiff = $cluster_minavgdist_H{$cluster} - $avgdist_H{$seqname};
+        my $mindiff = $avgdist_H{$seqname} - $cluster_minavgdist_H{$cluster};
+        printf("HEYA rechecking for cluster $cluster $seqname min is: $cluster_minavgdist_H{$cluster}, rep len is $cluster_rep_len_H{$cluster}, cur avg is $avgdist_H{$seqname}, cur len is $seqmdllen_HR->{$seqname}\n");
         if(($mindiff < $cdthresh + $small_value) && # this will be true if $avgdist_H{$seqname} is within $cdthresh of $cluster_minavgdist_H{$cluster}, with a precision tolerance of small value
-           ($seqlen_HR->{$seqname} > $cluster_rep_len_H{$cluster})) { # seqlen is greater than current representative
+           ($seqmdllen_HR->{$seqname} > $cluster_rep_len_H{$cluster})) { # seqmdllen is greater than current representative
           $cluster_rep_H{$cluster}     = $seqname;
-          $cluster_rep_len_H{$cluster} = $seqlen_HR->{$seqname};
+          $cluster_rep_len_H{$cluster} = $seqmdllen_HR->{$seqname};
         }
       }
     }
