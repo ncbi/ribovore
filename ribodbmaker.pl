@@ -2061,7 +2061,7 @@ sub parse_riboaligner_tbl_and_uapos_files {
       }
       my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
       $nlines++;
-      $seqmdllen_HR->{$target} = ($mstop - $mstart) + 1;
+      $seqmdllen_HR->{$target} = ($passfail eq "PASS") ? (($mstop - $mstart) + 1) : 0;
 
       if(! exists $rt_curfailstr_H{$target}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $target", "RIBO", 1, $FH_HR); }
 
@@ -3063,7 +3063,7 @@ sub parse_dist_file_to_choose_cluster_representatives {
       foreach $seqname (@seqs_in_clusters_A) { 
         $cluster = $in_cluster_HR->{$seqname};
         my $mindiff = $avgdist_H{$seqname} - $cluster_minavgdist_H{$cluster};
-        printf("HEYA rechecking for cluster $cluster $seqname min is: $cluster_minavgdist_H{$cluster}, rep len is $cluster_rep_len_H{$cluster}, cur avg is $avgdist_H{$seqname}, cur len is $seqmdllen_HR->{$seqname}\n");
+        #printf("HEYA rechecking for cluster $cluster $seqname min is: $cluster_minavgdist_H{$cluster}, rep len is $cluster_rep_len_H{$cluster}, cur avg is $avgdist_H{$seqname}, cur len is $seqmdllen_HR->{$seqname}\n");
         if(($mindiff < $cdthresh + $small_value) && # this will be true if $avgdist_H{$seqname} is within $cdthresh of $cluster_minavgdist_H{$cluster}, with a precision tolerance of small value
            ($seqmdllen_HR->{$seqname} > $cluster_rep_len_H{$cluster})) { # seqmdllen is greater than current representative
           $cluster_rep_H{$cluster}     = $seqname;
