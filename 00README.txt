@@ -61,6 +61,7 @@ export RIBOEASELDIR="/usr/local/infernal/1.1.2/bin"
 export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
 export RIBOTAXDIR="/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
 export RIBOBLASTDIR="/usr/bin"
+export RIBOTIMEDIR="/usr/bin"
 export SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor"
 export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
@@ -78,6 +79,7 @@ setenv RIBOEASELDIR "/usr/local/infernal/1.1.2/bin"
 setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
 setenv RIBOTAXDIR "/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
 setenv RIBOBLASTDIR "/usr/bin"
+setenv RIBOTIMEDIR "/usr/bin"
 setenv SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor"
 setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
 setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
@@ -182,12 +184,16 @@ Should return a potentially longer string that
 begins with:
 /panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor
 
-And finally, 
 > echo $RIBOBLASTDIR
 
 Should return:
 /usr/bin
 
+And finally, 
+> echo $RIBOTIMEDIR
+
+Should return:
+/usr/bin
 
 If any of these commands do not return what they are supposed to,
 please email Eric Nawrocki (nawrocke@ncbi.nlm.nih.gov). If you do see
