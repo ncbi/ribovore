@@ -3652,7 +3652,7 @@ sub fblast_stage {
       }
       if($do_blast) { 
         if(! $do_prvcmd) { # NOTE: this will only work if previous run used --fbcall and --keep
-          $sfetch_cmd = "esl-sfetch -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
+          $sfetch_cmd = $execs_HR->{"esl-sfetch"} . " -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
           ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
           if(! $do_keep) { 
             ribo_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
