@@ -19,35 +19,35 @@ echo "------------------------------------------------"
 echo "Cloning github repos with required code ... "
 # Clone what we need from GitHub (these are all public)
 # ribovore
-git clone https://github.com/nawrockie/ribovore.git
-#
+TMPVERSION1="0.13"
+TMPVERSION2="0.16"
+VERSION="0.34"
+DVERSION="ribotyper-$VERSION"
+
+# ribovore
+curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archive/$VERSION.zip; unzip ribovore-$VERSION.zip; rm ribovore-$VERSION.zip
+
 # rRNA_sensor
-git clone https://github.com/aaschaffer/rRNA_sensor/archive/ribovore-0.35.zip
-#
-# epn-options
-git clone https://github.com/nawrockie/epn-options/archive/ribovore-0.35.zip
-#
-# epn-ofile
-git clone https://github.com/nawrockie/epn-ofile/archive/ribovore-0.35.zip
-#
-# epn-test
-git clone https://github.com/nawrockie/epn-test/archive/ribovore-0.35.zip
-#
+curl -k -L -o rRNA_sensor-$TMPVERSION1.zip https://github.com/aaschaffer/rRNA_sensor/archive/$TMPVERSION1.zip; unzip rRNA_sensor-$TMPVERSION1.zip; rm rRNA_sensor-$TMPVERSION1.zip
+
+# epn-options, epn-ofile epn-test
+for m in epn-options epn-ofile epn-test; do 
+    curl -k -L -o $m-$DVERSION.zip https://github.com/nawrockie/$m/archive/$DVERSION.zip; unzip $m-$DVERSION.zip; rm $m-$DVERSION.zip
+done
 echo "Finished cloning github repos with required code."
 
 # Install Infernal 1.1.2
 # You can comment out this part if you already have Infernal installed 
 # on your system.
 echo "Installing Infernal 1.1.2 ... "
-curl -o infernal.tar.gz http://eddylab.org/infernal/infernal-1.1.2.tar.gz
-tar xf infernal-1.1.2.tar.gz
+curl -k -L -o infernal-1.1.2.tar.gz http://eddylab.org/infernal/infernal-1.1.2.tar.gz
+tar xfz infernal-1.1.2.tar.gz
 cd infernal-1.1.2
-sh ./configure $RIBOINSTALLDIR
+sh ./configure --prefix $RIBOINSTALLDIR
 make
-#make install
+make install
 cd easel
-sh ./configure $RIBOINSTALLDIR
-#make install
+make install
 cd $RIBOINSTALLDIR
 #echo "Finished installing Infernal 1.1.2"
 #echo "------------------------------------------------"
@@ -59,7 +59,7 @@ cd $RIBOINSTALLDIR
 # This is only necessary if you want to run the ribodbmaker.pl program.
 # To install it, uncomment the line below.
 #
-# git clone https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-0.35.zip
+curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; rm vecscreen_plus_taxonomy-$TMPVERSION2.zip
 # 
 #
 ################
@@ -71,8 +71,8 @@ cd $RIBOINSTALLDIR
 #
 # For 64-bit mac os/x:
 #~~~~~~~~~~~~~
-# curl -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-macosx.tar.gz
-# tar xfz blastn.tar.gz
+curl -k -L -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-macosx.tar.gz
+tar xfz blastn.tar.gz
 #~~~~~~~~~~~~~
 # 
 # For Linux: 
@@ -94,19 +94,19 @@ echo ""
 echo "If you are using the bash shell, add the following"
 echo "lines to the '.bashrc' file in your home directory:"
 echo ""
-echo "export RIBODIR=\"$RIBOINSTALLDIR\""
-echo "export RIBOINFERNALDIR=\"$RIBOINSTALLDIR/infernal-1.1.2/src\""
-echo "export RIBOEASELDIR=\"$RIBOINSTALLDIR/infernal-1.1.2/easel/miniapps\""
+echo "export RIBODIR=\"$RIBOINSTALLDIR/ribovore-$VERSION\""
+echo "export RIBOINFERNALDIR=\"$RIBOINSTALLDIR/bin\""
+echo "export RIBOEASELDIR=\"$RIBOINSTALLDIR/bin\""
 echo "export RIBOBLASTDIR=\"/usr/bin\""
 echo "export RIBOTIMEDIR=\"/usr/bin\""
-echo "export VECPLUSDIR=\"$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
-echo "export SENSORDIR=\"$RIBOINSTALLDIR/rRNA_sensor\""
-echo "export EPNOPTDIR=\"$RIBOINSTALLDIR/epn-options\""
-echo "export EPNOFILEDIR=\"$RIBOINSTALLDIR/epn-ofile\""
-echo "export EPNTESTDIR=\"$RIBOINSTALLDIR/epn-test\""
-echo "export PERL5LIB=\"$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB\""
-echo "export PATH=\"$RIBODIR:$PATH\""
-echo "export BLASTDB=\"$SENSORDIR:$BLASTDB\""
+echo "export VECPLUSDIR=\"$RIBOINSTALLDIR/vecscreen_plus_taxonomy-$TMPVERSION2\""
+echo "export SENSORDIR=\"$RIBOINSTALLDIR/rRNA_sensor-$TMPVERSION1\""
+echo "export EPNOPTDIR=\"$RIBOINSTALLDIR/epn-options-$DVERSION\""
+echo "export EPNOFILEDIR=\"$RIBOINSTALLDIR/epn-ofile-$DVERSION\""
+echo "export EPNTESTDIR=\"$RIBOINSTALLDIR/epn-test-$DVERSION\""
+echo "export PERL5LIB=\"\$RIBODIR:\$EPNOPTDIR:\$EPNOFILEDIR:\$EPNTESTDIR:\$PERL5LIB\""
+echo "export PATH=\"\$RIBODIR:\$PATH\""
+echo "export BLASTDB=\"\$SENSORDIR:\$BLASTDB\""
 echo ""
 echo "Note that the above assumes your blastn executable is in /usr/bin/."
 echo "If it is somewhere else, update the above line accordingly. If"
@@ -128,19 +128,19 @@ echo "---"
 echo "If you are using the C shell, add the following"
 echo "lines to the '.cshrc' file in your home directory:"
 echo ""
-echo "setenv RIBODIR \"$RIBOINSTALLDIR\""
-echo "setenv RIBOINFERNALDIR \"$RIBOINSTALLDIR/infernal-1.1.2/src\""
-echo "setenv RIBOEASELDIR \"$RIBOINSTALLDIR/infernal-1.1.2/easel/miniapps\""
+echo "setenv RIBODIR \"$RIBOINSTALLDIR/ribovore-$VERSION\""
+echo "setenv RIBOINFERNALDIR \"$RIBOINSTALLDIR/bin\""
+echo "setenv RIBOEASELDIR \"$RIBOINSTALLDIR/bin\""
 echo "setenv RIBOBLASTDIR \"/usr/bin\""
 echo "setenv RIBOTIMEDIR \"/usr/bin\""
-echo "setenv VECPLUSDIR \"$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
-echo "setenv SENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor\""
-echo "setenv EPNOPTDIR \"$RIBOINSTALLDIR/epn-options\""
-echo "setenv EPNOFILEDIR \"$RIBOINSTALLDIR/epn-ofile\""
-echo "setenv EPNTESTDIR \"$RIBOINSTALLDIR/epn-test\""
-echo "setenv PERL5LIB \"$RIBODIR\":\"$EPNOPTDIR\":\"$EPNOFILEDIR\":\"$EPNTESTDIR\":\"$PERL5LIB\""
-echo "setenv PATH \"$RIBODIR\":\"$PATH\""
-echo "setenv BLASTDB \"$SENSORDIR\":\"$BLASTDB\""
+echo "setenv VECPLUSDIR \"$RIBOINSTALLDIR/vecscreen_plus_taxonomy-$TMPVERSION2\""
+echo "setenv SENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor-$TMPVERSION1\""
+echo "setenv EPNOPTDIR \"$RIBOINSTALLDIR/epn-options-$DVERSION\""
+echo "setenv EPNOFILEDIR \"$RIBOINSTALLDIR/epn-ofile-$DVERSION\""
+echo "setenv EPNTESTDIR \"$RIBOINSTALLDIR/epn-test-$DVERSION\""
+echo "setenv PERL5LIB \"\$RIBODIR\":\"\$EPNOPTDIR\":\"\$EPNOFILEDIR\":\"\$EPNTESTDIR\":\"\$PERL5LIB\""
+echo "setenv PATH \"\$RIBODIR\":\"\$PATH\""
+echo "setenv BLASTDB \"\$SENSORDIR\":\"\$BLASTDB\""
 echo ""
 echo "And see the notes above after the export commands about blastn and"
 echo "infernal and make changes as necessary."
