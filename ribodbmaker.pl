@@ -10,12 +10,12 @@ require "ribo.pm";
 
 # make sure the RIBODIR and RIBOEASEL variables are set, others we will wait to see
 # if they are required first
-my $env_ribotyper_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_ribovore_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 my $env_riboeasel_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
 my $env_vecplus_dir       = undef;
-my $env_ribotax_dir       = undef;
 my $env_riboblast_dir     = undef;
-my $df_model_dir          = $env_ribotyper_dir . "/models/";
+my $df_model_dir          = $env_ribovore_dir . "/models/";
+my $df_tax_dir            = $env_ribovore_dir . "/taxonomy/";
 
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -52,6 +52,7 @@ opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,
 opt_Add("-n",           "integer", 1,                       $g,    undef, "-p",        "use <n> CPUs",                                              "use <n> CPUs",                                                 \%opt_HH, \@opt_order_A);
 opt_Add("--keep",       "boolean", 0,                       $g,    undef, undef,       "keep all intermediate files",                               "keep all intermediate files that are removed by default",      \%opt_HH, \@opt_order_A);
 opt_Add("--special",    "string",  undef,                   $g,    undef, undef,       "read list of special species taxids from <s>",              "read list of special species taxids from <s>",                 \%opt_HH, \@opt_order_A);
+opt_Add("--taxin",      "string",  undef,                   $g,    undef, undef,       "use taxonomy tree file <s> instead of default",             "use taxonomy tree file <s> instead of default",                \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for skipping stages";
 #               option  type       default               group   requires                incompat   preamble-output                                                     help-output    
@@ -198,6 +199,7 @@ my $options_okay =
                 'fasta=s'      => \$GetOptions_H{"--fasta"},
                 'keep'         => \$GetOptions_H{"--keep"},
                 'special=s'    => \$GetOptions_H{"--special"},
+                'taxin=s'      => \$GetOptions_H{"--taxin"},
                 'skipftaxid'   => \$GetOptions_H{"--skipftaxid"},
                 'skipfambig'   => \$GetOptions_H{"--skipfambig"},
                 'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
@@ -509,14 +511,16 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) {
 }
 if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
   $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
-    
-  $env_ribotax_dir = ribo_VerifyEnvVariableIsValidDir("RIBOTAXDIR");
-  $taxonomy_tree_six_column_file = $env_ribotax_dir . "/taxonomy_tree_ribodbmaker.txt";
+
+  # make sure the tax file exists
+  my $df_tax_file = $df_tax_dir . "ncbi-taxonomy-tree.ribodbmaker.txt";
+  if(! opt_IsUsed("--taxin", \%opt_HH)) { $taxonomy_tree_six_column_file = $df_tax_file; }
+  else                                  { $taxonomy_tree_six_column_file = opt_Get("--taxin", \%opt_HH); }
   ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
 
   $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
-  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribotyper_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
-  $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribotyper_dir . "/miniscripts/ali-apos-to-uapos.pl";
+  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribovore_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
+  $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribovore_dir . "/miniscripts/ali-apos-to-uapos.pl";
 }
 
 if($do_fblast) { 
@@ -559,11 +563,11 @@ if($do_fribo1 || $do_fribo2) {
     ribo_CheckIfFileExistsAndIsNonEmpty($ra_modelinfo_file, "riboaligner model info file specified with --rainfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
 
-  $execs_H{"ribotyper"}         = $env_ribotyper_dir  . "/ribotyper.pl";
-  $execs_H{"riboaligner"} = $env_ribotyper_dir  . "/riboaligner.pl";
+  $execs_H{"ribotyper"}         = $env_ribovore_dir  . "/ribotyper.pl";
+  $execs_H{"riboaligner"} = $env_ribovore_dir  . "/riboaligner.pl";
 }
 if(opt_IsUsed("--mslist", \%opt_HH)) { 
-  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribotyper_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
+  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribovore_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
 }
 
 ribo_ValidateExecutableHash(\%execs_H);
@@ -628,10 +632,9 @@ my $nfail_clustr = 0; # number of seqs that pass clustering
 my @arg_desc_A = ("input sequence file", "output directory name");
 my @arg_A      = ($in_fasta_file, $dir);
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}      = $env_ribotyper_dir;
+$extra_H{"\$RIBODIR"}      = $env_ribovore_dir;
 $extra_H{"\$RIBOEASELDIR"} = $env_riboeasel_dir;
 if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
-if(defined $env_ribotax_dir)    { $extra_H{"\$RIBOTAXDIR"}    = $env_ribotax_dir; }
 if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);

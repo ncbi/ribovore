@@ -1,7 +1,6 @@
-EPN, Thu Nov 15 12:35:44 2018
+EPN, Thu Jan 17 11:23:11 2019
 
-Ribotyper v0.34 README
-(commands/examples not updated since v0.31)
+ribovore v0.35 README
 
 Organization of this file:
 
@@ -24,8 +23,10 @@ TESTING SCRIPTS
 ##############################################################################
 INTRO
 
-This is documentation for ribotyper, a tool for detecting
-and classifying small subunit (SSU) rRNA and large subunit (LSU) rRNA sequences.  
+This is documentation for ribovore, a suite of tools for detecting, 
+classifying and analyzing small subunit (SSU) rRNA and large subunit
+(LSU) rRNA sequences.  
+
 The possible classifications are explained in the section entitled
 THE DEFAULT MODEL FILE
 
@@ -34,38 +35,88 @@ Author: Eric Nawrocki
 Current location of code and other relevant files at NCBI:
 /panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/
 
-Git repository for ribotyper:
-https://github.com/nawrockie/ribotyper-v1.git
+Git repository for ribovore:
+https://github.com/nawrockie/ribovore.git
+
+##############################################################################
+INSTALLATION
+
+The file 'install.sh' is an executable file for installing ribovore
+and its dependencies.
+
+That file will download and install the software packages ribovore,
+Infernal 1.1.2, and rRNA_sensor, as well as the required perl modules
+epn-options, epn-ofile and epn-test. It will *not* download and
+install blastn or vecscreen_plus_taxonomy, which are optional
+programs. 
+
+There are commands in install.sh to download and install
+vecscreen_plus_taxonomy and blastn but they are commented out. To
+download and install those programs, uncomment the lines, and
+importantly download the version of blastn that is appropriate for
+your system/OS.
+
+##############################################################################
+PREREQUISITE PROGRAMS AND FILES
+
+ribovore scripts require several other software packages to run. Some
+of these packages are only necessary for running certain ribovore
+scripts, as listed below.
+
+Package/files             version         required for ribovore script(s)
+-------------             -------------   -------------------------------
+Infernal                  1.1.2           all
+epn-options               ribovore-0.35   all
+epn-ofile                 ribovore-0.35   all
+epn-test                  ribovore-0.35   ribotest.pl
+blastn                    2.8.1+          ribosensor.pl, ribodbmaker.pl
+vecscreen_plus_taxonomy   ribovore-0.35   ribodbmaker.pl
+rRNA_sensor               ribovore-0.35   ribosensor.pl
+time*                      N/A             all
+
+* 'time' should be installed on your system, usually as 
+/usr/bin/time. You can verify your path with 'which time'. Set the
+directory returned by that which command as the RIBOTIMEDIR in the
+SETTING UP ENVIRONMENT VARIABLES section below.
+
+How to get these software packages:
+
+Package/files             available for download from
+-------------             ---------------------------
+Infernal                  http://eddylab.org/infernal/infernal-1.1.2.tar.gz
+epn-options               https://github.com/nawrockie/epn-options/archive/ribovore-0.35.zip
+epn-ofile                 https://github.com/nawrockie/epn-ofile/archive/ribovore-0.35.zip
+epn-test                  https://github.com/nawrockie/epn-test/archive/ribovore-0.35.zip
+blastn                    ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/
+vecscreen_plus_taxonomy   https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-0.35.zip
+rRNA_sensor               https://github.com/aaschaffer/rRNA_sensor/archive/ribovore-0.35.zip
 
 ##############################################################################
 SETTING UP ENVIRONMENT VARIABLES
 
-Some aspects of the following instructions apply only on NCBI computers.
-
-NCBI-specific steps will need to be revised later.
-
-Before you can run ribotyper.pl, you will need to update some of your
-environment variables. To do this, add the following four lines to
+Once all the required programs listed above are installed, you will
+need to update some of your environment variables before you can run
+the ribovore scripts. To do this, add the following lines to
 your .bashrc file (if you use bash shell) or .cshrc file (if you use C
 shell or tcsh). The .bashrc or .cshrc file is in your home
 directory. To determine what shell you use, type
+
 > echo $SHELL
 If this command returns '/bin/bash', then update your .bashrc file.
 If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
 The lines to add to your .bashrc file:
 -----------
-export RIBODIR="<full path to directory in which you have the ribotyper code>"
-export RIBOINFERNALDIR="/usr/local/infernal/1.1.2/bin"
-export RIBOEASELDIR="/usr/local/infernal/1.1.2/bin"
-export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
-export RIBOTAXDIR="/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
-export RIBOBLASTDIR="/usr/bin"
-export RIBOTIMEDIR="/usr/bin"
-export SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor"
-export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-options"
-export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
-export EPNTESTDIR="/panfs/pan1/dnaorg/ssudetection/code/epn-test"
+export RIBODIR="<full path to directory in which you have the ribovore code>"
+export RIBOINFERNALDIR="<full path to directory with infernal binaries (e.g. usr/local/bin)>"
+export RIBOEASELDIR="<full path to directory with infernal's easel miniapp binaries (e.g. usr/local/bin)>"
+export RIBOBLASTDIR="<full path to directory with blastn binary>"
+export RIBOTIMEDIR="<full path to time binary (usually /usr/bin)>"
+export VECPLUSDIR="<full path where vecscreen_plus_taxonomy git repo was downloaded>"
+export SENSORDIR="<full path where rRNA_sensor git repo was downloaded>"
+export EPNOPTDIR="<full path where epn-options git repo was downloaded>"
+export EPNOFILEDIR="<full path where epn-file git repo was downloaded>"
+export EPNTESTDIR="<full path where epn-test git repo was downloaded>"
 export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB"
 export PATH="$RIBODIR:$PATH"
 export BLASTDB="$SENSORDIR:$BLASTDB"
@@ -73,33 +124,20 @@ export BLASTDB="$SENSORDIR:$BLASTDB"
 
 The lines to add to your .cshrc file:
 -----------
-setenv RIBODIR "<full path to directory in which you have the ribotyper code>"
-setenv RIBOINFERNALDIR "/usr/local/infernal/1.1.2/bin"
-setenv RIBOEASELDIR "/usr/local/infernal/1.1.2/bin"
-setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy"
-setenv RIBOTAXDIR "/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files"
-setenv RIBOBLASTDIR "/usr/bin"
-setenv RIBOTIMEDIR "/usr/bin"
-setenv SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor"
-setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-options"
-setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-ofile"
-setenv EPNTESTDIR "/panfs/pan1/dnaorg/ssudetection/code/epn-test"
-setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
+setenv RIBODIR "<full path to directory in which you have the ribovore code>"
+setenv RIBOINFERNALDIR "<full path to directory with infernal binaries (e.g. usr/local/bin)>"
+setenv RIBOEASELDIR "<full path to directory with infernal's easel miniapp binaries (e.g. usr/local/bin)>"
+setenv RIBOBLASTDIR "<full path to directory with blastn binary>"
+setenv RIBOTIMEDIR "<full path to time binary (usually /usr/bin)>"
+setenv VECPLUSDIR "<full path where vecscreen_plus_taxonomy git repo was downloaded>"
+setenv SENSORDIR "<full path where rRNA_sensor git repo was downloaded>
+setenv EPNOPTDIR "<full path where epn-options git repo was downloaded>"
+setenv EPNOFILEDIR "<full path where epn-file git repo was downloaded>"
+setenv EPNTESTDIR "<full path where epn-test git repo was downloaded>"
+setenv PERL5LIB "$RIBODIR":$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$PATH"
-setenv BLASTDB="$SENSORDIR":"$BLASTDB"
+setenv BLASTDB "$SENSORDIR":"$BLASTDB"
 -----------
-
-The full path starts with a / and does not include the angle brackets <>.
-If you did not copy or clone the ribotyper code to your own directory, you
-can replace the first line with:
-
-export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
-or
-setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1"
-respectively.
-
-However, in some places below that specify a path including $RIBODIR,
-you must instead use a path to which you have write permission,
 
 After adding the lines specified above, execute the command:
 > source ~/.bashrc
@@ -128,90 +166,7 @@ or
 > source ~/.cshrc
 again.
 
-To check that your environment variables are properly set up, do the
-following commands (lines prefixed with '>')
-> echo $RIBODIR
-
-This should return only one directory,
-namely the directory where you installed ribotyper,
-or
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
-if you did not install your own copy of ribotyper.
-
-> echo $EPNOPTDIR
-> echo $EPNOFILEDIR
-> echo $EPNTESTDIR
-
-These should return:
-/panfs/pan1/dnaorg/ssudetection/code/epn-options
-/panfs/pan1/dnaorg/ssudetection/code/epn-ofile
-/panfs/pan1/dnaorg/ssudetection/code/epn-test
-
-> echo $PERL5LIB
-This should return a potentially longer string that
-begins with:
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1:/panfs/pan1/dnaorg/ssudetection/code/epn-options:/panfs/pan1/dnaorg/ssudetection/code/epn-ofile:/panfs/pan1/dnaorg/ssudetection/code/epn-test:
-
-> echo $PATH
-This should return a potentially longer string that
-begins with:
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1
-
-> echo $RIBOINFERNALDIR
-> echo $RIBOEASELDIR
-
-Should *each* return:
-/usr/local/infernal/bin
-
-> echo $VECPLUSDIR
-
-Should return:
-/panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy
-
-> echo $RIBOTAXDIR
-
-Should return:
-/panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
-
-> echo $SENSORDIR
-
-Should return:
-/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor
-
-> echo $BLASTDB 
-
-Should return a potentially longer string that
-begins with:
-/panfs/pan1/dnaorg/ssudetection/code/rRNA_sensor
-
-> echo $RIBOBLASTDIR
-
-Should return:
-/usr/bin
-
-And finally, 
-> echo $RIBOTIMEDIR
-
-Should return:
-/usr/bin
-
-If any of these commands do not return what they are supposed to,
-please email Eric Nawrocki (nawrocke@ncbi.nlm.nih.gov). If you do see
-the expected output, and you have the prequisite programs installed, as
-explained below, then the sample run below should work.
-
-##############################################################################
-PREREQUISITE PROGRAMS
-
-The Infernal v1.1.2 software package must be installed prior to
-running the ribotyper scripts. The $RIBOINFERNALDIR and $RIBOEASELDIR
-environment variables should point to the directories in which the
-binaries are installed. This will be 'infernal-1.1.2/src' and
-'infernal-1.1.2/easel/miniapps" respectively if you build infernal
-1.1.2 from source with just './configure; make'
-You can download Infernal from http://eddylab.org/infernal/.
-
-##############################################################################
+###########################################################################
 SAMPLE RUN
 
 This example runs the script ribotyper.pl on a sample file of 16 sequences. 

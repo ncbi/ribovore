@@ -7,7 +7,6 @@ use Time::HiRes qw(gettimeofday);
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
-require "epn-test.pm";
 require "epn-options.pm";
 require "epn-ofile.pm";
 require "ribo.pm";
