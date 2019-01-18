@@ -23,6 +23,7 @@ TMPVERSION1="0.13"
 TMPVERSION2="0.16"
 VERSION="0.34"
 DVERSION="ribotyper-$VERSION"
+BLASTVERSION="2.8.1"
 
 # ribovore
 curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archive/$VERSION.zip; unzip ribovore-$VERSION.zip; rm ribovore-$VERSION.zip
@@ -36,6 +37,7 @@ for m in epn-options epn-ofile epn-test; do
 done
 echo "Finished cloning github repos with required code."
 
+##########BEGINNING OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
 # Install Infernal 1.1.2
 # You can comment out this part if you already have Infernal installed 
 # on your system.
@@ -51,15 +53,17 @@ make install
 cd $RIBOINSTALLDIR
 #echo "Finished installing Infernal 1.1.2"
 #echo "------------------------------------------------"
+##########END OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
 #
 # Other software that is optional to install: 
 # 
-################
 # vecscreen_plus_taxonomy
 # This is only necessary if you want to run the ribodbmaker.pl program.
 # To install it, uncomment the line below.
 #
+##########BEGINNING OF LINES TO UNCOMMENT TO INSTALL vecscreen_plus_taxonomy##########################
 curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; rm vecscreen_plus_taxonomy-$TMPVERSION2.zip
+##########END OF LINES TO UNCOMMENT TO INSTALL vecscreen_plus_taxonomy##########################
 # 
 #
 ################
@@ -71,14 +75,18 @@ curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aascha
 #
 # For 64-bit mac os/x:
 #~~~~~~~~~~~~~
-curl -k -L -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-macosx.tar.gz
+##########BEGINNING OF LINES TO UNCOMMENT TO INSTALL blastn FOR MAC OS/X##########################
+curl -k -L -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BLASTVERSION/ncbi-blast-$BLASTVERSION+-x64-macosx.tar.gz
 tar xfz blastn.tar.gz
+##########END OF LINES TO UNCOMMENT TO INSTALL blastn FOR MAC OS/X##########################
 #~~~~~~~~~~~~~
 # 
 # For Linux: 
 #~~~~~~~~~~~~~
+##########BEGINNING OF LINES TO UNCOMMENT TO INSTALL blastn FOR LINUX##########################
 # curl -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-linux.tar.gz
 # tar xfz blastn.tar.gz
+##########END OF LINES TO UNCOMMENT TO INSTALL blastn FOR LINUX##########################
 #~~~~~~~~~~~~~
 # 
 # The above commands will download the
@@ -107,17 +115,6 @@ echo "export EPNTESTDIR=\"$RIBOINSTALLDIR/epn-test-$DVERSION\""
 echo "export PERL5LIB=\"\$RIBODIR:\$EPNOPTDIR:\$EPNOFILEDIR:\$EPNTESTDIR:\$PERL5LIB\""
 echo "export PATH=\"\$RIBODIR:\$PATH\""
 echo "export BLASTDB=\"\$SENSORDIR:\$BLASTDB\""
-echo ""
-echo "Note that the above assumes your blastn executable is in /usr/bin/."
-echo "If it is somewhere else, update the above line accordingly. If"
-echo "blastn is not installed and you do not want to (and are okay with"
-echo "not using ribosensor or ribodbmaker), then you can leave the above"
-echo "RIBOBLASTDIR line alone, it won't cause any problems."
-echo ""
-echo "The above also assumes you haven't modified the above commands that"
-echo "download from github, and download and install infernal. If you have,"
-echo "(for example, if infernal is already installed and you skipped that"
-echo "step by commenting it out) then adjust the above as necessary."
 echo ""
 echo "After adding the export lines to your .bashrc file, source that file"
 echo "to update your current environment with the command:"
@@ -154,11 +151,44 @@ echo "(To determine which shell you use, type: 'echo \$$SHELL')"
 echo ""
 echo ""
 echo "********************************************************"
+echo "IMPORTANT INFORMATION ABOUT Infernal, blastn AND vecscreen_plus_taxonomy"
+echo "that may mean you should change some of the above lines for setting"
+echo "the environment variables in your .bashrc or .cshrc files:"
+echo ""
 echo "Unless you changed the install.sh file prior to running"
-echo "it, blastn nor vecscreen_plus_taxonomy was installed. If"
-echo "you want to install those (blastn is required to run ribosensor.pl"
-echo "and ribodbmaker.pl, and vecscreen_plus_taxonomy is required"
-echo "to run ribodbmaker.pl) read all the comments in the install.sh"
-echo "file."
+echo "it, infernal-1.1.2 was installed, but neither blastn nor"
+echo "vecscreen_plus_taxonomy was installed. If you already"
+echo "have blastn installed, you can update the RIBOBLASTDIR"
+echo "environment variable to where the blastn executable is."
+echo ""
+echo "If you want to use the ribosensor.pl script, you will need to"
+echo "have blastn installed. If you want to use the ribodbmaker.pl"
+echo "script you will need to have blastn and vecscreen_plus_taxonomy"
+echo "installed. See below for instructions."
+echo ""
+echo "If you want to have this install.sh script install blastn, open the"
+echo "file install.sh and look for the text: \"BEGINNING OF LINES TO UNCOMMENT\""
+echo "TO INSTALL blastn\" and uncomment (by removing the first '#' character)"
+echo "either the Mac OS/X lines or the Linux lines depending on your OS."
+echo "If you do that you'll want to update RIBOBLASTDIR to"
+echo "$RIBOINSTALLDIR/ncbi-blast-$BLASTVERSION\"".
+echo ""
+echo "If blastn is not installed and you do *not* want to (and are okay with"
+echo "not using ribosensor or ribodbmaker), then you can leave the above"
+echo "RIBOBLASTDIR line alone, it won't cause any problems." 
+echo "" 
+echo "If you want to have this install.sh script install vecscreen_plus_taxonomy"
+echo "open the file install.sh and look for the text: \"BEGINNING OF LINES TO\""
+echo "UNCOMMENT TO INSTALL vecscreen_plus_taxonomy\" and uncomment (by removing"
+echo " the first '#' character) those lines. If you do that you'll want to update"
+echo "RIBOBLASTDIR to $RIBOINSTALLDIR/vecscreen_plus_taxonomy-$TMPVERSION2\"."
+echo ""
+echo "If you already had infernal installed, and want to delete the version you"
+echo "just installed, you can delete the copy in $RIBOINSTALLDIR. If you do that"
+echo "(or you skipped the infernal installation by commenting out the relevant"
+echo "lines), you will need to update the RIBOINFERNALDIR and RIBOEASELDIR"
+echo "environment variables to the paths where you have infernal-1.1.2 executables"
+echo "(e.g. cmsearch) and easel executables (e.g. esl-sfetch) installed."
+echo ""
 echo "********************************************************"
 echo ""
