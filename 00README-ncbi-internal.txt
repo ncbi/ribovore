@@ -7,29 +7,17 @@ Organization of this file:
 INTRO
 SETTING UP ENVIRONMENT VARIABLES
 PREREQUISITE PROGRAMS
-
 ribotyper.pl: DESCRIPTION
-ribotyper.pl: EXAMPLE RUN
+ribotyper.pl: SAMPLE RUN
 ribotyper.pl: OUTPUT 
 ribotyper.pl: UNEXPECTED FEATURES AND REASONS FOR FAILURE
 ribotyper.pl: THE DEFAULT MODEL FILE
 ribotyper.pl: TWO ROUND SEARCH STRATEGY
-ribotyper.pl: DEFINING ACCEPTABLE/QUESTIONABLE MODELS
-ribotyper.pl: ALL COMMAND LINE OPTIONS
-
-ribosensor.pl: DESCRIPTION
-ribosensor.pl: EXAMPLE RUN
-ribosensor.pl: OUTPUT
-ribosensor.pl: EXPLANATION OF ERRORS
-ribosensor.pl: ALL COMMAND LINE OPTIONS
-
-riboaligner.pl: DESCRIPTION
-riboaligner.pl: EXAMPLE RUN
-riboaligner.pl: OUTPUT
-riboaligner.pl: ALL COMMAND LINE OPTIONS
-
-ribodbmaker.pl: DESCRIPTION
-
+EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
+DEFINING ACCEPTABLE/QUESTIONABLE MODELS
+ALL COMMAND LINE OPTIONS
+ADDITIONAL SCRIPT: riboaligner.pl
+ADDITIONAL SCRIPT: ribodbmaker.pl
 PARALLELIZING ON A SGE COMPUTE FARM
 TESTING SCRIPTS
 
@@ -219,7 +207,7 @@ matches the profile. Each sequence is classified by the model that
 gave it the highest score.
 
 ###########################################################################
-ribotyer.pl: EXAMPLE RUN
+ribotyer.pl: SAMPLE RUN
 
 This example runs the script ribotyper.pl on a sample file of 16 sequences. 
 
@@ -807,7 +795,7 @@ For more information on rRNA_sensor, see its README:
 https://github.com/aaschaffer/rRNA_sensor/blob/master/README
 
 ----------------------------------------------------------------------------
-ribosensor.pl: EXAMPLE RUN
+ribosensor.pl: SAMPLE RUN
 
 This example runs the script on a sample file of 16 sequences. 
 
@@ -838,40 +826,32 @@ command with
 
 > ribosensor.pl -f example-16.fa rs-test
 
-To repeat the same analysis but specifying that the sequences are
-eukaryotic 18S SSU rRNA sequences instead of archaeal or bacterial
-SSU rRNA sequences, add the "-m 18S" option, like this:
-
-> ribosensor.pl -m 18S -f example-16.fa rs-test
-
-(The $RIBODIR environment variable is used here. That is
+The $RIBODIR environment variable is used here. That is
 a hard-coded path that was set in the 'SETTING UP ENVIRONMENT
-VARIABLES:' section above.)
+VARIABLES:' section above. 
 
 -------------------------------------------------------------
-ribosensor.pl: OUTPUT
+OUTPUT
 
-Example output of the script from the first command above
+Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.30 (Oct 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Tue Jan 22 14:30:06 2019
-# $RIBOBLASTDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ncbi-blast-2.8.1+/bin
-# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34
-# $RIBOEASELDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
-# $RIBOINFERNALDIR:  /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
-# $RIBOTIMEDIR:      /usr/bin
-# $SENSORDIR:        /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/rRNA_sensor-0.13
+# date:              Tue Oct 16 21:07:12 2018
+# $RIBOBLASTDIR:     /usr/bin
+# $RIBODIR:          /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
+# $SENSORDIR:        /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/rRNA_sensor
 #
-# target sequence input file:   example-16.fa
-# output directory name:        rs-test
-# forcing directory overwrite:  yes [-f]
+# target sequence input file:  example-16.fa
+# output directory name:       rs-test      
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Partitioning sequence file based on sequence lengths         ... done. [    0.0 seconds]
-# Running ribotyper on full sequence file                      ... done. [    3.3 seconds]
-# Running rRNA_sensor on seqs of length 351..600               ... done. [    0.1 seconds]
-# Running rRNA_sensor on seqs of length 601..inf               ... done. [    1.0 seconds]
+# Partitioning sequence file based on sequence lengths         ... done. [    0.1 seconds]
+# Running ribotyper on full sequence file                      ... done. [    8.7 seconds]
+# Running rRNA_sensor on seqs of length 351..600               ... done. [    0.4 seconds]
+# Running rRNA_sensor on seqs of length 601..inf               ... done. [    1.6 seconds]
 # Parsing and combining rRNA_sensor and ribotyper output       ... done. [    0.0 seconds]
 #
 # Outcome counts:
@@ -917,9 +897,9 @@ Example output of the script from the first command above
 #
 # stage      num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # ---------  --------  -------  ----------  ----------  -----------------------
-  ribotyper        16      4.8      6438.9      6438.9  00:00:03.30  (hh:mm:ss)
-  sensor           16     14.7     19585.3     19585.3  00:00:01.09  (hh:mm:ss)
-  total            16      3.6      4760.6      4760.6  00:00:04.47  (hh:mm:ss)
+  ribotyper        16      1.8      2446.7      2446.7  00:00:08.69  (hh:mm:ss)
+  sensor           16      8.1     10755.0     10755.0  00:00:01.98  (hh:mm:ss)
+  total            16      1.5      1931.6      1931.6  00:00:11.01  (hh:mm:ss)
 #
 #
 # Human readable error-based output saved to file rs-test/rs-test.ribosensor.out
@@ -935,8 +915,8 @@ Example output of the script from the first command above
 #
 # All output files created in directory ./rs-test/
 #
-# Elapsed time:  00:00:04.47
-#                hh:mm:ss
+# Elapsed time:  00:00:11.01
+#            hh:mm:ss
 # 
 # RIBO-SUCCESS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -944,65 +924,14 @@ Example output of the script from the first command above
 -----------------
 Output files:
 
-Two output files are particulary important. Both are tabular output files
+Currently, there are two output files. Both are tabular output files
 with one line per sequence with fields separated by whitespace
 (spaces, not tabs). They will both be in the new directory 'test' that
 was created by the example run above.
 
-The first file type is the 'GPIPE' output file. This file
-will end with the suffix '.ribosensor.gpipe'. This file includes one
-line per sequence in the input file. Each line contains 6 columns:
-
-column 1: index of sequence in input sequence file
-column 2: name of target sequence
-column 3: inferred taxonomy of sequence (e.g. SSU.Bacteria)
-column 4: strand of best-hit (plus or minus)
-column 5: pass fail status or ribotyper and rRNA_sensor
-          'RPSP': pass both ribotyper and rRNA_sensor
-          'RPSF': pass ribotyper, fail rRNA_sensor
-          'RFSP': fail ribotyper, pass rRNA_sensor
-          'RFSF': fail both ribotyper and rRNA_sensor
-
-column 6: list of errors (explained below in the 'EXPLANATION OF 
-          ERRORS section). '-' for no errors.  sequences with
-          zero errors 'PASS' ribosensor.pl sequences with 1 or more
-          errors 'FAIL' ribosensor.pl
-
-Here's an example GPIPE output file:
-
-> cat testfiles/rs-test.ribosensor.gpipe
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#idx  sequence                                       taxonomy               strand              p/f  error(s)
-#---  ---------------------------------------------  ---------------------  -----------------  ----  --------
-1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus               RPSP  -
-2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus               RPSP  -
-3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus               RPSF  -
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus               RFSF  SEQ_HOM_LowSimilarity;SEQ_HOM_LowCoverage;
-5     random                                         -                      NA                 RFSF  SEQ_HOM_NotSSUOrLSUrRNA;
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus              RPSP  -
-7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus               RPSP  -
-8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus               RPSP  -
-9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus               RPSP  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus              RPSP  -
-11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus               RPSP  -
-12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
-13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
-14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus              RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
-16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus               RFSF  SEQ_HOM_LengthLong;SEQ_HOM_TaxNotExpectedSSUrRNA;
-#
-# Explanation of columns:
-#
-# Column 1 [idx]:      index of sequence in input sequence file
-# Column 2 [target]:   name of target sequence
-# Column 3 [taxonomy]: inferred taxonomy of sequence
-# Column 4 [strnd]:    strand ('plus' or 'minus') of best-scoring hit
-# Column 5 [type]:     "R<1>S<2>" <1> is 'P' if passes ribotyper, 'F' if fails; <2> is same, but for sensor
-# Column 6 [error(s)]: reason(s) for failure (see 00README.txt)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The second file type includes the errors reported from both ribotyper
-and sensor. An example is below.
+The first file type is a 'human readable error-based' output file, and
+includes the errors reported from both ribotyper and sensor.  An
+example is below.
 
 Human readable file:
 > cat testfiles/rs-test.ribosensor.out 
@@ -1048,54 +977,56 @@ column 2, this inconsistency is not detected by ribosensor. One
 particularly important taxonomy issue is whether a sequence comes from
 Homo sapiens, because human samples need informed consent. Detecting
 whether a sequence comes from Homo sapiens is outside the scope of
-ribosensor.
+ribosensor because gpipe already has another tool for this purpose.
 
+The second file type is a 'GPIPE error-based' output file. It includes
+much of the same information as the human readable file, with the main
+difference being that the ribotyper and sensor errors have been
+replaced with their corresponding 'GPIPE' errors.  An example is
+below.
+
+GPIPE output file:
+$ cat testfiles/rs-test.ribosensor.gpipe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#idx  sequence                                       taxonomy               strand              p/f  error(s)
+#---  ---------------------------------------------  ---------------------  -----------------  ----  --------
+1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus               RPSP  -
+2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus               RPSP  -
+3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus               RPSF  -
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus               RFSF  SEQ_HOM_LowSimilarity;SEQ_HOM_LowCoverage;
+5     random                                         -                      NA                 RFSF  SEQ_HOM_NotSSUOrLSUrRNA;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus              RPSP  -
+7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus               RPSP  -
+8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus               RPSP  -
+9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus               RPSP  -
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus              RPSP  -
+11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus               RPSP  -
+12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus               RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus              RFSF  SEQ_HOM_TaxNotExpectedSSUrRNA;
+16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus               RFSF  SEQ_HOM_LengthLong;SEQ_HOM_TaxNotExpectedSSUrRNA;
+#
+# Explanation of columns:
+#
+# Column 1 [idx]:      index of sequence in input sequence file
+# Column 2 [target]:   name of target sequence
+# Column 3 [taxonomy]: inferred taxonomy of sequence
+# Column 4 [strnd]:    strand ('plus' or 'minus') of best-scoring hit
+# Column 5 [type]:     "R<1>S<2>" <1> is 'P' if passes ribotyper, 'F' if fails; <2> is same, but for sensor
+# Column 6 [error(s)]: reason(s) for failure (see 00README.txt)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##############################################################################
-ribosensor.pl: EXPLANATION OF ERRORS
+EXPLANATION OF ERRORS
 
----------
-Explanation of GPIPE errors and how they are derived from 
-ribotyper and rRNA_sensor errors.
----------
+(The text and tables below were taken from
+https://confluence.ncbi.nlm.nih.gov/display/GEN/Ribosensor%3A+proposed+criteria+and+names+for+errors
+on May 26, 2017)
 
-A GPIPE error is triggered by one or more occurrences of its
-triggering Sensor/Ribotyper errors (with the exception listed below
-for '*', '+', '@', and '^').
+List of Sensor and Ribotyper errors (listed in Ribosensor 'human
+readable output file'):
 
-
-idx  GPIPE error                     fails to      triggering Sensor/Ribotyper errors
----  ------------------------------  ---------     ----------------------------------
-G1.  SEQ_HOM_NotSSUOrLSUrRNA         submitter     S_NoHits*^, R_NoHits
-G2.  SEQ_HOM_LowSimilarity           submitter     S_NoSimilarity*^, S_LowSimilarity*^, S_LowScore*^, R_LowScore
-G3.  SEQ_HOM_SSUAndLSUrRNA           submitter     R_MultipleFamilies
-G4.  SEQ_HOM_MisAsBothStrands        submitter     S_BothStrands, R_BothStrands
-G5.  SEQ_HOM_MisAsHitOrder           submitter     R_InconsistentHits
-G6.  SEQ_HOM_MisAsDupRegion          submitter     R_DuplicateRegion
-G7.  SEQ_HOM_TaxNotExpectedSSUrRNA   submitter     R_UnacceptableModel
-G8.  SEQ_HOM_TaxQuestionableSSUrRNA  indexer       R_QuestionableModel@
-G9.  SEQ_HOM_LowCoverage             indexer       R_LowCoverage
-G10. SEQ_HOM_MultipleHits            indexer       S_MultipleHits, R_MultipleHits+
-
-
-* these Sensor errors do not trigger a GPIPE error if sequence is 'RPSF'
-  (ribotyper pass, sensor fail) and sample is uncultured (-c option not
-  used with ribosensor.pl).
-
-+ this Ribotyper error (R_MultipleHits) does not trigger a GPIPE error
-  if sequence is 'RFSP' (ribotyper fail, sensor pass).
-
-@ this Ribotyper error (R_QuestionableModel) does not trigger a GPIPE error
-  if sequence is 'RFSP' (ribotyper fail, sensor pass).
-
-^ these Sensor errors (S_NoHits, S_NoSimilarity, S_LowSimilarity,
-  S_LowScore) do not trigger a GPIPE error if sequence is 'RFSF'
-  (ribotyper fail, sensor fail) and R_UnacceptableModel or
-  R_QuestionableModel also exists.
-
----------
-Explanation of ribotyper and rRNA_sensor errors and how they 
-map to GPIPE errors:
 ---------
                                                                          ignored if
                                                                          RFSF and 
@@ -1121,35 +1052,86 @@ R6.  R_DuplicateRegion   SEQ_HOM_MisAsDupRegion          N/A         no         
 R7.  R_UnacceptableModel SEQ_HOM_TaxNotExpectedSSUrRNA   N/A         no          no  best hit is to model other than expected set
                                                                                      16S expected set: SSU.Archaea, SSU.Bacteria, SSU.Cyanobacteria, SSU.Chloroplast
                                                                                      18S expected set: SSU.Eukarya
-R8.  R_QuestionableModel SEQ_HOM_TaxQuestionableSSUrRNA  N/A        yes          no  best hit is to a 'questionable' model (if mode is 16S: SSU.Chloroplast)
+R8.  R_QuestionableModel SEQ_HOM_TaxQuestionableSSUrRNA  N/A         no          no  best hit is to a 'questionable' model (if mode is 16S: SSU.Chloroplast)
 R9.  R_LowCoverage       SEQ_HOM_LowCoverage             N/A         no          no  coverage of all hits is < 0.80 (<=350nt) or 0.86 (>350nt)
 R10. R_MultipleHits      SEQ_HOM_MultipleHits            N/A        yes          no  more than 1 hit reported
+---------
+
+The following list of GPIPE errors (listed in Ribosensor 'GPIPE output
+file') is relevant in the expected gpipe usage. One possible
+difference is that each sequence may be assigned one or more errrors,
+but gpipe determines whether an entire submission (typically
+comprising multiple sequences) succeeds or fails. At present, a
+submission fails if any of the sequences in the submission fails.
+
+---------
+idx  GPIPE error                     fails to      triggering Sensor/Ribotyper errors
+---  ------------------------------  ---------     ----------------------------------
+G1.  SEQ_HOM_NotSSUOrLSUrRNA         submitter     S_NoHits*^, R_NoHits
+G2.  SEQ_HOM_LowSimilarity           submitter     S_NoSimilarity*^, S_LowSimilarity*^, S_LowScore*^, R_LowScore
+G3.  SEQ_HOM_SSUAndLSUrRNA           submitter     R_MultipleFamilies
+G4.  SEQ_HOM_MisAsBothStrands        submitter     S_BothStrands, R_BothStrands
+G5.  SEQ_HOM_MisAsHitOrder           submitter     R_InconsistentHits
+G6.  SEQ_HOM_MisAsDupRegion          submitter     R_DuplicateRegion
+G7.  SEQ_HOM_TaxNotExpectedSSUrRNA   submitter     R_UnacceptableModel
+G8.  SEQ_HOM_TaxQuestionableSSUrRNA  indexer       R_QuestionableModel
+G9.  SEQ_HOM_LowCoverage             indexer       R_LowCoverage
+G10. SEQ_HOM_MultipleHits            indexer       S_MultipleHits, R_MultipleHits+
+
+* these Sensor errors do not trigger a GPIPE error if sequence is 'RPSF'
+  (ribotyper pass, sensor fail) and sample is uncultured (-c option not
+  used with ribosensor_wrapper.pl).
+
++ this Ribotyper error (R_MultipleHits) does not trigger a GPIPE error
+  if sequence is 'RFSP' (ribotyper fail, sensor pass).
+
+^ these Sensor errors (S_NoHits, S_NoSimilarity, S_LowSimilarity,
+  S_LowScore) do not trigger a GPIPE error if sequence is 'RFSF'
+  (ribotyper fail, sensor fail) and R_UnacceptableModel or
+  R_QuestionableModel also exists.
+
 ---------
 
 For more information on ribotyper errors which are reported prefixed
 with 'R_' in column 7 of the human readable output file, see
 ribotyper's 00README.txt:
-https://github.com/nawrockie/ribovore/blob/master/00README.txt
+https://github.com/nawrockie/ribotyper-v1/blob/master/00README.txt
 
 For more information on sensor errors, all of which are reported
 prefixed with 'S_' in column 7 of the human readable output file, see
 sensor's README file:
 https://github.com/aaschaffer/rRNA_sensor/blob/master/README
 
-A few important points about the lists of errors above:
+A few important points for users within NCBI about the lists of errors above:
 
+- A GPIPE error is triggered by one or more occurrences of its
+  triggering Sensor/Ribotyper errors (with the exception listed above
+  for '*', '+', and '^').
+
+- The definition above of Sensor/Ribotyper errors and the GPIPE errors
+  they trigger is slightly different from the most recent Confluence
+  'Analysis3-20170515' word document. Eric made changes where he
+  thought it made sense with the following goals in mind:
+
+  A) simplifying the 'Outcomes' section of the Analysis document,
+  which explained how to determine whether sequences pass or fail to
+  submitter or fail to indexer based on the ribotyper and sensor
+  output.  
+  
+  B) reporting GPIPE errors in the format that Alex Kotliarov asked for
+  at the May 15, 2017 gpipe/Foosh meeting.
 
 ##############################################################################
-ribosensor.pl: ALL COMMAND LINE OPTIONS
+ALL COMMAND LINE OPTIONS
 
 To see all the available command-line options to ribosensor.pl, call
 it with the -h option:
 
 > ribosensor.pl -h
 # ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.30 (Oct 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Jan 22 15:07:35 2019
+# date:    Tue Oct 16 21:14:47 2018
 #
 Usage: ribosensor.pl [-options] <fasta file to annotate> <output directory>
 
@@ -1178,50 +1160,46 @@ rRNA_sensor related options:
 options for saving sequence subsets to files:
   --psave : save passing sequences to a file
 
-options for parallelizing cmsearch on a compute farm:
-  -p         : parallelize ribotyper and rRNA_sensor on a compute farm
-  -q <s>     : use qsub info file <s> instead of default
-  -s <n>     : seed for random number generator is <n> [181]
-  --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
-  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
-  --errcheck : consider any farm stderr output as indicating a job failure
-
 ##############################################################################
-riboaligner.pl: DESCRIPTION
+riboaligner.pl: SUMMARY
 
 The riboaligner.pl script is a 'wrapper' script for ribotyper.pl. It runs
 ribotyper.pl and does some additional post-processing. Specifically,
 it aligns all the sequences that ribotyper.pl has defined as belonging
 to certain categories (by default SSU.archaea and SSU.bacteria) and
 classifies the length of those sequences. (The default set of
-categories can be changed using the -i option.) It also creates
-multiple alignments of the input sequences (one alignment per length
-class). This script can be useful if you are trying to determine which
-sequences are full length or partial in your dataset.
+categories can be changed using the -i option.) This script can be
+useful if you are trying to determine which sequences are full length
+or partial in your dataset.
 
-----------------------------------------------------------------------------
-riboaligner.pl: EXAMPLE RUN
+Setup: if you followed the instructions above and can
+successfully run ribotyper.pl you should be able to also run
+riboaligner.pl.
 
 Following, is an example run using the file example-rlc-11.fa in the
-testfiles/ directory, with output. Run the command:
+testfiles/ directory, with output. In the example, the command given is: 
+> riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-rlc
 
-> riboaligner.pl $RIBODIR/testfiles/example-ra-11.fa test-ra
+If you did not fully copy or clone the ribotyper files and set $RIBODIR to
+a directory in which you have write permission, then you should run instead
+> riboaligner.pl <user directory>/testfiles/example-rlc-11.fa test-rlc
+
+where <user directory> is the directory in which riboaligner.pl is installed.
+
+> riboaligner.pl $RIBODIR/testfiles/example-rlc-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.29 (Oct 2018)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Tue Jan 22 15:13:29 2019
-# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34
-# $RIBOEASELDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
-# $RIBOINFERNALDIR:  /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
+# date:              Mon Oct 15 14:49:05 2018
+# $RIBODIR:          /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
 #
-# target sequence input file:   /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34/testfiles/example-ra-11.fa
-# output directory name:        test-ra
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [    0.0 seconds]
-# Running ribotyper                                ... done. [    3.0 seconds]
-# Running cmalign and classifying sequence lengths ... done. [    3.4 seconds]
-# Extracting alignments for each length class      ... done. [    0.1 seconds]
+# Running ribotyper                                ... done. [    5.2 seconds]
+# Running cmalign and classifying sequence lengths ... done. [    5.4 seconds]
+# Extracting alignments for each length class      ... done. [    0.3 seconds]
 #
 # WARNING: 1 sequence(s) were not aligned because they were not classified by ribotyper into one of: SSU.Archaea SSU.Bacteria
 #  01223::Audouinella_hermannii.::AF026040
@@ -1271,14 +1249,11 @@ testfiles/ directory, with output. Run the command:
 #
 # All output files created in directory ./test-ra/
 #
-# Elapsed time:  00:00:06.47
-#                hh:mm:ss
+# Elapsed time:  00:00:10.90
+#            hh:mm:ss
 # 
 # RIBO-SUCCESS
 --------------
-
-----------------------------------------------------------------------------
-riboaligner.pl: OUTPUT
 
 The output of the program (above) lists all of the files that were
 created, including a ribotyper output directory (test-ra-rt) and
@@ -1339,9 +1314,6 @@ created by the above command:
 Columns 1-5 and 9 are redundant with columns 1-6 in the 'short' format
 output file from ribotyper.pl. 
 
-----------------------------------------------------------------------------
-riboaligner.pl: ALL COMMAND LINE OPTIONS
-
 You can see the command-line options for riboaligner.pl using
 the -h option, just as with ribotyper.pl:
 
@@ -1395,7 +1367,7 @@ instead.
 
 -----------------------------
 ##############################################################################
-ribodbmaker.pl: DESCRIPTION
+ADDITIONAL SCRIPT: ribodbmaker.pl
 
 The script 'ribodbmaker.pl' is also included in the ribotyper
 distribution. This script is designed to start from an input file of
@@ -1421,6 +1393,10 @@ other sequences in their taxonomic group are removed.
 Sequences that survive that are then (optionally) clustered and
 centroids for each cluster are selected.
 
+Setup: if you followed the instructions above and can
+successfully run ribotyper.pl you should be able to also run
+ribodbmaker.pl.
+
 There are two common usage cases for ribodbmaker.pl:
 
 Usage 1: create a representative database of high quality sequences 
@@ -1429,9 +1405,6 @@ Usage 2: create a subset of high quality sequences
 Below is an example of a run for each usage case, using a randomly
 selected set of 100 fungal SSU rRNA sequences - the
 testfiles/fungi-ssu.r100.fa file.
-
-----------------------------------------------------------------------------
-ribosensor.pl: EXAMPLE RUN 1 OF 2
 
 Usage 1: create a representative database of high quality sequences 
 > ribodbmaker.pl -f --model SSU.Eukarya --skipfribo1 --ribo2hmm $RIBODIR/testfiles/fungi-ssu.r100.fa u1-r100

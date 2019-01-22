@@ -31,7 +31,10 @@ echo "Determining current directory ... "
 echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 echo "Installing vecscreen_plus_taxonomy ... "
-curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; rm vecscreen_plus_taxonomy-$TMPVERSION2.zip
+curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; 
+unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; 
+rm vecscreen_plus_taxonomy-$TMPVERSION2.zip
+(cd vecscreen_plus_taxonomy-$TMPVERSION2/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
 
 ################
 # Output the final message:
