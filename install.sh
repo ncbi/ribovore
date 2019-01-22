@@ -16,7 +16,6 @@ RIBOINSTALLDIR=$PWD
 echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 
 echo "------------------------------------------------"
-echo "Cloning github repos with required code ... "
 # Clone what we need from GitHub (these are all public)
 # ribovore
 TMPVERSION1="0.13"
@@ -26,16 +25,18 @@ DVERSION="ribotyper-$VERSION"
 BLASTVERSION="2.8.1"
 
 # ribovore
+echo "Installing ribovore ... "
 curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archive/$VERSION.zip; unzip ribovore-$VERSION.zip; rm ribovore-$VERSION.zip
 
 # rRNA_sensor
+echo "Installing rRNA_sensor ... "
 curl -k -L -o rRNA_sensor-$TMPVERSION1.zip https://github.com/aaschaffer/rRNA_sensor/archive/$TMPVERSION1.zip; unzip rRNA_sensor-$TMPVERSION1.zip; rm rRNA_sensor-$TMPVERSION1.zip
 
 # epn-options, epn-ofile epn-test
+echo "Installing required perl modules ... "
 for m in epn-options epn-ofile epn-test; do 
     curl -k -L -o $m-$DVERSION.zip https://github.com/nawrockie/$m/archive/$DVERSION.zip; unzip $m-$DVERSION.zip; rm $m-$DVERSION.zip
 done
-echo "Finished cloning github repos with required code."
 
 ##########BEGINNING OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
 # Install Infernal 1.1.2
@@ -54,46 +55,7 @@ cd $RIBOINSTALLDIR
 #echo "Finished installing Infernal 1.1.2"
 #echo "------------------------------------------------"
 ##########END OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
-#
-# Other software that is optional to install: 
 # 
-# vecscreen_plus_taxonomy
-# This is only necessary if you want to run the ribodbmaker.pl program.
-# To install it, uncomment the line below.
-#
-##########BEGINNING OF LINES TO UNCOMMENT TO INSTALL vecscreen_plus_taxonomy##########################
-curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; rm vecscreen_plus_taxonomy-$TMPVERSION2.zip
-##########END OF LINES TO UNCOMMENT TO INSTALL vecscreen_plus_taxonomy##########################
-# 
-#
-################
-# blastn:
-#
-# This may already be on your system. If not, you can uncomment the
-# lines below to install blastn. Only uncomment the 2 lines that
-# are appropriate for your system/os.
-#
-# For 64-bit mac os/x:
-#~~~~~~~~~~~~~
-##########BEGINNING OF LINES TO UNCOMMENT TO INSTALL blastn FOR MAC OS/X##########################
-curl -k -L -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BLASTVERSION/ncbi-blast-$BLASTVERSION+-x64-macosx.tar.gz
-tar xfz blastn.tar.gz
-##########END OF LINES TO UNCOMMENT TO INSTALL blastn FOR MAC OS/X##########################
-#~~~~~~~~~~~~~
-# 
-# For Linux: 
-#~~~~~~~~~~~~~
-##########BEGINNING OF LINES TO UNCOMMENT TO INSTALL blastn FOR LINUX##########################
-# curl -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-linux.tar.gz
-# tar xfz blastn.tar.gz
-##########END OF LINES TO UNCOMMENT TO INSTALL blastn FOR LINUX##########################
-#~~~~~~~~~~~~~
-# 
-# The above commands will download the
-# latest version of blast+. You may want to install version 2.8.1+
-# which is known to be compatible with this version of ribovore.
-# Those files are at ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.8.1/
-#
 ################
 # Output the final message:
 echo "The final step is to update your environment variables."
@@ -105,9 +67,7 @@ echo ""
 echo "export RIBODIR=\"$RIBOINSTALLDIR/ribovore-$VERSION\""
 echo "export RIBOINFERNALDIR=\"$RIBOINSTALLDIR/bin\""
 echo "export RIBOEASELDIR=\"$RIBOINSTALLDIR/bin\""
-echo "export RIBOBLASTDIR=\"/usr/bin\""
 echo "export RIBOTIMEDIR=\"/usr/bin\""
-echo "export VECPLUSDIR=\"$RIBOINSTALLDIR/vecscreen_plus_taxonomy-$TMPVERSION2\""
 echo "export SENSORDIR=\"$RIBOINSTALLDIR/rRNA_sensor-$TMPVERSION1\""
 echo "export EPNOPTDIR=\"$RIBOINSTALLDIR/epn-options-$DVERSION\""
 echo "export EPNOFILEDIR=\"$RIBOINSTALLDIR/epn-ofile-$DVERSION\""
@@ -128,9 +88,7 @@ echo ""
 echo "setenv RIBODIR \"$RIBOINSTALLDIR/ribovore-$VERSION\""
 echo "setenv RIBOINFERNALDIR \"$RIBOINSTALLDIR/bin\""
 echo "setenv RIBOEASELDIR \"$RIBOINSTALLDIR/bin\""
-echo "setenv RIBOBLASTDIR \"/usr/bin\""
 echo "setenv RIBOTIMEDIR \"/usr/bin\""
-echo "setenv VECPLUSDIR \"$RIBOINSTALLDIR/vecscreen_plus_taxonomy-$TMPVERSION2\""
 echo "setenv SENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor-$TMPVERSION1\""
 echo "setenv EPNOPTDIR \"$RIBOINSTALLDIR/epn-options-$DVERSION\""
 echo "setenv EPNOFILEDIR \"$RIBOINSTALLDIR/epn-ofile-$DVERSION\""
