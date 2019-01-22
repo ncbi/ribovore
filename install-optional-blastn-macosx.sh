@@ -10,6 +10,7 @@
 #
 VERSION="0.34"
 BLASTVERSION="2.8.1"
+BLASTDIR="ncbi-blast-$BLASTVERSION+"
 
 # The following line will make the script fail if any commands fail
 set -e
@@ -51,7 +52,7 @@ echo ""
 echo "If you are using the bash shell, add the following"
 echo "lines to the '.bashrc' file in your home directory:"
 echo ""
-echo "export RIBOBLASTDIR=\"/usr/bin\""
+echo "export RIBOBLASTDIR=\"$RIBOINSTALLDIR/$BLASTDIR/bin\""
 echo "export BLASTDB=\"\$SENSORDIR:\$BLASTDB\""
 echo ""
 echo "After adding the export lines to your .bashrc file, source that file"
@@ -63,7 +64,7 @@ echo "---"
 echo "If you are using the C shell, add the following"
 echo "lines to the '.cshrc' file in your home directory:"
 echo ""
-echo "setenv RIBOBLASTDIR \"/usr/bin\""
+echo "setenv RIBOBLASTDIR \"$RIBOINSTALLDIR/$BLASTDIR/bin\""
 echo "setenv BLASTDB \"\$SENSORDIR\":\"\$BLASTDB\""
 echo ""
 echo "After adding the setenv lines to your .bashrc file, source that file"
