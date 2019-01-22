@@ -8,6 +8,7 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 BLASTVERSION="2.8.1"
+VERSION="0.34"
 
 # The following line will make the script fail if any commands fail
 set -e

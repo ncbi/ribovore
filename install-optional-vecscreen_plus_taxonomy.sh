@@ -9,6 +9,7 @@
 #
 RIBOINSTALLDIR=$PWD
 TMPVERSION2="0.16"
+VERSION="0.34"
 
 #
 # The following line will make the script fail if any commands fail

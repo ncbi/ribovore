@@ -8,10 +8,12 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 #
+VERSION="0.34"
 BLASTVERSION="2.8.1"
 
 # The following line will make the script fail if any commands fail
 set -e
+
 echo "--------------------------------------------------------"
 echo "INSTALLING blastn $BLASTVERSION FOR RIBOVORE $VERSION"
 echo "--------------------------------------------------------"
