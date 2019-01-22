@@ -7,22 +7,32 @@
 # A shell script for installing ribovore its dependencies
 # for ribosomal RNA sequence analysis.
 #
-# The following line will make the script fail if any commands fail
-set -e
-#
-echo "------------------------------------------------"
-echo "Determining current directory ... "
 RIBOINSTALLDIR=$PWD
-echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
-
-echo "------------------------------------------------"
-# Clone what we need from GitHub (these are all public)
-# ribovore
 TMPVERSION1="0.13"
 TMPVERSION2="0.16"
 VERSION="0.34"
 DVERSION="ribotyper-$VERSION"
 BLASTVERSION="2.8.1"
+
+# The following line will make the script fail if any commands fail
+set -e
+#
+echo "------------------------------------------------"
+echo "INSTALLING RIBOVORE $VERSION"
+echo "------------------------------------------------"
+echo ""
+echo "************************************************************"
+echo "IMPORTANT: BEFORE YOU WILL BE ABLE TO RUN RIBOVORE"
+echo "SCRIPTS, YOU NEED TO FOLLOW THE INSTRUCTIONS OUTPUT AT"
+echo "THE END OF THIS SCRIPT TO UPDATE YOUR ENVIRONMENT VARIABLES."
+echo "************************************************************"
+echo ""
+echo "Determining current directory ... "
+echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
+
+echo "------------------------------------------------"
+# Clone what we need from GitHub (these are all public)
+# ribovore
 
 # ribovore
 echo "Installing ribovore ... "
@@ -58,6 +68,9 @@ cd $RIBOINSTALLDIR
 # 
 ################
 # Output the final message:
+echo ""
+echo ""
+echo "********************************************************"
 echo "The final step is to update your environment variables."
 echo "(See ribovore/00README.txt for more information.)"
 echo ""

@@ -7,15 +7,27 @@
 # A shell script for installing vecscreen_plus_taxonomy
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
-# The following line will make the script fail if any commands fail
-set -e
-#
-echo "------------------------------------------------"
-echo "Determining current directory ... "
 RIBOINSTALLDIR=$PWD
 TMPVERSION2="0.16"
-echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 
+#
+# The following line will make the script fail if any commands fail
+set -e
+
+#
+echo "--------------------------------------------------------"
+echo "INSTALLING vecscreen_plus_taxonomy FOR RIBOVORE $VERSION"
+echo "--------------------------------------------------------"
+echo ""
+echo "************************************************************"
+echo "IMPORTANT: BEFORE YOU WILL BE ABLE TO RUN RIBOVORE"
+echo "SCRIPTS, YOU NEED TO FOLLOW THE INSTRUCTIONS OUTPUT AT"
+echo "THE END OF THIS SCRIPT TO UPDATE YOUR ENVIRONMENT VARIABLES."
+echo "************************************************************"
+echo ""
+echo "------------------------------------------------"
+echo "Determining current directory ... "
+echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 echo "Installing vecscreen_plus_taxonomy ... "
 curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; rm vecscreen_plus_taxonomy-$TMPVERSION2.zip

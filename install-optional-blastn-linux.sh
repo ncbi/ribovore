@@ -7,15 +7,26 @@
 # A shell script for installing blastn (linux)
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
+BLASTVERSION="2.8.1"
+
 # The following line will make the script fail if any commands fail
 set -e
-#
+
+echo "--------------------------------------------------------"
+echo "INSTALLING blastn $BLASTVERSION FOR RIBOVORE $VERSION"
+echo "--------------------------------------------------------"
+echo ""
+echo "************************************************************"
+echo "IMPORTANT: BEFORE YOU WILL BE ABLE TO RUN RIBOVORE"
+echo "SCRIPTS, YOU NEED TO FOLLOW THE INSTRUCTIONS OUTPUT AT"
+echo "THE END OF THIS SCRIPT TO UPDATE YOUR ENVIRONMENT VARIABLES."
+echo "************************************************************"
+echo ""
 echo "------------------------------------------------"
 echo "Determining current directory ... "
 RIBOINSTALLDIR=$PWD
 echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 
-BLASTVERSION="2.8.1"
 ################
 # blastn:
 #
