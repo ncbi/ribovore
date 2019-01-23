@@ -49,9 +49,6 @@ THE DEFAULT MODEL FILE
 
 Author: Eric Nawrocki
 
-Current location of code and other relevant files at NCBI:
-/panfs/pan1/dnaorg/ssudetection/code/ribotyper-v1/
-
 Git repository for ribovore:
 https://github.com/nawrockie/ribovore.git
 
