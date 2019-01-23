@@ -1,12 +1,13 @@
 EPN, Thu Jan 17 11:23:11 2019
 
-ribovore v0.35 README
+ribovore v0.35 README.txt
 
 Organization of this file:
 
-INTRO
+INTRODUCTION
+INSTALLATION
 SETTING UP ENVIRONMENT VARIABLES
-PREREQUISITE PROGRAMS
+VERIFYING SUCCESSFUL INSTALLATION WITH TEST RUNS
 
 ribotyper.pl: DESCRIPTION
 ribotyper.pl: EXAMPLE RUN
@@ -29,12 +30,15 @@ riboaligner.pl: OUTPUT
 riboaligner.pl: ALL COMMAND LINE OPTIONS
 
 ribodbmaker.pl: DESCRIPTION
+ribodbmaker.pl: EXAMPLE RUN 1 OF 2
+ribodbmaker.pl: OUTPUT 
+ribodbmaker.pl: EXAMPLE RUN 2 OF 2
+ribodbmaker.pl: ALL COMMAND LINE OPTIONS
 
 PARALLELIZING ON A SGE COMPUTE FARM
-TESTING SCRIPTS
 
 ##############################################################################
-INTRO
+INTRODUCTION
 
 This is documentation for ribovore, a suite of tools for detecting, 
 classifying and analyzing small subunit (SSU) rRNA and large subunit
@@ -112,7 +116,7 @@ also included below for reference, but with strings like:
 
 --
 Before you can run any ribovore scripts, you will need to update some of your
-environment variables. To do this, add the following four lines to
+environment variables. To do this, add the following lines to
 your .bashrc file (if you use bash shell) or .cshrc file (if you use C
 shell or tcsh). The .bashrc or .cshrc file is in your home
 directory. To determine what shell you use, type
@@ -199,6 +203,103 @@ or
 again.
 
 ###########################################################################
+VERIFYING SUCCESSFUL INSTALLATION WITH TEST RUNS
+
+The ribotest.pl script is included in the ribotyper package for
+testing scripts to make sure your installation was successful.
+It runs the ribovore scripts on small datasets and compares the
+output with expected outputs. It is also used during development for
+regression testing.
+
+There are 9 shell scripts for running tests. You will want to run one
+or more of these to validate that your installation was successful:
+
+     1	do-ribotyper-tests.sh
+     2	do-riboaligner-tests.sh
+     3	do-ribosensor-tests.sh
+     4	do-ribodbmaker-tests.sh
+     5	do-ribotyper-parallel-tests.sh
+     6	do-riboaligner-parallel-tests.sh
+     7	do-ribosensor-parallel-tests.sh
+     8	do-ribodbmaker-parallel-tests.sh
+     9	do-all-tests.sh
+
+All users will want to run at least 'do-ribotyper-tests.sh' and 
+'do-riboaligner-tests.sh' because those should pass for all
+installations. 
+
+If you additionally installed blastn or have it installed and updated
+your RIBOBLASTDIR environment variable accordingly (see SETTING UP
+ENVIRONMENT VARIABLES section), then you will additionally want to 
+run 'do-ribosensor-tests.sh'.
+
+If you have blastn installed *and* installed
+vecscreen_plus_taxonomy.pl then you will also want to run
+'do-ribodbmaker-tests.sh'.
+
+If you want to run the ribovore scripts in parallel across multiple
+machines on a SGE farm (see PARALLELIZING ON A SGE COMPUTE FARM
+section), then you will want to additionally run the test scripts that
+end with '-parallel-tests.sh', for the same set that you did for
+non-parallel tests.
+
+If you want to run all tests (parallel and non-parallel), you can do
+so with one command with the 'do-all-tests.sh' script.
+
+--
+Below is an example test for 'do-ribotyper-tests.sh'
+
+> cat $RIBODIR/testfiles/do-ribotyper-tests.sh
+$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/ribotyper.testin rt-test
+rm -rf rt-test
+
+Here is example output if we run that script:
+> sh $RIBODIR/testfiles/do-ribotyper-tests.sh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
+# ribotyper 0.35 (Jan 2019)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:      Wed Jan 23 10:14:53 2019
+# $RIBODIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.34
+#
+# test file:                    /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35/testfiles/ribotyper.testin
+# output directory name:        rt-test
+# forcing directory overwrite:  yes [-f]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Running command  1 [      ribotyper-1-16]          ... done. [    8.0 seconds]
+#	checking test-16/test-16.ribotyper.short.out                 ... pass
+#	checking test-16/test-16.ribotyper.long.out                  ... pass
+#	removing directory test-16                                   ... done
+# Running command  2 [     ribotyper-2-100]          ... done. [   26.6 seconds]
+#	checking r100/r100.ribotyper.short.out                       ... pass
+#	checking r100/r100.ribotyper.long.out                        ... pass
+#	removing directory r100                                      ... done
+#
+#
+# PASS: all 4 files were created correctly.
+#
+#
+# List and description of all output files saved in:   rt-test.ribotest.list
+# Output printed to screen saved in:                   rt-test.ribotest.log
+# List of executed commands saved in:                  rt-test.ribotest.cmd
+#
+# All output files created in directory ./rt-test/
+#
+# Elapsed time:  00:00:35.13
+#                hh:mm:ss
+# 
+# RIBO-SUCCESS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The most important line is the line that begins with "# PASS"
+
+# PASS: all 4 files were created correctly.
+
+This means that the test has passed. You should see a similar 
+line when you run the other tests. If you do not and need help
+figuring out why, email me at eric.nawrocki@nih.gov.
+
+###########################################################################
 ribotyer.pl: DESCRIPTION
 
 ribotyper.pl is a tool for classifying and validating SSU and/or LSU
@@ -263,10 +364,10 @@ Example output of the script from the above command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 > ribotyper.pl -f example-16.fa test
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Tue Jan 22 14:02:43 2019
-# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34
+# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.35
 # $RIBOEASELDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
 # $RIBOINFERNALDIR:  /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
 #
@@ -692,7 +793,7 @@ calling it at the command line with the -h option:
 
 > ribotyper.pl -h
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Tue Jan 22 14:09:04 2019
 #
@@ -858,11 +959,11 @@ ribosensor.pl: OUTPUT
 Example output of the script from the first command above
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Tue Jan 22 14:30:06 2019
 # $RIBOBLASTDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ncbi-blast-2.8.1+/bin
-# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34
+# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.35
 # $RIBOEASELDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
 # $RIBOINFERNALDIR:  /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
 # $RIBOTIMEDIR:      /usr/bin
@@ -1151,7 +1252,7 @@ it with the -h option:
 
 > ribosensor.pl -h
 # ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Tue Jan 22 15:07:35 2019
 #
@@ -1212,14 +1313,14 @@ testfiles/ directory, with output. Run the command:
 > riboaligner.pl $RIBODIR/testfiles/example-ra-11.fa test-ra
 --------------
 # riboaligner.pl :: classify lengths of ribosomal RNA sequences
-# ribotyper 0.34 (Nov 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Tue Jan 22 15:13:29 2019
-# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34
+# $RIBODIR:          /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.35
 # $RIBOEASELDIR:     /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
 # $RIBOINFERNALDIR:  /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/bin
 #
-# target sequence input file:   /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.34/testfiles/example-ra-11.fa
+# target sequence input file:   /Users/nawrocke/local-notebook/19_0117_ribo_test_install/test-install/ribovore-0.35/testfiles/example-ra-11.fa
 # output directory name:        test-ra
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [    0.0 seconds]
@@ -1412,7 +1513,7 @@ This script performs the following tests:
  - fail sequences that do not have a specified species taxid
  - fail sequences that have non-Weak VecScreen hits
  - fail sequences that have repetitive sequences revealed by
-   self-BLAST
+   BLAST against self
  - fail sequences that fail ribotyper
  - fail sequences that fail riboaligner
  - fail sequences that do cover a specified span of model positions
@@ -1435,52 +1536,53 @@ selected set of 100 fungal SSU rRNA sequences - the
 testfiles/fungi-ssu.r100.fa file.
 
 ----------------------------------------------------------------------------
-ribosensor.pl: EXAMPLE RUN 1 OF 2
+ribodbmaker.pl: EXAMPLE RUN 1 OF 2
 
 Usage 1: create a representative database of high quality sequences 
+
 > ribodbmaker.pl -f --model SSU.Eukarya --skipfribo1 --ribo2hmm $RIBODIR/testfiles/fungi-ssu.r100.fa u1-r100
 
--------------
+------------------------------
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.29 (Oct 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Mon Oct 15 14:50:54 2018
-# $RIBOBLASTDIR:  /usr/bin
-# $RIBODIR:       /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1
-# $RIBOEASELDIR:  /usr/local/infernal/1.1.2/bin
+# date:           Tue Jan 22 21:26:27 2019
+# $RIBOBLASTDIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ncbi-blast-2.8.1+/bin
+# $RIBODIR:       /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35
+# $RIBOEASELDIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/bin
 # $RIBOTAXDIR:    /panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
-# $VECPLUSDIR:    /panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy
+# $VECPLUSDIR:    /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/vecscreen_plus_taxonomy-0.16
 #
-# input sequence file:                                          /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1/testfiles/fungi-ssu.r100.fa
-# output directory name:                                        u1-r100                                                                                         
-# forcing directory overwrite:                                  yes [-f]                                                                                        
-# skip 1st stage that filters based on ribotyper:               yes [--skipfribo1]                                                                              
-# model to use is <s>:                                          SSU.Eukarya [--model]                                                                           
-# run ribotyper stage 2 in HMM-only mode (do not use --2slow):  yes [--ribo2hmm]                                                                                
+# input sequence file:                                          /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35/testfiles/fungi-ssu.r100.fa
+# output directory name:                                        u1-r100
+# forcing directory overwrite:                                  yes [-f]
+# skip 1st stage that filters based on ribotyper:               yes [--skipfribo1]
+# model to use is <s>:                                          SSU.Eukarya [--model]
+# run ribotyper stage 2 in HMM-only mode (do not use --2slow):  yes [--ribo2hmm]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# [Stage: prelim] Validating input files                                           ... done. [    0.0 seconds]
-# [Stage: prelim] Copying input fasta file                                         ... done. [    0.1 seconds]
-# [Stage: prelim] Reformatting names of sequences                                  ... done. [    0.0 seconds]
-# [Stage: prelim] Determining target sequence lengths                              ... done. [    0.1 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [   35.5 seconds]
-# [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [    0.0 seconds,     95 pass;      5 fail;]
-# [Stage: ftaxid] Filtering for specified species                                  ... done. [    3.9 seconds,     61 pass;     39 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [    4.4 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [    2.4 seconds,    100 pass;      0 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [   66.1 seconds,     70 pass;     30 fail;]
-# [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [    0.0 seconds,     70 pass;      0 fail;]
-# [Stage: fmspan] Filtering out seqs based on model span                           ... done. [    0.0 seconds,     32 pass;     38 fail;]
-# [***Checkpoint] Creating lists that survived all filter stages                   ... done. [    0.0 seconds,     18 pass;     82 fail; ONLY PASSES ADVANCE]
-# [Stage: ingrup] Determining percent identities in alignments                     ... done. [    0.1 seconds]
-# [Stage: ingrup] Performing ingroup analysis                                      ... done. [    1.2 seconds,     18 pass;      0 fail;]
-# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [    0.0 seconds, 0 phyla lost]
-# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [    0.0 seconds, 0 classes lost]
-# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [    0.0 seconds, 0 orders lost]
-# [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [    0.0 seconds,     18 pass;      0 fail; ONLY PASSES ADVANCE]
-# [***OutputFile] Generating model span survival tables for all seqs               ... done. [    6.5 seconds]
-# [***OutputFile] Generating model span survival tables for PASSing seqs           ... done. [    4.4 seconds]
-# [Stage: clustr] Clustering surviving sequences                                   ... done. [    0.1 seconds]
-# [***Checkpoint] Creating lists of seqs that survived clustering                  ... done. [    0.0 seconds,      9 pass;      9 fail;]
+# [Stage: prelim] Validating input files                                            ... done. [    0.0 seconds]
+# [Stage: prelim] Copying input fasta file                                          ... done. [    0.1 seconds]
+# [Stage: prelim] Reformatting names of sequences                                   ... done. [    0.0 seconds]
+# [Stage: prelim] Determining target sequence lengths                               ... done. [    0.2 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                  ... done. [   42.7 seconds]
+# [Stage: fambig] Filtering based on ambiguous nucleotides                          ... done. [    0.0 seconds,     95 pass;      5 fail;]
+# [Stage: ftaxid] Filtering for specified species                                   ... done. [    5.1 seconds,     61 pass;     39 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                       ... done. [    5.4 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                      ... done. [    2.5 seconds,    100 pass;      0 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                            ... done. [   87.5 seconds,     70 pass;     30 fail;]
+# [Stage: fribo2] Filtering out seqs riboaligner identified as too long             ... done. [    0.0 seconds,     70 pass;      0 fail;]
+# [Stage: fmspan] Filtering out seqs based on model span                            ... done. [    0.0 seconds,     32 pass;     38 fail;]
+# [***Checkpoint] Creating lists that survived all filter stages                    ... done. [    0.0 seconds,     18 pass;     82 fail; ONLY PASSES ADVANCE]
+# [Stage: ingrup] Determining percent identities in alignments                      ... done. [    0.1 seconds]
+# [Stage: ingrup] Performing ingroup analysis                                       ... done. [    1.2 seconds,     18 pass;      0 fail;]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                        ... done. [    0.0 seconds, 0 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                      ... done. [    0.0 seconds, 0 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                       ... done. [    0.0 seconds, 0 orders lost]
+# [***Checkpoint] Creating lists that survived ingroup analysis                     ... done. [    0.0 seconds,     18 pass;      0 fail; ONLY PASSES ADVANCE]
+# [***OutputFile] Generating model span survival tables for all seqs                ... done. [    7.0 seconds]
+# [***OutputFile] Generating model span survival tables for PASSing seqs            ... done. [    4.9 seconds]
+# [Stage: clustr] Clustering surviving sequences                                    ... done. [    0.1 seconds]
+# [***Checkpoint] Creating lists of seqs that survived clustering                   ... done. [    0.0 seconds,      9 pass;      9 fail;]
 #
 # Number of input sequences:                                                100  [listed in u1-r100/u1-r100.ribodbmaker.full.seqlist]
 # Number surviving all filter stages:                                        18  [listed in u1-r100/u1-r100.ribodbmaker.surv_filters.pass.seqlist]
@@ -1508,15 +1610,16 @@ Usage 1: create a representative database of high quality sequences
 #
 # All output files created in directory ./u1-r100/
 #
-# Elapsed time:  00:02:04.97
-#            hh:mm:ss
+# Elapsed time:  00:02:37.19
+#                hh:mm:ss
 # 
 # RIBO-SUCCESS
--------------
+------------------------------
+ribodbmaker.pl: OUTPUT 
 
 The output indicates how many sequences pass and fail each test. In
 this example, only 16 of the 100 sequences pass all the filter stages. Of
-these, 15 survive the 'ingroup analysis'. And 5 survive the clustering
+these, 18 survive the 'ingroup analysis'. And 9 survive the clustering
 step.
 
 Many output files are created. For a complete list see
@@ -1592,46 +1695,50 @@ file. The beginning of the file explains the information in each column:
 10    JX644478.1    1042   443158     4827  2212703  1913637  FAIL      -        -  mdlspan[68-1117];;
 
 -------------------------------
+ribodbmaker.pl: EXAMPLE RUN 2 OF 2
+
 Usage 2: create a subset of high quality sequences
+
 > ribodbmaker.pl -f --model SSU.Eukarya --skipclustr $RIBODIR/testfiles/fungi-ssu.r100.fa u2-r100
+
 # ribodbmaker.pl :: create representative database of ribosomal RNA sequences
-# ribotyper 0.28 (Sep 2018)
+# ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:           Mon Oct 15 14:54:42 2018
-# $RIBOBLASTDIR:  /usr/bin
-# $RIBODIR:       /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1
-# $RIBOEASELDIR:  /usr/local/infernal/1.1.2/bin
+# date:           Tue Jan 22 21:31:06 2019
+# $RIBOBLASTDIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ncbi-blast-2.8.1+/bin
+# $RIBODIR:       /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35
+# $RIBOEASELDIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/bin
 # $RIBOTAXDIR:    /panfs/pan1/dnaorg/rrna/git-ncbi-rrna-project/taxonomy-files
-# $VECPLUSDIR:    /panfs/pan1/dnaorg/ssudetection/code/vecscreen_plus_taxonomy
+# $VECPLUSDIR:    /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/vecscreen_plus_taxonomy-0.16
 #
-# input sequence file:                           /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1/testfiles/fungi-ssu.r100.fa
-# output directory name:                         u2-r100                                                                                         
-# forcing directory overwrite:                   yes [-f]                                                                                        
-# skip stage that clusters surviving sequences:  yes [--skipclustr]                                                                              
-# model to use is <s>:                           SSU.Eukarya [--model]                                                                           
+# input sequence file:                           /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35/testfiles/fungi-ssu.r100.fa
+# output directory name:                         u2-r100
+# forcing directory overwrite:                   yes [-f]
+# skip stage that clusters surviving sequences:  yes [--skipclustr]
+# model to use is <s>:                           SSU.Eukarya [--model]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# [Stage: prelim] Validating input files                                           ... done. [    0.0 seconds]
-# [Stage: prelim] Copying input fasta file                                         ... done. [    0.0 seconds]
-# [Stage: prelim] Reformatting names of sequences                                  ... done. [    0.0 seconds]
-# [Stage: prelim] Determining target sequence lengths                              ... done. [    0.1 seconds]
-# [Stage: prelim] Running srcchk for all sequences                                 ... done. [   35.9 seconds]
-# [Stage: fambig] Filtering based on ambiguous nucleotides                         ... done. [    0.0 seconds,     95 pass;      5 fail;]
-# [Stage: ftaxid] Filtering for specified species                                  ... done. [    4.2 seconds,     61 pass;     39 fail;]
-# [Stage: fvecsc] Identifying vector sequences with VecScreen                      ... done. [    2.8 seconds,     99 pass;      1 fail;]
-# [Stage: fblast] Identifying repeats by BLASTing against self                     ... done. [    2.9 seconds,    100 pass;      0 fail;]
-# [Stage: fribo1] Running ribotyper.pl                                             ... done. [   21.2 seconds,     94 pass;      6 fail;]
-# [Stage: fribo2] Running riboaligner.pl                                           ... done. [  339.9 seconds,     92 pass;      8 fail;]
-# [Stage: fribo2] Filtering out seqs riboaligner identified as too long            ... done. [    0.0 seconds,     92 pass;      0 fail;]
-# [Stage: fmspan] Filtering out seqs based on model span                           ... done. [    0.0 seconds,     44 pass;     48 fail;]
-# [***Checkpoint] Creating lists that survived all filter stages                   ... done. [    0.0 seconds,     19 pass;     81 fail; ONLY PASSES ADVANCE]
-# [Stage: ingrup] Determining percent identities in alignments                     ... done. [    0.0 seconds]
-# [Stage: ingrup] Performing ingroup analysis                                      ... done. [    1.2 seconds,     19 pass;      0 fail;]
-# [Stage: ingrup] Identifying phyla lost in ingroup analysis                       ... done. [    0.0 seconds, 0 phyla lost]
-# [Stage: ingrup] Identifying classes lost in ingroup analysis                     ... done. [    0.0 seconds, 0 classes lost]
-# [Stage: ingrup] Identifying orders lost in ingroup analysis                      ... done. [    0.0 seconds, 0 orders lost]
-# [***Checkpoint] Creating lists that survived ingroup analysis                    ... done. [    0.0 seconds,     19 pass;      0 fail; ONLY PASSES ADVANCE]
-# [***OutputFile] Generating model span survival tables for all seqs               ... done. [    9.7 seconds]
-# [***OutputFile] Generating model span survival tables for PASSing seqs           ... done. [    3.2 seconds]
+# [Stage: prelim] Validating input files                                            ... done. [    0.0 seconds]
+# [Stage: prelim] Copying input fasta file                                          ... done. [    0.1 seconds]
+# [Stage: prelim] Reformatting names of sequences                                   ... done. [    0.0 seconds]
+# [Stage: prelim] Determining target sequence lengths                               ... done. [    0.2 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                  ... done. [   42.7 seconds]
+# [Stage: fambig] Filtering based on ambiguous nucleotides                          ... done. [    0.0 seconds,     95 pass;      5 fail;]
+# [Stage: ftaxid] Filtering for specified species                                   ... done. [    5.1 seconds,     61 pass;     39 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                       ... done. [    5.2 seconds,     99 pass;      1 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                      ... done. [    2.6 seconds,    100 pass;      0 fail;]
+# [Stage: fribo1] Running ribotyper.pl                                              ... done. [   27.4 seconds,     94 pass;      6 fail;]
+# [Stage: fribo2] Running riboaligner.pl                                            ... done. [  419.0 seconds,     92 pass;      8 fail;]
+# [Stage: fribo2] Filtering out seqs riboaligner identified as too long             ... done. [    0.0 seconds,     92 pass;      0 fail;]
+# [Stage: fmspan] Filtering out seqs based on model span                            ... done. [    0.0 seconds,     44 pass;     48 fail;]
+# [***Checkpoint] Creating lists that survived all filter stages                    ... done. [    0.0 seconds,     19 pass;     81 fail; ONLY PASSES ADVANCE]
+# [Stage: ingrup] Determining percent identities in alignments                      ... done. [    0.1 seconds]
+# [Stage: ingrup] Performing ingroup analysis                                       ... done. [    1.2 seconds,     19 pass;      0 fail;]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                        ... done. [    0.0 seconds, 0 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                      ... done. [    0.0 seconds, 0 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                       ... done. [    0.0 seconds, 0 orders lost]
+# [***Checkpoint] Creating lists that survived ingroup analysis                     ... done. [    0.0 seconds,     19 pass;      0 fail; ONLY PASSES ADVANCE]
+# [***OutputFile] Generating model span survival tables for all seqs                ... done. [    9.6 seconds]
+# [***OutputFile] Generating model span survival tables for PASSing seqs            ... done. [    5.4 seconds]
 #
 # Number of input sequences:                                                100  [listed in u2-r100/u2-r100.ribodbmaker.full.seqlist]
 # Number surviving all filter stages:                                        19  [listed in u2-r100/u2-r100.ribodbmaker.surv_filters.pass.seqlist]
@@ -1658,8 +1765,8 @@ Usage 2: create a subset of high quality sequences
 #
 # All output files created in directory ./u2-r100/
 #
-# Elapsed time:  00:07:01.61
-#            hh:mm:ss
+# Elapsed time:  00:08:38.92
+#                hh:mm:ss
 # 
 # RIBO-SUCCESS
 
@@ -1670,8 +1777,140 @@ incorporates sequence and structure conservation when it examines
 sequences. 
 
 You can speed up this script (and ribotyper.pl and riboaligner.pl)
-using the -p option. See the PARALLELIZING ON A SGE COMPUTE FARM
-section below.
+via parallelization using the -p option. See the PARALLELIZING ON 
+A SGE COMPUTE FARM section below.
+
+-------------------------------
+ribodbmaker.pl: ALL COMMAND LINE OPTIONS
+
+You can see the command-line options for ribodbmaker.pl using
+the -h option, just as with ribotyper.pl:
+
+> ribodbmaker.pl -h
+# ribodbmaker.pl :: create representative database of ribosomal RNA sequences
+# ribotyper 0.35 (Jan 2019)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:    Tue Jan 22 21:21:55 2019
+#
+Usage: ribodbmaker.pl [-options] <input fasta sequence file> <output directory>
+
+
+basic options:
+  -f            : force; if <output directory> exists, overwrite it
+  -v            : be verbose; output commands to stdout as they're run
+  -n <n>        : use <n> CPUs [1]
+  --keep        : keep all intermediate files that are removed by default
+  --special <s> : read list of special species taxids from <s>
+
+options for skipping stages:
+  --skipfambig : skip stage that filters based on ambiguous nucleotides
+  --skipftaxid : skip stage that filters by taxid
+  --skipfvecsc : skip stage that filters based on VecScreen
+  --skipfblast : skip stage that filters based on BLAST hits to self
+  --skipfribo1 : skip 1st stage that filters based on ribotyper
+  --skipfribo2 : skip 2nd stage that filters based on ribotyper/riboaligner
+  --skipfmspan : skip stage that filters based on model span of hits
+  --skipingrup : skip stage that performs ingroup analysis
+  --skipclustr : skip stage that clusters sequences surviving all filters
+  --skiplistms : skip stage that lists missing taxids
+  --skipmstbl  : skip stage that outputs model span tables
+
+options for excluding seqs based on taxid pre-clustering, but after filter and ingroup stages:
+  --exclist <s> : exclude any seq w/a seq taxid listed in file <s>, post-filters/ingroup
+
+options for controlling the stage that filters based on ambiguous nucleotides:
+  --famaxn <n> : set maximum number of allowed ambiguous nts to <n> [5]
+  --famaxf <x> : set maximum fraction of allowed ambiguous nts to <x> [0.005]
+  --faonlyn    : enforce only max number of ambiguous nts
+  --faonlyf    : enforce only max fraction of ambiguous nts
+
+options for controlling the stage that filters by taxid:
+  --ftstrict : require all taxids for sequences exist in input NCBI taxonomy tree
+
+options for controlling the stage that filters based on self-BLAST hits:
+  --fbcsize <n>    : set num seqs for each BLAST run to <n> [20]
+  --fbcall         : do single BLAST run with all N seqs (CAUTION: slow for large N)
+  --fbword <n>     : set word_size for BLAST to <n> [20]
+  --fbevalue <x>   : set BLAST E-value cutoff to <x> [1]
+  --fbdbsize <n>   : set BLAST dbsize value to <n> [200000000]
+  --fbnominus      : do not consider BLAST self hits to minus strand
+  --fbmdiagok      : consider on-diagonal BLAST self hits to minus strand
+  --fbminuslen <n> : minimum length of BLAST self hit to minus strand is <n> [50]
+  --fbminuspid <x> : minimum percent id of BLAST self hit to minus strand is <x> [95]
+
+options for controlling both ribotyper/riboaligner stages:
+  --model <s>     : model to use is <s> (e.g. SSU.Eukarya)
+  --noscfail      : do not fail sequences in ribotyper with low scores
+  --lowppossc <x> : set --lowppossc <x> option for ribotyper to <x> [0.5]
+
+options for controlling the first stage that filters based on ribotyper:
+  --riboopts1 <s> : use ribotyper options listed in <s>
+  --ribodir1 <s>  : use pre-computed ribotyper dir <s>
+
+options for controlling the second stage that filters based on ribotyper/riboaligner:
+  --rainfo <s>    : use riboaligner.pl model info file <s> instead of default
+  --nomultfail    : do not fail sequences in ribotyper with multiple hits
+  --nocovfail     : do not fail sequences in ribotyper with low coverage
+  --nodifffail    : do not fail sequences in ribotyper with low score difference
+  --tcov <x>      : set --tcov <x> option for ribotyper to <x> [0.99]
+  --ribo2hmm      : run ribotyper stage 2 in HMM-only mode (do not use --2slow)
+  --riboopts2 <s> : use ribotyper options listed in <s>
+  --ribodir2 <s>  : use pre-computed riboaligner dir <s>
+
+options for controlling the stage that filters based on model span of hits::
+  --fmpos <n>  : aligned sequences must span from <n> to L - <n> + 1 for model of length L [60]
+  --fmlpos <n> : aligned sequences must begin at or 5' of position <n>
+  --fmrpos <n> : aligned sequences must end at or 3' of position <n>
+  --fmnogap    : require sequences do not have a gap at lpos and rpos
+
+options for controlling clustering stage::
+  --cfid <x> : set esl-cluster fractional identity to cluster at to <x> [0.97]
+
+options that affect the alignment from which percent identities are calculated::
+  --fullaln     : do not trim alignment to minimum required span before pid calculations
+  --noprob      : do not trim alignment based on post probs before pid calculations
+  --pthresh <x> : posterior probability threshold for alnment trimming is <x> [0.95]
+  --pfract <x>  : seq fraction threshold for post prob alnment trimming is <x> [0.95]
+
+options for reducing the number of passing sequences per taxid::
+  --fione        : only allow 1 sequence per (species) taxid to survive ingroup filter
+  --fimin <n>    : w/--fione, remove all sequences from species with < <n> sequences [1]
+  --figroup      : w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid
+  --fithresh <x> : w/--fione, winning seq is longest seq within <x> percent id of max percent id [0.3]
+
+options for modifying the ingroup stage::
+  --indiffseqtax : only consider sequences from different seq taxids when computing averages and maxes
+
+options for controlling model span survival table output file::
+  --msstep <n>     : for model span output table, set step size to <n> [10]
+  --msminlen <n>   : for model span output table, set min length span to <n> [200]
+  --msminstart <n> : for model span output table, set min start position to <n>
+  --msmaxstart <n> : for model span output table, set max start position to <n>
+  --msminstop <n>  : for model span output table, set min stop position to <n>
+  --msmaxstop <n>  : for model span output table, set max stop position to <n>
+  --mslist <s>     : re-sort model span table to prioritize taxids (orders) in file <s>
+  --msclass        : w/--mslist, taxids in --mslist file are classes not orders
+  --msphylum       : w/--mslist, taxids in --mslist file are phyla not orders
+
+options for changing sequence descriptions (deflines)::
+  --def : standardize sequence descriptions/deflines
+
+options for controlling maximum number of sequences to calculate percent identities for::
+  --pidmax <n> : set maximum number of seqs to compute percent identities for to <n> [40000]
+  --pidforce   : force calculation of percent identities for any number of sequences
+
+options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm:
+  -p         : parallelize ribotyper and riboaligner on a compute farm
+  -q <s>     : use qsub info file <s> instead of default
+  -s <n>     : seed for random number generator is <n> [181]
+  --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
+  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [1440]
+  --errcheck : consider any farm stderr output as indicating a job failure
+
+advanced options for debugging and testing::
+  --prvcmd     : do not execute commands; use output from previous run
+  --pcreclustr : w/--prvcmd, recluster sequences to new pid (--cfid)
+
 
 ##############################################################################
 PARALLELIZING ON A SGE COMPUTE FARM
@@ -1747,87 +1986,3 @@ The --errcheck option makes it so that if any job outputs any data to
 an error file then the ribotyper script will exit in error.
 
 ##############################################################################
-TESTING SCRIPTS 
-
-The ribodbmaker.pl script is included in the ribotyper package for
-testing scripts and is used during development for regression
-testing. 
-
-The testfiles/do-all-tests.sh shell script will perform all the
-tests. It includes 3 non-parallel and 3 parallel tests.
-
-That file:
-> cat $RIBODIR/testfiles/do-all-tests.sh
-# non-parallel 16 sequence test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1
-# parallel 16 sequence test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.example-16 test2
-
-# non-parallel 100 sequence test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.r100 test3
-# parallel 100 sequence test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.r100 test4
-
-# non-parallel ribodbmaker.pl test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.db test5
-# parallel ribodbmaker.pl test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test6
-
-# optionally remove all test directories
-#for d in test-16 test-p-16 test-100 test-p-100 test-db test-p-db; do 
-# rm -rf $d
-#done
-
-To do all tests and save output to the file 'test.out', do:
-
-> sh $RIBODIR/testfiles/do-all-tests.sh > test.out
-
-Here is the output for the first test performed by that script
-($RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1)
-# ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
-# ribotyper 0.29 (Oct 2018)
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:      Mon Oct 15 15:29:40 2018
-# $RIBODIR:  /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1
-#
-# test file:                    /panfs/pan1/infernal/notebook/18_1004_ribosensor_update/ribotyper-v1/testfiles/testin.example-16
-# output directory name:        test1                                                                                           
-# forcing directory overwrite:  yes [-f]                                                                                        
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [      ribotyper-1-16]          ... done. [    4.6 seconds]
-#	checking test-16/test-16.ribotyper.short.out                 ... pass
-#	checking test-16/test-16.ribotyper.long.out                  ... pass
-#	removing directory test-16                                   ... done
-# Running command  2 [    riboaligner-1-16]          ... done. [    8.7 seconds]
-#	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
-#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
-#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
-#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.ifile ... pass
-#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.elfile ... pass
-#	removing directory test-16-2                                 ... done
-#
-#
-# PASS: all 7 files were created correctly.
-#
-#
-# List and description of all output files saved in:   test1.ribotest.list
-# Output printed to screen saved in:                   test1.ribotest.log
-# List of executed commands saved in:                  test1.ribotest.cmd
-#
-# All output files created in directory ./test1/
-#
-# Elapsed time:  00:00:13.70
-#            hh:mm:ss
-# 
-# RIBO-SUCCESS
-
-The most important line is the line that begins with "# PASS"
-
-# PASS: all 7 files were created correctly.
-
-This means that the test has passed. If all tests run succesfully,
-then there will 6 such lines in the test.out output file when the
-tests finish. If any tests fail, it will have a line that begins with
-'# FAIL' instead of this line.
-
-
