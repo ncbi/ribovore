@@ -75,18 +75,22 @@ relevant file into the desired directory (this can be the same directory
 you ran 'install.sh' in) and run it with a command like: 
 './install-optional-blastn-linux.sh'.
 
-You can additionally install vecscreen_plus_taxonomy with the 
-'install-optional-vecscreen_plus_taxonomy.sh' executable file.
-Like with 'install.sh' copy the that file into the desired 
-directory (this can be the same directory you ran 
+You can additionally install vecscreen_plus_taxonomy *for Linux
+only* with the 'install-optional-vecscreen_plus_taxonomy-linux.sh' 
+executable file. Like with 'install.sh' copy the that file into the
+desired directory (this can be the same directory you ran 
 'install.sh' in) and run it with the command:
+
 './install-optional-vecscreen_plus_taxonomy.sh'.
+
+Currently, there is no version of vecscreen_plus_taxonomy
+compatible for non-Linux systems (including Mac OS/X), so
+it is only possible to run ribodbmaker.pl on Linux systems.
 
 When install.sh and the other optional install scripts finish
 running they will print important instructions to the screen that 
 explain how to modify your environment variables so that you 
 can run the ribovore scripts.
-
 
 There is one executable program required by ribovore which is not
 installed by any of the installation scripts: the unix program 'time'.

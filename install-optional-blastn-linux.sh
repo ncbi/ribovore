@@ -33,8 +33,8 @@ echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 #
 # For Linux: 
 #~~~~~~~~~~~~~
-echo "Installing blastn version $BLASTVERSION for linux ... "
- curl -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-linux.tar.gz
+echo "Installing blastn version $BLASTVERSION for Linux ... "
+curl -o blastn.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-64-linux.tar.gz
  tar xfz blastn.tar.gz
 #~~~~~~~~~~~~~
 # 
