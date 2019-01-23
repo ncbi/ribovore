@@ -12,11 +12,18 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: perl $RIBODIR/ribosensor.pl -f $RIBODIR/testfiles/example-16.fa test-rs-16 > /dev/null
-desc: ribosensor-1-16
-out: test-rs-16/test-rs-16.ribosensor.out
-out: test-rs-16/test-rs-16.ribosensor.gpipe
-exp: @RIBODIR@/testfiles/expected-files/test-rs-16.ribosensor.out
-exp: @RIBODIR@/testfiles/expected-files/test-rs-16.ribosensor.gpipe
-rmdir: test-rs-16
+command: perl $RIBODIR/ribotyper.pl -f $RIBODIR/testfiles/example-16.fa test-16 > /dev/null
+desc: ribotyper-1-16
+out: test-16/test-16.ribotyper.short.out
+out: test-16/test-16.ribotyper.long.out
+exp: @RIBODIR@/testfiles/expected-files/test-16.ribotyper.short.out
+exp: @RIBODIR@/testfiles/expected-files/test-16.ribotyper.long.out
+rmdir: test-16
+command: perl $RIBODIR/ribotyper.pl -f $RIBODIR/testfiles/fungi-ssu.r100.fa r100 > /dev/null
+desc: ribotyper-2-100
+out: r100/r100.ribotyper.short.out
+out: r100/r100.ribotyper.long.out
+exp: @RIBODIR@/testfiles/expected-files/r100.ribotyper.short.out
+exp: @RIBODIR@/testfiles/expected-files/r100.ribotyper.long.out
+rmdir: r100
 
