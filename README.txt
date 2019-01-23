@@ -260,7 +260,7 @@ Here is example output if we run that script:
 # ribotyper 0.35 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:      Wed Jan 23 10:14:53 2019
-# $RIBODIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.34
+# $RIBODIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35
 #
 # test file:                    /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.35/testfiles/ribotyper.testin
 # output directory name:        rt-test

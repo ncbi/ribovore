@@ -8,10 +8,8 @@
 # for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
-TMPVERSION1="0.13"
-TMPVERSION2="0.16"
-VERSION="0.34"
-DVERSION="ribotyper-$VERSION"
+VERSION="0.35"
+RVERSION="ribovore-$VERSION"
 BLASTVERSION="2.8.1"
 
 # The following line will make the script fail if any commands fail
@@ -40,12 +38,12 @@ curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archiv
 
 # rRNA_sensor
 echo "Installing rRNA_sensor ... "
-curl -k -L -o rRNA_sensor-$TMPVERSION1.zip https://github.com/aaschaffer/rRNA_sensor/archive/$TMPVERSION1.zip; unzip rRNA_sensor-$TMPVERSION1.zip; rm rRNA_sensor-$TMPVERSION1.zip
+curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; rm rRNA_sensor-$RVERSION.zip
 
 # epn-options, epn-ofile epn-test
 echo "Installing required perl modules ... "
 for m in epn-options epn-ofile epn-test; do 
-    curl -k -L -o $m-$DVERSION.zip https://github.com/nawrockie/$m/archive/$DVERSION.zip; unzip $m-$DVERSION.zip; rm $m-$DVERSION.zip
+    curl -k -L -o $m-$RVERSION.zip https://github.com/nawrockie/$m/archive/$RVERSION.zip; unzip $m-$RVERSION.zip; rm $m-$RVERSION.zip
 done
 
 ##########BEGINNING OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
@@ -81,10 +79,10 @@ echo "export RIBODIR=\"$RIBOINSTALLDIR/ribovore-$VERSION\""
 echo "export RIBOINFERNALDIR=\"$RIBOINSTALLDIR/bin\""
 echo "export RIBOEASELDIR=\"$RIBOINSTALLDIR/bin\""
 echo "export RIBOTIMEDIR=\"/usr/bin\""
-echo "export SENSORDIR=\"$RIBOINSTALLDIR/rRNA_sensor-$TMPVERSION1\""
-echo "export EPNOPTDIR=\"$RIBOINSTALLDIR/epn-options-$DVERSION\""
-echo "export EPNOFILEDIR=\"$RIBOINSTALLDIR/epn-ofile-$DVERSION\""
-echo "export EPNTESTDIR=\"$RIBOINSTALLDIR/epn-test-$DVERSION\""
+echo "export SENSORDIR=\"$RIBOINSTALLDIR/rRNA_sensor-$RVERSION\""
+echo "export EPNOPTDIR=\"$RIBOINSTALLDIR/epn-options-$RVERSION\""
+echo "export EPNOFILEDIR=\"$RIBOINSTALLDIR/epn-ofile-$RVERSION\""
+echo "export EPNTESTDIR=\"$RIBOINSTALLDIR/epn-test-$RVERSION\""
 echo "export PERL5LIB=\"\$RIBODIR:\$EPNOPTDIR:\$EPNOFILEDIR:\$EPNTESTDIR:\$PERL5LIB\""
 echo "export PATH=\"\$RIBODIR:\$SENSORDIR:\$PATH\""
 echo "export BLASTDB=\"\$SENSORDIR:\$BLASTDB\""
@@ -102,10 +100,10 @@ echo "setenv RIBODIR \"$RIBOINSTALLDIR/ribovore-$VERSION\""
 echo "setenv RIBOINFERNALDIR \"$RIBOINSTALLDIR/bin\""
 echo "setenv RIBOEASELDIR \"$RIBOINSTALLDIR/bin\""
 echo "setenv RIBOTIMEDIR \"/usr/bin\""
-echo "setenv SENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor-$TMPVERSION1\""
-echo "setenv EPNOPTDIR \"$RIBOINSTALLDIR/epn-options-$DVERSION\""
-echo "setenv EPNOFILEDIR \"$RIBOINSTALLDIR/epn-ofile-$DVERSION\""
-echo "setenv EPNTESTDIR \"$RIBOINSTALLDIR/epn-test-$DVERSION\""
+echo "setenv SENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor-$RVERSION\""
+echo "setenv EPNOPTDIR \"$RIBOINSTALLDIR/epn-options-$RVERSION\""
+echo "setenv EPNOFILEDIR \"$RIBOINSTALLDIR/epn-ofile-$RVERSION\""
+echo "setenv EPNTESTDIR \"$RIBOINSTALLDIR/epn-test-$RVERSION\""
 echo "setenv PERL5LIB \"\$RIBODIR\":\"\$EPNOPTDIR\":\"\$EPNOFILEDIR\":\"\$EPNTESTDIR\":\"\$PERL5LIB\""
 echo "setenv PATH \"\$RIBODIR\":\"\$SENSORDIR\":\"\$PATH\""
 echo "setenv BLASTDB \"\$SENSORDIR\":\"\$BLASTDB\""

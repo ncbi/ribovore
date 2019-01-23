@@ -8,7 +8,7 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 #
-VERSION="0.34"
+VERSION="0.35"
 BLASTVERSION="2.8.1"
 BLASTDIR="ncbi-blast-$BLASTVERSION+"
 
