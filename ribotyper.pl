@@ -7,7 +7,6 @@ use Time::HiRes qw(gettimeofday);
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
-require "epn-test.pm";
 require "epn-options.pm";
 require "epn-ofile.pm";
 require "ribo.pm";
@@ -211,11 +210,11 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.34";
+my $version           = "0.35";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
 my $qsub_version_str  = "0p32"; # qsub command file unchanged since version 0.32
-my $releasedate       = "Nov 2018";
-my $package_name      = "ribotyper";
+my $releasedate       = "Jan 2019";
+my $package_name      = "ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -634,7 +633,6 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
   $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
   $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
-  $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
   $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
   ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
@@ -647,6 +645,7 @@ else {
 }
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
+  push(@to_remove_A, $r1_tblout_file . ".time");
 }
 else { 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
@@ -825,6 +824,7 @@ if(defined $alg2) {
       }
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_tblout_file_A[$midx]);
+        push(@to_remove_A, $r2_tblout_file_A[$midx] . ".time");
       }
       else { 
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");

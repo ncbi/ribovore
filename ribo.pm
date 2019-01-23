@@ -1559,7 +1559,11 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   my $time_file       = $info_HR->{"OUT-NAME:time"};
   my $stderr_file     = $info_HR->{"OUT-NAME:stderr"};
   my $qcmdscript_file = $info_HR->{"OUT-NAME:qcmd"};
-
+  my $tmp_stderr_file = $stderr_file . ".tmp"; # necessary because we need to process $tmp_stderr_file to get $time_file and $stderr_file
+  my $tail_stderr_cmd = "tail -n 3 $tmp_stderr_file > $time_file"; # to create $time_file
+  my $awk_stderr_cmd  = "awk 'n>=3 { print a[n%3] } { a[n%3]=\$0; n=n+1 }' $tmp_stderr_file > $stderr_file";
+  my $rm_tmp_cmd      = "rm $tmp_stderr_file";
+  
   # determine if we are running on the farm or locally
   my $cmd      = ""; # the command that runs cmsearch, cmalign or rRNA_sensor
 
@@ -1569,14 +1573,18 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   if($executable =~ /cmsearch$/) { 
     my $model_file     = $info_HR->{"IN:modelfile"};
     my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
-    $cmd = "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+    # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
+    #$cmd = "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+    $cmd = "$time_path -p $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
   }
   elsif($executable =~ /cmalign$/) { 
     my $model_file    = $info_HR->{"IN:modelfile"};
     my $i_file        = $info_HR->{"OUT-NAME:ifile"};
     my $el_file       = $info_HR->{"OUT-NAME:elfile"};
     my $stk_file      = $info_HR->{"OUT-NAME:stk"};
-    $cmd = "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+    # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
+    #$cmd = "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+    $cmd = "$time_path -p $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
     my $minlen     = $info_HR->{"minlen"};
@@ -1588,7 +1596,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $ncpu       = $info_HR->{"ncpu"};
     my $outdir     = $info_HR->{"OUT-NAME:outdir"};
     my $blastdb    = $info_HR->{"blastdb"};
-    $cmd = "$time_path -p -o $time_file $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file";
+    # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
+    #$cmd = "$time_path -p -o $time_file $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file";
+    $cmd = "$time_path -p $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
   }
 
   if((defined $qsub_prefix) && (defined $qsub_suffix)) { 

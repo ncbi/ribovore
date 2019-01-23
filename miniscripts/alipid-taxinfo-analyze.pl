@@ -15,6 +15,8 @@ my $do_o3fail   = 0;    # set to '1' if --o3fail used;
 my $do_o4       = 0;    # set to '1' if --o4on is used;
 my $o4avgthresh = 3.5;  
 my $do_diffseqtax = 0;  # set to '1' if --diffseqtax used;
+my $do_s1       = 1;    # set to '0' if --s1off used;
+my $s1minthresh = 99.8; 
 
 my $usage = "perl alipid-taxinfo-analyze4.pl [OPTIONS]\n\t<alipid file>\n\t<seqlist file with seqs expected in alipid file>\n\t<tax_info file with group as 4th column>\n\t<output root>\n\n";
 
@@ -22,19 +24,23 @@ $usage .= "\tOPTIONS:\n";
 $usage .= sprintf("\t\t--gs <n>     : minimum number of sequences in a group to include group in analysis [df: %d]\n", $min_grp_size);
 $usage .= sprintf("\t\t--diffseqtax : require sequences have different sequence taxids to be included considered for max/avg b/t groups\n");
 $usage .= sprintf("\t\t--olist <s>  : read sequences to output information on from <s> [df: output all listed in seqlist]\n");
+$usage .= sprintf("\t\t--s1off      : do not identify s1 seqs (sequences with average percent identity within taxid < <f> from --s1min <f> [df: do identify S1 seqs]\n");
+$usage .= sprintf("\t\t--s1min <f>  : S1 threshold for minimum percent identity within taxid to not be a S1                                [df: %.3f%%]\n",   $s1minthresh);
 $usage .= sprintf("\t\t--o1avg <f>  : O1 threshold for percent difference between averages of best and assigned group to create a O1       [df: %.1f%%]\n",   $o1avgthresh);
 $usage .= sprintf("\t\t--o1max <f>  : O1 threshold for percent difference between maxes of best and assigned group to create a O1          [df: %.1f%%]\n",   $o1maxthresh);
 $usage .= sprintf("\t\t--o2avg <f>  : O2 threshold for percent difference between averages of best and assigned group to create a O2       [df: %.1f%%]\n",   $o2avgthresh);
 $usage .= sprintf("\t\t--o2max <f>  : O2 threshold for percent difference between maxes of best and assigned group to create a O2          [df: %.1f%%]\n",   $o2maxthresh);
-$usage .= sprintf("\t\t--o3fail     : fail O3 seqs (seqs w/maxavg and maxmax groups != assigned but w/diffs below O2 threshold)            [df: PASS O3 seqs]\n\n");
+$usage .= sprintf("\t\t--o3fail     : fail O3 seqs (seqs w/maxavg and maxmax groups != assigned but w/diffs below O2 threshold)            [df: PASS O3 seqs]\n");
 $usage .= sprintf("\t\t--o4on       : identify O4 seqs as non-O1,O2 seqs with (avg best group - avg assigned group) > <f> from --o4avg <f> [df: do not identify O4 seqs]\n");
-$usage .= sprintf("\t\t--o4avg <f>  : O4 threshold for percent difference between averages of best and assigned group, requires --o4on     [df: %.1f%%]\n", $o4avgthresh);
+$usage .= sprintf("\t\t--o4avg <f>  : O4 threshold for percent difference between averages of best and assigned group, requires --o4on     [df: %.1f%%]\n\n", $o4avgthresh);
 
 # values filled when we call &GetOptions
 my $opt_gs         = undef;     
 my $opt_diffseqtax = undef;     
 my $opt_imm        = undef;
 my $opt_olist      = undef;
+my $opt_s1off      = undef;
+my $opt_s1min      = undef;
 my $opt_o1avg      = undef;
 my $opt_o1max      = undef;
 my $opt_o2avg      = undef;
@@ -46,6 +52,8 @@ my $opt_o4avg      = undef;
 &GetOptions( "gs=s"       => \$opt_gs,
              "diffseqtax" => \$opt_diffseqtax,
              "olist=s"    => \$opt_olist, 
+             "s1off"      => \$opt_s1off,
+             "s1min=s"    => \$opt_s1min,
              "o1avg=s"    => \$opt_o1avg,
              "o1max=s"    => \$opt_o1max,
              "o2avg=s"    => \$opt_o2avg,
@@ -54,6 +62,7 @@ my $opt_o4avg      = undef;
              "o4on"       => \$opt_o4on,
              "o4avg=s"    => \$opt_o4avg);
 
+
 if(scalar(@ARGV) != 4) { die $usage; }
 
 my ($alipid_file, $list_file, $taxinfo_file, $out_root) = (@ARGV);
@@ -61,6 +70,8 @@ my ($alipid_file, $list_file, $taxinfo_file, $out_root) = (@ARGV);
 # handle options
 if(defined $opt_gs)         { $min_grp_size = $opt_gs; if($min_grp_size < $hard_min_grp_size) { die "ERROR with --gs <n> minimum allowed <n> is 3"; } }
 if(defined $opt_diffseqtax) { $do_diffseqtax = 1; }
+if(defined $opt_s1off)      { $do_s1       = 0;   };
+if(defined $opt_s1min)      { $s1minthresh = $opt_s1min; }
 if(defined $opt_o1avg)      { $o1avgthresh = $opt_o1avg; }
 if(defined $opt_o1max)      { $o1maxthresh = $opt_o1max; }
 if(defined $opt_o2avg)      { $o2avgthresh = $opt_o2avg; }
@@ -78,6 +89,7 @@ if(defined $opt_olist) {
   }
   close(IN);
 }
+  
 
 if(defined $opt_o1avg || defined $opt_o2avg) { 
   if($o1avgthresh < $o2avgthresh) { 
@@ -358,6 +370,7 @@ foreach my $seq (@seq_order_A) {
 }
 
 # define column explanations
+my $prt_s1minthresh = sprintf("%.2f", $s1minthresh);
 my $prt_o1avgthresh = sprintf("%.2f", $o1avgthresh);
 my $prt_o2avgthresh = sprintf("%.2f", $o2avgthresh);
 my $prt_o1maxthresh = sprintf("%.2f", $o1maxthresh);
@@ -373,13 +386,16 @@ else {
 }
 
 my @column_explanation_A = (); # array of strings that explain columns to write to output files and stdout
-push(@column_explanation_A, "# Explanation of columns [RIBO v0.34]:\n");
+push(@column_explanation_A, "# Explanation of columns [RIBO v0.35]:\n");
 push(@column_explanation_A, "# 1.  sequence:    sequence accession.version\n");
 push(@column_explanation_A, "# 2.  seq-taxid:   sequence taxid read from input file: $taxinfo_file\n");
 push(@column_explanation_A, "# 3.  taxid-nseq:  number of sequences with seq-taxid\n");
 push(@column_explanation_A, "# 4.  taxid-avgid: average percent identity between this sequence and all other sequences with same seq-taxid (or '-' if seqtaxid is '1' or taxid-nseq is 1)\n");
 push(@column_explanation_A, "# 5.  species: sequence genus and species\n");
-push(@column_explanation_A, "# 6.  type: type of sequence\n");
+push(@column_explanation_A, "# 6.  type: type of sequence, one of (in order of priority):\n");
+if($do_s1) { 
+  push(@column_explanation_A, "#           'S1': sequence average percent id within taxid (col 4) is below $prt_s1minthresh% (changeable with --s1min <f>)\n");
+}
 push(@column_explanation_A, "#           'I1': in-avgid (col 10) >= avgpid-other-group and in-maxid >= maxpid-other-group\n");
 push(@column_explanation_A, "#           'I2': in-avgid (col 10) <  avgpid-other-group and in-maxid >= maxpid-other-group\n");
 push(@column_explanation_A, "#           'I3': in-avgid (col 10) >= avgpid-other-group and in-maxid <  maxpid-other-group\n");
@@ -498,6 +514,7 @@ printf TAB ("#%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s
 
 # for each sequence, determine group that has 'max max' and 'max avg'
 # and output the relevant information
+my $small_value =  0.000001; # small value to use when dealing with precision of floats
 foreach my $seq (@seq_order_A) { 
   if((! defined $opt_olist) || (exists $olist_H{$seq})) { 
     if(! exists $seq_grp_H{$seq}) { 
@@ -515,30 +532,49 @@ foreach my $seq (@seq_order_A) {
                                      "-", "-", "-", "-", 
                                      "-", "-", 
                                      "-", "-");
-    my $taxid_avgid2print_rdb = sprintf("%6s", ($seq_taxid_pid_denom_H{$seq} > 0) ? sprintf("%6.2f", $seq_taxid_pid_avg_H{$seq}) : "-");
-    my $taxid_avgid2print_tab = sprintf("%s",  ($seq_taxid_pid_denom_H{$seq} > 0) ? sprintf("%.2f",  $seq_taxid_pid_avg_H{$seq}) : "-");
+    my $taxid_avgid2print_rdb = "";
+    my $taxid_avgid2print_tab = "";
 
-    # first deal with seqs in groups that are not big enough
+    # first, if we're identifying type S1, check for it
+    $type = "NA";
+    $pf   = "PASS";
+
+    # get the printf formatted avgid we will output
+    if($seq_taxid_pid_denom_H{$seq} > 0) { 
+      $taxid_avgid2print_rdb = sprintf("%6.2f", $seq_taxid_pid_avg_H{$seq});
+      $taxid_avgid2print_tab = sprintf("%.2f",  $seq_taxid_pid_avg_H{$seq});
+      if($do_s1) { 
+        # check if average percent identity within seq_taxid is above our minimum
+        if($seq_taxid_pid_avg_H{$seq} < ($s1minthresh - $small_value)) { 
+          # this will be true if $seq_taxid_pid_avg_H{$seq} < $s1minthresh, we use $small_value for precision reasons
+          $type = "S1";
+          $pf   = "FAIL";
+        }
+      }
+    }
+    else {
+      $taxid_avgid2print_rdb = sprintf("%6s", "-");
+      $taxid_avgid2print_tab = "-";
+      # type stays as "NA"
+    }
+
+    # deal with seqs in groups that are not big enough
     if((! exists $grp_bigenough_H{$cur_group}) || 
        (($do_diffseqtax) && (($grp_ct_H{$cur_group} - $tax_ct_H{$cur_tax}) == 0))) { # --diffseqtax was used and all seqs in this group are same taxid
-      $type = "NA";
-      # not enough sequences to do a comparison, automatic PASS
-      $pf = "PASS";
-      
       printf RDB ("%-*s  %7d  %6s  %6s  %-*s  %4s  $pf  ", 
                   $max_seqname_length, $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_rdb, $max_spec_length, $seq_spec_H{$seq}, $type);
       printf TAB ("%s\t%s\t%s\t%s\t%s\t%s\t$pf\t", 
-                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_tab, $max_spec_length, $seq_spec_H{$seq}, $type);
+                  $seq, $seq_taxid_H{$seq}, $tax_ct_H{$cur_tax}, $taxid_avgid2print_tab, $seq_spec_H{$seq}, $type);
 
       if((! exists $grp_not1_H{$cur_group}) || # sequence is in group 1
          (($do_diffseqtax) && (($grp_ct_H{$cur_group} - $tax_ct_H{$cur_tax}) == 0))) { # --diffseqtax was used and all seqs in this group are same taxid
         # group is 1 or sequence count is 1, we didn't even keep track for this sequence
         printf RDB ("%7s  %6s  %6s  %6s  %-*s  %6s  %-*s  ", 
-                    $cur_group, $grp_ct_H{$cur_group}, "-", 
+                    $cur_group, $grp_ct_H{$cur_group}, "-",  # $type is "NA"
                     "-", $max_seqname_length, "-", 
                     "-", $max_seqname_length, "-");
         printf TAB ("%s\t%s\t%s\t%s\t%s\t%s\t%s\t", 
-                    $cur_group, $grp_ct_H{$cur_group}, "-", 
+                    $cur_group, $grp_ct_H{$cur_group}, "-", # $type is "NA"
                     "-", "-", 
                     "-", "-");
       }
@@ -565,7 +601,7 @@ foreach my $seq (@seq_order_A) {
       # there is enough sequences in this group to PASS/FAIL based on a comparison with other groups
       my @sorted_grp_avg_A = (sort {$seq_grp_pid_avg_HH{$seq}{$b} <=> $seq_grp_pid_avg_HH{$seq}{$a}} keys %{$seq_grp_pid_avg_HH{$seq}});
       my @sorted_grp_max_A = (sort {$seq_grp_pid_max_HH{$seq}{$b} <=> $seq_grp_pid_max_HH{$seq}{$a}} keys %{$seq_grp_pid_max_HH{$seq}});
-    
+      
       my $win_avg_group = $sorted_grp_avg_A[0];
       my $win_max_group = $sorted_grp_max_A[0];
       # if max or avg is identical (within 0.01 percent) to $cur_group, set $cur_group as winner
@@ -594,12 +630,14 @@ foreach my $seq (@seq_order_A) {
          (($seq_grp_pid_avg_HH{$seq}{$win_avg_group} - $seq_grp_pid_avg_HH{$seq}{$cur_group}) > $o4avgthresh)) { 
         $satisfies_o4 = 1;
       }
-
+      
       # determine type
       if(($cur_group eq $win_avg_group) && 
          ($cur_group eq $win_max_group)) { 
-        $type = "I1";
-        $pf   = "PASS";
+        if($type ne "S1") { 
+          $type = "I1";
+          $pf   = "PASS";
+        }
         $prt_avg_group = (scalar(@sorted_grp_avg_A) > 1) ? $sorted_grp_avg_A[1] : undef;
         $prt_max_group = (scalar(@sorted_grp_max_A) > 1) ? $sorted_grp_max_A[1] : undef;
         $avg_str = "avg:same";
@@ -607,22 +645,27 @@ foreach my $seq (@seq_order_A) {
       }
       elsif(($cur_group ne $win_avg_group) && 
             ($cur_group eq $win_max_group)) { 
-        $type = "I2"; 
-        $pf = "PASS";
+        if($type ne "S1") { 
+          $type = "I2"; 
+          $pf = "PASS";
+        }
         $prt_avg_group  = $win_avg_group;
         $prt_max_group = (scalar(@sorted_grp_max_A) > 1) ? $sorted_grp_max_A[1] : undef;
         $avg_str = "avg:diff";
         $max_str = "max:same";
+
         # special case, check if this really should be an O4
-        if($satisfies_o4) { 
+        if(($type ne "S1") && ($satisfies_o4)) { 
           $type = "O4";
           $pf = "FAIL";
         }
       }
       elsif(($cur_group eq $win_avg_group) && 
             ($cur_group ne $win_max_group)) { 
-        $type = "I3"; 
-        $pf = "PASS";
+        if($type ne "S1") { 
+          $type = "I3"; 
+          $pf = "PASS";
+        }
         $prt_avg_group  = (scalar(@sorted_grp_avg_A) > 1) ? $sorted_grp_avg_A[1] : undef;
         $prt_max_group = $win_max_group;
         $avg_str = "avg:same";
@@ -631,22 +674,28 @@ foreach my $seq (@seq_order_A) {
       else { 
         if((($seq_grp_pid_avg_HH{$seq}{$win_avg_group} - $seq_grp_pid_avg_HH{$seq}{$cur_group}) > $o1avgthresh) && 
            (($seq_grp_pid_max_HH{$seq}{$win_max_group} - $seq_grp_pid_max_HH{$seq}{$cur_group}) > $o1maxthresh)) { 
-          $type = "O1";
-          $pf = "FAIL";
+          if($type ne "S1") { 
+            $type = "O1";
+            $pf = "FAIL";
+          }
         }
         elsif((($seq_grp_pid_avg_HH{$seq}{$win_avg_group} - $seq_grp_pid_avg_HH{$seq}{$cur_group}) > $o2avgthresh) && 
               (($seq_grp_pid_max_HH{$seq}{$win_max_group} - $seq_grp_pid_max_HH{$seq}{$cur_group}) > $o2maxthresh)) { 
-          $type = "O2";
-          $pf = "FAIL";
-        }
-        else { 
-          if($satisfies_o4) { 
-            $type = "O4";
+          if($type ne "S1") { 
+            $type = "O2";
             $pf = "FAIL";
           }
-          else { 
-            $type = "O3";
-            $pf = $do_o3fail ? "FAIL" : "PASS";
+        }
+        else { 
+          if($type ne "S1") { 
+            if($satisfies_o4) { 
+              $type = "O4";
+              $pf = "FAIL";
+            }
+            else { 
+              $type = "O3";
+              $pf = $do_o3fail ? "FAIL" : "PASS";
+            }
           }
         }
         $prt_avg_group  = $win_avg_group;

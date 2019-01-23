@@ -1,19 +1,9 @@
-# non-parallel 16 sequence test, ribotyper, riboaligner, ribosensor
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.example-16 test1
-# parallel 16 sequence test, ribotyper, riboaligner, ribosensor
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.example-16 test2
+sh $RIBODIR/testfiles/do-ribotyper-tests.sh
+sh $RIBODIR/testfiles/do-riboaligner-tests.sh
+sh $RIBODIR/testfiles/do-ribosensor-tests.sh
+sh $RIBODIR/testfiles/do-ribodbmaker-tests.sh
 
-# non-parallel 100 sequence test, ribotyper, riboaligner, ribosensor
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.r100 test4
-# parallel 100 sequence test, ribotyper, riboaligner, ribosensor
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.r100 test5
-
-# non-parallel ribodbmaker.pl test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.db test7
-# parallel ribodbmaker.pl test
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/testin.p.db test8
-
-# optionally remove all test directories
-#for d in test-16 test-p-16 test-100 test-p-100 test-db test-p-db; do 
-# rm -rf $d
-#done
+sh $RIBODIR/testfiles/do-ribotyper-parallel-tests.sh
+sh $RIBODIR/testfiles/do-riboaligner-parallel-tests.sh
+sh $RIBODIR/testfiles/do-ribosensor-parallel-tests.sh
+sh $RIBODIR/testfiles/do-ribodbmaker-parallel-tests.sh

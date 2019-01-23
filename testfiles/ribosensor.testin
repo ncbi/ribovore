@@ -1,0 +1,29 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+command: perl $RIBODIR/ribosensor.pl -f $RIBODIR/testfiles/example-16.fa test-rs-16 > /dev/null
+desc: ribosensor-1-16
+out: test-rs-16/test-rs-16.ribosensor.out
+out: test-rs-16/test-rs-16.ribosensor.gpipe
+exp: @RIBODIR@/testfiles/expected-files/test-rs-16.ribosensor.out
+exp: @RIBODIR@/testfiles/expected-files/test-rs-16.ribosensor.gpipe
+rmdir: test-rs-16
+command: perl $RIBODIR/ribosensor.pl -m 18S -f $RIBODIR/testfiles/fungi-ssu.r100.fa rs-r100 > /dev/null
+desc: ribosensor-2-100
+out: rs-r100/rs-r100.ribosensor.out
+out: rs-r100/rs-r100.ribosensor.gpipe
+exp: @RIBODIR@/testfiles/expected-files/rs-r100.ribosensor.out
+exp: @RIBODIR@/testfiles/expected-files/rs-r100.ribosensor.gpipe
+rmdir: rs-r100
+
