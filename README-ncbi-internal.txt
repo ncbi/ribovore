@@ -7,6 +7,7 @@ Organization of this file:
 INTRODUCTION
 SETTING UP ENVIRONMENT VARIABLES
 VERIFYING YOU CAN RUN RIBOVORE SCRIPTS
+EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
 
 Questions:
 email Eric Nawrocki: eric.nawrocki@nih.gov
@@ -120,18 +121,18 @@ To run all tests, run the script 'do-all-tests.sh'
 
 > cat $RIBODIR/testfiles/do-ribotyper-tests.sh
 <[(ribotyper-v1)]> cat $INF/notebook/19_0117_ribo_doc_update/ribovore/testfiles/do-all-tests.sh 
-sh do-ribotyper-tests.sh
-sh do-riboaligner-tests.sh
-sh do-ribosensor-tests.sh
-sh do-ribodbmaker-tests.sh
+sh $RIBODIR/testfiles/do-ribotyper-tests.sh
+sh $RIBODIR/testfiles/do-riboaligner-tests.sh
+sh $RIBODIR/testfiles/do-ribosensor-tests.sh
+sh $RIBODIR/testfiles/do-ribodbmaker-tests.sh
 
-sh do-ribotyper-parallel-tests.sh
-sh do-riboaligner-parallel-tests.sh
-sh do-ribosensor-parallel-tests.sh
-sh do-ribodbmaker-parallel-tests.sh
+sh $RIBODIR/testfiles/do-ribotyper-parallel-tests.sh
+sh $RIBODIR/testfiles/do-riboaligner-parallel-tests.sh
+sh $RIBODIR/testfiles/do-ribosensor-parallel-tests.sh
+sh $RIBODIR/testfiles/do-ribodbmaker-parallel-tests.sh
 
 Here is the beginning of the output when you run that script:
-> sh $RIBODIR/testfiles/do-ribotyper-tests.sh
+> sh $RIBODIR/testfiles/do-all-tests.sh
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ribotest.pl :: test ribotyper scripts [TEST SCRIPT]
 # ribotyper 0.35 (Jan 2019)
@@ -177,6 +178,31 @@ lines like this when you run the other tests. If you do not,
 email me at eric.nawrocki@nih.gov.
 
 ###########################################################################
+
+##############################################################################
+EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
+
+Here is an example paragraph that could be sent to a submitter
+explaining what Ribotyper does:
+
+~~~~~~~~~~~~~~~~~~~
+We compared each of your sequences against a set of profile HMMs built
+from representative alignments of SSU and LSU rRNA sequences.  Each
+profile HMM is a statistical model of the family it models
+(e.g. bacterial SSU rRNA) built from a multiple alignment of 50-100
+representative sequences from the family. The source of several of the
+alignments, including the bacterial model, is the Rfam database
+(rfam.xfam.org).  Each profile HMM has position specific scores at
+each position of the model, which means that positions of the family
+that are highly conserved have a higher impact on the final score than
+do positions that are not as well conserved (unlike BLAST for which
+each position is treated identically). Each sequence is aligned to
+each profile and a score is computed based on well the sequence
+matches the profile. Each sequence is classified by the model that
+gave it the highest score.
+~~~~~~~~~~~~~~~~~~~
+
+##############################################################################
 
 For additional documentation on ribovore, see README.txt
 

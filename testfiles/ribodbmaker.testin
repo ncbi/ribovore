@@ -17,5 +17,3 @@ desc: ribodbmaker-1-100
 out: db100/db100.ribodbmaker.rdb.tbl
 exp: @RIBODIR@/testfiles/expected-files/db100.ribodbmaker.rdb.tbl
 rmdir: db100
-
-

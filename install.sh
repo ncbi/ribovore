@@ -60,8 +60,8 @@ make install
 cd easel
 make install
 cd $RIBOINSTALLDIR
-#echo "Finished installing Infernal 1.1.2"
-#echo "------------------------------------------------"
+echo "Finished installing Infernal 1.1.2"
+echo "------------------------------------------------"
 ##########END OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
 # 
 ################
@@ -70,7 +70,7 @@ echo ""
 echo ""
 echo "********************************************************"
 echo "The final step is to update your environment variables."
-echo "(See ribovore/00README.txt for more information.)"
+echo "(See ribovore/README.txt for more information.)"
 echo ""
 echo "If you are using the bash shell, add the following"
 echo "lines to the '.bashrc' file in your home directory:"
