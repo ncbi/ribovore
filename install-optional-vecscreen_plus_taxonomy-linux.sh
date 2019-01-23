@@ -4,7 +4,7 @@
 #
 # EPN, Tue Jan 22 09:27:15 2019
 #
-# A shell script for installing vecscreen_plus_taxonomy
+# A shell script for installing vecscreen_plus_taxonomy (linux)
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
@@ -30,7 +30,7 @@ echo "------------------------------------------------"
 echo "Determining current directory ... "
 echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
-echo "Installing vecscreen_plus_taxonomy ... "
+echo "Installing vecscreen_plus_taxonomy for Linux ... "
 curl -k -L -o vecscreen_plus_taxonomy-$TMPVERSION2.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPVERSION2.zip; 
 unzip vecscreen_plus_taxonomy-$TMPVERSION2.zip; 
 rm vecscreen_plus_taxonomy-$TMPVERSION2.zip
