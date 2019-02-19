@@ -284,9 +284,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.35";
+my $version           = "0.36";
 my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "Jan 2019";
+my $releasedate       = "Feb 2019";
 my $package_name      = "ribovore";
 my $pkgstr            = "RIBO";
 
@@ -1793,6 +1793,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
 
   ribo_InitializeHashToEmptyString(\%curfailstr_H, $seqorder_AR);
 
+  # initialize
   foreach $seqname (@{$seqorder_AR}) { 
     if(! exists $seqtaxid_HR->{$seqname}) { 
       ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in passed in %seqtaxid_H", "RIBO", $?, $FH_HR);
@@ -1837,7 +1838,7 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     chomp $line;
     @el_A = split(/\t/, $line);
     if((scalar(@el_A) < 3) || (scalar(@el_A) > $max_nel)) { 
-      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+       ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
     my $accver = $el_A[0];
     my $taxid  = $el_A[1];
@@ -3857,21 +3858,21 @@ sub combine_ali_apos_to_uapos_files {
   open(OUT, ">", $out_file)  || ofile_FileOpenFailure($out_file,  "RIBO", $sub_name, $!, "writing", $FH_HR);
 
   # print explanation of columns:
-  print OUT ("# Explanation of tab delimited columns in this file:\n");
-  print OUT ("# seqname: name of sequence\n");
-  print OUT ("# lpos:  unaligned sequence position that aligns at alignment RF position $lpos\n");
-  print OUT ("#        if 'lgap' column is 'gap' then alignment is a gap for this sequence at position $lpos\n");
-  print OUT ("#        and so 'lpos' column is the final sequence position aligned before position $lpos\n");
-  print OUT ("#        or '-' if no residues exist before position $lpos\n");
-  print OUT ("#        or 'NA' if sequence was not aligned\n");
-  print OUT ("# rpos:  unaligned sequence position that aligns at alignment RF position $rpos\n");
-  print OUT ("#        if 'rgap' column is 'gap' then alignment is a gap for this sequence at position $rpos\n");
-  print OUT ("#        and so 'rpos' column is the first sequence position aligned after position $rpos\n");
-  print OUT ("#        or '-' if no residues exist after position $rpos\n");
-  print OUT ("#        or 'NA' if sequence was not aligned\n");
-  print OUT ("# lgap:  'nongap' if position $lpos is not a gap in sequence, 'gap' if it is, or 'NA' if sequence not aligned\n");
-  print OUT ("# rgap:  'nongap' if position $rpos is not a gap in sequence, 'gap' if it is, or 'NA' if sequence not aligned\n");
-  print OUT ("%s\t%s\t%s\t%s\t%s\n", "#seqname", "lpos", "rpos", "lgap", "rgap");
+  print  OUT ("# Explanation of tab delimited columns in this file:\n");
+  print  OUT ("# seqname: name of sequence\n");
+  print  OUT ("# lpos:  unaligned sequence position that aligns at alignment RF position $lpos\n");
+  print  OUT ("#        if 'lgap' column is 'gap' then alignment is a gap for this sequence at position $lpos\n");
+  print  OUT ("#        and so 'lpos' column is the final sequence position aligned before position $lpos\n");
+  print  OUT ("#        or '-' if no residues exist before position $lpos\n");
+  print  OUT ("#        or 'NA' if sequence was not aligned\n");
+  print  OUT ("# rpos:  unaligned sequence position that aligns at alignment RF position $rpos\n");
+  print  OUT ("#        if 'rgap' column is 'gap' then alignment is a gap for this sequence at position $rpos\n");
+  print  OUT ("#        and so 'rpos' column is the first sequence position aligned after position $rpos\n");
+  print  OUT ("#        or '-' if no residues exist after position $rpos\n");
+  print  OUT ("#        or 'NA' if sequence was not aligned\n");
+  print  OUT ("# lgap:  'nongap' if position $lpos is not a gap in sequence, 'gap' if it is, or 'NA' if sequence not aligned\n");
+  print  OUT ("# rgap:  'nongap' if position $rpos is not a gap in sequence, 'gap' if it is, or 'NA' if sequence not aligned\n");
+  printf OUT ("%s\t%s\t%s\t%s\t%s\n", "#seqname", "lpos", "rpos", "lgap", "rgap");
 
   foreach my $target (@{$seq_AR}) { 
     my $lpos = "NA";

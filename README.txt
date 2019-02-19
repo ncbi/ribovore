@@ -1,6 +1,6 @@
-EPN, Thu Jan 17 11:23:11 2019
+EPN, Tue Feb 19 09:28:17 2019
 
-ribovore v0.35 README.txt
+ribovore v0.36 README.txt
 
 Organization of this file:
 
@@ -52,12 +52,18 @@ Author: Eric Nawrocki
 Git repository for ribovore:
 https://github.com/nawrockie/ribovore.git
 
+(To be automatically updated about new releases, you can become a
+watcher of the repo on github.)
+
 ##############################################################################
 INSTALLATION
 
 The file 'install.sh' is an executable file for installing ribovore
-and its dependencies. Copy that file into the directory in which you 
-want to install ribovore. You may want to call that 'ribovore-installation'.
+and its dependencies. That file is located online at github here:
+https://github.com/nawrockie/ribovore/tree/0.36/install.sh
+
+Copy that file into the directory in which you 
+want to install ribovore. You may want to call that 'ribovore-0.36'.
 Then move into that directory and run the command './install.sh'. That
 will create several directories in the current directory.
 
@@ -114,14 +120,14 @@ also included below for reference, but with strings like:
 --
 Before you can run any ribovore scripts, you will need to update some of your
 environment variables. To do this, add the following lines to
-your .bashrc file (if you use bash shell) or .cshrc file (if you use C
+the end of your .bashrc file (if you use bash shell) or .cshrc file (if you use C
 shell or tcsh). The .bashrc or .cshrc file is in your home
 directory. To determine what shell you use, type
 > echo $SHELL
 If this command returns '/bin/bash', then update your .bashrc file.
 If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
-The lines to add to your .bashrc file:
+The lines to add to the end of your .bashrc file:
 -----------
 export RIBODIR="<full path to directory in which you have the ribovore code>"
 export RIBOINFERNALDIR="<full path to directory with infernal binaries (e.g. usr/local/bin)>"
@@ -147,7 +153,7 @@ export VECPLUSDIR="<full path to vecscreen_plus_taxonomy>"
 -----------
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The analogous lines to add to your .cshrc file:
+The analogous lines to add to the end of your .cshrc file:
 -----------
 setenv RIBODIR "<full path to directory in which you have the ribovore code>"
 setenv RIBOINFERNALDIR "<full path to directory with infernal binaries (e.g. usr/local/bin)>"
@@ -208,7 +214,8 @@ It runs the ribovore scripts on small datasets and compares the
 output with expected outputs. It is also used during development for
 regression testing.
 
-There are 9 shell scripts for running tests. You will want to run one
+There are 9 shell scripts for running tests. These are in the 
+testfiles/ subdirectory of ribovore. You will want to run one
 or more of these to validate that your installation was successful:
 
      1	do-ribotyper-tests.sh

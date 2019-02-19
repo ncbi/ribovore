@@ -8,7 +8,7 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 #
-VERSION="0.35"
+VERSION="0.36"
 BLASTVERSION="2.8.1"
 BLASTDIR="ncbi-blast-$BLASTVERSION+"
 
@@ -50,7 +50,8 @@ echo "The final step is to update your environment variables."
 echo "(See ribovore/README.txt for more information.)"
 echo ""
 echo "If you are using the bash shell, add the following"
-echo "lines to the '.bashrc' file in your home directory:"
+echo "lines to the end of the '.bashrc' file in your home"
+echo "directory:"
 echo ""
 echo "export RIBOBLASTDIR=\"$RIBOINSTALLDIR/$BLASTDIR/bin\""
 echo "export BLASTDB=\"\$SENSORDIR:\$BLASTDB\""
@@ -62,7 +63,8 @@ echo "source ~/.bashrc"
 echo ""
 echo "---"
 echo "If you are using the C shell, add the following"
-echo "lines to the '.cshrc' file in your home directory:"
+echo "lines to the end of the '.cshrc' file in your home"
+echo "directory:"
 echo ""
 echo "setenv RIBOBLASTDIR \"$RIBOINSTALLDIR/$BLASTDIR/bin\""
 echo "setenv BLASTDB \"\$SENSORDIR\":\"\$BLASTDB\""
