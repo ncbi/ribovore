@@ -8,8 +8,8 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
-VERSION="0.35"
-RVERSION="ribovore-0.35"
+VERSION="0.36"
+RVERSION="ribovore-0.36"
 
 #
 # The following line will make the script fail if any commands fail
@@ -33,8 +33,9 @@ echo "------------------------------------------------"
 echo "Installing vecscreen_plus_taxonomy for Linux ... "
 curl -k -L -o vecscreen_plus_taxonomy-$RVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$RVERSION.zip; 
 unzip vecscreen_plus_taxonomy-$RVERSION.zip; 
+mv vecscreen_plus_taxonomy-$RVERSION vecscreen_plus_taxonomy
 rm vecscreen_plus_taxonomy-$RVERSION.zip
-(cd vecscreen_plus_taxonomy-$RVERSION/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
+(cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
 
 ################
 # Output the final message:
@@ -42,9 +43,10 @@ echo "The final step is to update your environment variables."
 echo "(See ribovore/README.txt for more information.)"
 echo ""
 echo "If you are using the bash shell, add the following"
-echo "lines to the '.bashrc' file in your home directory:"
+echo "lines to the end of the '.bashrc' file in your home"
+echo "directory:"
 echo ""
-echo "export VECPLUSDIR=\"$RIBOINSTALLDIR/vecscreen_plus_taxonomy-$RVERSION\""
+echo "export VECPLUSDIR=\"$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo ""
 echo "After adding the export lines to your .bashrc file, source that file"
 echo "to update your current environment with the command:"
@@ -53,9 +55,10 @@ echo "source ~/.bashrc"
 echo ""
 echo "---"
 echo "If you are using the C shell, add the following"
-echo "lines to the '.cshrc' file in your home directory:"
+echo "lines to the end of the '.cshrc' file in your home"
+echo "directory:"
 echo ""
-echo "setenv VECPLUSDIR \"$RIBOINSTALLDIR/vecscreen_plus_taxonomy-$RVERSION\""
+echo "setenv VECPLUSDIR \"$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo ""
 echo "After adding the setenv lines to your .bashrc file, source that file"
 echo "to update your current environment with the command:"

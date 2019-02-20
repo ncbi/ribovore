@@ -210,10 +210,10 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.35";
+my $version           = "0.36";
 my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
 my $qsub_version_str  = "0p32"; # qsub command file unchanged since version 0.32
-my $releasedate       = "Jan 2019";
+my $releasedate       = "Feb 2019";
 my $package_name      = "ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
