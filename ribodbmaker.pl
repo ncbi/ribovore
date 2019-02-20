@@ -1842,15 +1842,19 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     }
     my $accver = $el_A[0];
     my $taxid  = $el_A[1];
-    if($specified_species_H{$taxid} == -1) { 
+
+    if(! exists $specified_species_H{$taxid}) { 
       if($do_strict) { $diestr .= "taxid: $taxid, accession: $accver\n"; }
-      else           { $curfailstr_H{$accver} = "not-in-taxtree;;"; }
+      else           { $curfailstr_H{$accver} = "not-in-tax-tree;;"; }
     }
     elsif($specified_species_H{$taxid} == 0) { 
       $curfailstr_H{$accver} = "not-specified-species;;";
     }
-    elsif($specified_species_H{$taxid} != 1) { 
-      ofile_FAIL("ERROR in $sub_name, tax file had unexpected value (not '0' or '1') for specified species for taxid $taxid ($accver)", "RIBO", $?, $FH_HR);
+    elsif($specified_species_H{$taxid} == -1) { 
+      ofile_FAIL("ERROR in $sub_name, read taxid $taxid in srcchk pass 2, but not pass 1 (sequence: $accver)", "RIBO", $?, $FH_HR);
+    }
+    elsif($specified_species_H{$taxid} != 1) {
+      ofile_FAIL("ERROR in $sub_name, unexpected value ($specified_species_H{$taxid} != 1, 0, or -1) for taxid $taxid (sequence: $accver)", "RIBO", $?, $FH_HR);
     }
   }
   close(SRCCHK);
