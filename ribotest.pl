@@ -4,8 +4,8 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-# ribotyper.pl :: detect and classify ribosomal RNA sequences
-# Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
+# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# Usage: ribotest.pl [-options] <input test file e.g. testfiles/testin.1> <output directory to create>
 
 require "epn-test.pm";
 require "epn-options.pm";
@@ -13,10 +13,7 @@ require "epn-ofile.pm";
 require "ribo.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-#my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
-#my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
-#my $df_model_dir         = $env_ribotyper_dir . "/models/";
+my $env_ribovore_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 
 #my %execs_H = (); # hash with paths to all required executables
 #$execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
@@ -66,7 +63,7 @@ opt_Add("--keep",       "boolean", 0,                        3,    undef, undef,
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: ribotest.pl [-options] <input test file e.g. testfiles/testin.1> <output directory to create>\n";
-my $synopsis = "ribotest.pl :: test ribotyper scripts [TEST SCRIPT]";
+my $synopsis = "ribotest.pl :: test ribovore scripts [TEST SCRIPT]";
 
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"},
@@ -79,8 +76,8 @@ my $options_okay =
 my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
-my $version       = "0.35";
-my $releasedate   = "Jan 2019";
+my $version       = "0.36";
+my $releasedate   = "Feb 2019";
 my $package_name  = "ribovore";
 my $pkgstr        = "RIBO";
 
@@ -153,7 +150,7 @@ my $out_root = $dir_out . "/" . $dir_tail . ".ribotest";
 my @arg_desc_A = ("test file", "output directory name");
 my @arg_A      = ($test_file, $dir_out);
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"} = $env_ribotyper_dir;
+$extra_H{"\$RIBODIR"} = $env_ribovore_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
