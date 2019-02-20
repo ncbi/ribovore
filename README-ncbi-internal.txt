@@ -8,6 +8,7 @@ INTRODUCTION
 SETTING UP ENVIRONMENT VARIABLES
 VERIFYING YOU CAN RUN RIBOVORE SCRIPTS
 EXAMPLE EXPLANATION OF RIBOTYPER FOR A SUBMITTER
+UPDATING THE NCBI TAXONOMY TREE FILE
 
 Questions:
 email Eric Nawrocki: eric.nawrocki@nih.gov
@@ -201,6 +202,32 @@ each profile and a score is computed based on well the sequence
 matches the profile. Each sequence is classified by the model that
 gave it the highest score.
 ~~~~~~~~~~~~~~~~~~~
+
+##############################################################################
+UPDATING THE NCBI TAXONOMY TREE FILE
+
+A specialized copy of the NCBI taxonomy tree file is included with
+ribovore. That file is here:
+
+ribovore/taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt
+
+That file is static for a given ribodbmaker release, but can be
+updated *on NCBI computer systems* using a different git repo
+available here:
+
+https://github.com/nawrockie/ncbi-rrna-project
+
+To clone that repo do:
+git clone https://github.com/nawrockie/ncbi-rrna-project.git
+
+You can then update the tree file as follows:
+> mv ncbi-rrna-project/taxonomy-files
+> update-for-ribodbmaker.sh
+
+Then, to use this updated taxonomy tree file with ribodbmaker.pl, use
+the --taxin option, like this:
+
+> ribodbmaker.pl --taxin PATH-TO-NCBI-RRNA-PROJECT/taxonomy-files/ncbi-taxonomy-tree.ribodbmaker.txt <fasta> <outdir>
 
 ##############################################################################
 
