@@ -8,8 +8,8 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
-VERSION="0.36"
-RVERSION="ribovore-0.36"
+VERSION="0.37"
+RVERSION="ribovore-$VERSION"
 
 #
 # The following line will make the script fail if any commands fail

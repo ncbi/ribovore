@@ -89,7 +89,7 @@ parse_seqstat_a_file($seqstat_file, \@seq_A, \@nongap_A);
 unlink $seqstat_file;
 
 # output 
-printf("# Explanation of columns [RIBO v0.36]:\n");
+printf("# Explanation of columns [RIBO v0.37]:\n");
 printf("# seqname: name of sequence\n");
 printf("# uapos:   unaligned sequence position that aligns at alignment %s %d\n", ($do_notrf ? "position" : "RF position"), $pos);
 printf("#          if 'gap?' column is 'gap' then alignment is a gap for this sequence at position $pos\n");

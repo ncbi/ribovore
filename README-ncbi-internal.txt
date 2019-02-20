@@ -1,6 +1,6 @@
-EPN, Wed Jan 23 10:41:06 2019
+EPN, Wed Feb 20 14:32:01 2019
 
-ribovore v0.36 README-ncbi-internal.txt
+ribovore v0.37 README-ncbi-internal.txt
 
 Organization of this file:
 
@@ -15,7 +15,7 @@ email Eric Nawrocki: eric.nawrocki@nih.gov
 ##############################################################################
 INTRODUCTION
 
-ribovore version 0.36 is installed in system-wide directories for
+ribovore version 0.37 is installed in system-wide directories for
 internal use at NCBI. The top-level directory is:
 
 /panfs/pan1/dnaorg/ssudetection/code/ribovore
@@ -30,7 +30,7 @@ https://confluence.ncbi.nlm.nih.gov/pages/viewpage.action?spaceKey=UGE&title=Gri
 The README.txt for ribovore includes example runs of each of the
 scripts. It is here:
 
-/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.36/README.txt
+/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.37/README.txt
 
 Git repository for ribovore:
 https://github.com/nawrockie/ribovore.git
@@ -49,7 +49,7 @@ If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
 The lines to add to your .bashrc file:
 -----------
-export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.36"
+export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.37"
 export RIBOINFERNALDIR="/usr/local/infernal/1.1.2/bin"
 export RIBOEASELDIR="/usr/local/infernal/1.1.2/bin"
 export RIBOTIMEDIR="/usr/bin"
@@ -67,7 +67,7 @@ export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/vecscreen_plus_
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The analogous lines to add to your .cshrc file:
 -----------
-setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.36"
+setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.37"
 setenv RIBOINFERNALDIR "/usr/local/infernal/1.1.2/bin"
 setenv RIBOEASELDIR "/usr/local/infernal/1.1.2/bin"
 setenv RIBOTIMEDIR "/usr/bin"
