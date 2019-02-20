@@ -8,7 +8,7 @@
 # for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
-VERSION="0.37"
+VERSION="0.38"
 RVERSION="ribovore-$VERSION"
 BLASTVERSION="2.8.1"
 
@@ -32,7 +32,7 @@ echo "------------------------------------------------"
 
 # ribovore
 echo "Installing ribovore ... "
-curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archive/$VERSION.zip; unzip ribovore-$VERSION.zip; rm ribovore-$VERSION.zip
+curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archive/$VERSION.zip; unzip ribovore-$VERSION.zip; mv ribovore-$VERSION ribovore; rm ribovore-$VERSION.zip
 
 # rRNA_sensor
 echo "Installing rRNA_sensor ... "
@@ -99,7 +99,7 @@ echo ""
 echo "If you are using the bash shell, add the following"
 echo "lines to the end of the '.bashrc' file in your home directory:"
 echo ""
-echo "export RIBODIR=$RIBOINSTALLDIR/ribovore-$VERSION"
+echo "export RIBODIR=$RIBOINSTALLDIR/ribovore"
 echo "export RIBOINFERNALDIR=$RIBOINSTALLDIR/bin"
 echo "export RIBOEASELDIR=$RIBOINSTALLDIR/bin"
 echo "export RIBOTIMEDIR=/usr/bin"

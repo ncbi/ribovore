@@ -7,7 +7,7 @@
 # A shell script for installing blastn (linux)
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
-VERSION="0.37"
+VERSION="0.38"
 BLASTVERSION="2.8.1"
 BLASTDIR="ncbi-blast-$BLASTVERSION+"
 

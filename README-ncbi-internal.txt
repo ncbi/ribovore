@@ -1,6 +1,6 @@
-EPN, Wed Feb 20 14:32:01 2019
+EPN, Wed Feb 20 16:43:40 2019
 
-ribovore v0.37 README-ncbi-internal.txt
+ribovore v0.38 README-ncbi-internal.txt
 
 Organization of this file:
 
@@ -15,7 +15,7 @@ email Eric Nawrocki: eric.nawrocki@nih.gov
 ##############################################################################
 INTRODUCTION
 
-ribovore version 0.37 is installed in system-wide directories for
+ribovore version 0.38 is installed in system-wide directories for
 internal use at NCBI. The top-level directory is:
 
 /panfs/pan1/dnaorg/ssudetection/code/ribovore
@@ -30,7 +30,7 @@ https://confluence.ncbi.nlm.nih.gov/pages/viewpage.action?spaceKey=UGE&title=Gri
 The README.txt for ribovore includes example runs of each of the
 scripts. It is here:
 
-/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.37/README.txt
+/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.38/README.txt
 
 Git repository for ribovore:
 https://github.com/nawrockie/ribovore.git
@@ -49,37 +49,37 @@ If this command returns'/bin/csh' or '/bin/tcsh' then update your .cshrc file.
 
 The lines to add to your .bashrc file:
 -----------
-export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.37"
+export RIBODIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore"
 export RIBOINFERNALDIR="/usr/local/infernal/1.1.2/bin"
 export RIBOEASELDIR="/usr/local/infernal/1.1.2/bin"
 export RIBOTIMEDIR="/usr/bin"
-export SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/rRNA_sensor"
-export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/epn-options"
-export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/epn-ofile"
-export EPNTESTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/epn-test"
+export SENSORDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/rRNA_sensor"
+export EPNOPTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-options"
+export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-ofile"
+export EPNTESTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-test"
 export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB"
 export PATH="$RIBODIR:$SENSORDIR:$PATH"
 export BLASTDB="$SENSORDIR:$BLASTDB"
-export RIBOBLASTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/ncbi-blast-2.8.1+/bin"
-export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore/vecscreen_plus_taxonomy"
+export RIBOBLASTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ncbi-blast-2.8.1+/bin"
+export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/vecscreen_plus_taxonomy"
 -------------
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The analogous lines to add to your .cshrc file:
 -----------
-setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.37"
+setenv RIBODIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore"
 setenv RIBOINFERNALDIR "/usr/local/infernal/1.1.2/bin"
 setenv RIBOEASELDIR "/usr/local/infernal/1.1.2/bin"
 setenv RIBOTIMEDIR "/usr/bin"
-setenv SENSORDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/rRNA_sensor"
-setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/epn-options"
-setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/epn-ofile"
-setenv EPNTESTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/epn-test"
+setenv SENSORDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/rRNA_sensor"
+setenv EPNOPTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-options"
+setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-ofile"
+setenv EPNTESTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-test"
 setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$SENSORDIR":"$PATH"
 setenv BLASTDB "$SENSORDIR":"$BLASTDB"
-setenv RIBOBLASTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/ncbi-blast-2.8.1+/bin"
-setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore/vecscreen_plus_taxonomy"
+setenv RIBOBLASTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ncbi-blast-2.8.1+/bin"
+setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/vecscreen_plus_taxonomy"
 -----------
 
 After adding the lines specified above, execute the command:
@@ -102,7 +102,7 @@ Similarly, if you get an error about BLASTDB being undefined,
 change the BLASTDB line to add to:
 export BLASTDB="$SENSORDIR"
 for .bashrc, OR
-setenv BLASTDB="$SENSORDIR"
+setenv BLASTDB "$SENSORDIR"
 for .cshrc. And then do
 > source ~/.bashrc
 or
@@ -118,7 +118,12 @@ It runs the ribovore scripts on small datasets and compares the
 output with expected outputs. It is also used during development for
 regression testing.
 
-To run all tests, run the script 'do-all-tests.sh'
+To run all tests, create a temporary directory and move into it, like
+this:
+> mkdir testing-ribovore
+> cd testing-ribovore
+
+And then run the script 'do-all-tests.sh'
 
 > cat $RIBODIR/testfiles/do-ribotyper-tests.sh
 <[(ribotyper-v1)]> cat $INF/notebook/19_0117_ribo_doc_update/ribovore/testfiles/do-all-tests.sh 
@@ -139,7 +144,7 @@ Here is the beginning of the output when you run that script:
 # ribotyper 0.36 (Jan 2019)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:      Wed Jan 23 10:14:53 2019
-# $RIBODIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.34
+# $RIBODIR:  /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.36
 #
 # test file:                    /panfs/pan1/infernal/notebook/19_0117_ribo_doc_update/test-install/ribovore-0.36/testfiles/ribotyper.testin
 # output directory name:        rt-test
