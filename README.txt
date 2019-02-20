@@ -117,7 +117,6 @@ also included below for reference, but with strings like:
 
 "<full path to directory in which you have the ribovore code>"
 
---
 Before you can run any ribovore scripts, you will need to update some of your
 environment variables. To do this, add the following lines to
 the end of your .bashrc file (if you use bash shell) or .cshrc file (if you use C
