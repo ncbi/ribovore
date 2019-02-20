@@ -8,7 +8,7 @@
 # for use with ribovore for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
-VERSION="0.37"
+VERSION="0.38"
 RVERSION="ribovore-$VERSION"
 
 #

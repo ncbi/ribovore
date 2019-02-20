@@ -1,6 +1,6 @@
-EPN, Wed Feb 20 14:31:35 2019
+EPN, Wed Feb 20 16:43:30 2019
 
-ribovore v0.37 README.txt
+ribovore v0.38 README.txt
 
 Organization of this file:
 
@@ -60,10 +60,10 @@ INSTALLATION
 
 The file 'install.sh' is an executable file for installing ribovore
 and its dependencies. That file is located online at github here:
-https://github.com/nawrockie/ribovore/tree/0.37/install.sh
+https://github.com/nawrockie/ribovore/tree/0.38/install.sh
 
 Copy that file into the directory in which you 
-want to install ribovore. You may want to call that 'ribovore-0.37'.
+want to install ribovore. You may want to call that 'ribovore-0.38'.
 Then move into that directory and run the command './install.sh'. That
 will create several directories in the current directory.
 
@@ -197,7 +197,7 @@ Similarly, if you get an error about BLASTDB being undefined,
 change the BLASTDB line to add to:
 export BLASTDB="$SENSORDIR"
 for .bashrc, OR
-setenv BLASTDB="$SENSORDIR"
+setenv BLASTDB "$SENSORDIR"
 for .cshrc. And then do
 > source ~/.bashrc
 or
@@ -215,7 +215,7 @@ regression testing.
 
 There are 9 shell scripts for running tests. These are in the 
 testfiles/ subdirectory of ribovore. You will want to run one
-or more of these to validate that your installation was successful:
+or more of these to validate that your installation was successful: 
 
      1	do-ribotyper-tests.sh
      2	do-riboaligner-tests.sh
@@ -226,6 +226,11 @@ or more of these to validate that your installation was successful:
      7	do-ribosensor-parallel-tests.sh
      8	do-ribodbmaker-parallel-tests.sh
      9	do-all-tests.sh
+
+To run these tests, create a temporary directory and move into it,
+like this:
+> mkdir testing-ribovore
+> cd testing-ribovore
 
 All users will want to run at least 'do-ribotyper-tests.sh' and 
 'do-riboaligner-tests.sh' because those should pass for all
