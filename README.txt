@@ -137,7 +137,7 @@ export EPNOPTDIR="<full path to epn-options directory>"
 export EPNOFILEDIR="<full path to epn-ofile directory>"
 export EPNTESTDIR="<full path to epn-test directory>"
 export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB"
-export PATH="$RIBODIR:$PATH"
+export PATH="$RIBODIR:$SENSORDIR:$PATH"
 export BLASTDB="$SENSORDIR:$BLASTDB"
 -------------
 
@@ -163,7 +163,7 @@ setenv EPNOPTDIR "<full path to epn-options directory>"
 setenv EPNOFILEDIR "<full path to epn-ofile directory>"
 setenv EPNTESTDIR "<full path to epn-test directory>"
 setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
-setenv PATH "$RIBODIR":"$PATH"
+setenv PATH "$RIBODIR":"$SENSORDIR":"$PATH"
 setenv BLASTDB "$SENSORDIR":"$BLASTDB"
 -----------
 
