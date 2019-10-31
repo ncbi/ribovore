@@ -138,6 +138,7 @@ opt_Add("--evalues",      "boolean", 0,                      12,  undef,   undef
 opt_Add("--skipsearch",   "boolean", 0,                      12,  undef,   "-f",                "skip search stage",                                 "skip search stage, use results from earlier run", \%opt_HH, \@opt_order_A);
 opt_Add("--noali",        "boolean", 0,                      12,"--keep",  "--skipsearch",      "no alignments in output",                           "no alignments in output, requires --keep", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                      12,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
+opt_Add("--skipval",      "boolean", 0,                      12,  undef,   undef,               "skip validation of CM and model info files",        "skip validation of CM and model info files", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -205,7 +206,8 @@ my $options_okay =
                 'outhits'      => \$GetOptions_H{"--outhits"},
                 'outgaps'      => \$GetOptions_H{"--outgaps"},
                 'outxgaps=s'   => \$GetOptions_H{"--outxgaps"},
-                'samedomain'   => \$GetOptions_H{"--samedomain"});
+                'samedomain'   => \$GetOptions_H{"--samedomain"},
+                'skipval'      => \$GetOptions_H{"--skipval"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -524,22 +526,28 @@ my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%f
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
-my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
-$width_H{"model"} = parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
+if(! opt_Get("--skipval", \%opt_HH)) { 
+  parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
+}
 
+# parse qsub file
 if(opt_IsUsed("-p", \%opt_HH)) { 
   ($qsub_prefix, $qsub_suffix) = ribo_ParseQsubFile($qsubinfo_file, $ofile_info_HH{"FH"});
 }
 
 # determine max width of domain, family, and classification (formed as family.domain)
+my %width_H = (); # hash, key is "model" or "target", value is maximum length of any model/target
+$width_H{"model"}          = length("model");
 $width_H{"domain"}         = length("domain");
 $width_H{"family"}         = length("fam");
 $width_H{"classification"} = length("classification");
 my $model;
 foreach $model (keys %domain_H) { 
+  my $model_len  = length($model);
   my $domain_len = length($domain_H{$model});
   my $family_len = length($family_H{$model});
   my $class_len  = $domain_len + $family_len + 1; # +1 is for the '.' separator
+  if($model_len  > $width_H{"model"})          { $width_H{"model"}          = $model_len; }
   if($domain_len > $width_H{"domain"})         { $width_H{"domain"}         = $domain_len; }
   if($family_len > $width_H{"family"})         { $width_H{"family"}         = $family_len; } 
   if($class_len  > $width_H{"classification"}) { $width_H{"classification"} = $class_len;  }
@@ -1372,7 +1380,7 @@ sub parse_inaccept_file {
 #                       ALREADY FILLED we use this only for validation
 #   $FH_HR:             ref to hash of file handles, including "cmd"
 #
-# Returns:     Maximum length of any model read from the model file.
+# Returns:     void
 # 
 # Dies:        If the master model file does not have exactly the 
 #              same set of models that are keys in $family_HR or does
@@ -1399,7 +1407,6 @@ sub parse_and_validate_model_files {
     # we will set to '1' when we see it in the model file and validate its checksum
   }
 
-  my $model_width = length("model");
   my $name_output = `grep -w ^NAME $master_model_file | awk '{ print \$2 }'`;
   my @name_A = split("\n", $name_output);
   my $cksum_output = `grep -w ^CKSUM $master_model_file | awk '{ print \$2 }'`;
@@ -1439,9 +1446,6 @@ sub parse_and_validate_model_files {
     }
     # if we get here, checksum test has passed
     $tmp_family_model_H{$model} = 1;
-    if(length($model) > $model_width) { 
-      $model_width = length($model);
-    }
   }
 
   foreach $model (keys %tmp_family_model_H) { 
@@ -1450,7 +1454,7 @@ sub parse_and_validate_model_files {
     }
   }
 
-  return $model_width;
+  return;
 }
 
 #################################################################
