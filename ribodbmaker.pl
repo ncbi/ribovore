@@ -1727,7 +1727,7 @@ if(opt_Get("-p", \%opt_HH)) {
 }
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
-exit 0;
+exit(0); 
 
 #####################################################################
 # SUBROUTINES 

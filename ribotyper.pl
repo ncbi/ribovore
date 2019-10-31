@@ -139,6 +139,7 @@ opt_Add("--skipsearch",   "boolean", 0,                      12,  undef,   "-f",
 opt_Add("--noali",        "boolean", 0,                      12,"--keep",  "--skipsearch",      "no alignments in output",                           "no alignments in output, requires --keep", \%opt_HH, \@opt_order_A);
 opt_Add("--samedomain",   "boolean", 0,                      12,  undef,   undef,               "top two hits can be same domain",                   "top two hits can be to models in the same domain", \%opt_HH, \@opt_order_A);
 opt_Add("--skipval",      "boolean", 0,                      12,  undef,   undef,               "skip validation of CM and model info files",        "skip validation of CM and model info files", \%opt_HH, \@opt_order_A);
+opt_Add("--onlyval",      "boolean", 0,                      12,  undef,   "--skipval",         "validate CM and model info files and exit",         "validate CM and model info files and exit", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -207,7 +208,8 @@ my $options_okay =
                 'outgaps'      => \$GetOptions_H{"--outgaps"},
                 'outxgaps=s'   => \$GetOptions_H{"--outxgaps"},
                 'samedomain'   => \$GetOptions_H{"--samedomain"},
-                'skipval'      => \$GetOptions_H{"--skipval"});
+                'skipval'      => \$GetOptions_H{"--skipval"},
+                'onlyval'      => \$GetOptions_H{"--onlyval"});
 
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -528,6 +530,12 @@ my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%f
 # models in the models file and models listed in the model info file
 if(! opt_Get("--skipval", \%opt_HH)) { 
   parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
+}
+if(opt_Get("--onlyval", \%opt_HH)) { 
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  $total_seconds += ribo_SecondsSinceEpoch();
+  ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+  exit(0); 
 }
 
 # parse qsub file
@@ -1083,7 +1091,6 @@ $total_seconds += ribo_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
-
 if(opt_Get("-p", \%opt_HH)) { 
   ofile_OutputString($log_FH, 1, "#\n");
   ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($r1_opt_p_sum_cpu_secs + $r2_opt_p_sum_cpu_secs)));
@@ -1091,6 +1098,8 @@ if(opt_Get("-p", \%opt_HH)) {
 }
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+exit(0); 
+
 ###########################################################################
 
 #####################################################################

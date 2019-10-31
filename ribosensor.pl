@@ -691,6 +691,7 @@ if((opt_Get("--psave", \%opt_HH)) && ($nseq_passed > 0)) {
 }
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+exit(0); 
 
 ###############
 # SUBROUTINES #
