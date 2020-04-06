@@ -1,0 +1,47 @@
+# Explanation of columns:
+# Column  1: 'idx':     index of sequence in input file
+# Column  2: 'seqname': name of sequence
+# Column  3: 'seqlen':  length of sequence
+# Column  4: 'staxid':  taxid of sequence (species level), '-' if all taxid related steps were skipped
+# Column  5: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped
+# Column  6: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped
+# Column  7: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped
+# Column  8: 'p/f':     PASS if sequence passed all filters else FAIL
+# Column  9: 'clust':   'R' if sequence selected as representative of a cluster, 'NR' if not
+# Column 10: 'special': '-' for all sequences because --special not used
+# Column 11: 'failstr': '-' for PASSing sequences, else list of reasons for FAILure, see below
+#
+# Possible substrings in 'failstr' column 11, each substring separated by ';;':
+# 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed
+# 'vecscreen-match[<s>]':  vecscreen reported match to vector of strength <s>
+# 'blastrepeat[<s>]':      repetitive sequence identified by blastn
+#                          <s> = <s1>,<s2>,...<sI>...<sN> for N >= 1, where
+#                          <sI> = <c1>|e=<g1>|len=<d1>|<d2>..<d3>/<d4>..<d5>|pid=<f1>|ngap=<d6>
+#                          <c1> = + for positive strand, - for negative strand
+#                          <g1> = E-value of hit
+#                          <d1> = maximum of query length and subject length in hit alignment
+#                          <d2>..<d3> = query coordinates of hit
+#                          <d4>..<d5> = subject coordinates of hit
+#                          <f1> = fractional identity of hit alignment
+#                          <d6> = number of gaps in hit alignment
+# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>
+#                          see db1/db1.ribodbmaker-ra/db1-ra.ribotyper.long.out
+#                          for explanation of unexpected features
+# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long
+#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end
+#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                 has indels in first and/or final 10 model positions and
+#                                                 insertions outnumber deletions at 5' and/or 3' end
+#                          <s>=5flush-extra:      alignment extends to first but not final model position
+#                                                 with >= 1 nt extra before first model position
+#                          <s>=5flush-ambig-more: alignment extends to first but not final model position
+#                                                 and has indels in first 10 model positions and
+#                                                 insertions outnumber deletions at 5' end
+#                          <s>=3flush-extra:      alignment extends to final but not first model position
+#                                                 with >= 1 nt extra after final model position
+#                          <s>=3flush-ambig-more: alignment extends to final but not first model position
+#                                                 and has indels in final 10 model positions and
+#                                                 insertions outnumber deletions at 3' end
+# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>
+#idx  seqname     seqlen   staxid   otaxid   ctaxid   ptaxid   p/f  clust  special  failstr
+1     EU278606.1    1737        -        -        -        -  PASS      R        -  -
