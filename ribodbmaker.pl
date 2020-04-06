@@ -57,7 +57,7 @@ opt_Add("--taxin",      "string",  undef,                   $g,    undef, undef,
 $opt_group_desc_H{++$g} = "options for skipping stages";
 #               option  type       default               group   requires                incompat   preamble-output                                                     help-output    
 opt_Add("--skipfambig", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on ambiguous nucleotides",           "skip stage that filters based on ambiguous nucleotides",           \%opt_HH, \@opt_order_A);
-opt_Add("--skipftaxid", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters by taxid",                                 "skip stage that filters by taxid",                                 \%opt_HH, \@opt_order_A);
+opt_Add("--skipftaxid", "boolean", 0,                       $g,"--skipmstbl",               undef,  "skip stage that filters by taxid",                                 "skip stage that filters by taxid",                                 \%opt_HH, \@opt_order_A);
 opt_Add("--skipfvecsc", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on VecScreen",                       "skip stage that filters based on VecScreen",                       \%opt_HH, \@opt_order_A);
 opt_Add("--skipfblast", "boolean", 0,                       $g,    undef,                   undef,  "skip stage that filters based on BLAST hits to self",              "skip stage that filters based on BLAST hits to self",              \%opt_HH, \@opt_order_A);
 opt_Add("--skipfribo1", "boolean", 0,                       $g,    undef,                   undef,  "skip 1st stage that filters based on ribotyper",                   "skip 1st stage that filters based on ribotyper",                   \%opt_HH, \@opt_order_A);
@@ -341,7 +341,7 @@ my $do_fblast     = opt_Get("--skipfblast", \%opt_HH) ? 0 : 1;
 my $do_fribo1     = opt_Get("--skipfribo1", \%opt_HH) ? 0 : 1;
 my $do_fribo2     = opt_Get("--skipfribo2", \%opt_HH) ? 0 : 1;
 my $do_fmspan     = opt_Get("--skipfmspan", \%opt_HH) ? 0 : 1;
-my $do_ingrup     = opt_Get("--skipingrup",  \%opt_HH) ? 0 : 1;
+my $do_ingrup     = opt_Get("--skipingrup", \%opt_HH) ? 0 : 1;
 my $do_clustr     = opt_Get("--skipclustr", \%opt_HH) ? 0 : 1;
 my $do_listms     = opt_Get("--skiplistms", \%opt_HH) ? 0 : 1;
 my $do_mstbl      = opt_Get("--skipmstbl",  \%opt_HH) ? 0 : 1;
@@ -500,6 +500,7 @@ $execs_H{"esl-alimask"}  = $env_riboeasel_dir    . "/esl-alimask";
 $execs_H{"esl-alipid"}   = $env_riboeasel_dir    . "/esl-alipid";
 $execs_H{"esl-alistat"}  = $env_riboeasel_dir    . "/esl-alistat";
 $execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
+$execs_H{"ali-apos-to-uapos.pl"} = $env_ribovore_dir . "/miniscripts/ali-apos-to-uapos.pl";
 
 if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) { 
   $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
@@ -520,7 +521,6 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
 
   $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
   $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribovore_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
-  $execs_H{"ali-apos-to-uapos.pl"}       = $env_ribovore_dir . "/miniscripts/ali-apos-to-uapos.pl";
 }
 
 if($do_fblast) { 
@@ -1458,7 +1458,7 @@ else {
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, $stage_key . ".outlist", "$cluster_out_list_file", 0, "list of sequences selected as representatives by esl-cluster");
       }
       else { # only 1 sequence to cluster, it is its own cluster
-        foreach $seqname (%is_representative_H) { # only 1 of these guys
+        foreach $seqname (sort keys %in_cluster_H) { # only 1 of these guys
           $is_representative_H{$seqname} = 1;
           $not_representative_H{$seqname} = 0;
           $in_cluster_H{$seqname} = 1;
