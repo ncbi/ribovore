@@ -2395,15 +2395,15 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   open(IN, $in_file)  || ofile_FileOpenFailure($in_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
-    ##idx  target      classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
-    ##---  ----------  ---------------------  -----  ----  ------  ------  ------------  -------------------
-    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
+    ##idx  target      classification         strnd   p/f  mstart   mstop  nins5p  nins3p  length_class  unexpected_features
+    ##---  ----------  ---------------------  -----  ----  ------  ------  ------  ------  ------------  -------------------
+    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851       -       -    full-exact  -
+    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851       -       -    full-exact  -
     if($line !~ m/^\#/) { 
       chomp $line;
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 9) { 
-        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      if(scalar(@el_A) != 11) { 
+        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 11 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
       }
       my ($target, $mstart, $mstop) = ($el_A[1], $el_A[5], $el_A[6]); 
       if(((! defined $seqfailstr_HR) || ($seqfailstr_HR->{$target} eq "")) && # we are doing all seqs ($seqfailstr_HR undef) or sequence has not failed
