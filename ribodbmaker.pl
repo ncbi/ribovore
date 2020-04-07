@@ -2031,11 +2031,15 @@ sub parse_riboaligner_tbl_and_uapos_files {
   my $max_nins3p = (opt_IsUsed("--max3pins", $opt_HHR)) ? opt_Get("--max3pins", $opt_HHR) : undef;
   my %fail_lenclass_H = ();
   my $lenclass;
-  my @lenclass_A = ("full-exact", "partial", "full-extra", "full-ambig-more", "5flush-extra", "5flush-ambig-more",
-                    "3flush-extra", "3flush-ambig-more");
+  my @lenclass_A = ("partial", "full-exact", "full-extra", "full-ambig-more", "full-ambig-less",
+                    "5flush-exact", "5flush-extra", "5flush-ambig-more", "5flush-ambig-less",
+                    "3flush-exact", "3flush-extra", "3flush-ambig-more", "3flush-ambig-less");
   # default: only partial and full-exact pass (all others cause failure)
   foreach $lenclass (@lenclass_A) { 
-    $fail_lenclass_H{$lenclass} = (($lenclass eq "full-exact") || ($lenclass eq "partial")) ? 0 : 1;
+    $fail_lenclass_H{$lenclass} = (($lenclass eq "partial") || 
+                                   ($lenclass eq "full-exact") || 
+                                   ($lenclass eq "5flush-exact") || 
+                                   ($lenclass eq "3flush-exact")) ? 0 : 1;
   }
   if(opt_IsUsed("--passlenclass", $opt_HHR)) { 
     foreach $lenclass (split(",", opt_Get("--passlenclass", $opt_HHR))) { 
@@ -2078,27 +2082,40 @@ sub parse_riboaligner_tbl_and_uapos_files {
   my %lenclass_explanation_H = ();
   my $max_nins5p2print = (defined $max_nins5p) ? $max_nins5p : 0;
   my $max_nins3p2print = (defined $max_nins3p) ? $max_nins3p : 0;
+  $lenclass_explanation_H{"partial"}            = sprintf("#%-26s%-20s    %s\n", "", "<s>=partial:",           "alignment does not span to first or final position");
   $lenclass_explanation_H{"full-exact"}         = sprintf("#%-26s%-20s    %s\n", "", "<s>=full-exact:",        "alignment spans full model with zero inserts");
   $lenclass_explanation_H{"full-exact"}        .= sprintf("#%-26s%-20s    %s\n", "", "",                       "before first or after final position");
-  $lenclass_explanation_H{"partial"}            = sprintf("#%-26s%-20s    %s\n", "", "<s>=partial:",           "alignment does not span to first or final position");
   $lenclass_explanation_H{"full-extra"}         = sprintf("#%-26s%-20s\n",       "", "<s>=full-extra:5pins:<d1>:3pins<d2>:");        
   $lenclass_explanation_H{"full-extra"}        .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("alignment spans full model with <d1> > %d nt extra before first model", $max_nins5p2print));
   $lenclass_explanation_H{"full-extra"}        .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("position and/or <d2> > %d nt extra after final model position", $max_nins3p2print));
   $lenclass_explanation_H{"full-ambig-more"}    = sprintf("#%-26s%-20s    %s\n", "", "<s>=full-ambig-more:",   "alignment spans full model with 0 nt extra on 5' or 3' end but");
   $lenclass_explanation_H{"full-ambig-more"}   .= sprintf("#%-26s%-20s    %s\n", "", "",                       "has indels in first and/or final 10 model positions and");
   $lenclass_explanation_H{"full-ambig-more"}   .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions outnumber deletions at 5' and/or 3' end");
+  $lenclass_explanation_H{"full-ambig-less"}    = sprintf("#%-26s%-20s    %s\n", "", "<s>=full-ambig-less:",   "alignment spans full model with 0 nt extra on 5' or 3' end but");
+  $lenclass_explanation_H{"full-ambig-less"}   .= sprintf("#%-26s%-20s    %s\n", "", "",                       "has indels in first and/or final 10 model positions and");
+  $lenclass_explanation_H{"full-ambig-less"}   .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and insertions do not outnumber deletions at 5' and/or 3' end");
+  $lenclass_explanation_H{"5flush-exact"}       = sprintf("#%-26s%-20s    %s\n", "", "<s>=5flush-exact:",      "alignment extends to first but not final model position, and has no 5' inserts");
+  $lenclass_explanation_H{"5flush-exact"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and no indels in the first 10 model positions");
   $lenclass_explanation_H{"5flush-extra"}       = sprintf("#%-26s%-20s\n",       "", "<s>=5flush-extra:5pins<d>:");
   $lenclass_explanation_H{"5flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       "alignment extends to first but not final model position");
   $lenclass_explanation_H{"5flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("with <d> > %d nt extra before first model position", $max_nins5p2print));
   $lenclass_explanation_H{"5flush-ambig-more"}  = sprintf("#%-26s%-20s    %s\n", "", "<s>=5flush-ambig-more:", "alignment extends to first but not final model position");
   $lenclass_explanation_H{"5flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and has indels in first 10 model positions and");
   $lenclass_explanation_H{"5flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions outnumber deletions at 5' end");
+  $lenclass_explanation_H{"5flush-ambig-less"}  = sprintf("#%-26s%-20s    %s\n", "", "<s>=5flush-ambig-less:", "alignment extends to first but not final model position");
+  $lenclass_explanation_H{"5flush-ambig-less"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and has indels in first 10 model positions and");
+  $lenclass_explanation_H{"5flush-ambig-less"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions do not outnumber deletions at 5' end");
+  $lenclass_explanation_H{"3flush-exact"}       = sprintf("#%-26s%-20s    %s\n", "", "<s>=3flush-exact:",      "alignment extends to final but not first model position, and has no 3' inserts");
+  $lenclass_explanation_H{"3flush-exact"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and no indels in the final 10 model positions");
   $lenclass_explanation_H{"3flush-extra"}       = sprintf("#%-26s%-20s\n",       "", "<s>=3flush-extra:3pins:<d>:");
   $lenclass_explanation_H{"3flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       "alignment extends to final but not first model position");
   $lenclass_explanation_H{"3flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("with <d> > %d nt extra after final model position", $max_nins3p2print));
   $lenclass_explanation_H{"3flush-ambig-more"}  = sprintf("#%-26s%-20s    %s\n", "", "<s>=3flush-ambig-more:", "alignment extends to final but not first model position");
   $lenclass_explanation_H{"3flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and has indels in final 10 model positions and");
   $lenclass_explanation_H{"3flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions outnumber deletions at 3' end");
+  $lenclass_explanation_H{"3flush-ambig-less"}  = sprintf("#%-26s%-20s    %s\n", "", "<s>=3flush-ambig-less:", "alignment extends to final but not first model position");
+  $lenclass_explanation_H{"3flush-ambig-less"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and has indels in final 10 model positions and");
+  $lenclass_explanation_H{"3flush-ambig-less"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions do not outnumber deletions at 3' end");
 
   push(@{$ra_explanation_AR}, "# 'riboaligner[<s>]:       riboaligner failure because of sequence length classification\n");
   foreach $lenclass (@lenclass_A) { 
