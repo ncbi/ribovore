@@ -1,6 +1,6 @@
-EPN, Wed Feb 20 16:43:30 2019
+EPN, Fri Apr  3 15:23:43 2020
 
-ribovore v0.38 README.txt
+ribovore v0.39 README.txt
 
 Organization of this file:
 
@@ -60,10 +60,10 @@ INSTALLATION
 
 The file 'install.sh' is an executable file for installing ribovore
 and its dependencies. That file is located online at github here:
-https://github.com/nawrockie/ribovore/tree/0.38/install.sh
+https://github.com/nawrockie/ribovore/tree/ribovore-0.39/install.sh
 
 Copy that file into the directory in which you 
-want to install ribovore. You may want to call that 'ribovore-0.38'.
+want to install ribovore. You may want to call that 'ribovore-0.39'.
 Then move into that directory and run the command './install.sh'. That
 will create several directories in the current directory.
 

@@ -1,21 +1,21 @@
-#idx  target                                         classification         strnd   p/f  mstart   mstop       length_class  unexpected_features
-#---  ---------------------------------------------  ---------------------  -----  ----  ------  ------  -----------------  -------------------
-1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS       1    1477         full-exact  -
-2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS       1    1477         full-exact  -
-3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS     415    1290            partial  -
-4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   FAIL       -       -                  -  *LowCoverage:(0.835<0.860);
-5     random                                         -                      -      FAIL       -       -                  -  *NoHits;
-6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  FAIL       -       -                  -  *MinusStrand;
-7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS       1    1533         full-extra  -
-8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS       1    1533         full-extra  -
-9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS     131     996            partial  -
-10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  FAIL       -       -                  -  *MinusStrand;
-11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS       9    1511            partial  -
-12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
-13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
-14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
-15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);*MinusStrand;
-16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
+#idx  target                                         classification         strnd   p/f  mstart   mstop  nins5p  nins3p       length_class  unexpected_features
+#---  ---------------------------------------------  ---------------------  -----  ----  ------  ------  ------  ------  -----------------  -------------------
+1     00052::Halobacterium_sp.::AE005128             SSU.Archaea            plus   PASS       1    1477       -       -         full-exact  -
+2     00013::Methanobacterium_formicicum::M36508     SSU.Archaea            plus   PASS       1    1477       -       -         full-exact  -
+3     00004::Nanoarchaeum_equitans::AJ318041         SSU.Archaea            plus   PASS     415    1290       -       -            partial  -
+4     00121::Thermococcus_celer::M21529              SSU.Archaea            plus   FAIL       -       -       -       -                  -  *LowCoverage:(0.835<0.860);
+5     random                                         -                      -      FAIL       -       -       -       -                  -  *NoHits;
+6     00115::Pyrococcus_furiosus::U20163|g643670     SSU.Archaea            minus  FAIL       -       -       -       -                  -  *MinusStrand;
+7     00035::Bacteroides_fragilis::M61006|g143965    SSU.Bacteria           plus   PASS       1    1533       6       2         full-extra  -
+8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS       1    1533       1       2         full-extra  -
+9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS     131     996       -       -            partial  -
+10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  FAIL       -       -       -       -                  -  *MinusStrand;
+11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS       9    1511       -       -            partial  -
+12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
+13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
+14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
+15    00229::Oxytricha_granulifera.::AF164122        SSU.Eukarya            minus  FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);*MinusStrand;
+16    01710::Oryza_sativa.::X00755                   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Explanation of columns:
@@ -27,7 +27,9 @@
 # Column 5 [p/f]:                 PASS or FAIL (reasons for failure begin with '*' in rightmost column)
 # Column 6 [mstart]:              model start position
 # Column 7 [mstop]:               model stop position
-# Column 8 [length_class]:        classification of length, one of:
+# Column 8 [nins5p]:              number of inserts before first model position, '-' if none
+# Column 9 [nins3p]:              number of inserts after final model position, '-' if none
+# Column 10 [length_class]:       classification of length, one of:
 #                                 'partial:'             does not extend to first model position or final model position
 #                                 'full-exact':          spans full model and no 5' or 3' inserts
 #                                                        and no indels in first or final 10 model positions
@@ -56,7 +58,7 @@
 #                                 '3flush-ambig-less':   extends to final but not first model position and has no 3' inserts
 #                                                        but has indel(s) in final 10 model positions
 #                                                        and insertions do not outnumber deletions at 3' end
-# Column 9 [unexpected_features]: unexpected/unusual features of sequence (see below)
+# Column 11 [unexpected_features]: unexpected/unusual features of sequence (see below)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 #
 # Explanation of possible values in unexpected_features column:

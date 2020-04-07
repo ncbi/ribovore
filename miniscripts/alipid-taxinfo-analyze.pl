@@ -386,7 +386,7 @@ else {
 }
 
 my @column_explanation_A = (); # array of strings that explain columns to write to output files and stdout
-push(@column_explanation_A, "# Explanation of columns [RIBO v0.38]:\n");
+push(@column_explanation_A, "# Explanation of columns [RIBO v0.39]:\n");
 push(@column_explanation_A, "# 1.  sequence:    sequence accession.version\n");
 push(@column_explanation_A, "# 2.  seq-taxid:   sequence taxid read from input file: $taxinfo_file\n");
 push(@column_explanation_A, "# 3.  taxid-nseq:  number of sequences with seq-taxid\n");

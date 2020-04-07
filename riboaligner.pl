@@ -105,8 +105,8 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.38";
-my $releasedate       = "Feb 2019";
+my $version           = "0.39";
+my $releasedate       = "April 2020";
 my $package_name      = "ribovore";
 my $ribotyper_model_version_str   = "0p20"; 
 my $riboaligner_model_version_str = "0p15";
@@ -641,16 +641,19 @@ sub output_tabular_file {
         $seqname =~ s/^\d+\s+//;
         $seqname =~ s/\s+.*//;
         if($line_ctr == 1) { 
-          printf OUT ("$prefix  %6s  %6s  %17s  $suffix\n", "mstart", "mstop", "length_class");
+          printf OUT ("$prefix  %6s  %6s  %6s  %6s  %17s  $suffix\n", "mstart", "mstop", "nins5p", "nins3p", "length_class");
         }
         elsif($line_ctr == 2) { 
-          printf OUT ("$prefix  %6s  %6s  %17s  $suffix\n", "------", "------", "-----------------");
+          printf OUT ("$prefix  %6s  %6s  %6s  %6s  %17s  $suffix\n", "------", "------", "------", "------", "-----------------");
         }
         elsif(exists $out_tbl_HHR->{$seqname}) { 
-          printf OUT ("$prefix  %6d  %6d  %17s  $suffix\n", $out_tbl_HHR->{$seqname}{"pred_cmfrom"}, $out_tbl_HHR->{$seqname}{"pred_cmto"}, $out_tbl_HHR->{$seqname}{"length_class"}); 
+          printf OUT ("$prefix  %6d  %6d  %6s  %6s  %17s  $suffix\n", 
+                      $out_tbl_HHR->{$seqname}{"pred_cmfrom"}, $out_tbl_HHR->{$seqname}{"pred_cmto"}, 
+                      $out_tbl_HHR->{$seqname}{"5p_ninserts"}, $out_tbl_HHR->{$seqname}{"3p_ninserts"}, 
+                      $out_tbl_HHR->{$seqname}{"length_class"}); 
         }
         else { # this sequence must not have been aligned
-          printf OUT ("$prefix  %6s  %6s  %17s  $suffix\n", "-", "-", "-");
+          printf OUT ("$prefix  %6s  %6s  %6s  %6s  %17s  $suffix\n", "-", "-", "-", "-", "-");
         }
       }
       else { 
@@ -662,7 +665,9 @@ sub output_tabular_file {
         # special case, add the descriptions of the 3 columns that we added:
         printf OUT ("%-33s %s\n", "# Column 6 [mstart]:",       "model start position");
         printf OUT ("%-33s %s\n", "# Column 7 [mstop]:",        "model stop position");
-        printf OUT ("%-33s %s\n", "# Column 8 [length_class]:", "classification of length, one of:");
+        printf OUT ("%-33s %s\n", "# Column 8 [nins5p]:",       "number of inserts before first model position, '-' if none");
+        printf OUT ("%-33s %s\n", "# Column 9 [nins3p]:",       "number of inserts after final model position, '-' if none");
+        printf OUT ("%-33s %s\n", "# Column 10 [length_class]:", "classification of length, one of:");
         printf OUT ("%-33s %s\n", "#",                          "'partial:'             does not extend to first model position or final model position");
         printf OUT ("%-33s %s\n", "#",                          "'full-exact':          spans full model and no 5' or 3' inserts");
         printf OUT ("%-33s %s\n", "#",                          "                       and no indels in first or final $nbound model positions");
@@ -692,7 +697,7 @@ sub output_tabular_file {
         printf OUT ("%-33s %s\n", "#",                          "                       but has indel(s) in final $nbound model positions");
         printf OUT ("%-33s %s\n", "#",                          "                       and insertions do not outnumber deletions at 3' end");
 
-        printf OUT ("%-33s %s\n", "# Column 9 [unexpected_features]:", "unexpected/unusual features of sequence (see below)")
+        printf OUT ("%-33s %s\n", "# Column 11 [unexpected_features]:", "unexpected/unusual features of sequence (see below)")
       }
       else { # regurgitate other comment lines
         print OUT $line;
@@ -857,6 +862,9 @@ sub parse_stk_file {
         my $i_after_final_rfpos  = 0; # number of insertions after RF position $modellen
         my $i_late               = 0; # number of insertions between RF position $modellen-$nbound+1 and $modellen
         my $d_late               = 0; # number of insertions between RF position $modellen-$nbound+1 and $modellen
+        $out_tbl_HHR->{$seqname}{"5p_ninserts"} = "-"; # set to a number if any inserts 5' of position 1 exist
+        $out_tbl_HHR->{$seqname}{"3p_ninserts"} = "-"; # set to a number if any inserts 3' of position $modellen exist
+
         if($out_tbl_HHR->{$seqname}{"pred_cmfrom"} == 1) { 
           my @seqstr_A = split("", $seqstr);
           # count number of insertions before RF position 1
@@ -900,6 +908,14 @@ sub parse_stk_file {
               $i_after_final_rfpos++;
             }
           }
+        }
+
+        # update ninserts
+        if($i_before_first_rfpos > 0) { 
+          $out_tbl_HHR->{$seqname}{"5p_ninserts"} = $i_before_first_rfpos;
+        }
+        if($i_after_final_rfpos > 0) { 
+          $out_tbl_HHR->{$seqname}{"3p_ninserts"} = $i_after_final_rfpos;
         }
 
         # classify
