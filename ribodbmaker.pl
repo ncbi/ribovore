@@ -10,12 +10,12 @@ require "ribo.pm";
 
 # make sure the RIBODIR and RIBOEASEL variables are set, others we will wait to see
 # if they are required first
-my $env_ribovore_dir     = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_riboeasel_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
-my $env_vecplus_dir       = undef;
-my $env_riboblast_dir     = undef;
-my $df_model_dir          = $env_ribovore_dir . "/models/";
-my $df_tax_dir            = $env_ribovore_dir . "/taxonomy/";
+my $env_ribovore_dir   = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_riboeasel_dir  = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_vecplus_dir    = undef;
+my $env_riboblast_dir  = undef;
+my $df_model_dir       = $env_ribovore_dir . "/models/";
+my $df_tax_dir         = $env_ribovore_dir . "/taxonomy/";
 
 #########################################################
 # Command line and option processing using epn-options.pm
@@ -116,6 +116,10 @@ opt_Add("--tcov",       "real",    0.99,             $g,        undef, "--skipfr
 opt_Add("--ribo2hmm",   "boolean", 0,                $g,"--skipfribo1","--skipfribo2,--ribodir2", "run ribotyper stage 2 in HMM-only mode (do not use --2slow)",          "run ribotyper stage 2 in HMM-only mode (do not use --2slow)", \%opt_HH, \@opt_order_A);
 opt_Add("--riboopts2",  "string",  undef,            $g,        undef, "--skipfribo2,--ribodir2", "use ribotyper stage 2 options listed in <s>",                          "use ribotyper options listed in <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--ribodir2",   "string",  undef,            $g,        undef, "--skipfribo2",            "use pre-computed riboaligner dir <s>",                                 "use pre-computed riboaligner dir <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--max5pins",  "integer",  undef,            $g,        undef, "--skipfribo2",            "FAIL seqs with > <n> inserts before first model position",             "FAIL seqs with > <n> inserts before first model position", \%opt_HH, \@opt_order_A);
+opt_Add("--max3pins",  "integer",  undef,            $g,        undef, "--skipfribo2",            "FAIL seqs with > <n> inserts after final model position",              "FAIL seqs with > <n> inserts after final model position", \%opt_HH, \@opt_order_A);
+opt_Add("--passlenclass","string", undef,            $g,        undef, "--skipfribo2",            "PASS seqs in riboaligner.pl length classes in comma separated string <s>", "PASS seqs in riboaligner.pl length classes in comma separated string <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--faillenclass","string", undef,            $g,        undef, "--skipfribo2",            "FAIL seqs in riboaligner.pl length classes in comma separated string <s>", "FAIL seqs in riboaligner.pl length classes in comma separated string <s>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits:";
 #       option           type        default             group  requires  incompat                 preamble-output                                          help-output    
@@ -192,84 +196,88 @@ my $usage    = "Usage: ribodbmaker.pl [-options] <input fasta sequence file> <ou
 $usage      .= "\n";
 my $synopsis = "ribodbmaker.pl :: create representative database of ribosomal RNA sequences";
 my $options_okay = 
-    &GetOptions('h'            => \$GetOptions_H{"-h"}, 
-                'f'            => \$GetOptions_H{"-f"},
-                'n=s'          => \$GetOptions_H{"-n"},
-                'v'            => \$GetOptions_H{"-v"},
-                'fasta=s'      => \$GetOptions_H{"--fasta"},
-                'keep'         => \$GetOptions_H{"--keep"},
-                'special=s'    => \$GetOptions_H{"--special"},
-                'taxin=s'      => \$GetOptions_H{"--taxin"},
-                'skipftaxid'   => \$GetOptions_H{"--skipftaxid"},
-                'skipfambig'   => \$GetOptions_H{"--skipfambig"},
-                'skipfvecsc'   => \$GetOptions_H{"--skipfvecsc"},
-                'skipfblast'   => \$GetOptions_H{"--skipfblast"},
-                'skipfribo1'   => \$GetOptions_H{"--skipfribo1"},
-                'skipfribo2'   => \$GetOptions_H{"--skipfribo2"},
-                'skipfmspan'   => \$GetOptions_H{"--skipfmspan"},
-                'skipingrup'   => \$GetOptions_H{"--skipingrup"},
-                'skipclustr'   => \$GetOptions_H{"--skipclustr"},
-                'skiplistms'   => \$GetOptions_H{"--skiplistms"},
-                'skipmstbl'    => \$GetOptions_H{"--skipmstbl"},
-                'exclist=s'    => \$GetOptions_H{"--exclist"},
-                'famaxn=s'     => \$GetOptions_H{"--famaxn"},
-                'famaxf=s'     => \$GetOptions_H{"--famaxf"},
-                'faonlyn'      => \$GetOptions_H{"--faonlyn"},
-                'faonlyf'      => \$GetOptions_H{"--faonlyf"},
-                'ftstrict'     => \$GetOptions_H{"--ftstrict"},
-                'fbcsize=s'    => \$GetOptions_H{"--fbcsize"},
-                'fbcall'       => \$GetOptions_H{"--fbcall"},
-                'fbword=s'     => \$GetOptions_H{"--fbword"},
-                'fbevalue=s'   => \$GetOptions_H{"--fbevalue"},
-                'fbdbsize=s'   => \$GetOptions_H{"--fbdbsize"},
-                'fbnominus'    => \$GetOptions_H{"--fbnominus"},
-                'fbmdiagok'    => \$GetOptions_H{"--fbmdiagok"},
-                'fbminuslen=s' => \$GetOptions_H{"--fbminuslen"},
-                'fbminuspid=s' => \$GetOptions_H{"--fbminuspid"},
-                'model=s'      => \$GetOptions_H{"--model"},
-                'nomultfail'   => \$GetOptions_H{"--nomultfail"},
-                'noscfail'     => \$GetOptions_H{"--noscfail"},
-                'nocovfail'    => \$GetOptions_H{"--nocovfail"},
-                'nodifffail'   => \$GetOptions_H{"--nodifffail"},
-                'lowpposs=s'   => \$GetOptions_H{"--lowppossc"},
-                'tcov=s'       => \$GetOptions_H{"--tcov"},
-                'riboopts1=s'  => \$GetOptions_H{"--riboopts1"},
-                'ribodir1=s'   => \$GetOptions_H{"--ribodir1"},
-                'rainfo=s'     => \$GetOptions_H{"--rainfo"},
-                'ribo2hmm'     => \$GetOptions_H{"--ribo2hmm"},
-                'riboopts2=s'  => \$GetOptions_H{"--riboopts2"},
-                'ribodir2=s'   => \$GetOptions_H{"--ribodir2"},
-                'cfid=s'       => \$GetOptions_H{"--cfid"},
-                'cdthresh=s'   => \$GetOptions_H{"--cdthresh"},
-                'cmaxlen'      => \$GetOptions_H{"--cmaxlen"},
-                'ccentroid'    => \$GetOptions_H{"--ccentroid"},
-                "fullaln"      => \$GetOptions_H{"--fullaln"},
-                "noprob"       => \$GetOptions_H{"--noprob"},
-                "pthresh=s"    => \$GetOptions_H{"--pthresh"},
-                "pfract=s"     => \$GetOptions_H{"--pfract"},
-                'fmpos=s'      => \$GetOptions_H{"--fmpos"},
-                'fmlpos=s'     => \$GetOptions_H{"--fmlpos"},
-                'fmrpos=s'     => \$GetOptions_H{"--fmrpos"},
-                'fmnogap'      => \$GetOptions_H{"--fmnogap"},
-                'fione'        => \$GetOptions_H{"--fione"},
-                'fimin'        => \$GetOptions_H{"--fimin"},
-                'figroup'      => \$GetOptions_H{"--figroup"},
-                'fithresh=s'   => \$GetOptions_H{"--fithresh"},
-                'indiffseqtax' => \$GetOptions_H{"--indiffseqtax"},
-                'inminavgid'   => \$GetOptions_H{"--inminavgid"},
-                'innominavgid' => \$GetOptions_H{"--innominavgid"},
-                'msstep=s'     => \$GetOptions_H{"--msstep"},
-                'msminlen=s'   => \$GetOptions_H{"--msminlen"},
-                'msminstart=s' => \$GetOptions_H{"--msminstart"},
-                'msmaxstart=s' => \$GetOptions_H{"--msmaxstart"},
-                'msminstop=s'  => \$GetOptions_H{"--msminstop"},
-                'msmaxstop=s'  => \$GetOptions_H{"--msmaxstop"},
-                'mslist=s'     => \$GetOptions_H{"--mslist"},
-                'msclass'      => \$GetOptions_H{"--msclass"},
-                'msphylum'     => \$GetOptions_H{"--msphylum"},
-                'def'          => \$GetOptions_H{"--def"},
-                'pidmax=s'     => \$GetOptions_H{"--pidmax"},
-                'pidforce'     => \$GetOptions_H{"--pidforce"},
+    &GetOptions('h'              => \$GetOptions_H{"-h"}, 
+                'f'              => \$GetOptions_H{"-f"},
+                'n=s'            => \$GetOptions_H{"-n"},
+                'v'              => \$GetOptions_H{"-v"},
+                'fasta=s'        => \$GetOptions_H{"--fasta"},
+                'keep'           => \$GetOptions_H{"--keep"},
+                'special=s'      => \$GetOptions_H{"--special"},
+                'taxin=s'        => \$GetOptions_H{"--taxin"},
+                'skipftaxid'     => \$GetOptions_H{"--skipftaxid"},
+                'skipfambig'     => \$GetOptions_H{"--skipfambig"},
+                'skipfvecsc'     => \$GetOptions_H{"--skipfvecsc"},
+                'skipfblast'     => \$GetOptions_H{"--skipfblast"},
+                'skipfribo1'     => \$GetOptions_H{"--skipfribo1"},
+                'skipfribo2'     => \$GetOptions_H{"--skipfribo2"},
+                'skipfmspan'     => \$GetOptions_H{"--skipfmspan"},
+                'skipingrup'     => \$GetOptions_H{"--skipingrup"},
+                'skipclustr'     => \$GetOptions_H{"--skipclustr"},
+                'skiplistms'     => \$GetOptions_H{"--skiplistms"},
+                'skipmstbl'      => \$GetOptions_H{"--skipmstbl"},
+                'exclist=s'      => \$GetOptions_H{"--exclist"},
+                'famaxn=s'       => \$GetOptions_H{"--famaxn"},
+                'famaxf=s'       => \$GetOptions_H{"--famaxf"},
+                'faonlyn'        => \$GetOptions_H{"--faonlyn"},
+                'faonlyf'        => \$GetOptions_H{"--faonlyf"},
+                'ftstrict'       => \$GetOptions_H{"--ftstrict"},
+                'fbcsize=s'      => \$GetOptions_H{"--fbcsize"},
+                'fbcall'         => \$GetOptions_H{"--fbcall"},
+                'fbword=s'       => \$GetOptions_H{"--fbword"},
+                'fbevalue=s'     => \$GetOptions_H{"--fbevalue"},
+                'fbdbsize=s'     => \$GetOptions_H{"--fbdbsize"},
+                'fbnominus'      => \$GetOptions_H{"--fbnominus"},
+                'fbmdiagok'      => \$GetOptions_H{"--fbmdiagok"},
+                'fbminuslen=s'   => \$GetOptions_H{"--fbminuslen"},
+                'fbminuspid=s'   => \$GetOptions_H{"--fbminuspid"},
+                'model=s'        => \$GetOptions_H{"--model"},
+                'nomultfail'     => \$GetOptions_H{"--nomultfail"},
+                'noscfail'       => \$GetOptions_H{"--noscfail"},
+                'nocovfail'      => \$GetOptions_H{"--nocovfail"},
+                'nodifffail'     => \$GetOptions_H{"--nodifffail"},
+                'lowpposs=s'     => \$GetOptions_H{"--lowppossc"},
+                'tcov=s'         => \$GetOptions_H{"--tcov"},
+                'riboopts1=s'    => \$GetOptions_H{"--riboopts1"},
+                'ribodir1=s'     => \$GetOptions_H{"--ribodir1"},
+                'rainfo=s'       => \$GetOptions_H{"--rainfo"},
+                'ribo2hmm'       => \$GetOptions_H{"--ribo2hmm"},
+                'riboopts2=s'    => \$GetOptions_H{"--riboopts2"},
+                'ribodir2=s'     => \$GetOptions_H{"--ribodir2"},
+                'max5pins=s'     => \$GetOptions_H{"--max5pins"},
+                'max3pins=s'     => \$GetOptions_H{"--max3pins"},
+                'passlenclass=s' =>\$GetOptions_H{"--passlenclass"},
+                'faillenclass=s' =>\$GetOptions_H{"--faillenclass"},
+                'cfid=s'         => \$GetOptions_H{"--cfid"},
+                'cdthresh=s'     => \$GetOptions_H{"--cdthresh"},
+                'cmaxlen'        => \$GetOptions_H{"--cmaxlen"},
+                'ccentroid'      => \$GetOptions_H{"--ccentroid"},
+                "fullaln"        => \$GetOptions_H{"--fullaln"},
+                "noprob"         => \$GetOptions_H{"--noprob"},
+                "pthresh=s"      => \$GetOptions_H{"--pthresh"},
+                "pfract=s"       => \$GetOptions_H{"--pfract"},
+                'fmpos=s'        => \$GetOptions_H{"--fmpos"},
+                'fmlpos=s'       => \$GetOptions_H{"--fmlpos"},
+                'fmrpos=s'       => \$GetOptions_H{"--fmrpos"},
+                'fmnogap'        => \$GetOptions_H{"--fmnogap"},
+                'fione'          => \$GetOptions_H{"--fione"},
+                'fimin'          => \$GetOptions_H{"--fimin"},
+                'figroup'        => \$GetOptions_H{"--figroup"},
+                'fithresh=s'     => \$GetOptions_H{"--fithresh"},
+                'indiffseqtax'   => \$GetOptions_H{"--indiffseqtax"},
+                'inminavgid'     => \$GetOptions_H{"--inminavgid"},
+                'innominavgid'   => \$GetOptions_H{"--innominavgid"},
+                'msstep=s'       => \$GetOptions_H{"--msstep"},
+                'msminlen=s'     => \$GetOptions_H{"--msminlen"},
+                'msminstart=s'   => \$GetOptions_H{"--msminstart"},
+                'msmaxstart=s'   => \$GetOptions_H{"--msmaxstart"},
+                'msminstop=s'    => \$GetOptions_H{"--msminstop"},
+                'msmaxstop=s'    => \$GetOptions_H{"--msmaxstop"},
+                'mslist=s'       => \$GetOptions_H{"--mslist"},
+                'msclass'        => \$GetOptions_H{"--msclass"},
+                'msphylum'       => \$GetOptions_H{"--msphylum"},
+                'def'            => \$GetOptions_H{"--def"},
+                'pidmax=s'       => \$GetOptions_H{"--pidmax"},
+                'pidforce'       => \$GetOptions_H{"--pidforce"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -1068,7 +1076,7 @@ my $ra_tbl_out_file  = undef;
 my %ignorems_seqfailstr_H = (); # copy of %seqfailstr_H as it existed after the mdlspan stage with mdlspan errors
                                         # removed. We use this to determine the set of PASSing seqs for the PASS mdlspan tbl 
 my $ra_opt_p_sum_cpu_secs = 0; # seconds spent in parallel in riboaligner call, filled only if -p
-
+my @ra_column_explanation_A = ();
 if($do_fribo2) { 
   $stage_key = "fribo2";
 
@@ -1135,7 +1143,7 @@ if($do_fribo2) {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $pkgstr, "rauapos", "$ra_uapos_tbl_file", 0, "unaligned position info that align at model positions $max_lpos and $min_rpos");
     
   # parse riboaligner tbl file
-  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqmdllen_H, \%seqlenclass_H, \%opt_HH, \%ofile_info_HH);
+  my ($rt2_npass, $ra_npass, $ms_npass) = parse_riboaligner_tbl_and_uapos_files($ra_tbl_out_file, $ra_uapos_lpos_tbl_file, $ra_uapos_rpos_tbl_file, $ra_uapos_tbl_file, $do_fmspan, $do_fmspan_nogap, $family_modellen, \%seqfailstr_H, \@seqorder_A, \@rapass_seqorder_A, \%seqlpos_H, \%seqrpos_H, \%seqmdllen_H, \%seqlenclass_H, \@ra_column_explanation_A, \%opt_HH, \%ofile_info_HH);
   my $extra_desc = undef;
   if((! $do_prvcmd) && (opt_IsUsed("--ribodir2", \%opt_HH))) { # -p is irrelevant here if --ribodir2 used
     $extra_desc = sprintf("%6d pass; %6d fail; (files copied from dir %s)", $rt2_npass, $nseq-$rt2_npass, opt_Get("--ribodir2", \%opt_HH));
@@ -1612,21 +1620,7 @@ if($do_fribo2) {
   push(@column_explanation_A, "# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>\n");
   push(@column_explanation_A, "#                          see $out_root-ra/$dir_tail-ra.ribotyper.long.out\n");
   push(@column_explanation_A, "#                          for explanation of unexpected features\n");
-  push(@column_explanation_A, "# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long\n");
-  push(@column_explanation_A, "#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end\n");
-  push(@column_explanation_A, "#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but\n");
-  push(@column_explanation_A, "#                                                 has indels in first and/or final 10 model positions and\n");
-  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' and/or 3' end\n");
-  push(@column_explanation_A, "#                          <s>=5flush-extra:      alignment extends to first but not final model position\n");
-  push(@column_explanation_A, "#                                                 with >= 1 nt extra before first model position\n");
-  push(@column_explanation_A, "#                          <s>=5flush-ambig-more: alignment extends to first but not final model position\n");
-  push(@column_explanation_A, "#                                                 and has indels in first 10 model positions and\n");
-  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 5' end\n");
-  push(@column_explanation_A, "#                          <s>=3flush-extra:      alignment extends to final but not first model position\n");
-  push(@column_explanation_A, "#                                                 with >= 1 nt extra after final model position\n");
-  push(@column_explanation_A, "#                          <s>=3flush-ambig-more: alignment extends to final but not first model position\n");
-  push(@column_explanation_A, "#                                                 and has indels in final 10 model positions and\n");
-  push(@column_explanation_A, "#                                                 insertions outnumber deletions at 3' end\n");
+  push(@column_explanation_A, @ra_column_explanation_A); # this was filled by parse_riboaligner_and_uapos_files()
 }
 if($do_fmspan) { 
   push(@column_explanation_A, "# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>\n");
@@ -2004,6 +1998,9 @@ sub parse_ribotyper_short_file {
 #   $seq_uapos_rpos_HR:      ref to hash of unaligned positions that align to right model span position
 #   $seqmdllen_HR:           ref to hash of model lengths (model rpos - model lpos + 1) for each aligned sequence
 #   $seqlenclass_HR:         ref to hash of length classes, can be undef
+#   $ra_explanation_AR:      ref to array of explanations for possible FAILs due to riboaligner
+#                            depends on --max5pins, --max3pins, --faillenclass and --passlenclass,
+#                            filled here
 #   $opt_HHR:                ref to 2D hash of cmdline options
 #   $ofile_info_HHR:         ref to the ofile info 2D hash
 #
@@ -2019,10 +2016,10 @@ sub parse_ribotyper_short_file {
 #################################################################
 sub parse_riboaligner_tbl_and_uapos_files { 
   my $sub_name = "parse_riboaligner_tbl_and_uapos_files()";
-  my $nargs_expected = 16;
+  my $nargs_expected = 17;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $seqmdllen_HR, $seqlenclass_HR, $opt_HHR, $ofile_info_HHR) = (@_);
+  my ($ra_tbl_file, $lpos_tbl_file, $rpos_tbl_file, $uapos_out_file, $do_fmspan, $do_fmspan_strict, $mlen, $seqfailstr_HR, $seqorder_AR, $rapass_seqorder_AR, $seq_uapos_lpos_HR, $seq_uapos_rpos_HR, $seqmdllen_HR, $seqlenclass_HR, $ra_explanation_AR, $opt_HHR, $ofile_info_HHR) = (@_);
 
   my %rt_curfailstr_H   = (); # holds fail strings for ribotyper
   my %ra_curfailstr_H   = (); # holds fail strings for riboaligner
@@ -2030,6 +2027,86 @@ sub parse_riboaligner_tbl_and_uapos_files {
   my @rtpass_seqorder_A = (); # array of sequences that pass ribotyper stage, in order
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
+  my $max_nins5p = (opt_IsUsed("--max5pins", $opt_HHR)) ? opt_Get("--max5pins", $opt_HHR) : undef;
+  my $max_nins3p = (opt_IsUsed("--max3pins", $opt_HHR)) ? opt_Get("--max3pins", $opt_HHR) : undef;
+  my %fail_lenclass_H = ();
+  my $lenclass;
+  my @lenclass_A = ("full-exact", "partial", "full-extra", "full-ambig-more", "5flush-extra", "5flush-ambig-more",
+                    "3flush-extra", "3flush-ambig-more");
+  # default: only partial and full-exact pass (all others cause failure)
+  foreach $lenclass (@lenclass_A) { 
+    $fail_lenclass_H{$lenclass} = (($lenclass eq "full-exact") || ($lenclass eq "partial")) ? 0 : 1;
+  }
+  if(opt_IsUsed("--passlenclass", $opt_HHR)) { 
+    foreach $lenclass (split(",", opt_Get("--passlenclass", $opt_HHR))) { 
+      if(! defined $fail_lenclass_H{$lenclass}) { 
+        my $fail_str = "ERROR, with --passlenclass, read length class $lenclass, which is not valid,\n";
+        $fail_str .= "valid length classes are:\n";
+        foreach my $lenclass2 (sort keys %fail_lenclass_H) { 
+          $fail_str .= "\t$lenclass2\n";
+        }
+        ofile_FAIL($fail_str, "RIBO", 1, $FH_HR);
+      }
+      $fail_lenclass_H{$lenclass} = 0;
+    }
+  }
+  if(opt_IsUsed("--faillenclass", $opt_HHR)) { 
+    foreach $lenclass (split(",", opt_Get("--faillenclass", $opt_HHR))) { 
+      if(! defined $fail_lenclass_H{$lenclass}) { 
+        my $fail_str = "ERROR, with --faillenclass, read length class $lenclass, which is not valid,\n";
+        $fail_str .= "valid length classes are:\n";
+        foreach my $lenclass2 (sort keys %fail_lenclass_H) { 
+          $fail_str .= "\t$lenclass2\n";
+        }
+        ofile_FAIL($fail_str, "RIBO", 1, $FH_HR);
+      }
+      $fail_lenclass_H{$lenclass} = 1;
+    }
+  }
+  if(opt_IsUsed("--max5pins", $opt_HHR)) { 
+    if((! $fail_lenclass_H{"5flush-extra"}) || 
+       (! $fail_lenclass_H{"full-extra"})) { 
+      ofile_FAIL("ERROR, with --max5pins, the option --passlenclass with 5flush-extra and full-extra is not allowed", "RIBO", 1, $FH_HR);
+    }      
+  }
+  if(opt_IsUsed("--max3pins", $opt_HHR)) { 
+    if((! $fail_lenclass_H{"3flush-extra"}) || 
+       (! $fail_lenclass_H{"full-extra"})) { 
+      ofile_FAIL("ERROR, with --max3pins, the option --passlenclass with 3flush-extra and full-extra is not allowed", "RIBO", 1, $FH_HR);
+    }      
+  }
+  my %lenclass_explanation_H = ();
+  my $max_nins5p2print = (defined $max_nins5p) ? $max_nins5p : 0;
+  my $max_nins3p2print = (defined $max_nins3p) ? $max_nins3p : 0;
+  $lenclass_explanation_H{"full-exact"}         = sprintf("#%-26s%-20s    %s\n", "", "<s>=full-exact:",        "alignment spans full model with zero inserts");
+  $lenclass_explanation_H{"full-exact"}        .= sprintf("#%-26s%-20s    %s\n", "", "",                       "before first or after final position");
+  $lenclass_explanation_H{"partial"}            = sprintf("#%-26s%-20s    %s\n", "", "<s>=partial:",           "alignment does not span to first or final position");
+  $lenclass_explanation_H{"full-extra"}         = sprintf("#%-26s%-20s\n",       "", "<s>=full-extra:5pins:<d1>:3pins<d2>:");        
+  $lenclass_explanation_H{"full-extra"}        .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("alignment spans full model with <d1> > %d nt extra before first model", $max_nins5p2print));
+  $lenclass_explanation_H{"full-extra"}        .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("position and/or <d2> > %d nt extra after final model position", $max_nins3p2print));
+  $lenclass_explanation_H{"full-ambig-more"}    = sprintf("#%-26s%-20s    %s\n", "", "<s>=full-ambig-more:",   "alignment spans full model with 0 nt extra on 5' or 3' end but");
+  $lenclass_explanation_H{"full-ambig-more"}   .= sprintf("#%-26s%-20s    %s\n", "", "",                       "has indels in first and/or final 10 model positions and");
+  $lenclass_explanation_H{"full-ambig-more"}   .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions outnumber deletions at 5' and/or 3' end");
+  $lenclass_explanation_H{"5flush-extra"}       = sprintf("#%-26s%-20s\n",       "", "<s>=5flush-extra:5pins<d>:");
+  $lenclass_explanation_H{"5flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       "alignment extends to first but not final model position");
+  $lenclass_explanation_H{"5flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("with <d> > %d nt extra before first model position", $max_nins5p2print));
+  $lenclass_explanation_H{"5flush-ambig-more"}  = sprintf("#%-26s%-20s    %s\n", "", "<s>=5flush-ambig-more:", "alignment extends to first but not final model position");
+  $lenclass_explanation_H{"5flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and has indels in first 10 model positions and");
+  $lenclass_explanation_H{"5flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions outnumber deletions at 5' end");
+  $lenclass_explanation_H{"3flush-extra"}       = sprintf("#%-26s%-20s\n",       "", "<s>=3flush-extra:3pins:<d>:");
+  $lenclass_explanation_H{"3flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       "alignment extends to final but not first model position");
+  $lenclass_explanation_H{"3flush-extra"}      .= sprintf("#%-26s%-20s    %s\n", "", "",                       sprintf("with <d> > %d nt extra after final model position", $max_nins3p2print));
+  $lenclass_explanation_H{"3flush-ambig-more"}  = sprintf("#%-26s%-20s    %s\n", "", "<s>=3flush-ambig-more:", "alignment extends to final but not first model position");
+  $lenclass_explanation_H{"3flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "and has indels in final 10 model positions and");
+  $lenclass_explanation_H{"3flush-ambig-more"} .= sprintf("#%-26s%-20s    %s\n", "", "",                       "insertions outnumber deletions at 3' end");
+
+  push(@{$ra_explanation_AR}, "# 'riboaligner[<s>]:       riboaligner failure because of sequence length classification\n");
+  foreach $lenclass (@lenclass_A) { 
+    if($fail_lenclass_H{$lenclass} == 1) { 
+      push(@{$ra_explanation_AR}, $lenclass_explanation_H{$lenclass});
+    }
+  }
+  
   ribo_InitializeHashToEmptyString(\%rt_curfailstr_H,  $seqorder_AR);
   # for %ra_curfailstr_H, we only do pass/fail for those that survive ribotyper
   # for %ms_curfailstr_H,  we only do pass/fail for those that survive ribotyper and riboaligner
@@ -2037,42 +2114,42 @@ sub parse_riboaligner_tbl_and_uapos_files {
   
   # determine maximum 5' start position and minimum 3' stop position required to be kept
   my ($max_lpos, $min_rpos) = determine_riboaligner_lpos_rpos($mlen, $opt_HHR); 
-
+  
   # parse the lpos and rpos tbl files
   my %seq_lgap_H; # key is sequence name, value is either 'gap' or 'nongap', read from $lpos_tbl_file
   my %seq_rgap_H; # key is sequence name, value is either 'gap' or 'nongap', read from $rpos_tbl_file
   parse_ali_apos_to_uapos_file($lpos_tbl_file, $seq_uapos_lpos_HR, \%seq_lgap_H, $opt_HHR, $ofile_info_HHR);
   parse_ali_apos_to_uapos_file($rpos_tbl_file, $seq_uapos_rpos_HR, \%seq_rgap_H, $opt_HHR, $ofile_info_HHR);
   combine_ali_apos_to_uapos_files($uapos_out_file, $max_lpos, $min_rpos, $seqorder_AR, $seq_uapos_lpos_HR, \%seq_lgap_H, $seq_uapos_rpos_HR, \%seq_rgap_H, $ofile_info_HHR);
-
+  
   # parse each line of the riboaligner output file
   open(RATBL, $ra_tbl_file)  || ofile_FileOpenFailure($ra_tbl_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
   my $nlines = 0;
-
+  
   my $line;
   while($line = <RATBL>) { 
-    ##idx  target      classification         strnd   p/f  mstart   mstop  length_class  unexpected_features
-    ##---  ----------  ---------------------  -----  ----  ------  ------  ------------  -------------------
-    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #3     X74753.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowCoverage:(0.831<0.860);MultipleHits:(2);
-    #4     X51542.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.09<0.50);*LowCoverage:(0.085<0.860);
-    #5     X66111.1    SSU.Eukarya            plus   FAIL       -       -             -  *LowScore:(0.01<0.50);*LowCoverage:(0.019<0.860);
-    #6     X56532.1    SSU.Eukarya            plus   PASS       1    1849       partial  -
-    #7     AY572456.1  SSU.Eukarya            plus   PASS       1    1851    full-exact  -
-    #8     AY364851.1  SSU.Eukarya            plus   PASS      35    1816       partial  -
+    ##idx  target      classification         strnd   p/f  mstart   mstop  nins5p  nins3p  length_class  unexpected_features
+    ##---  ----------  ---------------------  -----  ----  ------  ------  ------  ------  ------------  -------------------
+    #1     Z36893.1    SSU.Eukarya            plus   PASS       1    1851       -       -    full-exact  -
+    #2     Z26765.1    SSU.Eukarya            plus   PASS       1    1851       -       -    full-exact  -
+    #3     X74753.1    SSU.Eukarya            plus   FAIL       -       -       -       -             -  *LowCoverage:(0.831<0.860);MultipleHits:(2);
+    #4     X51542.1    SSU.Eukarya            plus   FAIL       -       -       -       -             -  *LowScore:(0.09<0.50);*LowCoverage:(0.085<0.860);
+    #5     X66111.1    SSU.Eukarya            plus   FAIL       -       -       -       -             -  *LowScore:(0.01<0.50);*LowCoverage:(0.019<0.860);
+    #6     X56532.1    SSU.Eukarya            plus   PASS       1    1849       -       -       partial  -
+    #7     AY572456.1  SSU.Eukarya            plus   PASS       1    1851       -       -    full-exact  -
+    #8     AY364851.1  SSU.Eukarya            plus   PASS      35    1816       -       -       partial  -
     if($line !~ m/^\#/) { 
       chomp $line;
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 9) { 
-        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 9 space-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      if(scalar(@el_A) != 11) { 
+        ofile_FAIL("ERROR in $sub_name, ra tblout file line did not have exactly 11 space-delimited tokens: $line\n", "RIBO", 1, $FH_HR);
       }
-      my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $lclass, $ufeatures) = @el_A;
+      my ($idx, $target, $class, $strand, $passfail, $mstart, $mstop, $nins5p, $nins3p, $lclass, $ufeatures) = @el_A;
       $nlines++;
       $seqmdllen_HR->{$target} = ($passfail eq "PASS") ? (($mstop - $mstart) + 1) : 0;
-
+      
       if(! exists $rt_curfailstr_H{$target}) { ofile_FAIL("ERROR in $sub_name, unexpected sequence name read: $target", "RIBO", 1, $FH_HR); }
-
+      
       # add to failstr if necessary
       if($passfail eq "FAIL") { 
         $rt_curfailstr_H{$target} = "ribotyper2[" . $ufeatures . "];;";
@@ -2080,17 +2157,46 @@ sub parse_riboaligner_tbl_and_uapos_files {
       else { # $passfail eq "PASS"
         # check for riboaligner fail
         if(defined $seqlenclass_HR) { $seqlenclass_HR->{$target} = $lclass; }
-        if(($lclass eq "full-extra")        || 
-           ($lclass eq "full-ambig-more")   || 
-           ($lclass eq "5flush-extra")      || 
-           ($lclass eq "5flush-ambig-more") || 
-           ($lclass eq "3flush-extra")      || 
-           ($lclass eq "3flush-ambig-more")) { 
-          $ra_curfailstr_H{$target} = "riboaligner[" . $lclass . "];;";
+
+        # determine if the sequence fails due to its riboaligner length class
+        my $failstr = "";
+        if(! defined $fail_lenclass_H{$lclass}) { 
+          ofile_FAIL("ERROR in $sub_name, unexpected length class $lclass read for $target", "RIBO", 1, $FH_HR);
+        }
+        if($fail_lenclass_H{$lclass}) { 
+          if($lclass eq "full-extra") { 
+            $failstr = "riboaligner[" . $lclass . ":5pins:" . $nins5p . ":3pins:" . $nins3p . "];;";
+          }
+          elsif($lclass eq "5flush-extra") { 
+            $failstr = "riboaligner[" . $lclass . ":5pins:" . $nins5p . "];;";
+          }
+          elsif($lclass eq "3flush-extra") { 
+            $failstr = "riboaligner[" . $lclass . ":3pins:" . $nins5p . "];;";
+          }
+          else { 
+            $failstr = "riboaligner[" . $lclass . "];;";
+          }
+        }
+        # check for special cases
+        if(($lclass eq "full-extra") && 
+           ((defined $max_nins5p && $nins5p <= $max_nins5p) || ($nins5p eq "-")) &&
+           ((defined $max_nins3p && $nins3p <= $max_nins3p) || ($nins3p eq "-"))) { 
+          $failstr = ""; # this seq passes
+        }
+        elsif(($lclass eq "5flush-extra") && 
+              (defined $max_nins5p && $nins5p <= $max_nins5p)) { 
+          $failstr = ""; # this seq passes
+        }
+        elsif(($lclass eq "3flush-extra") && 
+              (defined $max_nins3p && $nins3p <= $max_nins3p)) { 
+          $failstr = ""; # this seq passes
+        }
+        if($failstr ne "") { 
+          $ra_curfailstr_H{$target} = $failstr;
         }
         else { 
           $ra_curfailstr_H{$target} = "";
-          
+
           # check for model span fail
           if($do_fmspan) { 
             if(($mstart > $max_lpos) || ($mstop < $min_rpos)) { 
@@ -2102,7 +2208,7 @@ sub parse_riboaligner_tbl_and_uapos_files {
               if($do_fmspan_strict) { 
                 my $tmp_gap_str = "";
                 if(! exists $seq_lgap_H{$target}) { 
-                  ofile_FAIL("ERROR in $sub_name, $target not in $lpos_tbl_file", "RIBO", $?, $FH_HR);
+                  ofile_FAIL("ERROR in $sub_name, $target not in $lpos_tbl_file", "RIBO", 1, $FH_HR);
                 }
                 if(! exists $seq_rgap_H{$target}) { 
                   ofile_FAIL("ERROR in $sub_name, $target not in $rpos_tbl_file", "RIBO", $?, $FH_HR);
@@ -3956,7 +4062,10 @@ sub fasta_rewrite_sequence_descriptions {
       }
       my $orgn_strain = $seqorgn_HR->{$seqname};
       if((defined $seqstrain_HR->{$seqname}) && ($seqstrain_HR->{$seqname} ne "")) { $orgn_strain .= " " . $seqstrain_HR->{$seqname}; }
-      my $feature = sprintf("%s ribosomal RNA gene, %s sequence", $subunit_size, ($seqlenclass_HR->{$seqname} eq "full-exact") ? "complete" : "partial");
+      my $lenclass = (($seqlenclass_HR->{$seqname} eq "full-exact") || 
+                      ($seqlenclass_HR->{$seqname} eq "full-ambig-more")) ? 
+                      "complete" : "partial";
+      my $feature = sprintf("%s ribosomal RNA gene, %s sequence", $subunit_size, $lenclass);
       printf OUT (">%s %s %s\n", $seqname, $orgn_strain, $feature);
     }
     else { # not a sequence name line, output it as is
