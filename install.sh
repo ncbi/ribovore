@@ -8,7 +8,7 @@
 # for ribosomal RNA sequence analysis.
 #
 RIBOINSTALLDIR=$PWD
-VERSION="0.38"
+VERSION="0.39"
 RVERSION="ribovore-$VERSION"
 BLASTVERSION="2.8.1"
 
@@ -32,7 +32,15 @@ echo "------------------------------------------------"
 
 # ribovore
 echo "Installing ribovore ... "
-curl -k -L -o ribovore-$VERSION.zip https://github.com/nawrockie/ribovore/archive/$VERSION.zip; unzip ribovore-$VERSION.zip; mv ribovore-$VERSION ribovore; rm ribovore-$VERSION.zip
+curl -k -L -o ribovore-$RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip ribovore-$RVERSION.zip; mv ribovore-$RVERSION ribovore; rm ribovore-$RVERSION.zip
+# for a test build of a release, comment out above curl and uncomment block below
+# ----------------------------------------------------------------------------
+#git clone https://github.com/nawrockie/ribovore.git ribovore
+#cd ribovore
+#git checkout release-$VERSION
+#rm -rf .git
+#cd ..
+# ----------------------------------------------------------------------------
 
 # rRNA_sensor
 echo "Installing rRNA_sensor ... "

@@ -1,0 +1,19 @@
+# format of this file:
+# '#' prefixed files are comments, and are not parsed.
+# 'command:' prefix indicates remainder of line is a command to run
+# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'out:' prefix indicates output file to check against an expected file
+# 'exp:' prefix indicates expected file to check against an output file
+# 'rmdir:' prefix indicates name of output directory to remove after 
+# command is run and all output files have been checked.
+#
+# All 'out:' and 'exp:' lines following a 'command:' line (and before the 
+# next 'command:' line, will be checked after that command runs. The first
+# 'out:' file is compared against the first 'exp:' file, the second 
+# 'out:' file is compared against the second 'exp:' file, the second 'out:'
+# file, etc.
+command: cp $RIBODIR/testfiles/fungi-ssu.r1.fa ./; perl $RIBODIR/ribodbmaker.pl -f --model SSU.Eukarya --nocovfail --skipmstbl --skipfribo1 --skipftaxid --skipingrup --ribo2hmm fungi-ssu.r1.fa db1 > /dev/null; rm fungi-ssu.r1.fa*
+desc: iss1-ribodb
+out: db1/db1.ribodbmaker.rdb.tbl
+exp: @RIBODIR@/testfiles/github-issues/iss1/db1.ribodbmaker.rdb.tbl
+rmdir: db1

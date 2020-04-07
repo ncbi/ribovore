@@ -1,6 +1,6 @@
-EPN, Wed Feb 20 16:43:40 2019
+EPN, Fri Apr  3 15:23:40 2020
 
-ribovore v0.38 README-ncbi-internal.txt
+ribovore v0.39 README-ncbi-internal.txt
 
 Organization of this file:
 
@@ -15,7 +15,7 @@ email Eric Nawrocki: eric.nawrocki@nih.gov
 ##############################################################################
 INTRODUCTION
 
-ribovore version 0.38 is installed in system-wide directories for
+ribovore version 0.39 is installed in system-wide directories for
 internal use at NCBI. The top-level directory is:
 
 /panfs/pan1/dnaorg/ssudetection/code/ribovore
@@ -30,7 +30,7 @@ https://confluence.ncbi.nlm.nih.gov/pages/viewpage.action?spaceKey=UGE&title=Gri
 The README.txt for ribovore includes example runs of each of the
 scripts. It is here:
 
-/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.38/README.txt
+/panfs/pan1/dnaorg/ssudetection/code/ribovore/ribovore-0.39/README.txt
 
 Git repository for ribovore:
 https://github.com/nawrockie/ribovore.git
