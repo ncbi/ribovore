@@ -27,21 +27,34 @@
 # 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>
 #                          see db1/db1.ribodbmaker-ra/db1-ra.ribotyper.long.out
 #                          for explanation of unexpected features
-# 'riboaligner[<s>]:       riboaligner failure because sequence is too long or potentially too long
-#                          <s>=full-extra:        alignment spans full model with >= 1 nt extra on 5' or 3' end
-#                          <s>=full-ambig-more:   alignment spans full model with 0 nt extra on 5' or 3' end but
-#                                                 has indels in first and/or final 10 model positions and
-#                                                 insertions outnumber deletions at 5' and/or 3' end
-#                          <s>=5flush-extra:      alignment extends to first but not final model position
-#                                                 with >= 1 nt extra before first model position
-#                          <s>=5flush-ambig-more: alignment extends to first but not final model position
-#                                                 and has indels in first 10 model positions and
-#                                                 insertions outnumber deletions at 5' end
-#                          <s>=3flush-extra:      alignment extends to final but not first model position
-#                                                 with >= 1 nt extra after final model position
-#                          <s>=3flush-ambig-more: alignment extends to final but not first model position
-#                                                 and has indels in final 10 model positions and
-#                                                 insertions outnumber deletions at 3' end
+# 'riboaligner[<s>]:       riboaligner failure because of sequence length classification
+#                          <s>=full-extra:5pins:<d1>:3pins<d2>:
+#                                                  alignment spans full model with <d1> > 0 nt extra before first model
+#                                                  position and/or <d2> > 0 nt extra after final model position
+#                          <s>=full-ambig-more:    alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                  has indels in first and/or final 10 model positions and
+#                                                  insertions outnumber deletions at 5' and/or 3' end
+#                          <s>=full-ambig-less:    alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                  has indels in first and/or final 10 model positions and
+#                                                  and insertions do not outnumber deletions at 5' and/or 3' end
+#                          <s>=5flush-extra:5pins<d>:
+#                                                  alignment extends to first but not final model position
+#                                                  with <d> > 0 nt extra before first model position
+#                          <s>=5flush-ambig-more:    alignment extends to first but not final model position
+#                                                  and has indels in first 10 model positions and
+#                                                  insertions outnumber deletions at 5' end
+#                          <s>=5flush-ambig-less:    alignment extends to first but not final model position
+#                                                  and has indels in first 10 model positions and
+#                                                  insertions do not outnumber deletions at 5' end
+#                          <s>=3flush-extra:3pins:<d>:
+#                                                  alignment extends to final but not first model position
+#                                                  with <d> > 0 nt extra after final model position
+#                          <s>=3flush-ambig-more:    alignment extends to final but not first model position
+#                                                  and has indels in final 10 model positions and
+#                                                  insertions outnumber deletions at 3' end
+#                          <s>=3flush-ambig-less:    alignment extends to final but not first model position
+#                                                  and has indels in final 10 model positions and
+#                                                  insertions do not outnumber deletions at 3' end
 # 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>
 #idx  seqname     seqlen   staxid   otaxid   ctaxid   ptaxid   p/f  clust  special  failstr
 1     EU278606.1    1737        -        -        -        -  PASS      R        -  -
