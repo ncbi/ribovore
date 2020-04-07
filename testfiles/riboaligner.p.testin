@@ -19,7 +19,7 @@ out: test-16-2-p/test-16-2-p.riboaligner.SSU.Bacteria.partial.stk
 out: test-16-2-p/test-16-2-p.riboaligner.SSU.Bacteria.partial.list
 out: test-16-2-p/test-16-2-p.riboaligner.SSU.Bacteria.partial.ifile
 out: test-16-2-p/test-16-2-p.riboaligner.SSU.Bacteria.partial.elfile
-exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.tbl
+exp: @RIBODIR@/testfiles/expected-files/test-16-2-p.riboaligner.tbl
 exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.stk
 exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.list
 exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
@@ -30,7 +30,7 @@ desc: riboaligner-2-p-100
 out: r100-2-p/r100-2-p.riboaligner.tbl
 out: r100-2-p/r100-2-p.riboaligner.SSU.Eukarya.partial.list
 out: r100-2-p/r100-2-p.riboaligner.SSU.Eukarya.partial.stk
-exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.tbl
+exp: @RIBODIR@/testfiles/expected-files/r100-2-p.riboaligner.tbl
 exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.list
 exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.stk
 rmdir: r100-2-p
