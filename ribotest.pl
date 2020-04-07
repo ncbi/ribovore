@@ -249,6 +249,7 @@ if($overall_pass) {
 }
 else { 
   ofile_OutputString($log_FH, 1, sprintf("# FAIL: %d of %d files were not created correctly.\n", $nfail, $npass+$nfail));
+  ofile_FAIL("ERROR, at least one test FAILed", "RIBO", 1, undef);
 }
 ofile_OutputString($log_FH, 1, sprintf("#\n"));
 
