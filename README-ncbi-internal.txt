@@ -59,9 +59,9 @@ export EPNOFILEDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-of
 export EPNTESTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-test"
 export PERL5LIB="$RIBODIR:$EPNOPTDIR:$EPNOFILEDIR:$EPNTESTDIR:$PERL5LIB"
 export PATH="$RIBODIR:$SENSORDIR:$PATH"
-export BLASTDB="$SENSORDIR:$BLASTDB"
 export RIBOBLASTDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ncbi-blast-2.8.1+/bin"
 export VECPLUSDIR="/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/vecscreen_plus_taxonomy"
+export BLASTDB="$VECPLUSDIR:$SENSORDIR:$BLASTDB"
 -------------
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,9 +77,9 @@ setenv EPNOFILEDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-of
 setenv EPNTESTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/epn-test"
 setenv PERL5LIB "$RIBODIR":"$EPNOPTDIR":"$EPNOFILEDIR":"$EPNTESTDIR":"$PERL5LIB"
 setenv PATH "$RIBODIR":"$SENSORDIR":"$PATH"
-setenv BLASTDB "$SENSORDIR":"$BLASTDB"
 setenv RIBOBLASTDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ncbi-blast-2.8.1+/bin"
 setenv VECPLUSDIR "/panfs/pan1/dnaorg/ssudetection/code/ribovore-install/vecscreen_plus_taxonomy"
+setenv BLASTDB "$VECPLUSDIR:$SENSORDIR":"$BLASTDB"
 -----------
 
 After adding the lines specified above, execute the command:
