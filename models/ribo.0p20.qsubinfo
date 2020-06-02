@@ -14,5 +14,5 @@
 #
 # Line 2: the remainder of the qsub cmsearch/cmalign command 
 #
-qsub -N ![jobname]! -b y -v SGE_FACILITIES -P unified -S /bin/bash -cwd -V -j n -o /dev/null -e ![errfile]! -m n -l h_rt=288000,h_vmem=16G,mem_free=16G,reserve_mem=16G,m_mem_free=16G "
+qsub -N ![jobname]! -b y -v SGE_FACILITIES -P unified -S /bin/bash -cwd -V -j n -o /dev/null -e ![errfile]! -m n -l h_rt=288000,h_vmem=16G,mem_free=16G,m_mem_free=16G "
 "
