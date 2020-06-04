@@ -1,4 +1,11 @@
 #!/bin/bash
-set -e
+
 $RIBODIR/ribotest.pl -f $RIBODIR/testfiles/ribosensor.p.testin rs-p-test
-rm -rf rs-p-test
+if [ $? == 0 ]; then
+    rm -rf rs-p-test
+   echo "Success: all tests passed"
+   exit 0
+else 
+   echo "FAIL: at least one test failed"
+   exit 1
+fi
