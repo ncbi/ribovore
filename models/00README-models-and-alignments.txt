@@ -6,34 +6,44 @@ Individual model files (second token is file size):
 <[(models)]> ls -ltr *cm | awk '{ printf("%s %s\n", $9, $5); }'
 
 List:
-ribo.0p02.cm 12828463
-ribo.0p15.LSU_rRNA_archaea.cm 1977663
-ribo.0p15.LSU_rRNA_bacteria.cm 1940299
-ribo.0p15.LSU_rRNA_eukarya.cm 2242610
-ribo.0p15.SSU_rRNA_archaea.cm 977437
-ribo.0p15.SSU_rRNA_bacteria.cm 1013847
-ribo.0p15.SSU_rRNA_chloroplast.cm 985151
-ribo.0p15.SSU_rRNA_cyanobacteria.cm 984688
-ribo.0p15.SSU_rRNA_eukarya.cm 1213133
-ribo.0p15.SSU_rRNA_microsporidia.cm 866462
-ribo.0p15.SSU_rRNA_mitochondria_metazoa.cm 631187
-ribo.0p15.cm 12832477
-ribo.0p20.SSU_rRNA_apicoplast.cm 964205
-ribo.0p20.SSU_rRNA_chloroplast_pilostyles.cm 1010321
-ribo.0p20.SSU_rRNA_mitochondria_amoeba.cm 1210433
-ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.cm 784737
-ribo.0p20.SSU_rRNA_mitochondria_fungi.cm 1048963
-ribo.0p20.SSU_rRNA_mitochondria_kinetoplast.cm 403516
-ribo.0p20.SSU_rRNA_mitochondria_plant.cm 1275015
-ribo.0p20.SSU_rRNA_mitochondria_protist.cm 1093487
-ribo.0p20.extra.cm 20623154
-riboaligner.0p15.RF00177.cm 1012808
-riboaligner.0p15.RF01959.cm 976377
-riboaligner.0p15.RF01960.cm 1212436
-riboaligner.0p15.RF02540.cm 1976325
-riboaligner.0p15.RF02541.cm 1938871
-riboaligner.0p15.RF02542.cm 865745
 riboaligner.0p15.RF02543.cm 2241362
+riboaligner.0p15.RF02542.cm 865745
+riboaligner.0p15.RF02541.cm 1938871
+riboaligner.0p15.RF02540.cm 1976325
+riboaligner.0p15.RF01960.cm 1212436
+riboaligner.0p15.RF01959.cm 976377
+riboaligner.0p15.RF00177.cm 1012808
+ribo.0p20.extra.cm 20623154
+ribo.0p20.SSU_rRNA_mitochondria_protist.cm 1093487
+ribo.0p20.SSU_rRNA_mitochondria_plant.cm 1275015
+ribo.0p20.SSU_rRNA_mitochondria_kinetoplast.cm 403516
+ribo.0p20.SSU_rRNA_mitochondria_fungi.cm 1048963
+ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.cm 784737
+ribo.0p20.SSU_rRNA_mitochondria_amoeba.cm 1210433
+ribo.0p20.SSU_rRNA_chloroplast_pilostyles.cm 1010321
+ribo.0p20.SSU_rRNA_apicoplast.cm 964205
+ribo.0p15.cm 12832477
+ribo.0p15.SSU_rRNA_mitochondria_metazoa.cm 631187
+ribo.0p15.SSU_rRNA_microsporidia.cm 866462
+ribo.0p15.SSU_rRNA_eukarya.cm 1213133
+ribo.0p15.SSU_rRNA_cyanobacteria.cm 984688
+ribo.0p15.SSU_rRNA_chloroplast.cm 985151
+ribo.0p15.SSU_rRNA_bacteria.cm 1013847
+ribo.0p15.SSU_rRNA_archaea.cm 977437
+ribo.0p15.LSU_rRNA_eukarya.cm 2242610
+ribo.0p15.LSU_rRNA_bacteria.cm 1940299
+ribo.0p15.LSU_rRNA_archaea.cm 1977663
+riboaligner.0p40.SSU_rRNA_apicoplast.cm 963759
+riboaligner.0p40.SSU_rRNA_chloroplast.cm 983703
+riboaligner.0p40.SSU_rRNA_chloroplast_pilostyles.cm 1009875
+riboaligner.0p40.SSU_rRNA_cyanobacteria.cm 983048
+riboaligner.0p40.SSU_rRNA_mitochondria_amoeba.cm 1270048
+riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm 895529
+riboaligner.0p40.SSU_rRNA_mitochondria_fungi.cm 1039693
+riboaligner.0p40.SSU_rRNA_mitochondria_kinetoplast.cm 403076
+riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm 631244
+riboaligner.0p40.SSU_rRNA_mitochondria_plant.cm 1274593
+riboaligner.0p40.SSU_rRNA_mitochondria_protist.cm 1088003
 
 Short description of each including name of alignment file used to
 build them.
@@ -228,6 +238,7 @@ Built without --enone option to cmbuild.
   built with Infernal v1.1.2 cmbuild default from Rfam 12.2 RF02543
   alignment, which was built using 'strategy 2' (defined above).
 
+[added for 0.40 release]:
 And 11 CM files named 
 riboaligner.0p40.<s>.cm
 with <s> equal to one of
