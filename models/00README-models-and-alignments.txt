@@ -228,4 +228,25 @@ Built without --enone option to cmbuild.
   built with Infernal v1.1.2 cmbuild default from Rfam 12.2 RF02543
   alignment, which was built using 'strategy 2' (defined above).
 
+And 11 CM files named 
+riboaligner.0p40.<s>.cm
+with <s> equal to one of
+SSU_rRNA_apicoplast
+SSU_rRNA_chloroplast
+SSU_rRNA_chloroplast_pilostyles
+SSU_rRNA_cyanobacteria
+SSU_rRNA_mitochondria_amoeba
+SSU_rRNA_mitochondria_chlorophyta
+SSU_rRNA_mitochondria_fungi
+SSU_rRNA_mitochondria_kinetoplast
+SSU_rRNA_mitochondria_metazoa
+SSU_rRNA_mitochondria_plant
+SSU_rRNA_mitochondria_protist
 
+Alignment file: 
+ribo.0p15.<s>.stk OR
+ribo.0p20.<s>.stk
+built with Infernal v1.1.3 cmbuild with default parameters from a
+non-Rfam alignment which was built using 'strategy 1' (defined above).
+
+                
