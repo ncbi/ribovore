@@ -235,7 +235,7 @@ my $options_okay =
                 'noscfail'       => \$GetOptions_H{"--noscfail"},
                 'nocovfail'      => \$GetOptions_H{"--nocovfail"},
                 'nodifffail'     => \$GetOptions_H{"--nodifffail"},
-                'lowpposs=s'     => \$GetOptions_H{"--lowppossc"},
+                'lowppossc=s'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'         => \$GetOptions_H{"--tcov"},
                 'riboopts1=s'    => \$GetOptions_H{"--riboopts1"},
                 'ribodir1=s'     => \$GetOptions_H{"--ribodir1"},
