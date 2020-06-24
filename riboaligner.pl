@@ -265,19 +265,19 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
       ofile_FAIL("ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line", "RIBO", 1, $FH_HR);
     }
   }
-  if($extra_ribotyper_options =~ m/\s*\-f/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--keep/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\-n/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--scfail/)    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--covfail/)   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--minusfail/) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--inaccept/)  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-f/)          || ($extra_ribotyper_options =~ m/\s+-f/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--scfail/)    || ($extra_ribotyper_options =~ m/\s+--scfail/))    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--covfail/)   || ($extra_ribotyper_options =~ m/\s+--covfail/))   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--minusfail/) || ($extra_ribotyper_options =~ m/\s+--minusfail/)) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--inaccept/)  || ($extra_ribotyper_options =~ m/\s+--inaccept/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR); }
   # options related to parallelization
-  if($extra_ribotyper_options =~ m/\s*\-p/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\-q/)          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--nkb/)       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--wait/)      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if($extra_ribotyper_options =~ m/\s*\--errcheck/)  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
   close(RIBO);
 }
 
