@@ -235,7 +235,7 @@ my $options_okay =
                 'noscfail'       => \$GetOptions_H{"--noscfail"},
                 'nocovfail'      => \$GetOptions_H{"--nocovfail"},
                 'nodifffail'     => \$GetOptions_H{"--nodifffail"},
-                'lowpposs=s'     => \$GetOptions_H{"--lowppossc"},
+                'lowppossc=s'    => \$GetOptions_H{"--lowppossc"},
                 'tcov=s'         => \$GetOptions_H{"--tcov"},
                 'riboopts1=s'    => \$GetOptions_H{"--riboopts1"},
                 'ribodir1=s'     => \$GetOptions_H{"--ribodir1"},
@@ -292,9 +292,9 @@ my $options_okay =
 my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.39";
+my $version           = "0.40";
 my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "April 2020";
+my $releasedate       = "June 2020";
 my $package_name      = "ribovore";
 my $pkgstr            = "RIBO";
 
@@ -1721,7 +1721,7 @@ if(opt_Get("-p", \%opt_HH)) {
 }
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir, \%ofile_info_HH);
-exit 0;
+exit(0); 
 
 #####################################################################
 # SUBROUTINES 

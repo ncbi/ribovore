@@ -1,6 +1,6 @@
-EPN, Fri Apr  3 15:23:43 2020
+EPN, Wed Jun 24 14:31:54 2020
 
-ribovore v0.39 README.txt
+ribovore v0.40 README.txt
 
 Organization of this file:
 

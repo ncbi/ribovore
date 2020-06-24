@@ -8,11 +8,10 @@ RETVAL=0;
 # configured similarly to ncbi cluster, email eric.nawrocki@nih.gov
 # for information on how to configure for different clusters
 for t in \
-    do-ribotyper-tests.sh \
-    do-riboaligner-tests.sh \
-    do-ribosensor-tests.sh \
-    do-ribodbmaker-tests.sh \
-    github-issues/do-all-issue-tests.sh \
+    do-ribotyper-parallel-tests.sh \
+    do-riboaligner-parallel-tests.sh \
+    do-ribosensor-parallel-tests.sh \
+    do-ribodbmaker-parallel-tests.sh \
     ; do
     sh $RIBODIR/testfiles/$t
     if [ $? != 0 ]; then
