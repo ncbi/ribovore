@@ -586,6 +586,7 @@ if(opt_Get("-p", \%opt_HH)) {
 }
 
 ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+exit(0); 
 
 #################################################################
 # SUBROUTINES
