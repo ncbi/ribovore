@@ -10,6 +10,7 @@ CONS     yes
 MAP      yes
 DATE     Thu Jun  4 11:30:21 2020
 COM      [1] /usr/local/infernal/1.1.3/bin/cmbuild -F riboaligner.0p40.SSU_rRNA_chloroplast.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p15.SSU_rRNA_chloroplast.stk
+COM      [2] /usr/local/infernal/1.1.3/bin/cmcalibrate --cpu 4 riboaligner.0p40.SSU_rRNA_chloroplast.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -23,6 +24,10 @@ EFFN     0.960999
 CKSUM    1379446501
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -55.2120 0.69573
+ECMLC    0.75137    -8.01003    -0.81493     1600000      267345  0.004489
+ECMGC    0.06802  -316.95022  -304.24969     1600000         949  0.421496
+ECMLI    0.73772    -7.79171    -0.54511     1600000      251711  0.004767
+ECMGI    0.07355  -213.57387  -201.79964     1600000         951  0.420610
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     0     1  1527  1585  -6.484  -6.691  -0.085  -4.785                 

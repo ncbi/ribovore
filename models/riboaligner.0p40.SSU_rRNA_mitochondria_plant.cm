@@ -10,6 +10,7 @@ CONS     yes
 MAP      yes
 DATE     Thu Jun  4 11:30:29 2020
 COM      [1] /usr/local/infernal/1.1.3/bin/cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_plant.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p20.SSU_rRNA_mitochondria_plant.stk
+COM      [2] /usr/local/infernal/1.1.3/bin/cmcalibrate --cpu 4 riboaligner.0p40.SSU_rRNA_mitochondria_plant.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -23,6 +24,10 @@ EFFN     0.910156
 CKSUM    568242560
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -69.7031 0.69512
+ECMLC    0.72216    -8.79203    -1.20142     1600000      288288  0.004163
+ECMGC    0.03806  -442.52842  -427.71179     1600000         703  0.568990
+ECMLI    0.69400    -8.73888    -0.93905     1600000      269189  0.004458
+ECMGI    0.03960  -302.22886  -288.02472     1600000         702  0.569801
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     0     1  2028  2167  -6.455  -6.662  -0.220  -3.059                 
