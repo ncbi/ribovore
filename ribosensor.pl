@@ -128,10 +128,10 @@ my $options_okay =
 my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.39";
+my $version           = "0.40";
 my $model_version_str = "0p30"; # model info file unchanged since version 0.30
 my $qsub_version_str  = "0p32"; # for qsubinfo file only
-my $releasedate       = "April 2020";
+my $releasedate       = "June 2020";
 my $package_name      = "ribovore";
 my $pkgstr            = "RIBO";
 
