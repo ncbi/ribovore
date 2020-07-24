@@ -1184,6 +1184,7 @@ exit(0);
 #              - If model file listed in $modelinfo_file does not exist              
 #              - If a model file is listed twice in $modelinfo_file
 #              - If a master model file is not listed in $modelinfo_file
+#              - If a model name includes a right or left paranthesis character
 #
 ################################################################# 
 sub parse_modelinfo_file { 
@@ -1269,6 +1270,9 @@ sub parse_modelinfo_file {
       else { 
         if(exists $family_HR->{$model}) { 
           ofile_FAIL("ERROR read model $model twice in $modelinfo_file", "RIBO", 1, $ofile_info_HH{"FH"}); 
+        }
+        if($model =~ /[\(\)]/) { 
+          ofile_FAIL("ERROR read model $model with '(' and/or ')' characters, these are not allowed in model names", "RIBO", 1, $ofile_info_HH{"FH"}); 
         }
         $family_HR->{$model}      = $family;
         $domain_HR->{$model}      = $domain;

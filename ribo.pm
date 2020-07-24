@@ -305,6 +305,9 @@ sub ribo_ParseRAModelinfoFile {
       my $modellen  = $el_A[2];
       my @rtname_A = ();
       for(my $i = 3; $i < scalar(@el_A); $i++) { 
+        if($el_A[$i] =~ /[\)\(]/) { 
+          ofile_FAIL("ERROR in $sub_name, ribotyper model name $el_A[$i] has '(' and/or ')', but these characters are not allowed in model names", "RIBO", 1, $FH_HR);  
+        }
         push(@rtname_A, $el_A[$i]);
       }
       push(@{$family_order_AR}, $family);
