@@ -1,0 +1,17 @@
+# riboaligner.pl :: classify lengths of ribosomal RNA sequences
+# ribovore 0.40 (June 2020)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:              Fri Jul 24 15:41:35 2020
+# $RIBODIR:          /home/nawrocke/git/nawrockie/ribovore
+# $RIBOEASELDIR:     /usr/local/infernal/1.1.2/bin
+# $RIBOINFERNALDIR:  /usr/local/infernal/1.1.2/bin
+#
+# target sequence input file:                  /home/nawrocke/git/nawrockie/ribovore/testfiles/example-16.fa
+# output directory name:                       ra-16
+# forcing directory overwrite:                 yes [-f]
+# use model info file <s> instead of default:  /home/nawrocke/git/nawrockie/ribovore/t/data/riboaligner.parantheses.modelinfo [-i]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Validating input files                           ... 
+ERROR in ribo_ParseRAModelinfoFile, ribotyper model name SSU_rRNA_(bacteria) has '(' and/or ')', but these characters are not allowed in model names
+
+# RIBO-FAILURE
