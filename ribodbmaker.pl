@@ -1790,6 +1790,12 @@ sub parse_srcchk_and_tax_files_for_specified_species {
   # initialize
   foreach $seqname (@{$seqorder_AR}) { 
     if(! exists $seqtaxid_HR->{$seqname}) { 
+      # first check if a sequence does exist that is $seqname.version
+      foreach my $seqname2 (sort keys %{$seqtaxid_HR}) { 
+        if($seqname2 =~ /^$seqname\.\d+$/) { 
+          ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname, but taxid information was fetched for $seqname2\nAll input sequences in the input fasta file must be named as accession.version, as opposed to accession-only.\nThat may be the reason for this failure.", "RIBO", $?, $FH_HR);
+        }
+      }
       ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in passed in %seqtaxid_H", "RIBO", $?, $FH_HR);
     }
     $specified_species_H{$seqtaxid_HR->{$seqname}} = -1; 
@@ -1832,7 +1838,10 @@ sub parse_srcchk_and_tax_files_for_specified_species {
     chomp $line;
     @el_A = split(/\t/, $line);
     if((scalar(@el_A) < 3) || (scalar(@el_A) > $max_nel)) { 
-       ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
+      if(scalar(@el_A) == 1) { 
+        ofile_FAIL("ERROR in $sub_name, srcchk file line had only 1 token, probably only the sequence name.\nThis often means that the sequence name is not a sequence ID that exists in GenBank.\nAll sequence names should be accession.version format and be valid GenBank accession.version sequence IDs.\n\nBad srcchk line with only 1 token:\n$line\n", "RIBO", $?, $FH_HR);
+      }
+      ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens:\n$line\n", "RIBO", $?, $FH_HR);
     }
     my $accver = $el_A[0];
     my $taxid  = $el_A[1];
@@ -3378,6 +3387,9 @@ sub parse_srcchk_file {
       $strain = "";
     }
     else { 
+      if(scalar(@el_A) == 1) { 
+        ofile_FAIL("ERROR in $sub_name, srcchk file line had only 1 token, probably only the sequence name.\nThis often means that the sequence name is not a sequence ID that exists in GenBank.\nAll sequence names should be accession.version format and be valid GenBank accession.version sequence IDs.\n\nBad srcchk line with only 1 token:\n$line\n", "RIBO", $?, $FH_HR);
+      }
       ofile_FAIL("ERROR in $sub_name, srcchk file line did not have at least 3 and no more than $max_nel tab-delimited tokens: $line\n", "RIBO", $?, $FH_HR);
     }
     if(! exists $valid_taxid_H{$taxid}) { # replace obsolete taxids with '1'
@@ -3400,6 +3412,12 @@ sub parse_srcchk_file {
   # make sure all sequences were read
   foreach $seqname (@{$seqorder_AR}) { 
     if(! exists $seqtaxid_HR->{$seqname}) { 
+      # first check if a sequence does exist that is $seqname.version
+      foreach my $seqname2 (sort keys %{$seqtaxid_HR}) { 
+        if($seqname2 =~ /^$seqname\.\d+$/) { 
+          ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname, but taxid information was fetched for $seqname2\nAll input sequences in the input fasta file must be named as accession.version, as opposed to accession-only.\nThat may be the reason for this failure.", "RIBO", $?, $FH_HR);
+        }
+      }
       ofile_FAIL("ERROR in $sub_name, no taxid information for $seqname in $srcchk_file\n", "RIBO", $?, $FH_HR);
     }
   }
