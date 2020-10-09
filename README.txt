@@ -327,7 +327,7 @@ each position of the model, which means that positions of the family
 that are highly conserved have a higher impact on the final score than
 do positions that are not as well conserved (unlike BLAST for which
 each position is treated identically). Each sequence is aligned to
-each profile and a score is computed based on well the sequence
+each profile and a score is computed based on how well the sequence
 matches the profile. Each sequence is classified by the model that
 gave it the highest score.
 
@@ -1545,8 +1545,8 @@ This script performs the following tests:
    BLAST against self
  - fail sequences that fail ribotyper
  - fail sequences that fail riboaligner
- - fail sequences that do cover a specified span of model positions
-   (are too short)
+ - fail sequences that do not cover a specified span of model 
+   positions (are too short)
 
 Sequences that pass all these tests are subjected to a 'ingroup
 analysis' taxonomic test, and any sequences that do not cluster with
