@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+<#!/usr/bin/env perl
 use strict;
 use warnings;
 use Getopt::Long;
@@ -79,7 +79,6 @@ my $date          = scalar localtime();
 my $version       = "0.40";
 my $releasedate   = "June 2020";
 my $package_name  = "ribovore";
-my $pkgstr        = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -192,7 +191,7 @@ my @desc_A     = (); # array of the descriptions for the commands
 my @outfile_AA = (); # array of arrays of output files to compare for each command
 my @expfile_AA = (); # array of arrays of expected files to compare output to for each command
 my @rmdir_AA   = (); # array of directories to remove after each command is completed
-my $ncmd = test_ParseTestFile($test_file, $pkgstr, \@cmd_A, \@desc_A, \@outfile_AA, \@expfile_AA, \@rmdir_AA, \%opt_HH, $ofile_info_HH{"FH"});
+my $ncmd = test_ParseTestFile($test_file, \@cmd_A, \@desc_A, \@outfile_AA, \@expfile_AA, \@rmdir_AA, \%opt_HH, $ofile_info_HH{"FH"});
 
 my $npass = 0;
 my $nfail = 0;
@@ -223,7 +222,7 @@ for(my $i = 1; $i <= $ncmd; $i++) {
   my $nout = scalar(@{$outfile_AR});
   for(my $j = 0; $j < $nout; $j++) { 
     my $diff_file = $out_root . "." . $i . "." . ($j+1) . ".diff";
-    my $pass = test_DiffTwoFiles($outfile_AR->[$j], $expfile_AR->[$j], $diff_file, $pkgstr, $ofile_info_HH{"FH"});
+    my $pass = test_DiffTwoFiles($outfile_AR->[$j], $expfile_AR->[$j], $diff_file, $ofile_info_HH{"FH"});
     if($pass) { $npass++; }
     else      { $nfail++; }
   }
@@ -249,7 +248,7 @@ if($overall_pass) {
 }
 else { 
   ofile_OutputString($log_FH, 1, sprintf("# FAIL: %d of %d files were not created correctly.\n", $nfail, $npass+$nfail));
-  ofile_FAIL("ERROR, at least one test FAILed", "RIBO", 1, undef);
+  ofile_FAIL("ERROR, at least one test FAILed", 1, undef);
 }
 ofile_OutputString($log_FH, 1, sprintf("#\n"));
 

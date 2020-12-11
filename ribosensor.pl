@@ -133,7 +133,6 @@ my $model_version_str = "0p30"; # model info file unchanged since version 0.30
 my $qsub_version_str  = "0p32"; # for qsubinfo file only
 my $releasedate       = "June 2020";
 my $package_name      = "ribovore";
-my $pkgstr            = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -314,11 +313,11 @@ my $sensor_indi_FH       = undef; # output file handle for gpipe file sorted by 
 my $ribo_indi_FH         = undef; # output file handle for ribotyper gpipe file sorted by input sequence index
 my $combined_out_FH      = undef; # output file handle for the combined output file
 my $combined_gpipe_FH    = undef; # output file handle for the combined gpipe file
-open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
 my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
@@ -375,7 +374,7 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
     ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
     if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
-      ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $ofile_info_HH{"FH"}); 
+      ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $ofile_info_HH{"FH"}); 
     }
   }
 }
@@ -2543,18 +2542,18 @@ sub parse_modelinfo_file {
   # 18S 18S_centroids.1091 ribo.0p20.modelinfo ribosensor.0p30.ssu-euk.accept
   # ---
   my $found_mode = 0;
-  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
   while(my $line = <IN>) { 
     if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
       chomp $line;
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 4) { 
-        ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", "RIBO", 1, $FH_HR);
+        ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
       }
       my($mode, $sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = (@el_A);
       if($mode eq $in_mode) { # we found our mode, now verify that required files exist
         if($found_mode) { 
-          ofile_FAIL("ERROR in $sub_name, two lines match mode $in_mode", "RIBO", 1, $ofile_info_HH{"FH"});
+          ofile_FAIL("ERROR in $sub_name, two lines match mode $in_mode", 1, $ofile_info_HH{"FH"});
         }
         $found_mode = 1;
         $ret_sensor_blastdb = $sensor_blastdb; # we don't verify that this exists
@@ -2575,13 +2574,13 @@ sub parse_modelinfo_file {
 
           # check for modelinfo file: if it exists in both places, use the -i specified version
           if(($modelinfo_in_nondf == 0) && ($modelinfo_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
           }
           elsif(($modelinfo_in_nondf == -1) && ($modelinfo_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif(($modelinfo_in_nondf == 0) && ($modelinfo_in_df == -1)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif($modelinfo_in_nondf == 1) { 
             $ret_ribo_modelinfo_file = $non_df_ribo_modelinfo_file;
@@ -2590,18 +2589,18 @@ sub parse_modelinfo_file {
             $ret_ribo_modelinfo_file = $df_ribo_modelinfo_file;
           }
           else { 
-            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_modelinfo_file, unexpected situation (in_nondf: $modelinfo_in_nondf, in_df: $modelinfo_in_df)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_modelinfo_file, unexpected situation (in_nondf: $modelinfo_in_nondf, in_df: $modelinfo_in_df)\n", 1, $ofile_info_HH{"FH"});
           }
 
           # check for accept file: if it exists in both places, use the -i specified version
           if(($accept_in_nondf == 0) && ($accept_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
           }
           elsif(($accept_in_nondf == -1) && ($accept_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif(($accept_in_nondf == 0) && ($accept_in_df == -1)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif($accept_in_nondf == 1) { 
             $ret_ribo_accept_file = $non_df_ribo_accept_file;
@@ -2610,7 +2609,7 @@ sub parse_modelinfo_file {
             $ret_ribo_accept_file = $df_ribo_accept_file;
           }
           else { 
-            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_accept_file, unexpected situation (in_nondf: $accept_in_nondf, in_df: $accept_in_df)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_accept_file, unexpected situation (in_nondf: $accept_in_nondf, in_df: $accept_in_df)\n", 1, $ofile_info_HH{"FH"});
           }
         } #end of 'if($opt_is_used)'
         else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
@@ -2626,10 +2625,10 @@ sub parse_modelinfo_file {
 
   if(! $found_mode) { 
     if($opt_i_used) { 
-      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin modelinfo file $modelinfo_file (specified with -i)", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin modelinfo file $modelinfo_file (specified with -i)", 1, $FH_HR); 
     }
     else { 
-      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?", 1, $FH_HR);
     }
   }
 

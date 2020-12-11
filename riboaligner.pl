@@ -257,27 +257,27 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
 # parse --riboopts file
 if(opt_IsUsed("--riboopts", \%opt_HH)) { 
   my $ribotyper_file = opt_Get("--riboopts", \%opt_HH);
-  open(RIBO, $ribotyper_file) || ofile_FileOpenFailure($ribotyper_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "reading", $FH_HR);
+  open(RIBO, $ribotyper_file) || ofile_FileOpenFailure($ribotyper_file,  "ribolengtchecker.pl::Main", $!, "reading", $FH_HR);
   $extra_ribotyper_options = <RIBO>;
   chomp $extra_ribotyper_options;
   while(<RIBO>) { 
     if($_ =~ m/\w/) { 
-      ofile_FAIL("ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line", 1, $FH_HR);
     }
   }
-  if(($extra_ribotyper_options =~ m/^\-f/)          || ($extra_ribotyper_options =~ m/\s+-f/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--scfail/)    || ($extra_ribotyper_options =~ m/\s+--scfail/))    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--covfail/)   || ($extra_ribotyper_options =~ m/\s+--covfail/))   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--minusfail/) || ($extra_ribotyper_options =~ m/\s+--minusfail/)) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--inaccept/)  || ($extra_ribotyper_options =~ m/\s+--inaccept/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-f/)          || ($extra_ribotyper_options =~ m/\s+-f/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--scfail/)    || ($extra_ribotyper_options =~ m/\s+--scfail/))    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--covfail/)   || ($extra_ribotyper_options =~ m/\s+--covfail/))   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--minusfail/) || ($extra_ribotyper_options =~ m/\s+--minusfail/)) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--inaccept/)  || ($extra_ribotyper_options =~ m/\s+--inaccept/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", 1, $FH_HR); }
   # options related to parallelization
-  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", 1, $FH_HR); }
   close(RIBO);
 }
 
@@ -302,7 +302,7 @@ ribo_ParseRAModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%fa
 # verify the CM files listed in $modelinfo_file exist
 foreach $family (@family_order_A) { 
   if(! -s $family_modelfile_H{$family}) { 
-    ofile_FAIL("ERROR, model file $family_modelfile_H{$family} specified in $modelinfo_file does not exist or is empty", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR, model file $family_modelfile_H{$family} specified in $modelinfo_file does not exist or is empty", 1, $FH_HR);
   }
 }
 
@@ -319,7 +319,7 @@ if(-e $ssi_file) {
 }
 ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $FH_HR);
 if(! -s $ssi_file) { 
-  ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $FH_HR); 
+  ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $FH_HR); 
 } 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -395,12 +395,12 @@ foreach $family (@family_order_A) {
   open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
 }
 
-open(RIBO, $ribotyper_short_file) || ofile_FileOpenFailure($ribotyper_short_file,  "RIBO", "riboaligner.pl::Main", $!, "reading", $FH_HR);
+open(RIBO, $ribotyper_short_file) || ofile_FileOpenFailure($ribotyper_short_file,  "riboaligner.pl::Main", $!, "reading", $FH_HR);
 while(my $line = <RIBO>) { 
   if($line !~ m/^\#/) { 
     my @el_A = split(/\s+/, $line);
     if(scalar(@el_A) != 6) { 
-      ofile_FAIL("ERROR, unable to parse ribotyper short output file, expected 6 tokens on line:\n$line\n", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR, unable to parse ribotyper short output file, expected 6 tokens on line:\n$line\n", 1, $FH_HR); 
     }
     my ($seqname, $class, $passfail) = ($el_A[1], $el_A[2], $el_A[4]);
     $found_family_match = 0;
@@ -512,7 +512,7 @@ foreach $family (@family_order_A) {
       $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
 
-      open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
+      open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "riboaligner.pl::Main", $!, "writing", $FH_HR);
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }
@@ -623,8 +623,8 @@ sub output_tabular_file {
   my ($out_tbl_file, $ribo_short_file, $nbound, $out_tbl_HHR, $FH_HR) = @_; 
 
   # open the ribotyper short output file for input and output file for output
-  open(IN, $ribo_short_file)    || ofile_FileOpenFailure($ribo_short_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  open(OUT, ">", $out_tbl_file) || ofile_FileOpenFailure($out_tbl_file,     "RIBO", $sub_name, $!, "writing", $FH_HR);
+  open(IN, $ribo_short_file)    || ofile_FileOpenFailure($ribo_short_file,  $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $out_tbl_file) || ofile_FileOpenFailure($out_tbl_file,     $sub_name, $!, "writing", $FH_HR);
 
   my $line_ctr = 0;
   while(my $line = <IN>) { 
@@ -658,7 +658,7 @@ sub output_tabular_file {
         }
       }
       else { 
-        ofile_FAIL("ERROR unable to parse non-comment line of $ribo_short_file:\n$line\n", "RIBO", 1, $FH_HR);
+        ofile_FAIL("ERROR unable to parse non-comment line of $ribo_short_file:\n$line\n", 1, $FH_HR);
       }
     }
     else { # comment line
@@ -731,7 +731,7 @@ sub parse_cmalign_file {
 
   my ($cmalign_file, $out_tbl_HHR, $FH_HR) = @_;
 
-  open(IN, $cmalign_file) || ofile_FileOpenFailure($cmalign_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $cmalign_file) || ofile_FileOpenFailure($cmalign_file, $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
 ##                                                                           running time (s)                 
@@ -746,7 +746,7 @@ sub parse_cmalign_file {
       $line =~ s/^\s+//; # remove leading whitespace
       $line =~ s/\s+$//; # remove trailing whitespace
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 12) { ofile_FAIL("ERROR in $sub_name, unexpected number of tokens on cmalign output file line: $line", "RIBO", 1, $FH_HR);  }
+      if(scalar(@el_A) != 12) { ofile_FAIL("ERROR in $sub_name, unexpected number of tokens on cmalign output file line: $line", 1, $FH_HR);  }
       my ($seqname, $cmfrom, $cmto) = ($el_A[1], $el_A[3], $el_A[4]);
       $out_tbl_HHR->{$seqname}{"pred_cmfrom"} = $cmfrom;
       $out_tbl_HHR->{$seqname}{"pred_cmto"}   = $cmto;
@@ -802,18 +802,18 @@ sub parse_stk_file {
   # first pass through the file to get the RF line:
   my $line;
   my $rfstr = "";
-  open(IN, $stk_file) || ofile_FileOpenFailure($stk_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $stk_file) || ofile_FileOpenFailure($stk_file, $sub_name, $!, "reading", $FH_HR);
   while($line = <IN>) { 
     if($line =~ m/^#=GC RF\s+(\S+)/) { 
       if($rfstr ne "") { 
-        ofile_FAIL("ERROR in $sub_name, more than one RF line, alignment is not in Pfam format", "RIBO", 1, $FH_HR); 
+        ofile_FAIL("ERROR in $sub_name, more than one RF line, alignment is not in Pfam format", 1, $FH_HR); 
       }
       $rfstr = $1;
     }
   }
   close(IN);
   if($rfstr eq "") { 
-    ofile_FAIL("ERROR in $sub_name, no RF line found, alignment is not in Pfam format", "RIBO", 1, $FH_HR); 
+    ofile_FAIL("ERROR in $sub_name, no RF line found, alignment is not in Pfam format", 1, $FH_HR); 
   }
 
   # make a map of alignment positions to nongap RF positions
@@ -847,14 +847,14 @@ sub parse_stk_file {
   # $apos_final_rfpos is the alignment position that is the final nongap in the RF string
 
   # second pass through alignment
-  open(IN, $stk_file) || ofile_FAIL("ERROR unable to open cmalign file $stk_file for reading", "RIBO", 1, $FH_HR);
+  open(IN, $stk_file) || ofile_FAIL("ERROR unable to open cmalign file $stk_file for reading", 1, $FH_HR);
   while($line = <IN>) { 
     if($line !~ m/^#/ && $line =~ m/\w/) { 
       # a sequence line
       if($line =~ /(\S+)\s+(\S+)/) { 
         my ($seqname, $seqstr) = ($1, $2);
         if(! exists $out_tbl_HHR->{$seqname}) { 
-          ofile_FAIL("ERROR found sequence in alignment $stk_file without an entry in the output table", "RIBO", 1, $FH_HR); 
+          ofile_FAIL("ERROR found sequence in alignment $stk_file without an entry in the output table", 1, $FH_HR); 
         }
 
         my $i_before_first_rfpos = 0; # number of insertions before RF position 1
@@ -1049,8 +1049,8 @@ sub subset_from_insert_or_el_or_cmalign_file {
 
   my ($master_file, $sub_file, $AR, $cmalign_flag, $FH_HR) = @_;
 
-  open(IN,  $master_file)   || ofile_FileOpenFailure($master_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
-  open(OUT, ">", $sub_file) || ofile_FileOpenFailure($sub_file,    "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN,  $master_file)   || ofile_FileOpenFailure($master_file, $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $sub_file) || ofile_FileOpenFailure($sub_file,    $sub_name, $!, "reading", $FH_HR);
 
 
   my $col_idx = ($cmalign_flag) ? 1 : 0; # if cmalign file, column 1 has sequence name, else column 0 does
@@ -1076,11 +1076,11 @@ sub subset_from_insert_or_el_or_cmalign_file {
         $line =~ s/\s+$//; # remove trailing whitespace
         my @el_A = split(/\s+/, $line); 
         if(scalar(@el_A) <= $col_idx) { 
-          ofile_FAIL("ERROR in $sub_name, unable to parse line, too few elements: $line", "RIBO", 1, $FH_HR);
+          ofile_FAIL("ERROR in $sub_name, unable to parse line, too few elements: $line", 1, $FH_HR);
         }
         if(exists $H{$el_A[$col_idx]}) { 
           if($H{$el_A[$col_idx]} != 1) { 
-            ofile_FAIL("ERROR in $sub_name, read $el_A[$col_idx] more than once: $line", "RIBO", 1, $FH_HR);
+            ofile_FAIL("ERROR in $sub_name, read $el_A[$col_idx] more than once: $line", 1, $FH_HR);
           }
           $print_flag = 1; 
           $H{$el_A[$col_idx]} = 0;
@@ -1105,7 +1105,7 @@ sub subset_from_insert_or_el_or_cmalign_file {
     }
   }
   if($failstr ne "") { 
-    ofile_FAIL("ERROR in $sub_name, at least one sequence not found in $master_file:\n$failstr", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, at least one sequence not found in $master_file:\n$failstr", 1, $FH_HR);
   }
 
   return;

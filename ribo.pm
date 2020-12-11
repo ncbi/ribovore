@@ -122,7 +122,7 @@ sub ribo_ParseSeqstatFile {
 
   my ($seqstat_file, $max_targetname_length_R, $max_length_length_R, $nseq_R, $seqorder_AR, $seqidx_HR, $seqlen_HR, $FH_HR) = @_;
 
-  open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, $sub_name, $!, "reading", $FH_HR);
 
   my $nread = 0;            # number of sequences read
   my $tot_length = 0;       # summed length of all sequences
@@ -174,7 +174,7 @@ sub ribo_ParseSeqstatFile {
   }
   close(IN);
   if($nread == 0) { 
-    ofile_FAIL("ERROR in $sub_name, did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, did not read any sequence lengths in esl-seqstat file $seqstat_file, did you use -a option with esl-seqstat", 1, $FH_HR);
   }
   if($at_least_one_dup) { 
     my $i = 1;
@@ -184,7 +184,7 @@ sub ribo_ParseSeqstatFile {
       $i++;
     }
     $die_string .= "\n";
-    ofile_FAIL($die_string, "RIBO", 1, $FH_HR);
+    ofile_FAIL($die_string, 1, $FH_HR);
   }
 
   $$nseq_R = $nread;
@@ -214,7 +214,7 @@ sub ribo_ParseSeqstatCompTblFile {
 
   my ($seqstat_file, $seqnambig_HR, $FH_HR) = @_;
 
-  open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $seqstat_file) || ofile_FileOpenFailure($seqstat_file, $sub_name, $!, "reading", $FH_HR);
 
   my $nread = 0;            # number of sequences read
   my $nread_w_ambig = 0;    # summed length of all sequences
@@ -246,7 +246,7 @@ sub ribo_ParseSeqstatCompTblFile {
       $seqnambig_HR->{$seqname} = $nambig;
     }
     elsif($line !~ m/^\#/) { 
-      ofile_FAIL("ERROR in $sub_name, unable to parse esl-seqstat --comptbl line $line from file $seqstat_file", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, unable to parse esl-seqstat --comptbl line $line from file $seqstat_file", 1, $FH_HR);
     }
   }
   close(IN);
@@ -282,7 +282,7 @@ sub ribo_ParseRAModelinfoFile {
 
   my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR, $FH_HR) = @_;
 
-  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
     ## each line has information on 1 family and at least 4 tokens: 
@@ -298,7 +298,7 @@ sub ribo_ParseRAModelinfoFile {
       $line =~ s/\s+$//; # remove trailing whitespace
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) < 4) { 
-        ofile_FAIL("ERROR in $sub_name, less than 4 tokens found on line $line of $modelinfo_file", "RIBO", 1, $FH_HR);  
+        ofile_FAIL("ERROR in $sub_name, less than 4 tokens found on line $line of $modelinfo_file", 1, $FH_HR);  
       }
       my $family    = $el_A[0];
       my $modelfile = $el_A[1];
@@ -306,7 +306,7 @@ sub ribo_ParseRAModelinfoFile {
       my @rtname_A = ();
       for(my $i = 3; $i < scalar(@el_A); $i++) { 
         if($el_A[$i] =~ /[\)\(]/) { 
-          ofile_FAIL("ERROR in $sub_name, ribotyper model name $el_A[$i] has '(' and/or ')', but these characters are not allowed in model names", "RIBO", 1, $FH_HR);  
+          ofile_FAIL("ERROR in $sub_name, ribotyper model name $el_A[$i] has '(' and/or ')', but these characters are not allowed in model names", 1, $FH_HR);  
         }
         push(@rtname_A, $el_A[$i]);
       }
@@ -351,7 +351,7 @@ sub ribo_ParseQsubFile {
 
   my ($qsub_file, $FH_HR) = @_;
 
-  open(IN, $qsub_file) || ofile_FileOpenFailure($qsub_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $qsub_file) || ofile_FileOpenFailure($qsub_file, $sub_name, $!, "reading", $FH_HR);
 
   my $qsub_prefix_line = undef;
   my $qsub_suffix_line = undef;
@@ -361,17 +361,17 @@ sub ribo_ParseQsubFile {
       if   (! defined $qsub_prefix_line) { $qsub_prefix_line = $line; }
       elsif(! defined $qsub_suffix_line) { $qsub_suffix_line = $line; }
       else { # both $qsub_prefix_line and $qsub_suffix_line are defined, this shouldn't happen
-        ofile_FAIL("ERROR in $sub_name, read more than 2 non-# prefixed lines in file $qsub_file:\n$line\n", "RIBO", $?, $FH_HR);
+        ofile_FAIL("ERROR in $sub_name, read more than 2 non-# prefixed lines in file $qsub_file:\n$line\n", $?, $FH_HR);
       }
     }
   }
   close(IN);
   
   if(! defined $qsub_prefix_line) { 
-    ofile_FAIL("ERROR in $sub_name, read zero non-# prefixed lines in file $qsub_file, but expected 2", "RIBO", $?, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, read zero non-# prefixed lines in file $qsub_file, but expected 2", $?, $FH_HR);
   }
   if(! defined $qsub_suffix_line) { 
-    ofile_FAIL("ERROR in $sub_name, read only one non-# prefixed lines in file $qsub_file, but expected 2", "RIBO", $?, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, read only one non-# prefixed lines in file $qsub_file, but expected 2", $?, $FH_HR);
   }
 
   return($qsub_prefix_line, $qsub_suffix_line);
@@ -399,7 +399,7 @@ sub ribo_ParseLogFileForParallelTime {
 
   my ($log_file, $FH_HR) = @_;
 
-  open(IN, $log_file) || ofile_FileOpenFailure($log_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $log_file) || ofile_FileOpenFailure($log_file, $sub_name, $!, "reading", $FH_HR);
 
   my $tot_secs = 0.;
   while(my $line = <IN>) { 
@@ -437,7 +437,7 @@ sub ribo_ParseCmsearchFileForTotalCpuTime {
 
   my ($out_file, $FH_HR) = @_;
 
-  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, $sub_name, $!, "reading", $FH_HR);
 
   my $tot_secs = 0.;
   while(my $line = <IN>) { 
@@ -475,7 +475,7 @@ sub ribo_ParseCmalignFileForCpuTime {
 
   my ($out_file, $FH_HR) = @_;
 
-  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, $sub_name, $!, "reading", $FH_HR);
 
   my $tot_secs = 0.;
   while(my $line = <IN>) { 
@@ -530,7 +530,7 @@ sub ribo_ParseUnixTimeOutput {
 
   my ($out_file, $FH_HR) = @_;
 
-  open(IN, $out_file) || ofile_FileOpenFailure($out_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $out_file) || ofile_FileOpenFailure($out_file, $sub_name, $!, "reading", $FH_HR);
 
   my $tot_secs = 0.;
   while(my $line = <IN>) { 
@@ -709,7 +709,7 @@ sub ribo_CheckIfFileExistsAndIsNonEmpty {
       ofile_FAIL(sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
                          (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
                          (defined $filedesc         ? " ($filedesc)" : "")),
-                 "RIBO", 1, $FH_HR); 
+                 1, $FH_HR); 
     }
     return 0;
   }
@@ -718,7 +718,7 @@ sub ribo_CheckIfFileExistsAndIsNonEmpty {
       ofile_FAIL(sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
                          (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
                          (defined $filedesc         ? " ($filedesc)" : "")),
-                 "RIBO", 1, $FH_HR); 
+                 1, $FH_HR); 
     }
     return -1;
   }
@@ -765,7 +765,7 @@ sub ribo_ConcatenateListOfFiles {
 
   if(ribo_FindNonNumericValueInArray($file_AR, $outfile, $FH_HR) != -1) { 
     ofile_FAIL(sprintf("ERROR in $sub_name%s, output file name $outfile exists in list of files to concatenate", 
-                       (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), "RIBO", 1, $FH_HR);
+                       (defined $caller_sub_name) ? " called by $caller_sub_name" : ""), 1, $FH_HR);
   }
 
   # as a special case, check if output file names are /dev/null, in that case
@@ -779,7 +779,7 @@ sub ribo_ConcatenateListOfFiles {
   if($nfiles > ($max_nfiles * $max_nfiles)) { 
     ofile_FAIL(sprintf("ERROR in $sub_name%s, trying to concatenate %d files, our limit is %d", 
                        (defined $caller_sub_name) ? " called by $caller_sub_name" : "", $nfiles, $max_nfiles * $max_nfiles), 
-               "RIBO", 1, $FH_HR);
+               1, $FH_HR);
   }
     
   my ($idx1, $idx2); # indices in @{$file_AR}, and of secondary files
@@ -949,10 +949,10 @@ sub ribo_WriteArrayToFile {
   my ($AR, $file, $FH_HR) = @_;
 
   if((! defined $AR) || (scalar(@{$AR}) == 0)) { 
-    ofile_FAIL("ERROR in $sub_name, array is empty or not defined", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, array is empty or not defined", 1, $FH_HR);
   }
 
-  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "writing", $FH_HR);
+  open(OUT, ">", $file) || ofile_FileOpenFailure($file, $sub_name, $!, "writing", $FH_HR);
 
   foreach my $el (@{$AR}) { 
     print OUT $el . "\n"; 
@@ -989,10 +989,10 @@ sub ribo_ReadFileToArray {
 
   my ($file, $AR, $FH_HR) = @_;
 
-  open(IN, $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $file) || ofile_FileOpenFailure($file, $sub_name, $!, "reading", $FH_HR);
 
   if(! defined $AR) { 
-    ofile_FAIL("ERROR in $sub_name, array is not defined", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, array is not defined", 1, $FH_HR);
   }
   @{$AR} = (); # zero array, even if it already had values
 
@@ -1075,7 +1075,7 @@ sub ribo_FastaFileSplitRandomly {
   my $do_debug = 0;
 
   my $in_FH = undef;
-  open($in_FH, $fa_file) || ofile_FileOpenFailure($fa_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open($in_FH, $fa_file) || ofile_FileOpenFailure($fa_file, $sub_name, $!, "reading", $FH_HR);
   
   if(defined $rng_seed) { srand($rng_seed); }
 
@@ -1086,7 +1086,7 @@ sub ribo_FastaFileSplitRandomly {
   if($nfiles > $tot_nseq) { $nfiles = $tot_nseq; }
   if($nfiles > 300)       { $nfiles = 300; }
   if($nfiles <= 0) { 
-    ofile_FAIL("ERROR in $sub_name, trying to make $nfiles files", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, trying to make $nfiles files", 1, $FH_HR);
   }
   $targ_nres = int($tot_nres / $nfiles);
 
@@ -1137,7 +1137,7 @@ sub ribo_FastaFileSplitRandomly {
 
   # open up all output file handles, else open only the first
   for($fidx = 0; $fidx < $nfiles; $fidx++) { 
-    open($out_FH_A[$fidx], ">", $out_filename_A[$fidx]) || ofile_FileOpenFailure($out_filename_A[$fidx], "RIBO", $sub_name, $!, "writing", $FH_HR);
+    open($out_FH_A[$fidx], ">", $out_filename_A[$fidx]) || ofile_FileOpenFailure($out_filename_A[$fidx], $sub_name, $!, "writing", $FH_HR);
     $isopen_A[$fidx] = 1;
   }
   $nopen = $nfiles; # will be decremented as we close files
@@ -1148,10 +1148,10 @@ sub ribo_FastaFileSplitRandomly {
 
   while($nseq_remaining > 0) { 
     if(! defined $next_header_line) { 
-      ofile_FAIL("ERROR in $sub_name, read too few sequences in $fa_file, read expected $tot_nseq", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR in $sub_name, read too few sequences in $fa_file, read expected $tot_nseq", 1, $FH_HR); 
     }
     if(! exists $seqlen_HR->{$next_seqname}) { 
-      ofile_FAIL("ERROR in $sub_name, no sequence length information exists for $next_seqname", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, no sequence length information exists for $next_seqname", 1, $FH_HR);
     }
     $nres_this_seq = $seqlen_HR->{$next_seqname};
 
@@ -1264,7 +1264,7 @@ sub ribo_FastaFileReadAndOutputNextSeq {
     if(! defined $out_FH) { 
       chomp $line;
       if($line =~ m/\S/) { 
-        ofile_FAIL("ERROR in $sub_name, read line with non-whitespace character when none were expected:\n$line", "RIBO", 1, $FH_HR);
+        ofile_FAIL("ERROR in $sub_name, read line with non-whitespace character when none were expected:\n$line", 1, $FH_HR);
       }
     }
     else { 
@@ -1278,7 +1278,7 @@ sub ribo_FastaFileReadAndOutputNextSeq {
       $seqname = $1;
     }
     else { 
-      ofile_FAIL("ERROR in $sub_name, unable to parse sequence name from header line: $line", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, unable to parse sequence name from header line: $line", 1, $FH_HR);
     }
   }
   
@@ -1345,10 +1345,10 @@ sub ribo_GetMonoCharacterString {
   my ($len, $char, $FH_HR) = @_;
 
   if(! verify_integer($len)) { 
-    ofile_FAIL("ERROR in $sub_name, passed in length ($len) is not a non-negative integer", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, passed in length ($len) is not a non-negative integer", 1, $FH_HR);
   }
   if($len < 0) { 
-    ofile("ERROR in $sub_name, passed in length ($len) is a negative integer", "RIBO", 1, $FH_HR);
+    ofile("ERROR in $sub_name, passed in length ($len) is a negative integer", 1, $FH_HR);
   }
     
   my $ret_str = "";
@@ -1508,7 +1508,7 @@ sub ribo_ConvertFetchedNameToAccVersion {
   }
   else { 
     if($do_die) { 
-      ofile_FAIL("ERROR, in $sub_name, $fetched_name did not match the expected format for a fetched sequence, expect something like: gi|675602128|gb|KJ925573.1|", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR, in $sub_name, $fetched_name did not match the expected format for a fetched sequence, expect something like: gi|675602128|gb|KJ925573.1|", 1, $FH_HR); 
     }
     $accver_name = $fetched_name;
   }
@@ -1738,12 +1738,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
     @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
   else { 
-    ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", 1, $FH_HR);
   }
   # verify all keys exists, and that input files exist
   foreach my $key (@reqd_keys_A) { 
     if(! exists $info_HR->{$key}) { 
-      ofile_FAIL("ERROR in $sub_name, executable is $program_choice but $key file not set", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR in $sub_name, executable is $program_choice but $key file not set", 1, $FH_HR); 
     }
     # if it is an input file, make sure it exists
     if($info_HR->{$key} =~ m/^IN:/) { 
@@ -1860,7 +1860,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
             $wkr_info_H{$info_key} = $tmpdir . "." . $f . "/" . $tmpfile;
           }
           else { 
-            ofile_FAIL("ERROR unrecognized special prefix beginning with OUT in info_H key: $info_key", "RIBO", 1, $FH_HR);
+            ofile_FAIL("ERROR unrecognized special prefix beginning with OUT in info_H key: $info_key", 1, $FH_HR);
           }
           # and keep a list of these files, we will concatenate them later
           push(@{$wkr_outfiles_HA{$info_key}}, $wkr_info_H{$info_key});
@@ -2178,7 +2178,7 @@ sub ribo_RunCommand {
   my $stop_time = ($seconds + ($microseconds / 1000000.));
 
   if($? != 0) { 
-    ofile_FAIL("ERROR in $sub_name, the following command failed:\n$cmd\n", "RIBO", $?, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, the following command failed:\n$cmd\n", $?, $FH_HR);
   }
 
   return ($stop_time - $start_time);
@@ -2276,7 +2276,7 @@ sub ribo_SumSeqlenGivenArray {
   my $tot_seqlen = 0;
   foreach my $seqname (@{$seqname_AR}) { 
     if(! exists $seqlen_HR->{$seqname}) { 
-      ofile_FAIL("ERROR in $sub_name, $seqname does not exist in the seqlen_H hash", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, $seqname does not exist in the seqlen_H hash", 1, $FH_HR);
     }
     $tot_seqlen += abs($seqlen_HR->{$seqname}); # ribotyper.pl multiplies lengths by -1 after round 1
   }
@@ -2412,7 +2412,7 @@ sub ribo_WriteCommandScript {
 
   my ($file, $cmd, $FH_HR) = @_;
 
-  open(OUT, ">", $file) || ofile_FileOpenFailure($file, "RIBO", $sub_name, $!, "writing", $FH_HR);
+  open(OUT, ">", $file) || ofile_FileOpenFailure($file, $sub_name, $!, "writing", $FH_HR);
 
   print OUT ("#!/bin/bash\n");
   print OUT ("#filename: $file\n");
