@@ -254,5 +254,5 @@ else {
 ofile_OutputString($log_FH, 1, sprintf("#\n"));
 
 $total_seconds += ribo_SecondsSinceEpoch();
-ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir_out, \%ofile_info_HH);
+ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0);

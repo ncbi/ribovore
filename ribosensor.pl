@@ -690,7 +690,7 @@ if((opt_Get("--psave", \%opt_HH)) && ($nseq_passed > 0)) {
   printf("#\n# The $nseq_passed sequences that passed (with $nseq_revcomped minus strand sequences\n# reverse complemented) saved to file $passes_seq_file\n");
 }
 
-ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0); 
 
 ###############

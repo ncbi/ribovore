@@ -535,7 +535,7 @@ if(! opt_Get("--skipval", \%opt_HH)) {
 if(opt_Get("--onlyval", \%opt_HH)) { 
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   $total_seconds += ribo_SecondsSinceEpoch();
-  ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+  ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
   exit(0); 
 }
 
@@ -1098,7 +1098,7 @@ if(opt_Get("-p", \%opt_HH)) {
   ofile_OutputString($log_FH, 1, "#\n");
 }
 
-ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0); 
 
 ###########################################################################
