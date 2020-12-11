@@ -410,10 +410,10 @@ if((! $do_ftaxid) && (! $do_fambig) && (! $do_fvecsc) && (! $do_fblast) && (! $d
 my $in_special_file = opt_Get("--special", \%opt_HH); # this will be undefined unless --special used on the command line
 # verify required files exist
 if(defined $in_fasta_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_fasta_file, "<input fasta sequence file> command line argument", undef, 1, undef); 
+  utl_FileValidateExistsAndNonEmpty($in_fasta_file, "<input fasta sequence file> command line argument", undef, 1, undef); 
 }
 if(defined $in_special_file) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_special_file, "--special argument", undef, 1, undef); 
+  utl_FileValidateExistsAndNonEmpty($in_special_file, "--special argument", undef, 1, undef); 
 }
 # a more sophisticated check for --exclist arg, go ahead and parse it now
 my %exc_taxid_H = ();
@@ -525,7 +525,7 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
   my $df_tax_file = $df_tax_dir . "ncbi-taxonomy-tree.ribodbmaker.txt";
   if(! opt_IsUsed("--taxin", \%opt_HH)) { $taxonomy_tree_six_column_file = $df_tax_file; }
   else                                  { $taxonomy_tree_six_column_file = opt_Get("--taxin", \%opt_HH); }
-  ribo_CheckIfFileExistsAndIsNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
 
   $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
   $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribovore_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
@@ -544,7 +544,7 @@ if($do_fribo1) {
   # make sure the riboopts1 file exists if --riboopts1 used
   if(opt_IsUsed("--riboopts1", \%opt_HH)) {
     $in_riboopts1_file = opt_Get("--riboopts1", \%opt_HH);
-    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts1_file, "riboopts file specified with --riboopts1", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
+    utl_FileValidateExistsAndNonEmpty($in_riboopts1_file, "riboopts file specified with --riboopts1", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
   }
 }
 
@@ -557,18 +557,18 @@ if($do_fribo1 || $do_fribo2) {
   # make sure the riboopts2 file exists if --riboopts2 used
   if(opt_IsUsed("--riboopts2", \%opt_HH)) {
     $in_riboopts2_file = opt_Get("--riboopts2", \%opt_HH);
-    ribo_CheckIfFileExistsAndIsNonEmpty($in_riboopts2_file, "riboopts file specified with --riboopts2", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
+    utl_FileValidateExistsAndNonEmpty($in_riboopts2_file, "riboopts file specified with --riboopts2", undef, 1, undef); # last argument as 1 says: die if it doesn't exist or is empty
   }
 
   # make sure the riboaligner modelinfo files exists
   if(! opt_IsUsed("--rainfo", \%opt_HH)) { 
     $ra_modelinfo_file = $df_ra_modelinfo_file;  
-    ribo_CheckIfFileExistsAndIsNonEmpty($ra_modelinfo_file, "default riboaligner model info file", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
+    utl_FileValidateExistsAndNonEmpty($ra_modelinfo_file, "default riboaligner model info file", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
   else { # --rainfo used
     $ra_modelinfo_file = opt_Get("--rainfo", \%opt_HH); }
   if(! opt_IsUsed("--rainfo", \%opt_HH)) {
-    ribo_CheckIfFileExistsAndIsNonEmpty($ra_modelinfo_file, "riboaligner model info file specified with --rainfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
+    utl_FileValidateExistsAndNonEmpty($ra_modelinfo_file, "riboaligner model info file specified with --rainfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
 
   $execs_H{"ribotyper"}         = $env_ribovore_dir  . "/ribotyper.pl";
@@ -4148,7 +4148,7 @@ sub parse_taxid_list_file {
   %{$taxid_HR} = ();
 
   # make sure file exists and is non-empty
-  ribo_CheckIfFileExistsAndIsNonEmpty($in_file, "$option argument", undef, 1, undef); 
+  utl_FileValidateExistsAndNonEmpty($in_file, "$option argument", undef, 1, undef); 
   # make sure it contains 1 or more lines that is an integer
   open(IN, $in_file) || die "ERROR unable to open $in_file from $option <s>"; 
   my $line_ctr = 0;

@@ -6,8 +6,8 @@
 # Eric Nawrocki
 # EPN, Fri May 12 09:48:21 2017
 # 
-# Perl module used by ribotyper.pl, riboaligner.pl and 
-# ribodbcreate.pl which contains subroutines called by 
+# Perl module used by riboaligner.pl, ribodbmaker.pl, ribosensor.pl,
+# ribotest.pl and ribotyper.pl, which contains subroutines called by
 # those scripts.
 
 use strict;
@@ -29,7 +29,6 @@ require "sqp_utils.pm";
 # ribo_ProcessSequenceFile 
 #
 # Validating, creating or removing files
-# ribo_CheckIfFileExistsAndIsNonEmpty
 # ribo_ConcatenateListOfFiles
 # ribo_RemoveListOfFiles
 # ribo_RemoveListOfDirsWithRmrf
@@ -608,53 +607,6 @@ sub ribo_ProcessSequenceFile {
   }
 
   return $tot_length;
-}
-
-#################################################################
-# Subroutine : ribo_CheckIfFileExistsAndIsNonEmpty()
-# Incept:      EPN, Thu May  4 09:30:32 2017 [dnaorg.pm:validateFileExistsAndIsNonEmpty]
-#
-# Purpose:     Check if a file exists and is non-empty. 
-#
-# Arguments: 
-#   $filename:         file that we are checking on
-#   $filedesc:         description of file
-#   $calling_sub_name: name of calling subroutine (can be undef)
-#   $do_die:           '1' if we should die if it does not exist.  
-#   $FH_HR:            ref to hash of file handles, can be undef
-# 
-# Returns:     Return '1' if it does and is non empty, '0' if it does
-#              not exist, or '-1' if it exists but is empty.
-#
-# Dies:        If file does not exist or is empty and $do_die is 1.
-# 
-################################################################# 
-sub ribo_CheckIfFileExistsAndIsNonEmpty { 
-  my $nargs_expected = 5;
-  my $sub_name = "ribo_CheckIfFileExistsAndIsNonEmpty()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($filename, $filedesc, $calling_sub_name, $do_die, $FH_HR) = @_;
-
-  if(! -e $filename) { 
-    if($do_die) { 
-      ofile_FAIL(sprintf("ERROR in $sub_name, %sfile $filename%s does not exist.", 
-                         (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                         (defined $filedesc         ? " ($filedesc)" : "")),
-                 1, $FH_HR); 
-    }
-    return 0;
-  }
-  elsif(! -s $filename) { 
-    if($do_die) { 
-      ofile_FAIL(sprintf("ERROR in $sub_name, %sfile $filename%s exists but is empty.", 
-                         (defined $calling_sub_name ? "called by $calling_sub_name," : ""),
-                         (defined $filedesc         ? " ($filedesc)" : "")),
-                 1, $FH_HR); 
-    }
-    return -1;
-  }
-  
-  return 1;
 }
 
 #################################################################
@@ -1678,7 +1630,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
     }
     # if it is an input file, make sure it exists
     if($info_HR->{$key} =~ m/^IN:/) { 
-      ribo_CheckIfFileExistsAndIsNonEmpty($info_HR->{$key}, undef, $sub_name, 1, $FH_HR); 
+      utl_FileValidateExistsAndNonEmpty($info_HR->{$key}, undef, $sub_name, 1, $FH_HR); 
     }
   }
   
