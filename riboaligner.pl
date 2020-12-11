@@ -23,7 +23,7 @@ $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
 $execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
 $execs_H{"time"}         = $env_ribotime_dir  . "/time";
-ribo_ValidateExecutableHash(\%execs_H);
+utl_ExecHValidate(\%execs_H, undef);
 
 #########################################################
 # Command line and option processing using sqp_opts.pm

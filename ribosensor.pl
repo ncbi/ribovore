@@ -28,7 +28,7 @@ $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
 $execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
 $execs_H{"blastdbcmd"}         = $env_riboblast_dir . "/blastdbcmd";
 $execs_H{"time"}               = $env_ribotime_dir  . "/time";
-ribo_ValidateExecutableHash(\%execs_H);
+utl_ExecHValidate(\%execs_H, undef);
 
 
 #########################################################

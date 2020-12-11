@@ -577,7 +577,7 @@ if(opt_IsUsed("--mslist", \%opt_HH)) {
   $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribovore_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
 }
 
-ribo_ValidateExecutableHash(\%execs_H);
+utl_ExecHValidate(\%execs_H, undef);
 
 #############################
 # create the output directory

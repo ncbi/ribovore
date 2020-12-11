@@ -21,7 +21,6 @@ use warnings;
 # ribo_ProcessSequenceFile 
 #
 # Validating, creating or removing files
-# ribo_ValidateExecutableHash
 # ribo_VerifyEnvVariableIsValidDir
 # ribo_CheckIfFileExistsAndIsNonEmpty
 # ribo_ConcatenateListOfFiles
@@ -602,47 +601,6 @@ sub ribo_ProcessSequenceFile {
   }
 
   return $tot_length;
-}
-
-#################################################################
-# Subroutine : ribo_ValidateExecutableHash()
-# Incept:      EPN, Sat Feb 13 06:27:51 2016
-#
-# Purpose:     Given a reference to a hash in which the 
-#              values are paths to executables, validate
-#              those files are executable.
-#
-# Arguments: 
-#   $execs_HR: REF to hash, keys are short names to executable
-#              e.g. "cmbuild", values are full paths to that
-#              executable, e.g. "/usr/local/infernal/1.1.1/bin/cmbuild"
-# 
-# Returns:     void
-#
-# Dies:        if one or more executables does not exist#
-#
-################################################################# 
-sub ribo_ValidateExecutableHash { 
-  my $nargs_expected = 1;
-  my $sub_name = "ribo_ValidateExecutableHash()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($execs_HR) = (@_);
-
-  my $fail_str = undef;
-  foreach my $key (sort keys %{$execs_HR}) { 
-    if(! -e $execs_HR->{$key}) { 
-      $fail_str .= "\t$execs_HR->{$key} does not exist.\n"; 
-    }
-    elsif(! -x $execs_HR->{$key}) { 
-      $fail_str .= "\t$execs_HR->{$key} exists but is not an executable file.\n"; 
-    }
-  }
-  
-  if(defined $fail_str) { 
-    die "ERROR in $sub_name,\n$fail_str"; # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
-  }
-
-  return;
 }
 
 #################################################################

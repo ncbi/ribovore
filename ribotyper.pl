@@ -11,6 +11,7 @@ use Time::HiRes qw(gettimeofday);
 require "ribo.pm";
 require "sqp_opts.pm";
 require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure required environment variables are set
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
@@ -25,7 +26,7 @@ $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
 $execs_H{"time"}        = $env_ribotime_dir     . "/time";
-ribo_ValidateExecutableHash(\%execs_H);
+utl_ExecHValidate(\%execs_H, undef);
 
  
 #########################################################
