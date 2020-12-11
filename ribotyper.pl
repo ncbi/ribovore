@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+o#!/usr/bin/env perl
 #
 use strict;
 use warnings;
@@ -14,10 +14,10 @@ require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
-my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
-my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
+my $env_ribotyper_dir    = utl_DirEnvVarValid("RIBODIR");
+my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
+my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
+my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
 my $df_model_dir         = $env_ribotyper_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables

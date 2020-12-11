@@ -13,7 +13,7 @@ require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribovore_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_ribovore_dir    = utl_DirEnvVarValid("RIBODIR");
 
 #my %execs_H = (); # hash with paths to all required executables
 #$execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";

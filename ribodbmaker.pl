@@ -11,8 +11,8 @@ require "sqp_utils.pm";
 
 # make sure the RIBODIR and RIBOEASEL variables are set, others we will wait to see
 # if they are required first
-my $env_ribovore_dir   = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_riboeasel_dir  = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
+my $env_ribovore_dir   = utl_DirEnvVarValid("RIBODIR");
+my $env_riboeasel_dir  = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_vecplus_dir    = undef;
 my $env_riboblast_dir  = undef;
 my $df_model_dir       = $env_ribovore_dir . "/models/";
@@ -511,7 +511,7 @@ $execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
 $execs_H{"ali-apos-to-uapos.pl"} = $env_ribovore_dir . "/miniscripts/ali-apos-to-uapos.pl";
 
 if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) { 
-  $env_vecplus_dir = ribo_VerifyEnvVariableIsValidDir("VECPLUSDIR");
+  $env_vecplus_dir = utl_DirEnvVarValid("VECPLUSDIR");
   if($do_fvecsc) { 
     $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
     $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
@@ -532,7 +532,7 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
 }
 
 if($do_fblast) { 
-  $env_riboblast_dir = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
+  $env_riboblast_dir = utl_DirEnvVarValid("RIBOBLASTDIR");
   $execs_H{"blastn"} = $env_riboblast_dir  . "/blastn";
 }
 

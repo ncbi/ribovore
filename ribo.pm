@@ -29,7 +29,6 @@ require "sqp_utils.pm";
 # ribo_ProcessSequenceFile 
 #
 # Validating, creating or removing files
-# ribo_VerifyEnvVariableIsValidDir
 # ribo_CheckIfFileExistsAndIsNonEmpty
 # ribo_ConcatenateListOfFiles
 # ribo_RemoveListOfFiles
@@ -609,40 +608,6 @@ sub ribo_ProcessSequenceFile {
   }
 
   return $tot_length;
-}
-
-#################################################################
-# Subroutine : ribo_VerifyEnvVariableIsValidDir()
-# Incept:      EPN, Wed Oct 25 10:09:28 2017
-#
-# Purpose:     Verify that the environment variable $envvar exists 
-#              and that it is a valid directory. Return directory path.
-#              
-# Arguments: 
-#   $envvar:  environment variable
-#
-# Returns:    directory path $ENV{'$envvar'}
-#
-################################################################# 
-sub ribo_VerifyEnvVariableIsValidDir
-{
-  my $nargs_expected = 1;
-  my $sub_name = "ribo_VerifyEnvVariableIsValidDir()";
-  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-
-  my ($envvar) = $_[0];
-
-  if(! exists($ENV{"$envvar"})) { 
-    die "ERROR, the environment variable $envvar is not set";
-    # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
-  }
-  my $envdir = $ENV{"$envvar"};
-  if(! (-d $envdir)) { 
-    die "ERROR, the directory specified by your environment variable $envvar does not exist.\n"; 
-    # it's okay this isn't ofile_FAIL because this is called before ofile_info_HH is set-up
-  }    
-
-  return $envdir;
 }
 
 #################################################################
