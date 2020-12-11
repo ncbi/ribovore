@@ -7,6 +7,7 @@ use Time::HiRes qw(gettimeofday);
 require "ribo.pm";
 require "sqp_opts.pm";
 require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure the RIBODIR and RIBOEASEL variables are set, others we will wait to see
 # if they are required first

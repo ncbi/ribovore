@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-use strict;
-use warnings;
+#
+# version: 0.40 []
 #
 # ribo.pm
 # Eric Nawrocki
@@ -9,6 +9,14 @@ use warnings;
 # Perl module used by ribotyper.pl, riboaligner.pl and 
 # ribodbcreate.pl which contains subroutines called by 
 # those scripts.
+
+use strict;
+use warnings;
+
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
+require "sqp_utils.pm";
+
 #
 # List of subroutines:
 #

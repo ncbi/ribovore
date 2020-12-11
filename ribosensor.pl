@@ -10,6 +10,7 @@ use Time::HiRes qw(gettimeofday);
 require "ribo.pm";
 require "sqp_opts.pm";
 require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure required environment variables are set
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
