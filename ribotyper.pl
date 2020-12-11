@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+#
 use strict;
 use warnings;
 use Getopt::Long;
@@ -7,9 +8,9 @@ use Time::HiRes qw(gettimeofday);
 # ribotyper.pl :: detect and classify ribosomal RNA sequences
 # Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
 
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
 
 # make sure required environment variables are set
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
@@ -28,7 +29,7 @@ ribo_ValidateExecutableHash(\%execs_H);
 
  
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -247,7 +248,7 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-# do some final option checks that are currently too sophisticated for epn-options
+# do some final option checks that are currently too sophisticated for sqp_opts
 if(opt_Get("--evalues", \%opt_HH)) { 
   if((! opt_Get("--1hmm", \%opt_HH)) && 
      (! opt_Get("--1slow", \%opt_HH)) &&
@@ -388,9 +389,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the list, log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -664,8 +665,8 @@ if(! opt_Get("--keep", \%opt_HH)) {
   push(@to_remove_A, $r1_tblout_file . ".time");
 }
 else { 
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1tblout",       $r1_tblout_file,        0, ".tblout file for round 1");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1searchout", $r1_searchout_file, 0, "cmsearch output file for round 1");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1tblout",    $r1_tblout_file,    0, 1, ".tblout file for round 1");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1searchout", $r1_searchout_file, 0, 1, "cmsearch output file for round 1");
 }
 my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r1_opt_p_sum_cpu_secs) : undef;
 $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
@@ -681,7 +682,7 @@ if(! opt_Get("--keep", \%opt_HH)) {
   push(@to_remove_A, $r1_sorted_tblout_file);
 }
 else {
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sortedr1tblout", $r1_sorted_tblout_file, 0, "sorted .tblout file for round 1");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sortedr1tblout", $r1_sorted_tblout_file, 0, 1, "sorted .tblout file for round 1");
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ###########################################################################
@@ -713,11 +714,11 @@ if(! opt_Get("--keep", \%opt_HH)) {
   }
 }
 else { 
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_unsrt_long",   $r1_unsrt_long_out_file, 0, "round 1 unsorted long output file");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_unsrt_short",  $r1_unsrt_short_out_file, 0, "round 1 unsorted short output file");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_unsrt_long",   $r1_unsrt_long_out_file, 0, 1, "round 1 unsorted long output file");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_unsrt_short",  $r1_unsrt_short_out_file, 0, 1, "round 1 unsorted short output file");
   if(defined $alg2) { 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_srt_long",   $r1_srt_long_out_file, 0, "round 1 sorted long output file");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r1_srt_short",  $r1_srt_short_out_file, 0, "round 1 sorted short output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_srt_long",   $r1_srt_long_out_file, 0, 1, "round 1 sorted long output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_srt_short",  $r1_srt_short_out_file, 0, 1, "round 1 sorted short output file");
   }
 }
 
@@ -770,7 +771,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         push(@to_remove_A, $sfetchfile_H{$model});
       }
       else { 
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sfetch" . $model, $sfetchfile_H{$model}, 0, "sfetch file for $model");
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sfetch" . $model, $sfetchfile_H{$model}, 0, 1, "sfetch file for $model");
       }
     }
   }
@@ -785,7 +786,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
         push(@to_remove_A, $seqfile_H{$model});
         }
         else { 
-          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "seqfile" . $model, $seqfile_H{$model}, 0, "seqfile file for $model");
+          ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "seqfile" . $model, $seqfile_H{$model}, 0, 1, "seqfile file for $model");
         }
       }
     }
@@ -843,8 +844,8 @@ if(defined $alg2) {
         push(@to_remove_A, $r2_tblout_file_A[$midx] . ".time");
       }
       else { 
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, "$model .tblout file for round 2");
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, "$model .tblout file for round 2");
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2tblout" . $model, $r2_tblout_file_A[$midx], 0, 1, "$model .tblout file for round 2");
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2searchout" . $model, $r2_searchout_file_A[$midx], 0, 1, "$model .tblout file for round 2");
       }
       $midx++; 
     }
@@ -870,7 +871,7 @@ if(defined $alg2) {
         push(@to_remove_A, $r2_all_tblout_file);
       }
       else { 
-        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2alltblout", $r2_all_tblout_file, 0, "concatenated tblout file for round 2");
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2alltblout", $r2_all_tblout_file, 0, 1, "concatenated tblout file for round 2");
       }
     }
   }
@@ -888,7 +889,7 @@ if((defined $alg2) && ($nr2 > 0)) {
     push(@to_remove_A, $r2_all_sorted_tblout_file);
   }
   else { 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sortedr2alltblout", $r2_all_sorted_tblout_file, 0, "sorted concatenated tblout file for round 2");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sortedr2alltblout", $r2_all_sorted_tblout_file, 0, 1, "sorted concatenated tblout file for round 2");
   }
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
@@ -936,10 +937,10 @@ if(defined $alg2) {
     push(@to_remove_A, $r2_srt_short_out_file);
   }
   else { 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_unsrt_long",   $r2_unsrt_long_out_file,  0, "round 2 unsorted long output file");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_unsrt_short",  $r2_unsrt_short_out_file, 0, "round 2 unsorted short output file");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_srt_long",     $r2_srt_long_out_file,    0, "round 2 sorted long output file");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "r2_srt_short",    $r2_srt_short_out_file,   0, "round 2 sorted short output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2_unsrt_long",   $r2_unsrt_long_out_file,  0, 1, "round 2 unsorted long output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2_unsrt_short",  $r2_unsrt_short_out_file, 0, 1, "round 2 unsorted short output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2_srt_long",     $r2_srt_long_out_file,    0, 1, "round 2 sorted long output file");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r2_srt_short",    $r2_srt_short_out_file,   0, 1, "round 2 sorted short output file");
   }
   
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
@@ -965,8 +966,8 @@ if(defined $alg2) {
   output_short_tail($final_short_out_FH, \@ufeature_A, \%opt_HH);
   output_long_tail($final_long_out_FH, "final", \@ufeature_A, \%opt_HH, $ofile_info_HH{"FH"});
   close($final_short_out_FH);
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "short_out",  $final_short_out_file, 1, "Short (6 column) output");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "long_out",   $final_long_out_file,  1, sprintf("Long (%d column) output", determine_number_of_columns_in_long_output_file("final", \%opt_HH, $ofile_info_HH{"FH"})));
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "short_out",  $final_short_out_file, 1, 1, "Short (6 column) output");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "long_out",   $final_long_out_file,  1, 1, sprintf("Long (%d column) output", determine_number_of_columns_in_long_output_file("final", \%opt_HH, $ofile_info_HH{"FH"})));
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
 else { 
@@ -1044,7 +1045,7 @@ if($do_outseq || $do_outhit || $do_gapseq || $do_xgapseq) {
       }
     }
     close(CMALIGN);
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "hits.cmalign.script", $hits_cmalign_script, 1, "shell script that will align all hits to their best matching models using cmalign");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "hits.cmalign.script", $hits_cmalign_script, 1, 1, "shell script that will align all hits to their best matching models using cmalign");
   }
 }
 
@@ -4918,8 +4919,8 @@ sub fetch_pass_fail_per_model_seqs {
           $sfetch_desc = sprintf("sfetch input for gaps plus %2d extra nts between multiple hits in %5d sequences that $pf and match best to $wmodel", opt_Get("--outxgaps", $opt_HHR), scalar(@{$out_HHAR->{$pf}{$wmodel}})); 
           $fasta_desc  = sprintf("fasta file of    gaps plus %2d extra nts between multiple hits in %5d sequences that $pf and match best to $wmodel", opt_Get("--outxgaps", $opt_HHR), scalar(@{$out_HHAR->{$pf}{$wmodel}})); 
         }
-        ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "out.$type.list.$pf.$wmodel",   $out_sfetch_file, 1, $sfetch_desc);
-        ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "out.$type.fasta.$pf.$wmodel",  $out_fasta_file,  1, $fasta_desc);
+        ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "out.$type.list.$pf.$wmodel",   $out_sfetch_file, 1, 1, $sfetch_desc);
+        ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "out.$type.fasta.$pf.$wmodel",  $out_fasta_file,  1, 1, $fasta_desc);
       }
     }            
   }

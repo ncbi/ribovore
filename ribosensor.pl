@@ -7,9 +7,9 @@ use Time::HiRes qw(gettimeofday);
 # ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
 # Usage: ribosensor.pl [-options] <fasta file to annotate> <output directory>\n";
 
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
 
 # make sure required environment variables are set
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
@@ -32,7 +32,7 @@ ribo_ValidateExecutableHash(\%execs_H);
 
 
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -247,9 +247,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the list, log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -435,7 +435,7 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $start_secs = ofile_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, $log_FH, *STDOUT);
   ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
   $ribo_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "ribostdout",  $ribo_stdoutfile, 0, "ribotyper stdout output");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "ribostdout",  $ribo_stdoutfile, 0, 1, "ribotyper stdout output");
 }  
 # if -p used, overwrite ribo_secs with summed seconds
 if(opt_Get("-p", \%opt_HH)) { 
@@ -490,7 +490,7 @@ for($i = 0; $i < $nseq_parts; $i++) {
       $sensor_p_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
       $sensor_secs += ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, "rRNA_sensor stdout output for length class" . ($i+1));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, 1, "rRNA_sensor stdout output for length class" . ($i+1));
       if(! opt_IsUsed("--keep", \%opt_HH)) { # remove the fasta files that rRNA_sensor created
         my $sensor_mid_fafile = $sensor_dir_out_A[$i] . "/middle_queries.fsa";
         my $sensor_out_fafile = $sensor_dir_out_A[$i] . "/outlier_queries.fsa";
@@ -625,14 +625,14 @@ ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
 open($sensor_indi_FH, ">>", $sensor_indi_file) || die "ERROR, unable to open $sensor_indi_file for appending";
 output_tail_without_fails_to($sensor_indi_FH, \%opt_HH); 
 close($sensor_indi_FH);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorout", $sensor_indi_file, 1, "summary of rRNA_sensor results");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sensorout", $sensor_indi_file, 1, 1, "summary of rRNA_sensor results");
 
 # convert ribotyper output to gpipe 
 output_headers_without_fails_to($ribo_indi_FH, \%width_H, $ofile_info_HH{"FH"});
 convert_ribo_short_to_indi_file($ribo_indi_FH, $ribo_shortfile, \@herror_A, \%seqidx_H, \%width_H, \%opt_HH);
 output_tail_without_fails_to($ribo_indi_FH, \%opt_HH); 
 close($ribo_indi_FH);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "riboout", $ribo_indi_file, 1, "summary of ribotyper results");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "riboout", $ribo_indi_file, 1, 1, "summary of ribotyper results");
 
 initialize_hash_of_hash_of_counts(\%outcome_ct_HH, \@outcome_type_A, \@outcome_cat_A);
 initialize_hash_of_hash_of_counts(\%herror_ct_HH,  \@outcome_type_A, \@herror_A);
@@ -654,8 +654,8 @@ close($combined_out_FH);
 close($combined_gpipe_FH);
 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "combinedout",   $combined_out_file,   1, "summary of combined rRNA_sensor and ribotyper results (original errors)");
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "combinedgpipe", $combined_gpipe_file, 1, "summary of combined rRNA_sensor and ribotyper results (GPIPE errors)");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedout",   $combined_out_file,   1, 1, "summary of combined rRNA_sensor and ribotyper results (original errors)");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedgpipe", $combined_gpipe_file, 1, 1, "summary of combined rRNA_sensor and ribotyper results (GPIPE errors)");
 
 # remove files we do not want anymore, then exit
 foreach my $file (@to_remove_A) { 

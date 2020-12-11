@@ -586,7 +586,7 @@ sub ribo_ProcessSequenceFile {
   my $FH_HR = $ofile_info_HHR->{"FH"}; # for convenience
 
   ribo_RunCommand($seqstat_exec . " --dna -a $seq_file > $seqstat_file", opt_Get("-v", $opt_HHR), $FH_HR);
-  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "seqstat", $seqstat_file, 0, "esl-seqstat -a output for $seq_file");
+  ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "seqstat", $seqstat_file, 0, 1, "esl-seqstat -a output for $seq_file");
 
   # parse esl-seqstat file to get lengths
   my $max_targetname_length = length("target"); # maximum length of any target name
@@ -1973,7 +1973,7 @@ sub ribo_MergeAlignmentsAndReorder {
   ribo_RunCommand($execs_HR->{"esl-alimerge"} . " --list $list_file | " . $execs_HR->{"esl-alimanip"} . " --seq-k $seqlist_file --k-reorder --outformat pfam - > $merged_stk_file", opt_Get("-v", $opt_HHR), $FH_HR);
 
   if(opt_Get("--keep", $opt_HHR)) { 
-    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "RIBO", "$merged_stk_file.list", $merged_stk_file, 0, "list of alignment files merged to create " . ribo_RemoveDirPath($merged_stk_file));
+    ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "$merged_stk_file.list", $merged_stk_file, 0, 1, "list of alignment files merged to create " . ribo_RemoveDirPath($merged_stk_file));
   }
   else { 
     ribo_RemoveFileUsingSystemRm($list_file, $sub_name, $opt_HHR, $FH_HR);

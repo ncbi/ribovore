@@ -7,10 +7,10 @@ use Time::HiRes qw(gettimeofday);
 # ribotest.pl :: test ribovore scripts [TEST SCRIPT]
 # Usage: ribotest.pl [-options] <input test file e.g. testfiles/testin.1> <output directory to create>
 
-require "epn-test.pm";
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure required environment variables are set
 my $env_ribovore_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
@@ -22,7 +22,7 @@ my $env_ribovore_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 #ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -167,9 +167,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -197,7 +197,7 @@ my $ncmd = test_ParseTestFile($test_file, $pkgstr, \@cmd_A, \@desc_A, \@outfile_
 my $npass = 0;
 my $nfail = 0;
 
-# TODO: I SHOULD PUT THIS INTO A FUNCTION IN epn-test.pm (e.g. test_RunTestFile) but currently it requires
+# TODO: I SHOULD PUT THIS INTO A FUNCTION IN sqp_opts.pm (e.g. test_RunTestFile) but currently it requires
 # a ribo_RunCommand() call in the rmdir section. 
 # I could get around this by adding ofile_RemoveDir() and ofile_RemoveFile() functions.
 my $start_secs = undef;

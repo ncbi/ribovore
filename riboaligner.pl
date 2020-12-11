@@ -4,9 +4,9 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
 
 # make sure required environment variables are set
 my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
@@ -26,7 +26,7 @@ $execs_H{"time"}         = $env_ribotime_dir  . "/time";
 ribo_ValidateExecutableHash(\%execs_H);
 
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -200,9 +200,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the list, log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 my $FH_HR  = $ofile_info_HH{"FH"};
@@ -354,7 +354,7 @@ my %width_H    = (); # hash, key is "target", value is maximum length of target
 my @accept_A = ();
 foreach $family (@family_order_A) { push(@accept_A, @{$family_rtname_HA{$family}}); }
 ribo_WriteAcceptFile(\@accept_A, $ribotyper_accept_file, $FH_HR);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "accept", $ribotyper_accept_file, 0, 1, "accept input file for ribotyper");
 
 # run ribotyper
 my $ribotyper_options = " -f --inaccept $ribotyper_accept_file --minusfail "; 
@@ -426,7 +426,7 @@ close(RIBO);
 
 foreach $family (@family_order_A) { 
   close($family_sfetch_FH_H{$family});
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, "list file for $family");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, 1, "list file for $family");
 }
                                                        
 ##########################################################
@@ -452,7 +452,7 @@ foreach $family (@family_order_A) {
   if(-s $family_sfetch_filename_H{$family}) { 
     # fetch the sequences
     ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} > $family_seqfile_H{$family}", opt_Get("-v", \%opt_HH), $FH_HR);
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " fasta file", $family_seqfile_H{$family}, 0, "sequence file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " fasta file", $family_seqfile_H{$family}, 0, 1, "sequence file for $family");
 
     # align the sequences
     my %info_H = ();
@@ -469,10 +469,10 @@ foreach $family (@family_order_A) {
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, "EL file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, "cmalign output file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, 1, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, 1, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, 1, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, 1, "cmalign output file for $family");
 
     # parse cmalign file
     parse_cmalign_file($info_H{"OUT-NAME:stdout"}, \%out_tbl_HH, $FH_HR);
@@ -517,7 +517,7 @@ foreach $family (@family_order_A) {
         print OUT $seqname . "\n";
       }
       close(OUT);
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "listfile", $length_class_list_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "List file", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "listfile", $length_class_list_file, 1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "List file", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
 
       # extract relevant lines from insert file and EL file:
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_insert_file, $cmalign_insert_file, $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
@@ -527,10 +527,10 @@ foreach $family (@family_order_A) {
       # extract subset from the alignment
       ribo_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | " . $execs_H{"esl-reformat"} . " --mingap --keeprf stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), $FH_HR);
 
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "EL",      $cmalign_el_file,     1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "EL",      $cmalign_el_file,     1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
     }
   }
 }
