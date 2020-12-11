@@ -3833,7 +3833,7 @@ sub fblast_stage {
     }
 
     # concatenate the blast output 
-    ribo_ConcatenateListOfFiles(\@chunk_blast_file_A, $concat_blast_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
+    utl_ConcatenateListOfFiles(\@chunk_blast_file_A, $concat_blast_file, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
     ofile_AddClosedFileToOutputInfo($ofile_info_HHR, $stage_key . ".blast", "$concat_blast_file", 0, 1, "concatenated blast output for chunked sequence file");
   } # end of 'else' entered if --prvcmd was NOT used
 
