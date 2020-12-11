@@ -1,11 +1,27 @@
 # Ribovore <a name="top"></a>
-#### Version 0.40; September 2020
+#### Version 0.40dev; September 2020
 #### https://github.com/nawrockie/ribovore.git
 
-## Ribovore introduction <a name="introduction"></a>
-This is documentation for ribovore, a suite of tools for detecting, 
-classifying and analyzing small subunit (SSU) rRNA and large subunit
-(LSU) rRNA sequences. Ribovore is written in perl. 
+Ribovore is a suite of tools for detecting, classifying and analyzing
+small subunit ribosomal RNA (SSU rRNA) and large subunit (LSU) rRNA
+sequences. It is used by GenBank to validate incoming 16S SSU srRNA
+sequences and to generate high quality datasets of SSU and LSU rRNA
+sequences for RefSeq and for use as blastn databases. Ribovore is
+written in perl.
+
+The Ribovore `ribotyper.pl` script is used to quickly validate and
+classify rRNA sequences using profile models of SSU and LSU rRNA genes
+from different taxonomic groups. The `ribosensor.pl` script also
+validates and classifies rRNA sequences, but uses both profiles and
+blastn to do single-sequence comparisons. The `riboaligner.pl` script
+is used to check if rRNA sequences are full length and do not extend
+past the gene boundary. The `ribodbmaker.pl` script performs a series
+of tests on input sequences to create a high quality dataset of
+sequences that pass all tests.
+
+SOMETHING ABOUT MODELS HERE
+
+
 
 The possible classifications are explained in the section entitled
 [The default model file](#default-model).
@@ -292,6 +308,7 @@ line when you run the other tests. If you do not and need help
 figuring out why, email me at eric.nawrocki@nih.gov.
 
 ### ribotyer.pl description<a name="ribotyper-description"></a>
+
 
 ribotyper.pl is a tool for classifying and validating SSU and/or LSU
 rRNA sequences in an input. A central assumption of the script is that
