@@ -765,7 +765,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     $sfetchfile_H{$model} = undef;
     if(scalar(@{$seqsub_HA{$model}}) > 0) { 
       $sfetchfile_H{$model} = $out_root . ".$model.sfetch";
-      ribo_WriteArrayToFile($seqsub_HA{$model}, $sfetchfile_H{$model}, $ofile_info_HH{"FH"}); 
+      utl_AToFile($seqsub_HA{$model}, $sfetchfile_H{$model}, 1, $ofile_info_HH{"FH"}); 
       $totseqlen_H{$model} = ribo_SumSeqlenGivenArray($seqsub_HA{$model}, \%seqlen_H, $ofile_info_HH{"FH"});
       $nseq_H{$model}      = scalar(@{$seqsub_HA{$model}});
       if(! opt_Get("--keep", \%opt_HH)) { 
@@ -4888,7 +4888,7 @@ sub fetch_pass_fail_per_model_seqs {
         
         # create sfetch file
         if($type eq "seqs") { 
-          ribo_WriteArrayToFile($out_HHAR->{$pf}{$wmodel}, $out_sfetch_file, $ofile_info_HH{"FH"}); 
+          utl_AToFile($out_HHAR->{$pf}{$wmodel}, $out_sfetch_file, 1, $ofile_info_HH{"FH"}); 
         }
         else { # hits
           open(SFETCH, ">", $out_sfetch_file) || ofile_FileOpenFailure($out_sfetch_file, "ribotyper.pl::Main", $!, "reading", $ofile_info_HHR->{"FH"});
