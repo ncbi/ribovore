@@ -290,7 +290,7 @@ my $options_okay =
                 'pcreclustr'   => \$GetOptions_H{"--pcreclustr"}); 
 
 
-my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.40";
@@ -590,7 +590,7 @@ if($dir !~ m/\/$/) { $dir =~ s/\/$//; } # remove final '/' if it exists
 if(-d $dir) { 
   $cmd = "rm -rf $dir";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir directory exists but -f not used
     if(! $do_prvcmd) { 
@@ -601,7 +601,7 @@ if(-d $dir) {
 elsif(-e $dir) { 
   $cmd = "rm $dir";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir file exists but -f not used
     die "ERROR a file named $dir already exists. Remove it, or use -f to overwrite it."; 
@@ -611,7 +611,7 @@ elsif(-e $dir) {
 # create the dir
 $cmd = "mkdir $dir";
 if(! $do_prvcmd) { 
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef);
   push(@early_cmd_A, $cmd);
 }
 
@@ -714,7 +714,7 @@ if($do_fribo1 || $do_fribo2) {
   }
   # create the riboaligner info file for $family
   open(RAINFO, ">", $local_ra_modelinfo_file) || ofile_FileOpenFailure($local_ra_modelinfo_file,  "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-  my $local_family_modelfile = ribo_RemoveDirPath($family_modelfile);
+  my $local_family_modelfile = ofile_RemoveDirPath($family_modelfile);
   printf RAINFO ("%s %s %s", $family, $local_family_modelfile, $family_modellen);
   foreach my $rtname (@{$tmp_family_rtname_HA{$family}}) { 
     printf RAINFO (" %s", $rtname);
@@ -738,7 +738,7 @@ if($do_fribo1 || $do_fribo2) {
   # create the riboopts2 file to supply to riboaligner, unless --riboopts2 <s> provided in which case use <s>
   if(opt_IsUsed("--riboopts2", \%opt_HH)) { 
     my $cp_command = sprintf("cp %s $local_ra_riboopts_file", opt_Get("--riboopts2", \%opt_HH));
-    ribo_RunCommand($cp_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    utl_RunCommand($cp_command, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   }
   else { 
     open(RIBOOPTS2, ">", $local_ra_riboopts_file) || ofile_FileOpenFailure($local_ra_riboopts_file,  "ribodbmaker.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
@@ -809,7 +809,7 @@ my $raw_fasta_file = $out_root . ".raw.fa";
 my $full_fasta_file = $out_root . ".full.fa";
 $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Copying input fasta file ", $progress_w, $log_FH, *STDOUT);
 my $cp_command .= "cp $in_fasta_file $raw_fasta_file";
-if(! $do_prvcmd) { ribo_RunCommand($cp_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+if(! $do_prvcmd) { utl_RunCommand($cp_command, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # reformat the names of the sequences, if necessary
@@ -854,12 +854,12 @@ $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Determining target sequ
 ribo_ProcessSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $seqstat_file, \@seqorder_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH, \%ofile_info_HH);
 $nseq = scalar(keys %seqidx_H);
 ribo_CountAmbiguousNucleotidesInSequenceFile($execs_H{"esl-seqstat"}, $full_fasta_file, $comptbl_file, \%seqnambig_H, \%opt_HH, $ofile_info_HH{"FH"});
-if(! $do_prvcmd) { ribo_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+if(! $do_prvcmd) { utl_RunCommand("grep ^\= $seqstat_file | awk '{ print \$2 }' > $full_list_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "fulllist", "$full_list_file", 0, 1, "file with list of all $nseq input sequences");
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # index the sequence file
-if(! $do_prvcmd) { ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $full_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+if(! $do_prvcmd) { utl_RunCommand($execs_H{"esl-sfetch"} . " --index $full_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "fullssi", $full_fasta_file . ".ssi", 0, 1, ".ssi index file for full fasta file");
 
 ######################################################################################################
@@ -875,7 +875,7 @@ foreach $level (@level_A) {
 if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
   $start_secs = ofile_OutputProgressPrior("[Stage: prelim] Running srcchk for all sequences ", $progress_w, $log_FH, *STDOUT);
   $full_srcchk_file = $out_root . ".full.srcchk";
-  if(! $do_prvcmd) { ribo_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism,strain\' > $full_srcchk_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { utl_RunCommand($execs_H{"srcchk"} . " -i $full_list_file -f \'taxid,organism,strain\' > $full_srcchk_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "fullsrcchk", "$full_srcchk_file", 0, 1, "srcchk output for all $nseq input sequences");
 
   # parse srcchk output to fill %seqtaxid_H, and possibly %seq_orgn_H
@@ -888,7 +888,7 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
   # get taxonomy file with taxonomic levels
   foreach $level (@level_A) { 
     my $find_tax_cmd = $execs_H{"find_taxonomy_ancestors.pl"} . " --input_summary $full_srcchk_file --input_tax $taxonomy_tree_six_column_file --input_level $level --outfile " . $taxinfo_wlevel_file_H{$level};
-    if(! $do_prvcmd) { ribo_RunCommand($find_tax_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { utl_RunCommand($find_tax_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "taxinfo.$level", $taxinfo_wlevel_file_H{$level}, 0, 1, "taxinfo file with $level");
     # parse tax_level file to fill %full_level_ct_HH
     parse_tax_level_file($taxinfo_wlevel_file_H{$level}, undef, $seqgtaxid_HH{$level}, $full_level_ct_HH{$level}, $ofile_info_HH{"FH"});
@@ -964,17 +964,17 @@ if($do_fvecsc) {
   $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Identifying vector sequences with VecScreen", $progress_w, $log_FH, *STDOUT);
   my $vecscreen_output_file = $out_root . ".vecscreen";
   my $vecscreen_cmd  = $execs_H{"vecscreen"} . " -text_output -query $full_fasta_file > $vecscreen_output_file";
-  if(! $do_prvcmd) { ribo_RunCommand($vecscreen_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { utl_RunCommand($vecscreen_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "vecout", "$vecscreen_output_file", 0, 1, "vecscreen output file");
 
   # parse vecscreen 
   my $parse_vecscreen_cmd   = $execs_H{"parse_vecscreen.pl"} . " --verbose --input $vecscreen_output_file --outfile_terminal $parse_vecscreen_terminal_file --outfile_internal $parse_vecscreen_internal_file";
   my $combine_summaries_cmd = $execs_H{"combine_summaries.pl"} . " --input_internal $parse_vecscreen_internal_file --input_terminal $parse_vecscreen_terminal_file --outfile $parse_vecscreen_combined_file";
-  if(! $do_prvcmd) { ribo_RunCommand($parse_vecscreen_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+  if(! $do_prvcmd) { utl_RunCommand($parse_vecscreen_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "parsevecterm", "$parse_vecscreen_terminal_file", 0, 1, "parse_vecscreen.pl terminal output file");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "parsevecint",  "$parse_vecscreen_internal_file", 0, 1, "parse_vecscreen.pl internal output file");
   
-  if(! $do_prvcmd) { ribo_RunCommand($combine_summaries_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});}
+  if(! $do_prvcmd) { utl_RunCommand($combine_summaries_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});}
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "parseveccombined", "$parse_vecscreen_combined_file", 0, 1, "combined parse_vecscreen.pl output file");
 
   # get list of accessions in combined parse_vecscreen output that have non-Weak matches
@@ -1025,7 +1025,7 @@ if($do_fribo1) {
     if(opt_IsUsed("--keep",        \%opt_HH)) { $ribotyper_options .= " --keep"; }
 
     my $ribotyper_command = $execs_H{"ribotyper"} . " $ribotyper_options $full_fasta_file $ribotyper_outdir > $ribotyper_outfile";
-    if(! $do_prvcmd) { ribo_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { utl_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "rtout", "$ribotyper_outfile", 0, 1, "output of ribotyper");
     
     # if -p: parse the ribotyper log file to get CPU+wait time for parallel
@@ -1037,18 +1037,18 @@ if($do_fribo1) {
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Copying relevant ribotyper.pl output files (--ribodir1)", $progress_w, $log_FH, *STDOUT);
 
     my $src_ribotyper_outdir      = opt_Get("--ribodir1", \%opt_HH); 
-    my $src_ribotyper_outdir_tail = ribo_RemoveDirPath($src_ribotyper_outdir);
+    my $src_ribotyper_outdir_tail = ofile_RemoveDirPath($src_ribotyper_outdir);
     my $src_ribotyper_out_root    = $src_ribotyper_outdir . "/" . $src_ribotyper_outdir_tail . ".ribotyper";
     my $src_ribotyper_short_file  = $src_ribotyper_out_root . ".short.out";
     my $src_ribotyper_long_file   = $src_ribotyper_out_root . ".long.out";
     my $src_ribotyper_cmd_file    = $src_ribotyper_out_root . ".cmd";
     my $src_ribotyper_log_file    = $src_ribotyper_out_root . ".log";
 
-    ribo_RunCommand("mkdir $ribotyper_outdir",                            opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ribotyper_short_file $ribotyper_short_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ribotyper_long_file $ribotyper_long_file",   opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ribotyper_cmd_file $ribotyper_cmd_file",     opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ribotyper_log_file $ribotyper_log_file",     opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    utl_RunCommand("mkdir $ribotyper_outdir",                            opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ribotyper_short_file $ribotyper_short_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ribotyper_long_file $ribotyper_long_file",   opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ribotyper_cmd_file $ribotyper_cmd_file",     opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ribotyper_log_file $ribotyper_log_file",     opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   } # end of 'else' entered if 
   # parse ribotyper short file
   $npass = parse_ribotyper_short_file($ribotyper_short_file, \%seqfailstr_H, \@seqorder_A, \%opt_HH, \%ofile_info_HH);
@@ -1104,7 +1104,7 @@ if($do_fribo2) {
     if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ra_options .= " --errcheck"; }
     
     my $ra_command = $execs_H{"riboaligner"} . " $ra_options --riboopts $local_ra_riboopts_file $full_fasta_file $ra_outdir > $ra_out_file";
-    if(! $do_prvcmd) { ribo_RunCommand($ra_command, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { utl_RunCommand($ra_command, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "raout", "$ra_out_file", 0, 1, "output of riboaligner");
     
     # if -p: parse the ribotyper log file to get CPU+wait time for parallel
@@ -1116,18 +1116,18 @@ if($do_fribo2) {
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Copying relevant riboaligner.pl output files (--ribodir2)", $progress_w, $log_FH, *STDOUT);
 
     my $src_ra_outdir         = opt_Get("--ribodir2", \%opt_HH); 
-    my $src_ra_outdir_tail    = ribo_RemoveDirPath($src_ra_outdir);
+    my $src_ra_outdir_tail    = ofile_RemoveDirPath($src_ra_outdir);
     my $src_ra_out_root       = $src_ra_outdir . "/" . $src_ra_outdir_tail . ".riboaligner";
     my $src_ra_full_stk_file  = $src_ra_out_root . "." . $family . ".cmalign.stk";
     my $src_ra_tbl_out_file   = $src_ra_out_root . ".tbl";
     my $src_ra_cmd_file       = $src_ra_out_root . ".cmd";
     my $src_ra_log_file       = $src_ra_out_root . ".log";
 
-    ribo_RunCommand("mkdir $ra_outdir",                           opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ra_full_stk_file $ra_full_stk_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ra_tbl_out_file  $ra_tbl_out_file",  opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ra_cmd_file      $ra_cmd_file",      opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    ribo_RunCommand("cp $src_ra_log_file      $ra_log_file",      opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    utl_RunCommand("mkdir $ra_outdir",                           opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ra_full_stk_file $ra_full_stk_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ra_tbl_out_file  $ra_tbl_out_file",  opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ra_cmd_file      $ra_cmd_file",      opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand("cp $src_ra_log_file      $ra_log_file",      opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   }
 
   # commands and output files for determining sequence positions that align to lpos and rpos
@@ -1136,8 +1136,8 @@ if($do_fribo2) {
   my $ra_uapos_tbl_file      = $out_root . "." . $stage_key . ".uapos.tbl";
   my $uapos_lpos_cmd         = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir $ra_full_stk_file $max_lpos > $ra_uapos_lpos_tbl_file";
   my $uapos_rpos_cmd         = $execs_H{"ali-apos-to-uapos.pl"} . " --easeldir $env_riboeasel_dir --after $ra_full_stk_file $min_rpos > $ra_uapos_rpos_tbl_file";
-  ribo_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-  ribo_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($uapos_lpos_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+  utl_RunCommand($uapos_rpos_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "ralpos", "$ra_uapos_lpos_tbl_file", 0, 1, "unaligned position info that align at model position $max_lpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "rarpos", "$ra_uapos_rpos_tbl_file", 0, 1, "unaligned position info that align at model position $min_rpos");
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "rauapos", "$ra_uapos_tbl_file", 0, 1, "unaligned position info that align at model positions $max_lpos and $min_rpos");
@@ -1227,7 +1227,7 @@ my $def_fasta_file = $out_root . ".def.fa"; # need to define this here so it's i
 if($do_def) { 
   my $tmp_fasta_file = $out_root . ".tmp.def.fa";
   my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $full_fasta_file $npass_filters_list > $tmp_fasta_file";
-  ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
   fasta_rewrite_sequence_descriptions($tmp_fasta_file, $def_fasta_file, $family, \%seqlenclass_H, \%seqorgn_H, \%seqstrain_H, \%opt_HH, \%ofile_info_HH);
 
@@ -1235,7 +1235,7 @@ if($do_def) {
   ribo_RemoveFileUsingSystemRm($tmp_fasta_file, "ribodbmaker.pl:main", \%opt_HH, $ofile_info_HH{"FH"});
 
   # index the new sequence file
-  ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $def_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+  utl_RunCommand($execs_H{"esl-sfetch"} . " --index $def_fasta_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); 
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "defssi", $def_fasta_file . ".ssi", 0, 1, ".ssi index file for def-rewritten fasta file");
 }
 
@@ -1300,21 +1300,21 @@ else {
       $alipid_analyze_cmd_H{$level} = $execs_H{"alipid-taxinfo-analyze.pl"} . " $alipid_opts $rfonly_alipid_file $rfonly_list_file " . $taxinfo_wlevel_file_H{$level} . " $out_root.$stage_key.$level > " . $alipid_analyze_out_file_H{$level};
     }
       
-    if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { utl_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "rfonlystk", "$rfonly_stk_file", 0, 1, "RF-column-only alignment");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
-    if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { utl_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "merged" . "alipid", "$rfonly_alipid_file", 0, 1, "esl-alipid output for $rfonly_stk_file");
       
-    if(! $do_prvcmd) { ribo_RunCommand($alistat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+    if(! $do_prvcmd) { utl_RunCommand($alistat_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "merged" . "list", "$rfonly_list_file", 0, 1, "list of sequences in $rfonly_stk_file");
       
     $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Performing ingroup analysis", $progress_w, $log_FH, *STDOUT);
     foreach $level (@level_A) {
-      #if(! $do_prvcmd) { ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
-      ribo_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      #if(! $do_prvcmd) { utl_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
+      utl_RunCommand($alipid_analyze_cmd_H{$level}, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "alipid.analyze.$level", $alipid_analyze_out_file_H{$level}, 0, 1, "$level output file from alipid-taxinfo-analyze.pl");
     }
     # we need an array that has only the sequences that PASS all filters and will be listed
@@ -1420,11 +1420,11 @@ else {
       
       if(! $do_ingrup) { 
         # we did not yet run esl-alimask and esl-alipid, so do that now
-        if(! $do_prvcmd) { ribo_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+        if(! $do_prvcmd) { utl_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "rfonlystk", "$rfonly_stk_file", 0, 1, "RF-column-only alignment");
 
         $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Determining percent identities in alignments", $progress_w, $log_FH, *STDOUT);
-        if(! $do_prvcmd) { ribo_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); }
+        if(! $do_prvcmd) { utl_RunCommand($alipid_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
         ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "merged" . "alipid", "$rfonly_alipid_file", 0, 1, "esl-alipid output for $rfonly_stk_file");
       }
@@ -1454,7 +1454,7 @@ else {
         # cluster the sequences using esl-cluster
         my $clust_cmd = $execs_H{"esl-cluster"} . " -q 1 -t 2 -v 3 -x $cluster_did $cluster_in_list_file $cluster_dist_file > $cluster_out_file";
         if((! $do_prvcmd) || ($do_pcreclustr)) { 
-          ribo_RunCommand($clust_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+          utl_RunCommand($clust_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); 
         }
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $stage_key . ".esl-cluster", "$cluster_out_file",  0, 1, "esl-cluster output file");
         
@@ -1516,7 +1516,7 @@ if($npass_final > 0) {
   # create the fasta file of the final sequences
   my $fa_fetch_file = ($do_def) ? $def_fasta_file : $full_fasta_file;
   my $sfetch_cmd = $execs_H{"esl-sfetch"} . " -f $fa_fetch_file $final_list_file > $final_fasta_file";
-  ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "final.fa", "$final_fasta_file", 1, 1, "fasta file with final set of surviving sequences");
 }
 
@@ -1712,11 +1712,11 @@ ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in %s]\n", "# Number
 foreach $level (@level_A) { 
   ofile_OutputString($log_FH, 1, sprintf("%-70s  %7d  [listed in final line of %s]\n", sprintf("# Number of %-7s represented in final set of surviving sequences:", pluralize_level($level)), $final_nsurv_H{$level}, $out_root . "." . $level . ".ct"));
 }
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 
 if(opt_Get("-p", \%opt_HH)) { 
   ofile_OutputString($log_FH, 1, "#\n");
-  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($rt_opt_p_sum_cpu_secs + $ra_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($rt_opt_p_sum_cpu_secs + $ra_opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
 }
 
@@ -2619,7 +2619,7 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
     if   (opt_Get("--msclass",  $opt_HHR)) { $opt_str .= "-c"; $key = "classes"; }
     elsif(opt_Get("--msphylum", $opt_HHR)) { $opt_str .= "-p"; $key = "phyla";   }
     my $resort_cmd = $mdlspan_sort_exec . " $opt_str $out_file " . opt_Get("--mslist", $opt_HHR) . " > $resort_out_file"; 
-    ribo_RunCommand($resort_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    utl_RunCommand($resort_cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
     ofile_AddClosedFileToOutputInfo($ofile_info_HHR, "$out_key.resort.mdlspan.survtbl", $resort_out_file, 1, 1, "$out_key.mdlspan.survtbl table re-sorted to prioritize $key read from --mslist <s> file");
   }
   return;
@@ -3802,27 +3802,27 @@ sub fblast_stage {
       if($do_blast) { 
         if(! $do_prvcmd) { # NOTE: this will only work if previous run used --fbcall and --keep
           $sfetch_cmd = $execs_HR->{"esl-sfetch"} . " -f $full_fasta_file $chunk_sfetch_file > $chunk_fasta_file";
-          ribo_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          utl_RunCommand($sfetch_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
           if(! $do_keep) { 
-            ribo_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+            utl_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
           }
           $blast_cmd  = $execs_H{"blastn"} . " -evalue $evalue -dbsize $dbsize -word_size $wordsize -num_threads 1 -subject $chunk_fasta_file -query $chunk_fasta_file -outfmt \"6 qaccver qstart qend nident length gaps pident sacc sstart send evalue\" > $chunk_blast_file";
           # previously I tried to use max_target_seqs, but doesn't guarantee top hit will be to self if identical seq (or superseq) exists
-          ribo_RunCommand($blast_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          utl_RunCommand($blast_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
         }
         # parse the blast output, keeping track of failures in curfailstr_H
         parse_blast_output_for_self_hits($chunk_blast_file, \%cur_nhit_H, \%curfailstr_H, \%opt_HH, $ofile_info_HH{"FH"});
 
         push(@chunk_blast_file_A, $chunk_blast_file); # we will concatenate these when we are done
         if((! $do_prvcmd) && (! $do_keep)) { 
-          ribo_RunCommand("rm $chunk_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+          utl_RunCommand("rm $chunk_fasta_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
         }
       }
     }
 
     # clean up final empty sfetch file that may exist
     if((! $do_keep) && (-e $chunk_sfetch_file)) { 
-      ribo_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      utl_RunCommand("rm $chunk_sfetch_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
     }
 
     # make sure all seqs were blasted against each other exactly once

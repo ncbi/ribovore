@@ -1,4 +1,4 @@
-o#!/usr/bin/env perl
+#!/usr/bin/env perl
 #
 use strict;
 use warnings;
@@ -213,7 +213,7 @@ my $options_okay =
                 'skipval'      => \$GetOptions_H{"--skipval"},
                 'onlyval'      => \$GetOptions_H{"--onlyval"});
 
-my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.40";
@@ -313,7 +313,7 @@ if($min_secondary_sc > $min_primary_sc) {
   }
 }
 
-my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my $cmd         = undef; # a command to be run by utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = ();    # array of files to remove at end
 my $r1_secs     = undef; # number of seconds required for round 1 search
@@ -338,18 +338,18 @@ else {  # --skipsearch not used, normal case
   # if $dir_out already exists remove it only if -f also used
   if(-d $dir_out) { 
     $cmd = "rm -rf $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+    if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); }
     else                        { die "ERROR intended output directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+    if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); }
     else                        { die "ERROR a file matching the name of the intended output directory $dir_out already exists. Remove the file, or use -f to overwrite it."; }
   }
   # if $dir_out does not exist, create it
   if(! -d $dir_out) { 
     $cmd = "mkdir $dir_out";
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
 }
 
@@ -535,7 +535,7 @@ if(! opt_Get("--skipval", \%opt_HH)) {
 }
 if(opt_Get("--onlyval", \%opt_HH)) { 
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-  $total_seconds += ribo_SecondsSinceEpoch();
+  $total_seconds += ofile_SecondsSinceEpoch();
   ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
   exit(0); 
 }
@@ -586,7 +586,7 @@ my $ssi_file = $seq_file . ".ssi";
 if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"})) { 
   unlink $ssi_file;
 }
-ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+utl_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
   ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $ofile_info_HH{"FH"}); 
 }
@@ -678,7 +678,7 @@ $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDO
 my $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
 my $r1_sort_cmd           = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
 $start_secs = ofile_OutputProgressPrior("Sorting classification results", $progress_w, $log_FH, *STDOUT);
-ribo_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+utl_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_sorted_tblout_file);
 }
@@ -724,10 +724,10 @@ else {
 }
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
 $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
 # reopen them, and add tails to the output files
 open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
@@ -782,7 +782,7 @@ if(defined $alg2) { # only do this if we're doing a second round of searching
     if(defined $sfetchfile_H{$model}) { 
       $seqfile_H{$model} = $out_root . ".$model.fa";
       if(! opt_Get("--skipsearch", \%opt_HH)) { 
-        ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+        utl_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file " . $sfetchfile_H{$model} . " > " . $seqfile_H{$model}, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
         if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $seqfile_H{$model});
         }
@@ -866,7 +866,7 @@ if(defined $alg2) {
         $cat_cmd .= "$r2_tblout_file_A[$midx] ";
       }
       $cat_cmd .= "> " . $r2_all_tblout_file;
-      ribo_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+      utl_RunCommand($cat_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
       ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       if(! opt_Get("--keep", \%opt_HH)) { 
         push(@to_remove_A, $r2_all_tblout_file);
@@ -885,7 +885,7 @@ if((defined $alg2) && ($nr2 > 0)) {
   $start_secs = ofile_OutputProgressPrior("Sorting search results", $progress_w, $log_FH, *STDOUT);
   $r2_all_sorted_tblout_file = $r2_all_tblout_file . ".sorted";
   $r2_all_sort_cmd = determine_sort_cmd($alg2, $r2_all_tblout_file, $r2_all_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
-  ribo_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($r2_all_sort_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   if(! opt_Get("--keep", \%opt_HH)) { 
     push(@to_remove_A, $r2_all_sorted_tblout_file);
   }
@@ -917,10 +917,10 @@ if(defined $alg2) {
   close($r2_srt_short_out_FH);
 
   $cmd = "sort -n $r2_unsrt_short_out_file >> $r2_srt_short_out_file";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
   $cmd = "sort -n $r2_unsrt_long_out_file >> $r2_srt_long_out_file";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
   # reopen them, and add tails to the output files
   # now that we know the max sequence name length, we can output headers to the output files
@@ -1088,14 +1088,14 @@ output_summary_statistics($log_FH, \%class_stats_HH, $ofile_info_HH{"FH"});
 output_ufeature_statistics(*STDOUT, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"}, $ofile_info_HH{"FH"});
 output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_HH{"*input*"}{"nseq"}, $ofile_info_HH{"FH"});
 
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 
 output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
 if(opt_Get("-p", \%opt_HH)) { 
   ofile_OutputString($log_FH, 1, "#\n");
-  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($r1_opt_p_sum_cpu_secs + $r2_opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($r1_opt_p_sum_cpu_secs + $r2_opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
 }
 
@@ -1208,9 +1208,8 @@ sub parse_modelinfo_file {
   # either be in this directory or in $df_model_dir
   my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
   if($opt_i_used) { 
-    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
+    $non_df_modelinfo_dir = ofile_GetDirPath($modelinfo_file);
   }
-
 
   # actually parse modelinfo file: 
   # example lines:
@@ -2504,9 +2503,9 @@ sub output_short_headers {
 
   my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
-  my $class_dash_str  = ribo_GetMonoCharacterString($width_HR->{"classification"}, "-", $FH_HR);
+  my $index_dash_str  = "#" . utl_StringMonoChar($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = utl_StringMonoChar($width_HR->{"target"}, "-", $FH_HR);
+  my $class_dash_str  = utl_StringMonoChar($width_HR->{"classification"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %5s  %4s  %s\n", 
               $width_HR->{"index"}, "#idx", 
@@ -2549,12 +2548,12 @@ sub output_long_headers {
 
   my ($FH, $round, $opt_HHR, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str   = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
-  my $target_dash_str  = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
-  my $model_dash_str   = ribo_GetMonoCharacterString($width_HR->{"model"},  "-", $FH_HR);
-  my $family_dash_str  = ribo_GetMonoCharacterString($width_HR->{"family"}, "-", $FH_HR);
-  my $domain_dash_str  = ribo_GetMonoCharacterString($width_HR->{"domain"}, "-", $FH_HR);
-  my $length_dash_str  = ribo_GetMonoCharacterString($width_HR->{"length"}, "-", $FH_HR);
+  my $index_dash_str   = "#" . utl_StringMonoChar($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str  = utl_StringMonoChar($width_HR->{"target"}, "-", $FH_HR);
+  my $model_dash_str   = utl_StringMonoChar($width_HR->{"model"},  "-", $FH_HR);
+  my $family_dash_str  = utl_StringMonoChar($width_HR->{"family"}, "-", $FH_HR);
+  my $domain_dash_str  = utl_StringMonoChar($width_HR->{"domain"}, "-", $FH_HR);
+  my $length_dash_str  = utl_StringMonoChar($width_HR->{"length"}, "-", $FH_HR);
 
   my $have_model_coords = determine_if_we_have_model_coords($round, $opt_HHR, $FH_HR);
   my $have_evalues      = determine_if_we_have_evalues($round, $opt_HHR, $FH_HR);
@@ -2595,8 +2594,8 @@ sub output_long_headers {
     } 
   }
 
-  my $best_model_group_dash_str   = ribo_GetMonoCharacterString($best_model_group_width, "-", $FH_HR);
-  my $second_model_group_dash_str = ribo_GetMonoCharacterString($second_model_group_width, "-", $FH_HR);
+  my $best_model_group_dash_str   = utl_StringMonoChar($best_model_group_width, "-", $FH_HR);
+  my $second_model_group_dash_str = utl_StringMonoChar($second_model_group_width, "-", $FH_HR);
   
   # line 1
   printf $FH ("%-*s  %-*s  %4s  %*s  %3s  %*s  %*s  %-*s  %6s  %6s", 
@@ -3121,7 +3120,7 @@ sub center_string {
   my $nspaces_to_prepend = int(($width - length($str)) / 2);
   if($nspaces_to_prepend < 0) { $nspaces_to_prepend = 0; }
 
-  return ribo_GetMonoCharacterString($nspaces_to_prepend, " ", $FH_HR) . $str; 
+  return utl_StringMonoChar($nspaces_to_prepend, " ", $FH_HR) . $str; 
 }
 
 #################################################################
@@ -3198,13 +3197,13 @@ sub output_summary_statistics {
                   $width_H{"fail"},     "that FAIL");
   # line 3
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s  %*s\n", 
-                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-", $FH_HR),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-", $FH_HR),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR),
-                  $width_H{"length"},   ribo_GetMonoCharacterString($width_H{"length"}, "-", $FH_HR),
-                  $width_H{"coverage"}, ribo_GetMonoCharacterString($width_H{"coverage"}, "-", $FH_HR),
-                  $width_H{"pass"},     ribo_GetMonoCharacterString($width_H{"pass"}, "-", $FH_HR),
-                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-", $FH_HR));
+                  $width_H{"class"},    utl_StringMonoChar($width_H{"class"}, "-", $FH_HR),
+                  $width_H{"nseq"},     utl_StringMonoChar($width_H{"nseq"}, "-", $FH_HR),
+                  $width_H{"fraction"}, utl_StringMonoChar($width_H{"fraction"}, "-", $FH_HR),
+                  $width_H{"length"},   utl_StringMonoChar($width_H{"length"}, "-", $FH_HR),
+                  $width_H{"coverage"}, utl_StringMonoChar($width_H{"coverage"}, "-", $FH_HR),
+                  $width_H{"pass"},     utl_StringMonoChar($width_H{"pass"}, "-", $FH_HR),
+                  $width_H{"fail"},     utl_StringMonoChar($width_H{"fail"}, "-", $FH_HR));
   
   $class = "*input*";
   printf $out_FH ("  %-*s  %*d  %*.4f  %*.2f  %*.4f  %*s  %*s\n", 
@@ -3346,12 +3345,12 @@ sub output_timing_statistics {
   
   # line 2
   printf $out_FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
-                  $width_H{"class"},    ribo_GetMonoCharacterString($width_H{"class"}, "-", $FH_HR),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"}, "-", $FH_HR),
-                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"}, "-", $FH_HR),
-                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"}, "-", $FH_HR),
-                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
-                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR));
+                  $width_H{"class"},    utl_StringMonoChar($width_H{"class"}, "-", $FH_HR),
+                  $width_H{"nseq"},     utl_StringMonoChar($width_H{"nseq"}, "-", $FH_HR),
+                  $width_H{"seqsec"},   utl_StringMonoChar($width_H{"seqsec"}, "-", $FH_HR),
+                  $width_H{"ntsec"},    utl_StringMonoChar($width_H{"ntsec"}, "-", $FH_HR),
+                  $width_H{"ntseccpu"}, utl_StringMonoChar($width_H{"ntseccpu"}, "-", $FH_HR),
+                  $width_H{"total"},    utl_StringMonoChar($width_H{"total"}, "-", $FH_HR));
   
   $class = "classification";
   printf $out_FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -3360,7 +3359,7 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r1_nseq / $r1_secs2print,
                   $width_H{"ntsec"},    $r1_nnt / $r1_secs2print, 
                   $width_H{"ntseccpu"}, ($r1_nnt  / $r1_secs2print) / $ncpu, 
-                  $width_H{"total"},    ribo_GetTimeString($r1_secs2print));
+                  $width_H{"total"},    ofile_FormatTimeString($r1_secs2print));
 
   $class = "search";
   if(defined $alg2) { 
@@ -3370,7 +3369,7 @@ sub output_timing_statistics {
                     $width_H{"seqsec"},   $r2_nseq / $r2_secs2print,
                     $width_H{"ntsec"},    $r2_nnt  / $r2_secs2print, 
                     $width_H{"ntseccpu"}, ($r2_nnt  / $r2_secs2print) / $ncpu, 
-                    $width_H{"total"},    ribo_GetTimeString($r2_secs2print));
+                    $width_H{"total"},    ofile_FormatTimeString($r2_secs2print));
   }
   
   $class = "total";
@@ -3380,12 +3379,12 @@ sub output_timing_statistics {
                   $width_H{"seqsec"},   $r1_nseq / $tot_secs,
                   $width_H{"ntsec"},    $r1_nnt  / $tot_secs,
                   $width_H{"ntseccpu"}, ($r1_nnt  / $tot_secs) / $ncpu, 
-                  $width_H{"total"},    ribo_GetTimeString($tot_secs));
+                  $width_H{"total"},    ofile_FormatTimeString($tot_secs));
                   
   printf $out_FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
     printf $out_FH ("# 'classification' and 'search' timing statistics are summed elapsed time of multiple jobs [-p]\n");
-    printf $out_FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ribo_GetTimeString($r1_secs + $r2_secs));
+    printf $out_FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ofile_FormatTimeString($r1_secs + $r2_secs));
     printf $out_FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
     printf $out_FH ("#\n");
   }
@@ -3461,10 +3460,10 @@ sub output_ufeature_statistics {
 
   # line 3
   printf $out_FH ("# %-*s  %-*s  %*s  %*s\n", 
-                  $width_H{"ufeature"}, ribo_GetMonoCharacterString($width_H{"ufeature"}, "-", $FH_HR),
-                  $width_H{"fail"},     ribo_GetMonoCharacterString($width_H{"fail"}, "-", $FH_HR),
-                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-", $FH_HR),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR));
+                  $width_H{"ufeature"}, utl_StringMonoChar($width_H{"ufeature"}, "-", $FH_HR),
+                  $width_H{"fail"},     utl_StringMonoChar($width_H{"fail"}, "-", $FH_HR),
+                  $width_H{"seqs"},     utl_StringMonoChar($width_H{"seqs"}, "-", $FH_HR),
+                  $width_H{"fraction"}, utl_StringMonoChar($width_H{"fraction"}, "-", $FH_HR));
 
   foreach $ufeature (@{$ufeature_AR}) { 
     if(($ufeature_ct_HR->{$ufeature} > 0) || ($ufeature eq "CLEAN")) { 
@@ -4904,7 +4903,7 @@ sub fetch_pass_fail_per_model_seqs {
         
         # fetch the sequences
         my $sfetch_opts = ($type eq "seqs") ? "-f" : "-Cf";
-        ribo_RunCommand($execs_H{"esl-sfetch"} . " $sfetch_opts $seq_file $out_sfetch_file > $out_fasta_file", opt_Get("-v", \%opt_HH), $ofile_info_HHR->{"FH"});
+        utl_RunCommand($execs_H{"esl-sfetch"} . " $sfetch_opts $seq_file $out_sfetch_file > $out_fasta_file", opt_Get("-v", \%opt_HH), 0, $ofile_info_HHR->{"FH"});
         
         my $sfetch_desc = undef;
         my $fasta_desc  = undef;

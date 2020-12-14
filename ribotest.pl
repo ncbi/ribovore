@@ -1,4 +1,4 @@
-<#!/usr/bin/env perl
+#!/usr/bin/env perl
 use strict;
 use warnings;
 use Getopt::Long;
@@ -73,7 +73,7 @@ my $options_okay =
 #                'dirbuild=s'   => \$GetOptions_H{"--dirbuild"},
                 'keep'         => \$GetOptions_H{"--keep"});
 
-my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
 my $version       = "0.40";
@@ -117,7 +117,7 @@ if($dir_out !~ m/\/$/) { $dir_out =~ s/\/$//; } # remove final '/' if it exists
 if(-d $dir_out) { 
   $cmd = "rm -rf $dir_out";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir_out directory exists but -f not used
     die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -126,7 +126,7 @@ if(-d $dir_out) {
 elsif(-e $dir_out) { 
   $cmd = "rm $dir_out";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir_out file exists but -f not used
     die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -135,7 +135,7 @@ elsif(-e $dir_out) {
 
 # create the dir
 $cmd = "mkdir $dir_out";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
+utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef);
 push(@early_cmd_A, $cmd);
 
 my $dir_tail = $dir_out;
@@ -197,7 +197,7 @@ my $npass = 0;
 my $nfail = 0;
 
 # TODO: I SHOULD PUT THIS INTO A FUNCTION IN sqp_opts.pm (e.g. test_RunTestFile) but currently it requires
-# a ribo_RunCommand() call in the rmdir section. 
+# a utl_RunCommand() call in the rmdir section. 
 # I could get around this by adding ofile_RemoveDir() and ofile_RemoveFile() functions.
 my $start_secs = undef;
 for(my $i = 1; $i <= $ncmd; $i++) { 
@@ -215,7 +215,7 @@ for(my $i = 1; $i <= $ncmd; $i++) {
   else { 
     # -s not used, run command
     $start_secs = ofile_OutputProgressPrior(sprintf("Running command %2d [%20s]", $i, $desc_A[($i-1)]), $progress_w, $log_FH, *STDOUT);
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   }
 
@@ -231,7 +231,7 @@ for(my $i = 1; $i <= $ncmd; $i++) {
     my $nrmdir = (defined $rmdir_AR) ? scalar(@{$rmdir_AR}) : 0;
     for(my $k = 0; $k < $nrmdir; $k++) { 
       ofile_OutputString($log_FH, 1, sprintf("#\t%-60s ... ", "removing directory $rmdir_AR->[$k]"));
-      ribo_RunCommand("rm -rf $rmdir_AR->[$k]", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+      utl_RunCommand("rm -rf $rmdir_AR->[$k]", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); 
       ofile_OutputString($log_FH, 1, "done\n");
     }
   }
@@ -252,6 +252,6 @@ else {
 }
 ofile_OutputString($log_FH, 1, sprintf("#\n"));
 
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0);

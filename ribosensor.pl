@@ -126,7 +126,7 @@ my $options_okay =
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"});
 
-my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds          = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.40";
@@ -162,7 +162,7 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-my $cmd  = undef;                    # a command to be run by ribo_RunCommand()
+my $cmd  = undef;                    # a command to be run by utl_RunCommand()
 my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = (); # array of files to remove at end
@@ -189,7 +189,7 @@ else {  # --skipsearch not used, normal case
       die "ERROR you used --psave but directory $dir_out already exists.\nYou can either run with --skipsearch to create the psave file and not redo the searches OR\nremove the $dir_out directory and then rerun with --psave if you really want to redo the search steps";
     }
     elsif(opt_Get("-f", \%opt_HH)) { 
-      ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); 
+      utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); 
     }
     else { 
       die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -197,14 +197,14 @@ else {  # --skipsearch not used, normal case
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); }
+    if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); }
     else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
 }
 # if $dir_out does not exist, create it
 if(! -d $dir_out) { 
   $cmd = "mkdir $dir_out";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef);
 }
 
 my $dir_out_tail = $dir_out;
@@ -373,7 +373,7 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   # check for SSI index file for the sequence file,
   # if it doesn't exist, create it
   if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
-    ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    utl_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
     if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
       ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $ofile_info_HH{"FH"}); 
     }
@@ -433,7 +433,7 @@ my $ribo_shortfile = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
 my $ribo_logfile   = $ribo_dir_out . "/ribo-out.ribotyper.log";
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, $log_FH, *STDOUT);
-  ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   $ribo_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "ribostdout",  $ribo_stdoutfile, 0, 1, "ribotyper stdout output");
 }  
@@ -621,7 +621,7 @@ output_headers_without_fails_to($sensor_indi_FH, \%width_H, $ofile_info_HH{"FH"}
 close($sensor_indi_FH);
 
 $cmd = "sort -n $unsrt_sensor_indi_file >> $sensor_indi_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 open($sensor_indi_FH, ">>", $sensor_indi_file) || die "ERROR, unable to open $sensor_indi_file for appending";
 output_tail_without_fails_to($sensor_indi_FH, \%opt_HH); 
 close($sensor_indi_FH);
@@ -680,7 +680,7 @@ output_error_counts($log_FH, "Per-program error counts:", $tot_nseq, \%{$herror_
 output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 output_error_counts($log_FH, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
@@ -750,7 +750,7 @@ sub fetch_seqs_in_length_range {
 
   if($nseq > 0 && ($do_fetch)) { 
     my $sfetch_cmd = $sfetch_exec . " -f $seq_file $sfetch_file > $subseq_file"; 
-    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    utl_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
   }
 
   return ($nseq, $nnt);
@@ -941,10 +941,10 @@ sub output_headers_without_fails_to {
 
   my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
-  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-", $FH_HR);
-  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-", $FH_HR);
+  my $index_dash_str  = "#" . utl_StringMonoChar($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = utl_StringMonoChar($width_HR->{"target"}, "-", $FH_HR);
+  my $tax_dash_str    = utl_StringMonoChar($width_HR->{"taxonomy"}, "-", $FH_HR);
+  my $strand_dash_str = utl_StringMonoChar($width_HR->{"strand"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %-*s  %4s  %s\n", 
               $width_HR->{"index"},    "#idx", 
@@ -981,10 +981,10 @@ sub output_headers_with_fails_to {
 
   my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
-  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-", $FH_HR);
-  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-", $FH_HR);
+  my $index_dash_str  = "#" . utl_StringMonoChar($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = utl_StringMonoChar($width_HR->{"target"}, "-", $FH_HR);
+  my $tax_dash_str    = utl_StringMonoChar($width_HR->{"taxonomy"}, "-", $FH_HR);
+  my $strand_dash_str = utl_StringMonoChar($width_HR->{"strand"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %-*s  %4s  %9s  %s\n", 
               $width_HR->{"index"},    "#idx", 
@@ -1798,12 +1798,12 @@ sub output_outcome_counts {
                   $width_H{"unmapped"},  "unmapped");
   # line 2
   printf $FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n", 
-                  $width_H{"type"},      ribo_GetMonoCharacterString($width_H{"type"}, "-", $FH_HR),
-                  $width_H{"total"},     ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR),
-                  $width_H{"pass"},      ribo_GetMonoCharacterString($width_H{"pass"}, "-", $FH_HR),
-                  $width_H{"indexer"},   ribo_GetMonoCharacterString($width_H{"indexer"}, "-", $FH_HR),
-                  $width_H{"submitter"}, ribo_GetMonoCharacterString($width_H{"submitter"}, "-", $FH_HR),
-                  $width_H{"unmapped"},  ribo_GetMonoCharacterString($width_H{"unmapped"}, "-", $FH_HR));
+                  $width_H{"type"},      utl_StringMonoChar($width_H{"type"}, "-", $FH_HR),
+                  $width_H{"total"},     utl_StringMonoChar($width_H{"total"}, "-", $FH_HR),
+                  $width_H{"pass"},      utl_StringMonoChar($width_H{"pass"}, "-", $FH_HR),
+                  $width_H{"indexer"},   utl_StringMonoChar($width_H{"indexer"}, "-", $FH_HR),
+                  $width_H{"submitter"}, utl_StringMonoChar($width_H{"submitter"}, "-", $FH_HR),
+                  $width_H{"unmapped"},  utl_StringMonoChar($width_H{"unmapped"}, "-", $FH_HR));
   
   foreach $type ("RPSP", "RPSF", "RFSP", "RFSF", "*all*") { 
     if($type eq "*all*") { print $FH "#\n"; }
@@ -1881,9 +1881,9 @@ sub output_error_counts {
 
   # line 3
   printf $FH ("# %-*s  %-*s  %*s\n", 
-                  $width_H{"error"},    ribo_GetMonoCharacterString($width_H{"error"}, "-", $FH_HR),
-                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-", $FH_HR),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR));
+                  $width_H{"error"},    utl_StringMonoChar($width_H{"error"}, "-", $FH_HR),
+                  $width_H{"seqs"},     utl_StringMonoChar($width_H{"seqs"}, "-", $FH_HR),
+                  $width_H{"fraction"}, utl_StringMonoChar($width_H{"fraction"}, "-", $FH_HR));
 
   foreach $error (@{$key_AR}) { 
     if(($ct_HR->{$error} > 0) || ($error eq "CLEAN")) { 
@@ -2049,12 +2049,12 @@ sub output_timing_statistics {
   
   # line 2
   printf $FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
-                  $width_H{"stage"},    ribo_GetMonoCharacterString($width_H{"stage"},    "-", $FH_HR),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"},     "-", $FH_HR),
-                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"},   "-", $FH_HR),
-                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"},    "-", $FH_HR),
-                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
-                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"},    "-", $FH_HR));
+                  $width_H{"stage"},    utl_StringMonoChar($width_H{"stage"},    "-", $FH_HR),
+                  $width_H{"nseq"},     utl_StringMonoChar($width_H{"nseq"},     "-", $FH_HR),
+                  $width_H{"seqsec"},   utl_StringMonoChar($width_H{"seqsec"},   "-", $FH_HR),
+                  $width_H{"ntsec"},    utl_StringMonoChar($width_H{"ntsec"},    "-", $FH_HR),
+                  $width_H{"ntseccpu"}, utl_StringMonoChar($width_H{"ntseccpu"}, "-", $FH_HR),
+                  $width_H{"total"},    utl_StringMonoChar($width_H{"total"},    "-", $FH_HR));
   
   
 
@@ -2075,7 +2075,7 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   $tot_nseq / $ribo_secs2print,
                 $width_H{"ntsec"},    $tot_nnt  / $ribo_secs2print, 
                 $width_H{"ntseccpu"}, ($tot_nnt  / $ribo_secs2print) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($ribo_secs2print));
+                $width_H{"total"},    ofile_FormatTimeString($ribo_secs2print));
   }
      
   $stage = "sensor";
@@ -2095,7 +2095,7 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   $tot_nseq / $sensor_secs2print,
                 $width_H{"ntsec"},    $tot_nnt  / $sensor_secs2print, 
                 $width_H{"ntseccpu"}, ($tot_nnt  / $sensor_secs2print) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($sensor_secs2print));
+                $width_H{"total"},    ofile_FormatTimeString($sensor_secs2print));
   }
 
   $stage = "total";
@@ -2106,7 +2106,7 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   "-",
                 $width_H{"ntsec"},    "-",
                 $width_H{"ntseccpu"}, "-",
-                $width_H{"total"},    ribo_GetTimeString($tot_secs));
+                $width_H{"total"},    ofile_FormatTimeString($tot_secs));
   }
   else { 
     printf $FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -2115,13 +2115,13 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   $tot_nseq / $tot_secs,
                 $width_H{"ntsec"},    $tot_nnt  / $tot_secs, 
                 $width_H{"ntseccpu"}, ($tot_nnt  / $tot_secs) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($tot_secs));
+                $width_H{"total"},    ofile_FormatTimeString($tot_secs));
   }
 
   printf $FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
     printf $FH ("# 'ribotyper' and 'sensor' timing statistics are summed elapsed time of multiple jobs [-p]\n");
-    printf $FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ribo_GetTimeString($ribo_secs + $sensor_secs));
+    printf $FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ofile_FormatTimeString($ribo_secs + $sensor_secs));
     printf $FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
     printf $FH ("#\n");
   }
@@ -2226,7 +2226,7 @@ sub fetch_seqs_given_gpipe_file {
     else { 
       $sfetch_cmd = $sfetch_exec . " -f $seq_file $sfetch_file > $subseq_file"; 
     }
-    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    utl_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
   }
 
   return ($nseq, $nseq_revcomped);
@@ -2533,7 +2533,7 @@ sub parse_modelinfo_file {
   # either be in this directory or in $ribo_model_dir
   my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
   if($opt_i_used) { 
-    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
+    $non_df_modelinfo_dir = ofile_GetDirPath($modelinfo_file);
   }
 
   # actually parse modelinfo file: 
@@ -2559,7 +2559,7 @@ sub parse_modelinfo_file {
         $found_mode = 1;
         $ret_sensor_blastdb = $sensor_blastdb; # we don't verify that this exists
         # make sure this blastdb exists, if this command does not fail, then it does
-        ribo_RunCommand("$blastdbcmd -info -db $ret_sensor_blastdb > /dev/null", opt_Get("-v", $opt_HHR), $ofile_info_HH{"FH"});
+        utl_RunCommand("$blastdbcmd -info -db $ret_sensor_blastdb > /dev/null", opt_Get("-v", $opt_HHR), 0, $ofile_info_HH{"FH"});
 
         # make sure that the ribotyper modelinfo file exists, either in $df_ribo_model_dir or, if
         # -i was used, in the same directory that $modelinfo_file is in

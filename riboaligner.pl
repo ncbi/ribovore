@@ -103,7 +103,7 @@ my $options_okay =
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"});
 
-my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.40";
@@ -140,7 +140,7 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my $cmd         = undef; # a command to be run by utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = ();    # array of files to remove at end
 my $ncpu        = opt_Get("-n", \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
@@ -150,18 +150,18 @@ if($ncpu == 1) { $ncpu = 0; } # prefer --cpu 0 to --cpu 1
 # if $dir_out already exists remove it only if -f also used
 if(-d $dir_out) { 
   $cmd = "rm -rf $dir_out";
-  if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+  if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); }
   else                        { die "ERROR intended output directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
 }
 elsif(-e $dir_out) { 
   $cmd = "rm $dir_out";
-  if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+  if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); }
   else                        { die "ERROR a file matching the name of the intended output directory $dir_out already exists. Remove the file, or use -f to overwrite it."; }
 }
 # if $dir_out does not exist, create it
 if(! -d $dir_out) { 
   $cmd = "mkdir $dir_out";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
 }
 my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
@@ -318,7 +318,7 @@ my $ssi_file = $seq_file . ".ssi";
 if(-e $ssi_file) { 
   unlink $ssi_file; 
 }
-ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $FH_HR);
+utl_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $FH_HR);
 if(! -s $ssi_file) { 
   ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $FH_HR); 
 } 
@@ -370,7 +370,7 @@ if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . op
 if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
-ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), $FH_HR);
+utl_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), 0, $FH_HR);
 # if -p: parse the ribotyper log file to get CPU+wait time for parallel
 $rt_opt_p_sum_cpu_secs = 0;
 if(opt_Get("-p", \%opt_HH)) { 
@@ -452,7 +452,7 @@ my $opt_p_sum_cpu_secs = 0; # if -p: summed number of elapsed CPU secs all cmsea
 foreach $family (@family_order_A) { 
   if(-s $family_sfetch_filename_H{$family}) { 
     # fetch the sequences
-    ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} > $family_seqfile_H{$family}", opt_Get("-v", \%opt_HH), $FH_HR);
+    utl_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} > $family_seqfile_H{$family}", opt_Get("-v", \%opt_HH), 0, $FH_HR);
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " fasta file", $family_seqfile_H{$family}, 0, 1, "sequence file for $family");
 
     # align the sequences
@@ -484,7 +484,7 @@ foreach $family (@family_order_A) {
     # if we have no more than 100K seqs, convert to stockholm now that we're done parsing it
     if($family_nseq_H{$family} <= 100000) { 
       my $reformat_cmd = $execs_H{"esl-reformat"} . " stockholm " . $info_H{"OUT-NAME:stk"} . " > " . $info_H{"OUT-NAME:stk"} . ".reformat; mv " . $info_H{"OUT-NAME:stk"} . ".reformat " . $info_H{"OUT-NAME:stk"};
-      ribo_RunCommand($reformat_cmd, opt_Get("-v", \%opt_HH), $FH_HR);
+      utl_RunCommand($reformat_cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
     }
   }
 }
@@ -526,7 +526,7 @@ foreach $family (@family_order_A) {
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_out_file,    $cmalign_out_file,    $family_length_class_HHA{$family}{$length_class}, 1, $FH_HR);
 
       # extract subset from the alignment
-      ribo_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | " . $execs_H{"esl-reformat"} . " --mingap --keeprf stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), $FH_HR);
+      utl_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | " . $execs_H{"esl-reformat"} . " --mingap --keeprf stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), 0, $FH_HR);
 
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
@@ -578,11 +578,11 @@ ofile_OutputString($log_FH, 1, "# ribotyper output directory saved as $ribotyper
 
 ofile_OutputString($log_FH, 1, "#\n# Tabular output saved to file $output_file\n");
 
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 
 if(opt_Get("-p", \%opt_HH)) { 
   ofile_OutputString($log_FH, 1, "#\n");
-  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
 }
 
