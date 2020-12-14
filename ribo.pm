@@ -778,7 +778,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stderr":   path to stderr output file
 #                       "OUT-NAME:qcmd":     path to cmd script file for the qsub cmd
 #
-#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $opt_HHR:         REF to 2D hash of option values, see top of seqp_opts.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
 # Returns: 2 values: 
@@ -863,7 +863,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
 #                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
 #                    see comments for that subroutine for more details.
-#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $opt_HHR:         REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
 # Returns: $sum_cpu_plus_wait_secs:   '0' unless -p used.
@@ -1030,7 +1030,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
 #  $AR:              ref to array of files to merge
 #  $merged_stk_file: path to merged stk file to create
 #  $seqlist_file:    file with list of all sequences in the correct order
-#  $opt_HHR:         REF to 2D hash of option values, see top of epn-options.pm for description
+#  $opt_HHR:         REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
 # Returns:     void
@@ -1444,7 +1444,7 @@ sub ribo_WriteCommandScript {
 # Arguments: 
 #   $dirs2remove_AR:    REF to array with list of directories to remove
 #   $caller_sub_name:  name of calling subroutine (can be undef)
-#   $opt_HHR:          REF to 2D hash of option values, see top of epn-options.pm for description
+#   $opt_HHR:          REF to 2D hash of option values, see top of sqp_opts.pm for description
 #   $FH_HR:            ref to hash of file handles
 # 
 # Returns:     Nothing.
