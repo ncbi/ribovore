@@ -1,97 +1,163 @@
 #!/bin/bash
-# The previous line forces this script to be run with bash, regardless of user's 
-# shell.
+# EPN, Mon Dec 14 16:55:10 2020
+# install.sh
+# A shell script for downloading and installing Ribovore and its dependencies.
+# 
+# usage: 
+# install.sh <"linux" or "macosx">
 #
-# EPN, Thu Jan 17 12:59:26 2019
+# for example:
+# install.sh linux
 #
-# A shell script for installing ribovore its dependencies
-# for ribosomal RNA sequence analysis.
-#
-RIBOINSTALLDIR=$PWD
-VERSION="0.40"
-RVERSION="ribovore-$VERSION"
-BLASTVERSION="2.8.1"
-
 # The following line will make the script fail if any commands fail
-set -e
-#
+set -e 
+
+RIBOINSTALLDIR=$PWD
+
+# versions
+#VERSION="1.0"
+VERSION="0.40"
+# blast+
+BVERSION="2.11.0"
+# infernal
+IVERSION="1.1.4"
+# dependency git tag
+RVERSION="ribovore-$VERSION"
+
+# set defaults
+INPUTSYSTEM="?"
+
+########################
+# Validate correct usage
+########################
+# make sure correct number of cmdline arguments were used, exit if not
+if [ "$#" -ne 1 ]; then
+   echo "Usage: $0 <\"linux\" or \"macosx\">"
+   exit 1
+fi
+
+# make sure 1st argument is either "linux" or "macosx"
+if [ "$1" = "linux" ]; then
+    INPUTSYSTEM="linux";
+fi
+if [ "$1" = "macosx" ]; then
+    INPUTSYSTEM="macosx";
+fi
+if [ "$INPUTSYSTEM" = "?" ]; then 
+   echo "Usage: $0 <\"linux\" or \"macosx\">"
+   exit 1
+fi
+########################################################
 echo "------------------------------------------------"
-echo "INSTALLING RIBOVORE $VERSION"
+echo "DOWNLOADING AND BUILDING RIBOVORE $VERSION"
 echo "------------------------------------------------"
 echo ""
 echo "************************************************************"
-echo "IMPORTANT: BEFORE YOU WILL BE ABLE TO RUN RIBOVORE"
-echo "SCRIPTS, YOU NEED TO FOLLOW THE INSTRUCTIONS OUTPUT AT"
-echo "THE END OF THIS SCRIPT TO UPDATE YOUR ENVIRONMENT VARIABLES."
+echo "IMPORTANT: BEFORE YOU WILL BE ABLE TO RUN RIBOVORE SCRIPTS,"
+echo "YOU NEED TO FOLLOW THE INSTRUCTIONS OUTPUT AT THE END"
+echo "OF THIS SCRIPT TO UPDATE YOUR ENVIRONMENT VARIABLES."
 echo "************************************************************"
+
 echo ""
 echo "Determining current directory ... "
 echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
-echo "------------------------------------------------"
-# Clone what we need from GitHub (these are all public)
 
+###########################################
+# Download section
+###########################################
+echo "------------------------------------------------"
 # ribovore
-echo "Installing ribovore ... "
-curl -k -L -o ribovore-$RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip ribovore-$RVERSION.zip; mv ribovore-$RVERSION ribovore; rm ribovore-$RVERSION.zip
+echo "Downloading ribovore ... "
+#curl -k -L -o $RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv $RVERSION ribovore; rm $RVERSION.zip
 # for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-#git clone https://github.com/nawrockie/ribovore.git ribovore
-#cd ribovore
-#git checkout release-$VERSION
-#rm -rf .git
-#cd ..
+git clone https://github.com/nawrockie/ribovore.git ribovore
+cd ribovore
+git checkout develop
+rm -rf .git
+cd ..
 # ----------------------------------------------------------------------------
 
 # rRNA_sensor
-echo "Installing rRNA_sensor ... "
+echo "Downloading rRNA_sensor ... "
 curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
 
-# epn-options, epn-ofile epn-test
-echo "Installing required perl modules ... "
-for m in epn-options epn-ofile epn-test; do 
-    curl -k -L -o $m-$RVERSION.zip https://github.com/nawrockie/$m/archive/$RVERSION.zip; unzip $m-$RVERSION.zip; mv $m-$RVERSION $m; rm $m-$RVERSION.zip
-done
+# sequip
+echo "Downloading sequip ... "
+#curl -k -L -o sequip-$RVERSION.zip https://github.com/nawrockie/sequip/archive/$RVERSION.zip; unzip sequip-$RVERSION.zip; mv sequip-$RVERSION sequip; rm sequip-$RVERSION.zip
+# to checkout a specific branch, comment out above curl and uncomment block below
+# ----------------------------------------------------------------------------
+git clone https://github.com/nawrockie/sequip.git sequip
+cd sequip
+git checkout develop
+rm -rf .git
+cd ..
+# ----------------------------------------------------------------------------
 
-##########BEGINNING OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
-# Install Infernal 1.1.2
-# You can comment out this part if you already have Infernal installed 
-# on your system.
-echo "Installing Infernal 1.1.2 ... "
-curl -k -L -o infernal-1.1.2.tar.gz http://eddylab.org/infernal/infernal-1.1.2.tar.gz
-tar xfz infernal-1.1.2.tar.gz
-cd infernal-1.1.2
-sh ./configure --prefix $RIBOINSTALLDIR
-make
-make install
-cd easel
-make install
-cd $RIBOINSTALLDIR
-echo "Finished installing Infernal 1.1.2"
+# download infernal binary distribution
+# - to download source distribution and build, see 
+#   'infernal block 2' below.
+
+# ----- infernal block 1 start  -----
+if [ "$INPUTSYSTEM" = "linux" ]; then
+    echo "Downloading Infernal version $IVERSION for Linux"
+    curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-linux-intel-gcc.tar.gz
+else
+    echo "Downloading Infernal version $IVERSION for Mac/OSX"
+    curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-macosx-intel.tar.gz
+fi
+tar xfz infernal.tar.gz
+rm infernal.tar.gz
+if [ "$INPUTSYSTEM" = "linux" ]; then
+    mv infernal-$IVERSION-linux-intel-gcc infernal
+else
+    mv infernal-$IVERSION-macosx-intel infernal
+fi
+# ----- infernal block 1 end -----
+
+# if you'd rather download the source distro and build it yourself
+# (maybe because the binaries aren't working for you for some reason)
+# comment out 'infernal block 1' above and 
+# uncomment 'infernal block 2' below
+# ----- infernal block 2 start  -----
+#echo "Downloading Infernal version $IVERSION src distribution"
+#curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION.tar.gz
+#tar xfz infernal.tar.gz
+#rm infernal.tar.gz
+#echo "Building Infernal ... "
+#mv infernal-$IVERSION infernal
+#cd infernal
+#mkdir binaries
+#sh ./configure --bindir=$PWD/binaries --prefix=$PWD
+#make
+#make install
+#(cd easel/miniapps; make install)
+#cd ..
+#echo "Finished building Infernal "
+# ----- infernal block 2 end -----
 echo "------------------------------------------------"
-##########END OF LINES TO COMMENT OUT TO SKIP INFERNAL INSTALLATION##########################
-# 
-################
-# Output the final message:
+
+# download blast binaries
+if [ "$INPUTSYSTEM" = "linux" ]; then
+echo "Downloading BLAST version $BVERSION for Linux"
+curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz
+else 
+echo "Downloading BLAST version $BVERSION for Mac/OSX"
+echo "curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz"
+curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz
+fi
+tar xfz blast.tar.gz
+rm blast.tar.gz
+mv ncbi-blast-$BVERSION+ ncbi-blast
+echo "------------------------------------------------"
+
+###############################################
+# Message about setting environment variables
+###############################################
 echo ""
 echo ""
-echo "********************************************************"
-echo "IMPORTANT INFORMATION ABOUT FURTHER INSTALLATION STEPS"
-echo "REQUIRED FOR FULL FUNCTIONALITY OF RIBOVORE:"
-echo ""
-echo "If you want to use the ribosensor.pl script you will need to"
-echo "have blastn installed. If you want to use the ribodbmaker.pl"
-echo "script you will need to have blastn and vecscreen_plus_taxonomy"
-echo "installed. See below for instructions."
-echo ""
-echo "To install blastn, run the script 'install-optional-blastn-macosx.sh'"
-echo "or 'install-optional-blastn-linux.sh' depending on your OS, and follow"
-echo "the instructions output from that command to change the RIBOBLASTDIR"
-echo " environment variable. That will install blast version $BLASTVERSION"
-echo "which is compatible with this version of ribovore. Alternatively,"
-echo "if you already have blastn installed and want to use that version,"
-echo "add a line to the end of your .bashrc or .cshrc file that updates the"
-echo "environment variable RIBOBLASTDIR to the directory the blastn"
-echo "executable is."
+echo "If you want to use the ribodbmaker.pl script you will need to"
+echo "have vecscreen_plus_taxonomy installed. See below for instructions."
 echo ""
 echo "To install vecscreen_plus_taxonomy, run the script"
 echo " 'install-optional-vecscreen_plus_taxonomy-linux.sh' and follow"
@@ -104,48 +170,52 @@ echo "********************************************************"
 echo "The final step is to update your environment variables."
 echo "(See ribovore/README.txt for more information.)"
 echo ""
-echo "If you are using the bash shell, add the following"
-echo "lines to the end of the '.bashrc' file in your home directory:"
+echo "If you are using the bash or zsh shell (zsh is default in MacOS/X as"
+echo "of v10.15 (Catalina)), add the following lines to the end of your"
+echo "'.bashrc' or '.zshrc' file in your home directory:"
 echo ""
 echo "export RIBOINSTALLDIR=\"$RIBOINSTALLDIR\""
-echo "export RIBODIR=\"\$RIBOINSTALLDIR/ribovore\""
-echo "export RIBOINFERNALDIR=\"\$RIBOINSTALLDIR/bin\""
-echo "export RIBOEASELDIR=\"\$RIBOINSTALLDIR/bin\""
+echo "export RIBOSCRIPTSDIR=\"\$RIBOINSTALLDIR/ribovore\""
+echo "export RIBOINFERNALDIR=\"\$RIBOINSTALLDIR/infernal/binaries\""
+echo "export RIBOEASELDIR=\"\$RIBOINSTALLDIR/infernal/binaries\""
+echo "export RIBOSEQUIPDIR=\"\$RIBOINSTALLDIR/sequip\""
 echo "export RIBOTIMEDIR=/usr/bin"
-echo "export SENSORDIR=$RIBOINSTALLDIR/rRNA_sensor"
-echo "export EPNOPTDIR=$RIBOINSTALLDIR/epn-options"
-echo "export EPNOFILEDIR=$RIBOINSTALLDIR/epn-ofile"
-echo "export EPNTESTDIR=$RIBOINSTALLDIR/epn-test"
-echo "export PERL5LIB=\"\$RIBODIR\":\"\$EPNOPTDIR\":\"\$EPNOFILEDIR\":\"\$EPNTESTDIR\":\"\$PERL5LIB\""
-echo "export PATH=\"\$RIBODIR\":\"\$SENSORDIR\":\"\$PATH\""
-echo "export BLASTDB=\"\$SENSORDIR\":\"\$BLASTDB\""
+echo "export RRNASENSORDIR=$RIBOINSTALLDIR/rRNA_sensor"
+echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
+echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+echo "export BLASTDB=\"\$RRNASENSORDIR\":\"\$BLASTDB\""
 echo ""
-echo "After adding the export lines to the end of your .bashrc file,"
-echo "source that file to update your current environment with the command:"
+echo "After adding the export lines to your .bashrc or .zshrc file, source that file"
+echo "to update your current environment with the command:"
 echo ""
 echo "source ~/.bashrc"
 echo ""
+echo "OR"
+echo ""
+echo "source ~/.zshrc"
+echo ""
 echo "---"
 echo "If you are using the C shell, add the following"
-echo "lines to the end of the '.cshrc' file in your home directory:"
+echo "lines to the end of your '.cshrc' file in your home"
+echo "directory:"
 echo ""
-echo "setenv RIBODIR $RIBOINSTALLDIR/ribovore-$VERSION"
-echo "setenv RIBOINFERNALDIR $RIBOINSTALLDIR/bin"
-echo "setenv RIBOEASELDIR $RIBOINSTALLDIR/bin"
+echo "setenv RIBOINSTALLDIR \"$RIBOINSTALLDIR\""
+echo "setenv RIBOSCRIPTSDIR \"\$RIBOINSTALLDIR/ribovore\""
+echo "setenv RIBOINFERNALDIR \"\$RIBOINSTALLDIR/bin\""
+echo "setenv RIBOEASELDIR \"\$RIBOINSTALLDIR/bin\""
+echo "setenv RIBOSEQUIPDIR \"\$RIBOINSTALLDIR/sequip\""
 echo "setenv RIBOTIMEDIR /usr/bin"
-echo "setenv SENSORDIR $RIBOINSTALLDIR/rRNA_sensor"
-echo "setenv EPNOPTDIR $RIBOINSTALLDIR/epn-options"
-echo "setenv EPNOFILEDIR $RIBOINSTALLDIR/epn-ofile"
-echo "setenv EPNTESTDIR $RIBOINSTALLDIR/epn-test"
-echo "setenv PERL5LIB \"\$RIBODIR\":\"\$EPNOPTDIR\":\"\$EPNOFILEDIR\":\"\$EPNTESTDIR\":\"\$PERL5LIB\""
-echo "setenv PATH \"\$RIBODIR\":\"\$SENSORDIR\":\"\$PATH\""
-echo "setenv BLASTDB \"\$SENSORDIR\":\"\$BLASTDB\""
-echo ""
-echo "After adding the setenv lines to the end of your .bashrc file,"
-echo "source that file to update your current environment with the command:"
+echo "setenv RRNASENSORDIR $RIBOINSTALLDIR/rRNA_sensor"
+echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
+echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+echo "setenv BLASTDB \"\$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "After adding the setenv lines to your .cshrc file, source that file"
+echo "to update your current environment with the command:"
 echo ""
 echo "source ~/.cshrc"
 echo ""
 echo "(To determine which shell you use, type: 'echo \$SHELL')"
 echo ""
+echo ""
+echo "********************************************************"
 echo ""
