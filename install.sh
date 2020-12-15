@@ -21,6 +21,7 @@ VERSION="0.40"
 BVERSION="2.11.0"
 # infernal
 IVERSION="1.1.4"
+IESLCLUSTERVERSION="1.1.2"
 # dependency git tag
 RVERSION="ribovore-$VERSION"
 
@@ -95,38 +96,56 @@ rm -rf .git
 cd ..
 # ----------------------------------------------------------------------------
 
-# download infernal binary distribution
-# - to download source distribution and build, see 
+# download two infernal binary distributions
+# the first is a recent release, we'll use most programs from this release,
+# the second is *only* for esl-cluster which is no longer available in current releases
+# 
+# - to download source distributions and build them instead of binary distributions, see 
 #   'infernal block 2' below.
 
 # ----- infernal block 1 start  -----
 if [ "$INPUTSYSTEM" = "linux" ]; then
     echo "Downloading Infernal version $IVERSION for Linux"
     curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-linux-intel-gcc.tar.gz
+    echo "Downloading Infernal version $IESLCLUSTERVERSION for Linux"
+    curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION-linux-intel-gcc.tar.gz
 else
     echo "Downloading Infernal version $IVERSION for Mac/OSX"
     curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-macosx-intel.tar.gz
+    echo "Downloading Infernal version $IESLCLUSTERVERSION for Mac/OSX"
+    curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION-macosx-intel.tar.gz
 fi
 tar xfz infernal.tar.gz
+tar xfz infernal2.tar.gz
 rm infernal.tar.gz
+rm infernal2.tar.gz
 if [ "$INPUTSYSTEM" = "linux" ]; then
     mv infernal-$IVERSION-linux-intel-gcc infernal
+    mv infernal-$IESLCLUSTERVERSION-linux-intel-gcc/binaries/esl-cluster infernal/binaries/
+    rm -rf infernal-$IESLCLUSTERVERSION-linux-intel-gcc
 else
     mv infernal-$IVERSION-macosx-intel infernal
+    mv infernal-$IESLCLUSTERVERSION-macosx-intel/binaries/esl-cluster infernal/binaries/
+    rm -rf infernal-$IESLCLUSTERVERSION-macosx-intel
 fi
 # ----- infernal block 1 end -----
 
-# if you'd rather download the source distro and build it yourself
+# if you'd rather download the source distros and build them yourself
 # (maybe because the binaries aren't working for you for some reason)
 # comment out 'infernal block 1' above and 
 # uncomment 'infernal block 2' below
 # ----- infernal block 2 start  -----
 #echo "Downloading Infernal version $IVERSION src distribution"
 #curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION.tar.gz
+#echo "Downloading Infernal version $IESLCLUSTERVERSION src distribution"
+#curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION.tar.gz
 #tar xfz infernal.tar.gz
+#tar xfz infernal2.tar.gz
 #rm infernal.tar.gz
+#rm infernal2.tar.gz
 #echo "Building Infernal ... "
 #mv infernal-$IVERSION infernal
+#mv infernal-$IESLCLUSTERVERSION infernal2
 #cd infernal
 #mkdir binaries
 #sh ./configure --bindir=$PWD/binaries --prefix=$PWD
@@ -134,6 +153,12 @@ fi
 #make install
 #(cd easel/miniapps; make install)
 #cd ..
+#cd infernal2
+#sh ./configure
+#make
+#mv easel/miniapps/esl-cluster ../infernal/binaries/
+#cd ..
+#rm -rf infernal2
 #echo "Finished building Infernal "
 # ----- infernal block 2 end -----
 echo "------------------------------------------------"
@@ -168,6 +193,7 @@ echo "only be installed on Linux systems, which means that ribodbmaker.pl"
 echo "cannot currently be run on non-Linux systems (including Mac OS/X)."
 echo ""
 echo "********************************************************"
+echo ""
 echo "The final step is to update your environment variables."
 echo "(See ribovore/README.txt for more information.)"
 echo ""
@@ -216,7 +242,6 @@ echo ""
 echo "source ~/.cshrc"
 echo ""
 echo "(To determine which shell you use, type: 'echo \$SHELL')"
-echo ""
 echo ""
 echo "********************************************************"
 echo ""
