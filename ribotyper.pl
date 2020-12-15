@@ -3962,7 +3962,7 @@ sub determine_cmsearch_opts {
 
   my $alg_opts = undef;
   if($alg eq "fast") { 
-    $alg_opts .= " --F1 0.02 --doF1b --F1b 0.02 --F2 0.001 --F3 0.00001 --trmF3 --hmmonly --noali ";
+    $alg_opts .= " --hmmF1 0.02 --hmmF2 0.001 --hmmF3 0.00001 --trmF3 --hmmonly --noali ";
   }
   elsif($alg eq "slow") { 
     if(opt_Get("--mid", $opt_HHR)) { 
