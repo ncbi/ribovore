@@ -13,7 +13,7 @@ require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribovore_dir    = utl_DirEnvVarValid("RIBODIR");
+my $env_riboscripts_dir = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 
 #my %execs_H = (); # hash with paths to all required executables
 #$execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
@@ -149,7 +149,7 @@ my $out_root = $dir_out . "/" . $dir_tail . ".ribotest";
 my @arg_desc_A = ("test file", "output directory name");
 my @arg_A      = ($test_file, $dir_out);
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"} = $env_ribovore_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"} = $env_riboscripts_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 

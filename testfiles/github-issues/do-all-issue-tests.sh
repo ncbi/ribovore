@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$RIBODIR/testfiles/github-issues/iss1/do-iss1-tests.sh
+$RIBOSCRIPTSDIR/testfiles/github-issues/iss1/do-iss1-tests.sh
 if [ $? == 0 ]; then
    rm -rf rt-test
    echo "Success: all tests passed"

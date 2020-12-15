@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/ribodbmaker.p.testin rdb-p-test
+$RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/ribodbmaker.p.testin rdb-p-test
 if [ $? == 0 ]; then
     rm -rf rdb-p-test
    echo "Success: all tests passed"

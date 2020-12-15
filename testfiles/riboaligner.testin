@@ -12,30 +12,30 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBODIR/testfiles/example-16.fa ./; perl $RIBODIR/riboaligner.pl -f example-16.fa test-16-2 > /dev/null; rm example-16.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/riboaligner.pl -f example-16.fa test-16-2 > /dev/null; rm example-16.fa*
 desc: riboaligner-1-16
 out: test-16-2/test-16-2.riboaligner.tbl
 out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk
 out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list
 out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
 out: test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.elfile
-exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.tbl
-exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.stk
-exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.list
-exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
-exp: @RIBODIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.elfile
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.tbl
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.stk
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.list
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.elfile
 rmdir: test-16-2
-command: cp $RIBODIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBODIR/riboaligner.pl -i $RIBODIR/models/riboaligner.0p15.ssu.euk.modelinfo -f fungi-ssu.r100.fa r100-2 > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/riboaligner.pl -i $RIBOSCRIPTSDIR/models/riboaligner.0p15.ssu.euk.modelinfo -f fungi-ssu.r100.fa r100-2 > /dev/null; rm fungi-ssu.r100.fa*
 desc: riboaligner-2-100
 out: r100-2/r100-2.riboaligner.tbl
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.list
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.ifile
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.elfile
 out: r100-2/r100-2.riboaligner.SSU.Eukarya.partial.stk
-exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.tbl
-exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.list
-exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.ifile
-exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.elfile
-exp: @RIBODIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.stk
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100-2.riboaligner.tbl
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.list
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.ifile
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.elfile
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100-2.riboaligner.SSU.Eukarya.partial.stk
 rmdir: r100-2
 

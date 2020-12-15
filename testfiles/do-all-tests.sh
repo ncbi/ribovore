@@ -14,7 +14,7 @@ for t in \
     do-ribodbmaker-tests.sh \
     github-issues/do-all-issue-tests.sh \
     ; do
-    sh $RIBODIR/testfiles/$t
+    sh $RIBOSCRIPTSDIR/testfiles/$t
     if [ $? != 0 ]; then
         RETVAL=1;
     fi   

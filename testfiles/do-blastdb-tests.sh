@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/blastdb-univec.testin rt-blastdb
+$RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/blastdb-univec.testin rt-blastdb
 rm -rf rt-blastdb

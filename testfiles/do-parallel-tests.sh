@@ -13,7 +13,7 @@ for t in \
     do-ribosensor-parallel-tests.sh \
     do-ribodbmaker-parallel-tests.sh \
     ; do
-    sh $RIBODIR/testfiles/$t
+    sh $RIBOSCRIPTSDIR/testfiles/$t
     if [ $? != 0 ]; then
         RETVAL=1;
     fi   

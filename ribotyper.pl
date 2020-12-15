@@ -14,11 +14,11 @@ require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = utl_DirEnvVarValid("RIBODIR");
+my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
-my $df_model_dir         = $env_ribotyper_dir . "/models/";
+my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
@@ -371,7 +371,7 @@ push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
@@ -1170,7 +1170,7 @@ exit(0);
 #              
 # Arguments: 
 #   $modelinfo_file:  file to parse
-#   $df_model_dir:    default $RIBODIR/models directory, where default models should be
+#   $df_model_dir:    default $RIBOSCRIPTSDIR/models directory, where default models should be
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $indi_cmfile_HR:  ref to hash of CM files, key is model name, value is path to CM file
@@ -1288,7 +1288,7 @@ sub parse_modelinfo_file {
       ofile_FAIL("ERROR in $sub_name, didn't read special line with '*all*' as first token\nin modelinfo file $modelinfo_file (specified with -i) which\nspecifies the master CM file", 1, $FH_HR); 
     }
     else { 
-      ofile_FAIL("ERROR in $sub_name, didn't read special line'*all*' as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, didn't read special line'*all*' as first token\nin default modelinfo file. Is your RIBOSCRIPTSDIR env variable set correctly?", 1, $FH_HR);
     }
   }
 

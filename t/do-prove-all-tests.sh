@@ -17,8 +17,8 @@ if [ $# != 0 ]; then
     do_teamcity=1;
 fi
 
-if [ -z "${RIBODIR}" ] ; then
-    echo "RIBODIR environment variable is not set, set it to top-level ribovore/ dir and rerun"
+if [ -z "${RIBOSCRIPTSDIR}" ] ; then
+    echo "RIBOSCRIPTSDIR environment variable is not set, set it to top-level ribovore/ dir and rerun"
     exit 1
 fi
 
@@ -29,7 +29,7 @@ for test in \
         echo "##teamcity[testStarted name=\"$test\" captureStandardOutput='true']"
     fi
 
-    prove -v $RIBODIR/t/$test;
+    prove -v $RIBOSCRIPTSDIR/t/$test;
     CURRETVAL=$?
 
     if [ $do_teamcity == 1 ]; then 

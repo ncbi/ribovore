@@ -9,14 +9,14 @@ require "sqp_opts.pm";
 require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
-# make sure the RIBODIR and RIBOEASEL variables are set, others we will wait to see
+# make sure the RIBOSCRIPTSDIR and RIBOEASEL variables are set, others we will wait to see
 # if they are required first
-my $env_ribovore_dir   = utl_DirEnvVarValid("RIBODIR");
-my $env_riboeasel_dir  = utl_DirEnvVarValid("RIBOEASELDIR");
-my $env_vecplus_dir    = undef;
-my $env_riboblast_dir  = undef;
-my $df_model_dir       = $env_ribovore_dir . "/models/";
-my $df_tax_dir         = $env_ribovore_dir . "/taxonomy/";
+my $env_riboscripts_dir = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
+my $env_riboeasel_dir   = utl_DirEnvVarValid("RIBOEASELDIR");
+my $env_vecplus_dir     = undef;
+my $env_riboblast_dir   = undef;
+my $df_model_dir        = $env_riboscripts_dir . "/models/";
+my $df_tax_dir          = $env_riboscripts_dir . "/taxonomy/";
 
 #########################################################
 # Command line and option processing using sqp_opts.pm
@@ -508,7 +508,7 @@ $execs_H{"esl-alimask"}  = $env_riboeasel_dir    . "/esl-alimask";
 $execs_H{"esl-alipid"}   = $env_riboeasel_dir    . "/esl-alipid";
 $execs_H{"esl-alistat"}  = $env_riboeasel_dir    . "/esl-alistat";
 $execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
-$execs_H{"ali-apos-to-uapos.pl"} = $env_ribovore_dir . "/miniscripts/ali-apos-to-uapos.pl";
+$execs_H{"ali-apos-to-uapos.pl"} = $env_riboscripts_dir . "/miniscripts/ali-apos-to-uapos.pl";
 
 if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) { 
   $env_vecplus_dir = utl_DirEnvVarValid("VECPLUSDIR");
@@ -528,7 +528,7 @@ if($do_ftaxid || $do_ingrup || $do_special || $do_def) {
   utl_FileValidateExistsAndNonEmpty($taxonomy_tree_six_column_file, "taxonomy tree file with taxonomic levels and specified species", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
 
   $execs_H{"find_taxonomy_ancestors.pl"} = $env_vecplus_dir . "/scripts/find_taxonomy_ancestors.pl";
-  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_ribovore_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
+  $execs_H{"alipid-taxinfo-analyze.pl"}  = $env_riboscripts_dir . "/miniscripts/alipid-taxinfo-analyze.pl";
 }
 
 if($do_fblast) { 
@@ -571,11 +571,11 @@ if($do_fribo1 || $do_fribo2) {
     utl_FileValidateExistsAndNonEmpty($ra_modelinfo_file, "riboaligner model info file specified with --rainfo", undef, 1, undef); # 1 says: die if it doesn't exist or is empty
   }
 
-  $execs_H{"ribotyper"}         = $env_ribovore_dir  . "/ribotyper.pl";
-  $execs_H{"riboaligner"} = $env_ribovore_dir  . "/riboaligner.pl";
+  $execs_H{"ribotyper"}   = $env_riboscripts_dir  . "/ribotyper.pl";
+  $execs_H{"riboaligner"} = $env_riboscripts_dir  . "/riboaligner.pl";
 }
 if(opt_IsUsed("--mslist", \%opt_HH)) { 
-  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_ribovore_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
+  $execs_H{"mdlspan-survtbl-sort.pl"} = $env_riboscripts_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
 }
 
 utl_ExecHValidate(\%execs_H, undef);
@@ -640,8 +640,8 @@ my $nfail_clustr = 0; # number of seqs that pass clustering
 my @arg_desc_A = ("input sequence file", "output directory name");
 my @arg_A      = ($in_fasta_file, $dir);
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}      = $env_ribovore_dir;
-$extra_H{"\$RIBOEASELDIR"} = $env_riboeasel_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"} = $env_riboscripts_dir;
+$extra_H{"\$RIBOEASELDIR"}   = $env_riboeasel_dir;
 if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
 if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
 ofile_OutputBanner(*STDOUT, $package_name, $version, r$eleasedate, $synopsis, $date, \%extra_H);
@@ -2568,11 +2568,11 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   print OUT ("# Finally, you can create that additional file that prioritizes certain orders, classes or phyla outside of\n");
   print OUT ("# ribodbmaker.pl using the script mdlspan-survtbl-sort.pl in the ribotyper-v1/miniscripts directory that ribodbmaker.pl is in.\n");
   print OUT ("# Some example commands for that script are:\n");
-  print OUT ("# perl \$RIBODIR/miniscripts/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# perl \$RIBOSCRIPTSDIR/miniscripts/mdlspan-survtbl-sort.pl <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
   print OUT ("# OR\n");
-  print OUT ("# perl \$RIBODIR/miniscripts/mdlspan-survtbl-sort.pl -c <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
+  print OUT ("# perl \$RIBOSCRIPTSDIR/miniscripts/mdlspan-survtbl-sort.pl -c <PATH-TO-THIS-FILE> <file with list of orders to prioritize>\n");
   print OUT ("# OR\n");
-  print OUT ("# perl \$RIBODIR/miniscripts/mdlspan-survtbl-sort.pl -s <PATH-TO-THIS-FILE> <comma-delimited list of orders to prioritize>\n");
+  print OUT ("# perl \$RIBOSCRIPTSDIR/miniscripts/mdlspan-survtbl-sort.pl -s <PATH-TO-THIS-FILE> <comma-delimited list of orders to prioritize>\n");
   print OUT ("#\n");
   print OUT ("# Explanation of columns in this file:\n");
   print OUT ("#  1. 'length': length of model span\n");

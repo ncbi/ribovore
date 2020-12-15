@@ -12,17 +12,17 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBODIR/testfiles/example-16.fa ./; perl $RIBODIR/ribotyper.pl -p -f example-16.fa test-16-p > /dev/null; rm example-16.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribotyper.pl -p -f example-16.fa test-16-p > /dev/null; rm example-16.fa*
 desc: ribotyper-1-p-16
 out: test-16-p/test-16-p.ribotyper.short.out
 out: test-16-p/test-16-p.ribotyper.long.out
-exp: @RIBODIR@/testfiles/expected-files/test-16.ribotyper.short.out
-exp: @RIBODIR@/testfiles/expected-files/test-16.ribotyper.long.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.short.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.long.out
 rmdir: test-16-p
-command: cp $RIBODIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBODIR/ribotyper.pl -p -f fungi-ssu.r100.fa r100-p > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribotyper.pl -p -f fungi-ssu.r100.fa r100-p > /dev/null; rm fungi-ssu.r100.fa*
 desc: ribotyper-2-p-100
 out: r100-p/r100-p.ribotyper.short.out
 out: r100-p/r100-p.ribotyper.long.out
-exp: @RIBODIR@/testfiles/expected-files/r100.ribotyper.short.out
-exp: @RIBODIR@/testfiles/expected-files/r100.ribotyper.long.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100.ribotyper.short.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100.ribotyper.long.out
 rmdir: r100-p

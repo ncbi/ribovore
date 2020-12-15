@@ -10,11 +10,11 @@ require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = utl_DirEnvVarValid("RIBODIR");
+my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
-my $df_model_dir         = $env_ribotyper_dir . "/models/";
+my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"cmalign"}      = $env_riboinfernal_dir . "/cmalign";
@@ -22,7 +22,7 @@ $execs_H{"esl-sfetch"}   = $env_riboeasel_dir    . "/esl-sfetch";
 $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
 $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
-$execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
+$execs_H{"ribotyper"}    = $env_riboscripts_dir  . "/ribotyper.pl";
 $execs_H{"time"}         = $env_ribotime_dir  . "/time";
 utl_ExecHValidate(\%execs_H, undef);
 
@@ -182,7 +182,7 @@ push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);

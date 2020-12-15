@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$RIBODIR/ribotest.pl -f $RIBODIR/testfiles/ribosensor.testin rs-test
+$RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/ribosensor.testin rs-test
 if [ $? == 0 ]; then
    rm -rf rs-test
    echo "Success: all tests passed"

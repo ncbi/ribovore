@@ -13,16 +13,16 @@ require "sqp_ofile.pm";
 require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = utl_DirEnvVarValid("RIBODIR");
+my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_sensor_dir       = utl_DirEnvVarValid("SENSORDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
 my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
-my $df_model_dir         = $env_ribotyper_dir . "/models/";
+my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"ribo"}               = $env_ribotyper_dir . "/ribotyper.pl";
+$execs_H{"ribo"}               = $env_riboscripts_dir . "/ribotyper.pl";
 $execs_H{"rRNA_sensor_script"} = $env_sensor_dir    . "/rRNA_sensor_script";
 $execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
@@ -225,7 +225,7 @@ push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
 $extra_H{"\$SENSORDIR"}       = $env_sensor_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
@@ -2496,7 +2496,7 @@ sub human_to_gpipe_fail_message {
 #   $modelinfo_file:    file to parse
 #   $blastdbcmd:        path to 'blastdbcmd' executable
 #   $in_mode:           mode we are running, default is "16S"
-#   $df_ribo_model_dir: default $RIBODIR/models directory, where default models should be
+#   $df_ribo_model_dir: default $RIBOSCRIPTSDIR/models directory, where default models should be
 #   $df_sensor_dir:     default $SENSORDIR directory, where default blast DBs should be
 #   $opt_HHR:           ref to 2D hash of cmdline options (needed to determine if -i was used)
 #   $FH_HR:             ref to hash of file handles, including "cmd"
@@ -2629,7 +2629,7 @@ sub parse_modelinfo_file {
       ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin modelinfo file $modelinfo_file (specified with -i)", 1, $FH_HR); 
     }
     else { 
-      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin default modelinfo file. Is your RIBOSCRIPTSDIR env variable set correctly?", 1, $FH_HR);
     }
   }
 

@@ -12,17 +12,17 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBODIR/testfiles/example-16.fa ./; perl $RIBODIR/ribosensor.pl -p -f example-16.fa test-rs-16-p > /dev/null; rm example-16.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribosensor.pl -p -f example-16.fa test-rs-16-p > /dev/null; rm example-16.fa*
 desc: ribosensor-1-p-16
 out: test-rs-16-p/test-rs-16-p.ribosensor.out
 out: test-rs-16-p/test-rs-16-p.ribosensor.gpipe
-exp: @RIBODIR@/testfiles/expected-files/test-rs-16.ribosensor.out
-exp: @RIBODIR@/testfiles/expected-files/test-rs-16.ribosensor.gpipe
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-rs-16.ribosensor.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-rs-16.ribosensor.gpipe
 rmdir: test-rs-16-p
-command: cp $RIBODIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBODIR/ribosensor.pl -p -m 18S -f fungi-ssu.r100.fa rs-r100-p > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribosensor.pl -p -m 18S -f fungi-ssu.r100.fa rs-r100-p > /dev/null; rm fungi-ssu.r100.fa*
 desc: ribosensor-2-p-100
 out: rs-r100-p/rs-r100-p.ribosensor.out
 out: rs-r100-p/rs-r100-p.ribosensor.gpipe
-exp: @RIBODIR@/testfiles/expected-files/rs-r100.ribosensor.out
-exp: @RIBODIR@/testfiles/expected-files/rs-r100.ribosensor.gpipe
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/rs-r100.ribosensor.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/rs-r100.ribosensor.gpipe
 rmdir: rs-r100-p
