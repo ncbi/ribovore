@@ -644,7 +644,7 @@ $extra_H{"\$RIBOSCRIPTSDIR"} = $env_riboscripts_dir;
 $extra_H{"\$RIBOEASELDIR"}   = $env_riboeasel_dir;
 if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
 if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
-ofile_OutputBanner(*STDOUT, $package_name, $version, r$eleasedate, $synopsis, $date, \%extra_H);
+ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
 # open the list, log and command files:
