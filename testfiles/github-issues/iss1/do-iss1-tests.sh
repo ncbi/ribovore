@@ -1,7 +1,7 @@
 #!/bin/bash
 
 $RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/github-issues/iss1/iss1.testin iss1-out
-if [ $? == 0 ]; then
+if [ $? -eq 0 ]; then
    rm -rf iss1-out
    echo "Success: all tests passed"
    exit 0

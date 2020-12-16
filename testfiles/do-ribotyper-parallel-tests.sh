@@ -1,8 +1,7 @@
 #!/bin/bash
 
-$RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/ribotyper.p.testin rt-p-test
-if [ $? == 0 ]; then
-   rm -rf rt-p-test
+$RIBOSCRIPTSDIR/ribotest.pl --rmout -f $RIBOSCRIPTSDIR/testfiles/ribotyper.p.testin rt-p-test
+if [ $? -eq 0 ]; then
    echo "Success: all tests passed"
    exit 0
 else 
