@@ -255,3 +255,205 @@ ofile_OutputString($log_FH, 1, sprintf("#\n"));
 $total_seconds += ofile_SecondsSinceEpoch();
 ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0);
+
+#####################################################################
+# SUBROUTINES 
+#####################################################################
+sub test_ParseTestFile { 
+  my $sub_name = "test_ParseTestFile";
+  my $nargs_expected = 9;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($testfile, $cmd_AR, $desc_AR, $outfile_AAR, $expfile_AAR, $rmdir_AAR, $opt_HHR, $FH_HR) = @_;
+
+  open(IN, $testfile) || ofile_FileOpenFailure($testfile, $sub_name, $!, "reading", $FH_HR);
+  my $ncmd = 0;
+  my $ndesc = 0;
+  my $outfile;
+  my $expfile;
+  my $rmdir;
+
+  while(my $line = <IN>) { 
+    if(($line !~ m/^\#/) && ($line =~ m/\w/)) { 
+      # example input file:
+      # # comment line (ignored)
+      # command: perl $DNAORGDIR/dnaorg_scripts/dnaorg_classify.pl -f -A /panfs/pan1/dnaorg/virseqannot/dnaorg-build-directories/norovirus-builds --infasta testfiles/noro.9.fa --dirbuild /panfs/pan1/dnaorg/virseqannot/dnaorg-build-directories/norovirus-builds --dirout test-noro.9
+      # out: test-noro.9/test-noro.9-NC_001959.dnaorg_annotate.sqtable 
+      # exp: testfiles/testout.1/test-noro.9/test-noro.9-NC_001959.dnaorg_annotate.sqtable 
+      chomp $line;
+      if($line =~ m/\r$/) { chop $line; } # remove ^M if it exists
+
+      if($line =~ s/^command\:\s+//) { 
+        my $cmd = $line;
+        if($ncmd > 0) { 
+          # make sure we have read >= 1 outfiles and expfiles for previous command
+          if(! (@{$outfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any out: lines for command " . ($ncmd+1), 1, $FH_HR); }
+          if(! (@{$expfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any exp: lines for command " . ($ncmd+1), 1, $FH_HR); }
+          my $nout_prv = scalar(@{$outfile_AAR->[($ncmd-1)]});
+          my $nexp_prv = scalar(@{$expfile_AAR->[($ncmd-1)]});
+          if($nout_prv != $nexp_prv) { 
+            ofile_FAIL("ERROR different number of output and expected lines for command " . ($ncmd+1), 1, $FH_HR);
+          }
+        }
+        # replace !<s>! with value of --<s> from options, die if it wasn't set or doesn't exist
+        while($cmd =~ /\!(\w+)\!/) { 
+          my $var = $1;
+          my $varopt = "--" . $var;
+          if(! opt_Exists($varopt, $opt_HHR)) { 
+            ofile_FAIL("ERROR trying to replace !$var! in test file but option --$var does not exist in command line options", 1, $FH_HR); 
+          }
+          if(! opt_IsUsed($varopt, $opt_HHR)) { 
+            ofile_FAIL("ERROR trying to replace !$var! in test file but option --$var was not specified on the command line, please rerun with --$var", 1, $FH_HR); 
+          }
+          my $replacevalue = opt_Get($varopt, $opt_HHR);
+          $cmd =~ s/\!$var\!/$replacevalue/g;
+        }
+        push(@{$cmd_AR}, $cmd); 
+        $ncmd++;
+      }
+      elsif($line =~ s/^desc\:\s+//) { 
+        my $desc = $line;
+        push(@{$desc_AR}, $desc); 
+        $ndesc++;
+      }
+      elsif($line =~ s/^out\:\s+//) { 
+        $outfile = $line;
+        $outfile =~ s/^\s+//;
+        $outfile =~ s/\s+$//;
+        if($outfile =~ m/\s/) { ofile_FAIL("ERROR output file has spaces: $outfile", 1, $FH_HR); }
+        if(scalar(@{$outfile_AAR}) < $ncmd) { 
+          @{$outfile_AAR->[($ncmd-1)]} = ();
+        }
+        push(@{$outfile_AAR->[($ncmd-1)]}, $outfile);
+        if((opt_IsUsed("-s", $opt_HHR)) && (opt_Get("-s", $opt_HHR))) { 
+          # -s used, we aren't running commands, just comparing files, output files must already exist
+          if(! -e $outfile) { ofile_FAIL("ERROR, output file $outfile does not already exist (and -s used)", 1, $FH_HR); }
+        }
+        else { 
+          # -s not used
+          if(-e $outfile) { ofile_FAIL("ERROR, output file $outfile already exists (and -s not used)", 1, $FH_HR); }
+        }
+      }
+      elsif($line =~ s/^exp\:\s+//) { 
+        $expfile = $line;
+        $expfile =~ s/^\s+//;
+        $expfile =~ s/\s+$//;
+        # replace @<s>@ with value of $ENV{'<s>'}
+        while($expfile =~ /\@(\w+)\@/) { 
+          my $envvar = $1;
+          my $replacevalue = $ENV{"$envvar"};
+          $expfile =~ s/\@$envvar\@/$replacevalue/g;
+        }
+        if($expfile =~ m/\s/) { ofile_FAIL("ERROR expected file has spaces: $expfile", 1, $FH_HR) }
+        if(scalar(@{$expfile_AAR}) < $ncmd) { 
+          @{$expfile_AAR->[($ncmd-1)]} = ();
+        }
+        push(@{$expfile_AAR->[($ncmd-1)]}, $expfile);
+        if(! -e $expfile) { ofile_FAIL("ERROR, expected file $expfile does not exist", 1, $FH_HR); }
+      }
+      elsif($line =~ s/^rmdir\:\s+//) { 
+        $rmdir = $line;
+        $rmdir =~ s/^\s+//;
+        $rmdir =~ s/\s+$//;
+        if(! defined $rmdir_AAR->[($ncmd-1)]) { 
+          @{$rmdir_AAR->[($ncmd-1)]} = ();
+        }
+        push(@{$rmdir_AAR->[($ncmd-1)]}, "$rmdir");
+      }
+      else { 
+        ofile_FAIL("ERROR unable to parse line $line in $testfile", 1, $FH_HR);
+      }
+    }
+  }
+  close(IN);
+
+  if($ndesc != $ncmd) { ofile_FAIL("ERROR did not read same number of descriptions and commands", 1, $FH_HR); }
+
+  # for final command, check that number of exp and out files is equal
+  if(! (@{$outfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any out: lines for command " . ($ncmd+1), 1, $FH_HR); }
+  if(! (@{$expfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any exp: lines for command " . ($ncmd+1), 1, $FH_HR); }
+  my $nout_prv = scalar(@{$outfile_AAR->[($ncmd-1)]});
+  my $nexp_prv = scalar(@{$expfile_AAR->[($ncmd-1)]});
+  if($nout_prv != $nexp_prv) { 
+    ofile_FAIL("ERROR different number of output and expected lines for command " . ($ncmd+1), 1, $FH_HR);
+  }
+
+  return $ncmd;
+}
+
+#################################################################
+# Subroutine:  test_DiffTwoFiles()
+# Incept:      EPN, Thu May 17 14:24:06 2018
+#
+# Purpose:     Diff two files, and output whether they are identical or not.
+#
+# Arguments:
+#   $out_file:    name of output file
+#   $exp_file:    name of expected file
+#   $diff_file:   output file for diff command
+#   $FH_HR:       REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:    '1' if $outfile is identical to $expfile as determined by diff
+#
+# Dies:       If an expected file does not exist or is empty.
+#
+#################################################################
+sub test_DiffTwoFiles { 
+  my $sub_name = "test_DiffTwoFiles";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $exp_file, $diff_file, $FH_HR) = @_;
+
+  my $out_file_exists   = (-e $out_file) ? 1 : 0;
+  my $exp_file_exists   = (-e $exp_file) ? 1 : 0;
+  my $out_file_nonempty = (-s $out_file) ? 1 : 0;
+  my $exp_file_nonempty = (-s $exp_file) ? 1 : 0;
+
+  my $conclusion = "";
+  my $pass = 0;
+
+  if(! $exp_file_exists) { 
+    ofile_FAIL("ERROR in $sub_name, expected file $exp_file does not exist", 1, $FH_HR) ;
+  }
+  if(! $exp_file_nonempty) { 
+    ofile_FAIL("ERROR in $sub_name, expected file $exp_file exists but is empty", 1, $FH_HR);
+  }
+    
+  ofile_OutputString($FH_HR->{"log"}, 1, sprintf("#\t%-60s ... ", "checking $out_file"));
+
+  if($out_file_nonempty) { 
+    my $cmd = "diff -U 0 $out_file $exp_file > $diff_file";
+    # don't use runCommand() because diff 'fails' if files are not identical
+    ofile_OutputString($FH_HR->{"cmd"}, 0, "$cmd\n");
+    system($cmd);
+    if(-s $diff_file) { 
+      # copy the two files here:
+      my $copy_of_out_file = $diff_file . ".out";
+      my $copy_of_exp_file = $diff_file . ".exp";
+      ribo_RunCommand("cp $out_file $copy_of_out_file", 0, $FH_HR);
+      ribo_RunCommand("cp $exp_file $copy_of_exp_file", 0, $FH_HR);
+      # analyze the diff file and print out how many lines 
+      if($out_file =~ m/\.sqtable/ && $exp_file =~ m/\.sqtable/) { 
+        my $sqtable_diff_file = $diff_file . ".man";
+        test_DnaorgCompareTwoSqtableFiles($out_file, $exp_file, $sqtable_diff_file, $FH_HR);
+        $conclusion = "FAIL [files differ, see $sqtable_diff_file]";
+      }
+      else { 
+        $conclusion = "FAIL [files differ, see $diff_file]";
+      }
+    }
+    else { 
+      $conclusion = "pass";
+      $pass = 1;
+    }
+  }
+  else { 
+    $conclusion = ($out_file_exists) ? "FAIL [output file exists but is empty]" : "FAIL [output file does not exist]";
+  }
+
+  ofile_OutputString($FH_HR->{"log"}, 1, "$conclusion\n");
+
+  return $pass;
+}
+
