@@ -24,6 +24,7 @@ IVERSION="1.1.4"
 IESLCLUSTERVERSION="1.1.2"
 # dependency git tag
 RVERSION="ribovore-$VERSION"
+TMPVERSION="ribovore-0.40"
 
 # set defaults
 INPUTSYSTEM="?"
@@ -82,7 +83,14 @@ cd ..
 
 # rRNA_sensor
 echo "Downloading rRNA_sensor ... "
-curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
+#curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
+# ----------------------------------------------------------------------------
+git clone https://github.com/aaschaffer/rRNA_sensor.git rRNA_sensor
+cd rRNA_sensor
+git checkout ribovore-1.0-release
+rm -rf .git
+cd ..
+# ----------------------------------------------------------------------------
 
 # sequip
 echo "Downloading sequip ... "
@@ -177,6 +185,18 @@ rm blast.tar.gz
 mv ncbi-blast-$BVERSION+ ncbi-blast
 echo "------------------------------------------------"
 
+# if linux, download vecscreen_plus_taxonomy
+if [ "$INPUTSYSTEM" = "linux" ]; then
+curl -k -L -o vecscreen_plus_taxonomy-$TMPRVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$RVERSION.zip; 
+unzip vecscreen_plus_taxonomy-$TMPRVERSION.zip; 
+mv vecscreen_plus_taxonomy-$TMPRVERSION vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-$TMPRVERSION.zip
+(cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
+else 
+echo "Not installing vecscreen_plus_taxonomy (only avaiable for Linux)"
+fi
+echo "------------------------------------------------"
+
 ###############################################
 # Message about setting environment variables
 ###############################################
@@ -211,7 +231,12 @@ echo "export RIBOTIMEDIR=/usr/bin"
 echo "export RRNASENSORDIR=$RIBOINSTALLDIR/rRNA_sensor"
 echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+if [ "$INPUTSYSTEM" = "linux" ]; then
+echo "export VECPLUSDIR=\"$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
+echo "export BLASTDB=\"\$VECPLUSDIR/univec-files\":\"$RRNASENSORDIR\":\"\$BLASTDB\""
+else
 echo "export BLASTDB=\"\$RRNASENSORDIR\":\"\$BLASTDB\""
+fi
 echo ""
 echo "After adding the export lines to your .bashrc or .zshrc file, source that file"
 echo "to update your current environment with the command:"
@@ -237,7 +262,12 @@ echo "setenv RIBOTIMEDIR /usr/bin"
 echo "setenv RRNASENSORDIR $RIBOINSTALLDIR/rRNA_sensor"
 echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+if [ "$INPUTSYSTEM" = "linux" ]; then
+echo "setenv VECPLUSDIR \"$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
+echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"$RRNASENSORDIR\":\"\$BLASTDB\""
+else
 echo "setenv BLASTDB \"\$RRNASENSORDIR\":\"\$BLASTDB\""
+fi
 echo "After adding the setenv lines to your .cshrc file, source that file"
 echo "to update your current environment with the command:"
 echo ""
