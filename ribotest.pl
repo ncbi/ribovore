@@ -58,7 +58,8 @@ $opt_group_desc_H{"2"} = "options for defining variables in testing files";
 #       option       type        default                group  requires incompat          preamble-output                                              help-output    
 #opt_Add("--dirbuild",   "string",  undef,                    2,   undef, undef,       "build directory, replaces !dirbuild! in test file with <s>", "build directory, replaces !dirbuild! in test file with <s>", \%opt_HH, \@opt_order_A);
 $opt_group_desc_H{"3"} = "other options";
-opt_Add("--keep",       "boolean", 0,                        3,    undef, undef,      "leaving intermediate files on disk", "do not remove intermediate files, keep them all on disk", \%opt_HH, \@opt_order_A);
+opt_Add("--rmout",      "boolean", 0,                        2,    undef, "-s",       "if output files listed in testin file already exist, remove them", "if output files listed in testin file already exist, remove them", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",       "boolean", 0,                        2,    undef, undef,      "leaving intermediate files on disk", "do not remove intermediate files, keep them all on disk", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -71,6 +72,7 @@ my $options_okay =
                 'f'            => \$GetOptions_H{"-f"},
                 's'            => \$GetOptions_H{"-s"},
 #                'dirbuild=s'   => \$GetOptions_H{"--dirbuild"},
+                'rmout'        => \$GetOptions_H{"--rmout"},
                 'keep'         => \$GetOptions_H{"--keep"});
 
 my $total_seconds = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
@@ -110,7 +112,7 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 #############################
 # create the output directory
 #############################
-my $cmd;              # a command to run with runCommand()
+my $cmd;              # a command to run with utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 if($dir_out !~ m/\/$/) { $dir_out =~ s/\/$//; } # remove final '/' if it exists
                 
@@ -259,9 +261,35 @@ exit(0);
 #####################################################################
 # SUBROUTINES 
 #####################################################################
+
+#################################################################
+# Subroutine:  test_ParseTestFile()
+# Incept:      EPN, Wed May 16 16:03:40 2018
+#
+# Purpose:     Parse an input test file and store the relevant information
+#              in passed in array references.
+#
+# Arguments:
+#   $testfile:    name of file to parse
+#   $cmd_AR:      ref to array of commands to fill here
+#   $desc_AR:     ref to array of descriptions to fill here
+#   $outfile_AAR: ref to 2D array of output files to fill here
+#   $expfile_AAR: ref to 2D array of expected files to fill here
+#   $rmdir_AAR:   ref to 2D array of directories to remove after calling each command
+#   $opt_HHR:     ref to 2D hash of option values, see top of epn-options.pm for description
+#   $FH_HR:       ref to hash of file handles, including "log" and "cmd"
+#
+# Returns:    number of commands read in $testfile
+#
+# Dies:       - if any of the expected files do not exist
+#             - if number of expected files is not equal to number of output files
+#               for any command
+#             - if there are 0 output files for a given command
+#             - if output file already exists
+#################################################################
 sub test_ParseTestFile { 
   my $sub_name = "test_ParseTestFile";
-  my $nargs_expected = 9;
+  my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($testfile, $cmd_AR, $desc_AR, $outfile_AAR, $expfile_AAR, $rmdir_AAR, $opt_HHR, $FH_HR) = @_;
@@ -328,6 +356,10 @@ sub test_ParseTestFile {
         if((opt_IsUsed("-s", $opt_HHR)) && (opt_Get("-s", $opt_HHR))) { 
           # -s used, we aren't running commands, just comparing files, output files must already exist
           if(! -e $outfile) { ofile_FAIL("ERROR, output file $outfile does not already exist (and -s used)", 1, $FH_HR); }
+        }
+        elsif((opt_IsUsed("--rmout", $opt_HHR)) && (opt_Get("--rmout", $opt_HHR))) { 
+          # --rmout used, remove any file that already exists
+          if(-e $outfile) { utl_FileRemoveUsingSystemRm($outfile, "ribotest.pl", $opt_HHR, $FH_HR); }
         }
         else { 
           # -s not used
@@ -400,7 +432,7 @@ sub test_ParseTestFile {
 #################################################################
 sub test_DiffTwoFiles { 
   my $sub_name = "test_DiffTwoFiles";
-  my $nargs_expected = 5;
+  my $nargs_expected = 4;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($out_file, $exp_file, $diff_file, $FH_HR) = @_;
@@ -431,8 +463,8 @@ sub test_DiffTwoFiles {
       # copy the two files here:
       my $copy_of_out_file = $diff_file . ".out";
       my $copy_of_exp_file = $diff_file . ".exp";
-      ribo_RunCommand("cp $out_file $copy_of_out_file", 0, $FH_HR);
-      ribo_RunCommand("cp $exp_file $copy_of_exp_file", 0, $FH_HR);
+      utl_RunCommand("cp $out_file $copy_of_out_file", 0, 0, $FH_HR);
+      utl_RunCommand("cp $exp_file $copy_of_exp_file", 0, 0, $FH_HR);
       # analyze the diff file and print out how many lines 
       if($out_file =~ m/\.sqtable/ && $exp_file =~ m/\.sqtable/) { 
         my $sqtable_diff_file = $diff_file . ".man";
