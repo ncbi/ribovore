@@ -14,7 +14,7 @@ require "sqp_utils.pm";
 
 # make sure required environment variables are set
 my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
-my $env_sensor_dir       = utl_DirEnvVarValid("SENSORDIR");
+my $env_rrnasensor_dir   = utl_DirEnvVarValid("RRNASENSORDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
@@ -23,7 +23,7 @@ my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"ribo"}               = $env_riboscripts_dir . "/ribotyper.pl";
-$execs_H{"rRNA_sensor_script"} = $env_sensor_dir    . "/rRNA_sensor_script";
+$execs_H{"rRNA_sensor_script"} = $env_rrnasensor_dir  . "/rRNA_sensor_script";
 $execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
 $execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
@@ -226,7 +226,7 @@ push(@arg_A, $dir_out);
 
 my %extra_H    = ();
 $extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
-$extra_H{"\$SENSORDIR"}       = $env_sensor_dir;
+$extra_H{"\$RRNASENSORDIR"}   = $env_rrnasensor_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 $extra_H{"\$RIBOBLASTDIR"}    = $env_riboblast_dir;
@@ -321,7 +321,7 @@ open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailu
 open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
-my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
+my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_rrnasensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
 
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
@@ -2497,7 +2497,7 @@ sub human_to_gpipe_fail_message {
 #   $blastdbcmd:        path to 'blastdbcmd' executable
 #   $in_mode:           mode we are running, default is "16S"
 #   $df_ribo_model_dir: default $RIBOSCRIPTSDIR/models directory, where default models should be
-#   $df_sensor_dir:     default $SENSORDIR directory, where default blast DBs should be
+#   $df_rrnasensor_dir: default $RRNASENSORDIR directory, where default blast DBs should be
 #   $opt_HHR:           ref to 2D hash of cmdline options (needed to determine if -i was used)
 #   $FH_HR:             ref to hash of file handles, including "cmd"
 #
@@ -2518,7 +2518,7 @@ sub parse_modelinfo_file {
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $blastdbcmd, $in_mode, $df_ribo_model_dir, $df_sensor_dir, $opt_HHR, $FH_HR) = @_;
+  my ($modelinfo_file, $blastdbcmd, $in_mode, $df_ribo_model_dir, $df_rrnasensor_dir, $opt_HHR, $FH_HR) = @_;
 
   my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
   my $modelinfo_in_df;     # flag for whether we found model info file in default dir or not
