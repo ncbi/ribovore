@@ -1,7 +1,6 @@
 #  <a name="top"></a> Ribovore installation instructions
 
 * [Installation using `install.sh`](#install.sh)
-  * [Installing Inline and LWP if installation fails](#inline)
 * [Setting environment variables](#environment)
 * [Verifying successful installation](#tests)
 * [Further information](#further)
@@ -22,7 +21,7 @@ https://raw.githubusercontent.com/nawrockie/ribovore/1.0/vadr-install.sh
 
 Copy the `install.sh` file into the directory in which you want
 to install Ribovore. A good name for that directory is
-`ribovore-install-dir`. Then move into that directory and run one of the
+`ribovore-install`. Then move into that directory and run one of the
 following two commands depending on whether you are installing on a
 Linux or Mac/OSX system. *Note that you if you are installing on Mac/OSX the
 ribodbmaker.pl script will have limited functionality because vecscreen_plus_taxonomy
@@ -44,7 +43,7 @@ The `install.sh` command will create several directories in the
 current directory.  It will download and install Ribovore and the
 required module libraries
 [sequip](https://github.com/nawrockie/sequip), as well as the binary
-executables of [Infernal](http://eddylab.org/infernal/), , the NCBI
+executables of [Infernal](http://eddylab.org/infernal/), the NCBI
 BLAST package (for either Linux or Mac/OSX), and (if Linux) the
 vecscreen_plus_taxonomy package.
 
