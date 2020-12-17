@@ -191,81 +191,175 @@ Below is an example of the expected output for
 `do-all-tests.sh` for a `linux` installation:
 
 ```
-# v-test.pl :: test VADR scripts [TEST SCRIPT]
-# VADR 1.1 (May 2020)
+# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed May  6 11:58:08 2020
+# date:             Thu Dec 17 16:41:47 2020
+# $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
-# test file:                                                         /usr/local/vadr-install-dir/vadr/testfiles/noro.r10.local.testin
-# output directory:                                                  vt-n10-local
+# test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribotyper.testin
+# output directory name:                                             rt-test
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Parsing test file                                  ... done. [    0.0 seconds]
-##teamcity[testStarted name='annotate-noro-10-local' captureStandardOutput='true']
-# Running command  1 [annotate-noro-10-local]        ... done. [   20.0 seconds]
-#       checking va-noro.r10/va-noro.r10.vadr.pass.tbl                                                                ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.fail.tbl                                                                ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.sqa                                                                     ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.sqc                                                                     ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.ftr                                                                     ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.sgm                                                                     ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.mdl                                                                     ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.alt                                                                     ... pass
-#       checking va-noro.r10/va-noro.r10.vadr.alc                                                                     ... pass
-#       removing directory va-noro.r10                               ... done
-##teamcity[testFinished name='annotate-noro-10-local']
+# Running command  1 [      ribotyper-1-16]          ... done. [    6.3 seconds]
+#	checking test-16/test-16.ribotyper.short.out                 ... pass
+#	checking test-16/test-16.ribotyper.long.out                  ... pass
+#	removing directory test-16                                   ... done
+# Running command  2 [     ribotyper-2-100]          ... done. [   21.2 seconds]
+#	checking r100/r100.ribotyper.short.out                       ... pass
+#	checking r100/r100.ribotyper.long.out                        ... pass
+#	removing directory r100                                      ... done
 #
 #
-# PASS: all 9 files were created correctly.
+# PASS: all 4 files were created correctly.
 #
-# Output printed to screen saved in:                   vt-n10-local.vadr.log
-# List of executed commands saved in:                  vt-n10-local.vadr.cmd
-# List and description of all output files saved in:   vt-n10-local.vadr.list
 #
-# All output files created in directory ./vt-n10-local/
+# List and description of all output files saved in:   rt-test.ribotest.list
+# Output printed to screen saved in:                   rt-test.ribotest.log
+# List of executed commands saved in:                  rt-test.ribotest.cmd
 #
-# Elapsed time:  00:00:20.13
+# All output files created in directory ./rt-test/
+#
+# Elapsed time:  00:00:27.67
 #                hh:mm:ss
-#
+# 
 [ok]
-# v-test.pl :: test VADR scripts [TEST SCRIPT]
-# VADR 1.1 (May 2020)
+Success: all tests passed
+# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed May  6 11:58:28 2020
+# date:             Thu Dec 17 16:42:15 2020
+# $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
-# test file:                                                         /usr/local/vadr-install-dir/vadr/testfiles/noro.r10.local.testin
-# output directory:                                                  vt-d5-local
+# test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/riboaligner.testin
+# output directory name:                                             ra-test
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Parsing test file                                  ... done. [    0.0 seconds]
-##teamcity[testStarted name='annotate-dengue-5-local' captureStandardOutput='true']
-# Running command  1 [annotate-dengue-5-local]       ... done. [   28.4 seconds]
-#       checking va-dengue.r5/va-dengue.r5.vadr.pass.tbl                                                              ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.fail.tbl                                                              ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.sqa                                                                   ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.sqc                                                                   ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.ftr                                                                   ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.sgm                                                                   ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.mdl                                                                   ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.alt                                                                   ... pass
-#       checking va-dengue.r5/va-dengue.r5.vadr.alc                                                                   ... pass
-#       removing directory va-dengue.r5                              ... done
-##teamcity[testFinished name='annotate-dengue-5-local']
+# Running command  1 [    riboaligner-1-16]          ... done. [   11.0 seconds]
+#	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.ifile ... pass
+#	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.elfile ... pass
+#	removing directory test-16-2                                 ... done
+# Running command  2 [   riboaligner-2-100]          ... done. [   81.3 seconds]
+#	checking r100-2/r100-2.riboaligner.tbl                       ... pass
+#	checking r100-2/r100-2.riboaligner.SSU.Eukarya.partial.list  ... pass
+#	checking r100-2/r100-2.riboaligner.SSU.Eukarya.partial.ifile ... pass
+#	checking r100-2/r100-2.riboaligner.SSU.Eukarya.partial.elfile ... pass
+#	checking r100-2/r100-2.riboaligner.SSU.Eukarya.partial.stk   ... pass
+#	removing directory r100-2                                    ... done
 #
 #
-# PASS: all 9 files were created correctly.
+# PASS: all 10 files were created correctly.
 #
-# Output printed to screen saved in:                   vt-d5-local.vadr.log
-# List of executed commands saved in:                  vt-d5-local.vadr.cmd
-# List and description of all output files saved in:   vt-d5-local.vadr.list
 #
-# All output files created in directory ./vt-d5-local/
+# List and description of all output files saved in:   ra-test.ribotest.list
+# Output printed to screen saved in:                   ra-test.ribotest.log
+# List of executed commands saved in:                  ra-test.ribotest.cmd
 #
-# Elapsed time:  00:00:28.52
+# All output files created in directory ./ra-test/
+#
+# Elapsed time:  00:01:32.71
 #                hh:mm:ss
+# 
+[ok]
+Success: all tests passed
+# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribovore 1.0 (June 2020)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:             Thu Dec 17 16:43:48 2020
+# $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
+# test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribosensor.testin
+# output directory name:                                             rs-test
+# forcing directory overwrite:                                       yes [-f]
+# if output files listed in testin file already exist, remove them:  yes [--rmout]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Running command  1 [     ribosensor-1-16]          ... done. [    9.9 seconds]
+#	checking test-rs-16/test-rs-16.ribosensor.out                ... pass
+#	checking test-rs-16/test-rs-16.ribosensor.gpipe              ... pass
+#	removing directory test-rs-16                                ... done
+# Running command  2 [    ribosensor-2-100]          ... done. [   40.9 seconds]
+#	checking rs-r100/rs-r100.ribosensor.out                      ... pass
+#	checking rs-r100/rs-r100.ribosensor.gpipe                    ... pass
+#	removing directory rs-r100                                   ... done
+#
+#
+# PASS: all 4 files were created correctly.
+#
+#
+# List and description of all output files saved in:   rs-test.ribotest.list
+# Output printed to screen saved in:                   rs-test.ribotest.log
+# List of executed commands saved in:                  rs-test.ribotest.cmd
+#
+# All output files created in directory ./rs-test/
+#
+# Elapsed time:  00:00:50.95
+#                hh:mm:ss
+# 
+[ok]
+Success: all tests passed
+# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribovore 1.0 (June 2020)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:             Thu Dec 17 16:44:40 2020
+# $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
+#
+# test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribodbmaker-vec.testin
+# output directory name:                                             rdb-test
+# forcing directory overwrite:                                       yes [-f]
+# if output files listed in testin file already exist, remove them:  yes [--rmout]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Running command  1 [ribodbmaker-vec-1-100]         ... done. [  125.9 seconds]
+#	checking db100vec/db100vec.ribodbmaker.rdb.tbl               ... pass
+#	removing directory db100vec                                  ... done
+#
+#
+# PASS: all 1 files were created correctly.
+#
+#
+# List and description of all output files saved in:   rdb-test.ribotest.list
+# Output printed to screen saved in:                   rdb-test.ribotest.log
+# List of executed commands saved in:                  rdb-test.ribotest.cmd
+#
+# All output files created in directory ./rdb-test/
+#
+# Elapsed time:  00:02:05.99
+#                hh:mm:ss
+# 
+[ok]
+Success: all tests passed
+# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribovore 1.0 (June 2020)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# date:             Thu Dec 17 16:46:46 2020
+# $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
+#
+# test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/github-issues/iss1/iss1.testin
+# output directory name:                                             iss1-out
+# forcing directory overwrite:                                       yes [-f]
+# if output files listed in testin file already exist, remove them:  yes [--rmout]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Running command  1 [         iss1-ribodb]          ... done. [    6.7 seconds]
+#	checking db1/db1.ribodbmaker.rdb.tbl                         ... pass
+#	removing directory db1                                       ... done
+#
+#
+# PASS: all 1 files were created correctly.
+#
+#
+# List and description of all output files saved in:   iss1-out.ribotest.list
+# Output printed to screen saved in:                   iss1-out.ribotest.log
+# List of executed commands saved in:                  iss1-out.ribotest.cmd
+#
+# All output files created in directory ./iss1-out/
+#
+# Elapsed time:  00:00:06.74
+#                hh:mm:ss
+# 
 [ok]
 Success: all tests passed
 ```
@@ -282,9 +376,11 @@ figuring out why, email me at eric.nawrocki@nih.gov.
 ---
 ## Further information
 
-* [`v-annotate.pl` example usage and command-line options](annotate.md#top)
-* [`v-build.pl` example usage and command-line options](build.md#top)
-* [VADR output formats](formats.md#top)
+* [`riboaligner.pl` example usage and command-line options](aligner.md#top)
+* [`ribodbmaker.pl` example usage and command-line options](dbmaker.md#top)
+* [`ribosensor.pl` example usage and command-line options](sensor.md#top)
+* [`ribotyper.pl` example usage and command-line options](typer.md#top)
+* [Ribovore output formats](formats.md#top)
 
 ---
 #### Questions, comments or feature requests? Send a mail to eric.nawrocki@nih.gov.
