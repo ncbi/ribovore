@@ -228,12 +228,12 @@ echo "export RIBOEASELDIR=\"\$RIBOINSTALLDIR/infernal/binaries\""
 echo "export RIBOSEQUIPDIR=\"\$RIBOINSTALLDIR/sequip\""
 echo "export RIBOBLASTDIR=\"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 echo "export RIBOTIMEDIR=/usr/bin"
-echo "export RRNASENSORDIR=$RIBOINSTALLDIR/rRNA_sensor"
+echo "export RRNASENSORDIR=\"\$RIBOINSTALLDIR/rRNA_sensor\""
 echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "export VECPLUSDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
-echo "export BLASTDB=\"\$VECPLUSDIR/univec-files\":\"$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "export BLASTDB=\"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
 else
 echo "export BLASTDB=\"\$RRNASENSORDIR\":\"\$BLASTDB\""
 fi
@@ -259,12 +259,12 @@ echo "setenv RIBOEASELDIR \"\$RIBOINSTALLDIR/bin\""
 echo "setenv RIBOSEQUIPDIR \"\$RIBOINSTALLDIR/sequip\""
 echo "setenv RIBOBLASTDIR \"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 echo "setenv RIBOTIMEDIR /usr/bin"
-echo "setenv RRNASENSORDIR $RIBOINSTALLDIR/rRNA_sensor"
+echo "setenv RRNASENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor\""
 echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "setenv VECPLUSDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
-echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
 else
 echo "setenv BLASTDB \"\$RRNASENSORDIR\":\"\$BLASTDB\""
 fi
