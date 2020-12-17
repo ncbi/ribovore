@@ -24,7 +24,7 @@ IVERSION="1.1.4"
 IESLCLUSTERVERSION="1.1.2"
 # dependency git tag
 RVERSION="ribovore-$VERSION"
-TMPVERSION="ribovore-0.40"
+TMPRVERSION="ribovore-0.40"
 
 # set defaults
 INPUTSYSTEM="?"
@@ -187,7 +187,7 @@ echo "------------------------------------------------"
 
 # if linux, download vecscreen_plus_taxonomy
 if [ "$INPUTSYSTEM" = "linux" ]; then
-curl -k -L -o vecscreen_plus_taxonomy-$TMPRVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$RVERSION.zip; 
+curl -k -L -o vecscreen_plus_taxonomy-$TMPRVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPRVERSION.zip; 
 unzip vecscreen_plus_taxonomy-$TMPRVERSION.zip; 
 mv vecscreen_plus_taxonomy-$TMPRVERSION vecscreen_plus_taxonomy
 rm vecscreen_plus_taxonomy-$TMPRVERSION.zip
