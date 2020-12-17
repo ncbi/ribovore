@@ -13,7 +13,6 @@
 #
 # Possible substrings in 'failstr' column 11, each substring separated by ';;':
 # 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed
-# 'vecscreen-match[<s>]':  vecscreen reported match to vector of strength <s>
 # 'blastrepeat[<s>]':      repetitive sequence identified by blastn
 #                          <s> = <s1>,<s2>,...<sI>...<sN> for N >= 1, where
 #                          <sI> = <c1>|e=<g1>|len=<d1>|<d2>..<d3>/<d4>..<d5>|pid=<f1>|ngap=<d6>
