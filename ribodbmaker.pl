@@ -1321,7 +1321,7 @@ else {
     # in the alipid_analyze_tab_files, those sequences are listed in $rfonly_list_file, we make
     # an array of them here
     my @survfilters_seqorder_A = ();
-    utl_FileLinesToArrayy($rfonly_list_file, 0, \@survfilters_seqorder_A, $ofile_info_HH{"FH"});
+    utl_FileLinesToArray($rfonly_list_file, 0, \@survfilters_seqorder_A, $ofile_info_HH{"FH"});
     my $cur_nfail = parse_alipid_analyze_tab_files(\%alipid_analyze_tab_file_H, \@level_A, \%seqfailstr_H, \@survfilters_seqorder_A, \%seqmdllen_H, $out_root, \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, sprintf("%6d pass; %6d fail;", scalar(@survfilters_seqorder_A) - $cur_nfail, $cur_nfail), $log_FH, *STDOUT);
 
