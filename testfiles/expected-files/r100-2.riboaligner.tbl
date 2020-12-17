@@ -42,7 +42,7 @@
 40    gi|321173709|gb|HQ888690.1|   SSU.Eukarya            plus   PASS      40    1779       -       -            partial  -
 41    gi|299562053|gb|HM134241.1|   SSU.Eukarya            plus   PASS      74    1126       -       -            partial  -
 42    gi|360040292|gb|JN940342.1|   SSU.Eukarya            plus   PASS      59    1131       -       -            partial  -
-43    gi|219812851|gb|FJ553065.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowScore:(0.42<0.50);*LowCoverage:(0.360<0.860);
+43    gi|219812851|gb|FJ553065.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowScore:(0.42<0.50);*LowCoverage:(0.360<0.860);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:22.5/165-1005:+);
 44    gi|507143285|gb|KC674878.1|   SSU.Eukarya            plus   PASS       1    1850       -       -       5flush-exact  -
 45    gi|799667172|gb|KM492859.1|   SSU.Eukarya            plus   PASS     134    1324       -       -            partial  MultipleHits:(2:SI[M:-1(407..407),S:75(270..344)]);
 46    gi|37933356|gb|AY242195.1|    SSU.Eukarya            plus   PASS      39    1803       -       -            partial  -
@@ -60,11 +60,11 @@
 58    gi|1139492845|gb|KX822310.1|  SSU.Eukarya            plus   PASS     259    1813       -       -            partial  -
 59    gi|1205803570|gb|MF318998.1|  SSU.Eukarya            plus   PASS      52    1171       -       -            partial  -
 60    gi|99122353|gb|DQ519026.1|    SSU.Eukarya            plus   PASS      76    1816       -       -            partial  -
-61    gi|219813948|gb|FJ554162.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowScore:(0.36<0.50);*LowCoverage:(0.332<0.860);MultipleHits:(2:SI[M:-7(1680..1686),S:211(195..405)]);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:21.0/267-1107:+);
+61    gi|219813948|gb|FJ554162.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowScore:(0.36<0.50);*LowCoverage:(0.332<0.860);MultipleHits:(2:SI[M:-7(1680..1686),S:211(195..405)]);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:20.3/267-1107:+);
 62    gi|283827997|gb|AY251104.2|   SSU.Eukarya            plus   PASS      57    1850       -       -            partial  -
 63    gi|226534219|gb|FJ763542.1|   SSU.Eukarya            plus   PASS      22    1824       -       -            partial  -
 64    gi|301153788|gb|HM486991.1|   SSU.Eukarya            plus   PASS     322    1726       -       -            partial  -
-65    gi|979839298|gb|KP322969.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowCoverage:(0.628<0.860);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:491.6/1374-2758:+);
+65    gi|979839298|gb|KP322969.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowCoverage:(0.628<0.860);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:496.3/1387-2758:+);
 66    gi|507142378|gb|KC673971.1|   SSU.Eukarya            plus   PASS       1    1850       -       -       5flush-exact  -
 67    gi|57864442|dbj|AB053234.2|   SSU.Eukarya            plus   PASS      22    1840       -       -            partial  -
 68    gi|324497190|gb|HQ263224.1|   SSU.Eukarya            plus   PASS      20    1800       -       -            partial  -
