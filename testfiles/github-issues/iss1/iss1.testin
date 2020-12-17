@@ -12,7 +12,7 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r1.fa ./; perl $RIBOSCRIPTSDIR/ribodbmaker.pl -f --model SSU.Eukarya --nocovfail --skipmstbl --skipfribo1 --skipftaxid --skipingrup --ribo2hmm fungi-ssu.r1.fa db1 > /dev/null; rm fungi-ssu.r1.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r1.fa ./; perl $RIBOSCRIPTSDIR/ribodbmaker.pl -f --model SSU.Eukarya --nocovfail --skipmstbl --skipfribo1 --skipftaxid --skipingrup --ribo2hmm --skipfvecsc fungi-ssu.r1.fa db1 > /dev/null; rm fungi-ssu.r1.fa*
 desc: iss1-ribodb
 out: db1/db1.ribodbmaker.rdb.tbl
 exp: @RIBOSCRIPTSDIR@/testfiles/github-issues/iss1/db1.ribodbmaker.rdb.tbl
