@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/riboaligner.testin ra-test
+$RIBOSCRIPTSDIR/ribotest.pl --rmout -f $RIBOSCRIPTSDIR/testfiles/riboaligner.testin ra-test
 if [ $? -eq 0 ]; then
    rm -rf ra-test
    echo "Success: all tests passed"
