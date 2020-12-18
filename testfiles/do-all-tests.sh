@@ -14,13 +14,13 @@ for t in \
     do-ribodbmaker-tests.sh \
     github-issues/do-all-issue-tests.sh \
     ; do
-    sh $RIBODIR/testfiles/$t
-    if [ $? != 0 ]; then
+    sh $RIBOSCRIPTSDIR/testfiles/$t
+    if [ $? -ne 0 ]; then
         RETVAL=1;
     fi   
 done
 
-if [ $RETVAL == 0 ]; then
+if [ $RETVAL -eq 0 ]; then
    echo "Success: all tests passed"
    exit 0
 else 

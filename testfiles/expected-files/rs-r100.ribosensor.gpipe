@@ -42,7 +42,7 @@
 40    gi|321173709|gb|HQ888690.1|   SSU.Eukarya            plus               RPSP  -
 41    gi|299562053|gb|HM134241.1|   SSU.Eukarya            plus               RPSP  -
 42    gi|360040292|gb|JN940342.1|   SSU.Eukarya            plus               RPSP  -
-43    gi|219812851|gb|FJ553065.1|   SSU.Eukarya            plus               RFSF  SEQ_HOM_LowSimilarity;SEQ_HOM_LowCoverage;
+43    gi|219812851|gb|FJ553065.1|   SSU.Eukarya            plus               RFSF  SEQ_HOM_SSUAndLSUrRNA;SEQ_HOM_LowSimilarity;SEQ_HOM_LowCoverage;
 44    gi|507143285|gb|KC674878.1|   SSU.Eukarya            plus               RPSP  -
 45    gi|799667172|gb|KM492859.1|   SSU.Eukarya            plus               RFSF  SEQ_HOM_LowSimilarity;SEQ_HOM_MultipleHits;
 46    gi|37933356|gb|AY242195.1|    SSU.Eukarya            plus               RPSP  -

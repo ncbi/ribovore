@@ -3,7 +3,7 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-require "epn-options.pm";
+require "sqp_opts.pm";
 
 #########################################################
 # Command line and option processing using epn-options.pm

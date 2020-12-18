@@ -4,16 +4,17 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
-my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
-my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
-my $df_model_dir         = $env_ribotyper_dir . "/models/";
+my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
+my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
+my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
+my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
+my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"cmalign"}      = $env_riboinfernal_dir . "/cmalign";
@@ -21,12 +22,12 @@ $execs_H{"esl-sfetch"}   = $env_riboeasel_dir    . "/esl-sfetch";
 $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
 $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
-$execs_H{"ribotyper"}    = $env_ribotyper_dir    . "/ribotyper.pl";
+$execs_H{"ribotyper"}    = $env_riboscripts_dir  . "/ribotyper.pl";
 $execs_H{"time"}         = $env_ribotime_dir  . "/time";
-ribo_ValidateExecutableHash(\%execs_H);
+utl_ExecHValidate(\%execs_H, undef);
 
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -102,7 +103,7 @@ my $options_okay =
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"});
 
-my $total_seconds     = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.40";
@@ -139,7 +140,7 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-my $cmd         = undef; # a command to be run by ribo_RunCommand()
+my $cmd         = undef; # a command to be run by utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = ();    # array of files to remove at end
 my $ncpu        = opt_Get("-n", \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
@@ -149,18 +150,18 @@ if($ncpu == 1) { $ncpu = 0; } # prefer --cpu 0 to --cpu 1
 # if $dir_out already exists remove it only if -f also used
 if(-d $dir_out) { 
   $cmd = "rm -rf $dir_out";
-  if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+  if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); }
   else                        { die "ERROR intended output directory named $dir_out already exists. Remove it, or use -f to overwrite it."; }
 }
 elsif(-e $dir_out) { 
   $cmd = "rm $dir_out";
-  if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); }
+  if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); }
   else                        { die "ERROR a file matching the name of the intended output directory $dir_out already exists. Remove the file, or use -f to overwrite it."; }
 }
 # if $dir_out does not exist, create it
 if(! -d $dir_out) { 
   $cmd = "mkdir $dir_out";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
 }
 my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
@@ -181,7 +182,7 @@ push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
@@ -200,9 +201,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the list, log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 my $FH_HR  = $ofile_info_HH{"FH"};
@@ -233,51 +234,51 @@ my $qsubinfo_file = undef;
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
 else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
-ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+utl_FileValidateExistsAndNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($modelinfo_file, "default model info file", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 }
 else { # -i used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 }
 if(! opt_IsUsed("-q", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
 else { # -q used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model files after we parse the model info file, below
 
 # read command line options for ribotyper from file if --riboopts used
 my $extra_ribotyper_options = "";
 if(opt_IsUsed("--riboopts", \%opt_HH)) { 
-  ribo_CheckIfFileExistsAndIsNonEmpty(opt_Get("--riboopts", \%opt_HH), "--riboopts file", undef, 1, $ofile_info_HH{"FH"}); # last argument as 1 says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty(opt_Get("--riboopts", \%opt_HH), "--riboopts file", undef, 1, $ofile_info_HH{"FH"}); # last argument as 1 says: die if it doesn't exist or is empty
 }
 
 # parse --riboopts file
 if(opt_IsUsed("--riboopts", \%opt_HH)) { 
   my $ribotyper_file = opt_Get("--riboopts", \%opt_HH);
-  open(RIBO, $ribotyper_file) || ofile_FileOpenFailure($ribotyper_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "reading", $FH_HR);
+  open(RIBO, $ribotyper_file) || ofile_FileOpenFailure($ribotyper_file,  "ribolengtchecker.pl::Main", $!, "reading", $FH_HR);
   $extra_ribotyper_options = <RIBO>;
   chomp $extra_ribotyper_options;
   while(<RIBO>) { 
     if($_ =~ m/\w/) { 
-      ofile_FAIL("ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR, expected exactly one line in $ribotyper_file, with command line options for ribotyper, but read more than one line", 1, $FH_HR);
     }
   }
-  if(($extra_ribotyper_options =~ m/^\-f/)          || ($extra_ribotyper_options =~ m/\s+-f/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--scfail/)    || ($extra_ribotyper_options =~ m/\s+--scfail/))    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--covfail/)   || ($extra_ribotyper_options =~ m/\s+--covfail/))   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--minusfail/) || ($extra_ribotyper_options =~ m/\s+--minusfail/)) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--inaccept/)  || ($extra_ribotyper_options =~ m/\s+--inaccept/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-f/)          || ($extra_ribotyper_options =~ m/\s+-f/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--scfail/)    || ($extra_ribotyper_options =~ m/\s+--scfail/))    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--covfail/)   || ($extra_ribotyper_options =~ m/\s+--covfail/))   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--minusfail/) || ($extra_ribotyper_options =~ m/\s+--minusfail/)) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--inaccept/)  || ($extra_ribotyper_options =~ m/\s+--inaccept/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", 1, $FH_HR); }
   # options related to parallelization
-  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", "RIBO", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", 1, $FH_HR); }
   close(RIBO);
 }
 
@@ -302,7 +303,7 @@ ribo_ParseRAModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%fa
 # verify the CM files listed in $modelinfo_file exist
 foreach $family (@family_order_A) { 
   if(! -s $family_modelfile_H{$family}) { 
-    ofile_FAIL("ERROR, model file $family_modelfile_H{$family} specified in $modelinfo_file does not exist or is empty", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR, model file $family_modelfile_H{$family} specified in $modelinfo_file does not exist or is empty", 1, $FH_HR);
   }
 }
 
@@ -317,9 +318,9 @@ my $ssi_file = $seq_file . ".ssi";
 if(-e $ssi_file) { 
   unlink $ssi_file; 
 }
-ribo_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $FH_HR);
+utl_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $FH_HR);
 if(! -s $ssi_file) { 
-  ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $FH_HR); 
+  ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $FH_HR); 
 } 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
@@ -354,7 +355,7 @@ my %width_H    = (); # hash, key is "target", value is maximum length of target
 my @accept_A = ();
 foreach $family (@family_order_A) { push(@accept_A, @{$family_rtname_HA{$family}}); }
 ribo_WriteAcceptFile(\@accept_A, $ribotyper_accept_file, $FH_HR);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "accept", $ribotyper_accept_file, 0, "accept input file for ribotyper");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "accept", $ribotyper_accept_file, 0, 1, "accept input file for ribotyper");
 
 # run ribotyper
 my $ribotyper_options = " -f --inaccept $ribotyper_accept_file --minusfail "; 
@@ -369,7 +370,7 @@ if(opt_IsUsed("--nkb",         \%opt_HH)) { $ribotyper_options .= " --nkb " . op
 if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . opt_Get("--wait", \%opt_HH); }
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
-ribo_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), $FH_HR);
+utl_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), 0, $FH_HR);
 # if -p: parse the ribotyper log file to get CPU+wait time for parallel
 $rt_opt_p_sum_cpu_secs = 0;
 if(opt_Get("-p", \%opt_HH)) { 
@@ -395,12 +396,12 @@ foreach $family (@family_order_A) {
   open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
 }
 
-open(RIBO, $ribotyper_short_file) || ofile_FileOpenFailure($ribotyper_short_file,  "RIBO", "riboaligner.pl::Main", $!, "reading", $FH_HR);
+open(RIBO, $ribotyper_short_file) || ofile_FileOpenFailure($ribotyper_short_file,  "riboaligner.pl::Main", $!, "reading", $FH_HR);
 while(my $line = <RIBO>) { 
   if($line !~ m/^\#/) { 
     my @el_A = split(/\s+/, $line);
     if(scalar(@el_A) != 6) { 
-      ofile_FAIL("ERROR, unable to parse ribotyper short output file, expected 6 tokens on line:\n$line\n", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR, unable to parse ribotyper short output file, expected 6 tokens on line:\n$line\n", 1, $FH_HR); 
     }
     my ($seqname, $class, $passfail) = ($el_A[1], $el_A[2], $el_A[4]);
     $found_family_match = 0;
@@ -426,7 +427,7 @@ close(RIBO);
 
 foreach $family (@family_order_A) { 
   close($family_sfetch_FH_H{$family});
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, "list file for $family");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " sfetch file", $family_sfetch_filename_H{$family}, 0, 1, "list file for $family");
 }
                                                        
 ##########################################################
@@ -451,8 +452,8 @@ my $opt_p_sum_cpu_secs = 0; # if -p: summed number of elapsed CPU secs all cmsea
 foreach $family (@family_order_A) { 
   if(-s $family_sfetch_filename_H{$family}) { 
     # fetch the sequences
-    ribo_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} > $family_seqfile_H{$family}", opt_Get("-v", \%opt_HH), $FH_HR);
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " fasta file", $family_seqfile_H{$family}, 0, "sequence file for $family");
+    utl_RunCommand($execs_H{"esl-sfetch"} . " -f $seq_file $family_sfetch_filename_H{$family} > $family_seqfile_H{$family}", opt_Get("-v", \%opt_HH), 0, $FH_HR);
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " fasta file", $family_seqfile_H{$family}, 0, 1, "sequence file for $family");
 
     # align the sequences
     my %info_H = ();
@@ -469,10 +470,10 @@ foreach $family (@family_order_A) {
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, "EL file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, "stockholm alignment file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, "cmalign output file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, 1, "insert file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, 1, "EL file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, 1, "stockholm alignment file for $family");
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, 1, "cmalign output file for $family");
 
     # parse cmalign file
     parse_cmalign_file($info_H{"OUT-NAME:stdout"}, \%out_tbl_HH, $FH_HR);
@@ -483,7 +484,7 @@ foreach $family (@family_order_A) {
     # if we have no more than 100K seqs, convert to stockholm now that we're done parsing it
     if($family_nseq_H{$family} <= 100000) { 
       my $reformat_cmd = $execs_H{"esl-reformat"} . " stockholm " . $info_H{"OUT-NAME:stk"} . " > " . $info_H{"OUT-NAME:stk"} . ".reformat; mv " . $info_H{"OUT-NAME:stk"} . ".reformat " . $info_H{"OUT-NAME:stk"};
-      ribo_RunCommand($reformat_cmd, opt_Get("-v", \%opt_HH), $FH_HR);
+      utl_RunCommand($reformat_cmd, opt_Get("-v", \%opt_HH), 0, $FH_HR);
     }
   }
 }
@@ -512,12 +513,12 @@ foreach $family (@family_order_A) {
       $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
 
-      open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "RIBO", "ribolengtchecker.pl::Main", $!, "writing", $FH_HR);
+      open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "riboaligner.pl::Main", $!, "writing", $FH_HR);
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }
       close(OUT);
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "listfile", $length_class_list_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "List file", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "listfile", $length_class_list_file, 1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "List file", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
 
       # extract relevant lines from insert file and EL file:
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_insert_file, $cmalign_insert_file, $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
@@ -525,12 +526,12 @@ foreach $family (@family_order_A) {
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_out_file,    $cmalign_out_file,    $family_length_class_HHA{$family}{$length_class}, 1, $FH_HR);
 
       # extract subset from the alignment
-      ribo_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | " . $execs_H{"esl-reformat"} . " --mingap --keeprf stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), $FH_HR);
+      utl_RunCommand($execs_H{"esl-alimanip"} . " --seq-k $length_class_list_file $family_cmalign_stk_file | " . $execs_H{"esl-reformat"} . " --mingap --keeprf stockholm - > $cmalign_stk_file", opt_Get("-v", \%opt_HH), 0, $FH_HR);
 
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "EL",      $cmalign_el_file,     1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "EL",      $cmalign_el_file,     1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
     }
   }
 }
@@ -577,15 +578,15 @@ ofile_OutputString($log_FH, 1, "# ribotyper output directory saved as $ribotyper
 
 ofile_OutputString($log_FH, 1, "#\n# Tabular output saved to file $output_file\n");
 
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 
 if(opt_Get("-p", \%opt_HH)) { 
   ofile_OutputString($log_FH, 1, "#\n");
-  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ribo_GetTimeString($opt_p_sum_cpu_secs)));
+  ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
 }
 
-ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0); 
 
 #################################################################
@@ -623,8 +624,8 @@ sub output_tabular_file {
   my ($out_tbl_file, $ribo_short_file, $nbound, $out_tbl_HHR, $FH_HR) = @_; 
 
   # open the ribotyper short output file for input and output file for output
-  open(IN, $ribo_short_file)    || ofile_FileOpenFailure($ribo_short_file,  "RIBO", $sub_name, $!, "reading", $FH_HR);
-  open(OUT, ">", $out_tbl_file) || ofile_FileOpenFailure($out_tbl_file,     "RIBO", $sub_name, $!, "writing", $FH_HR);
+  open(IN, $ribo_short_file)    || ofile_FileOpenFailure($ribo_short_file,  $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $out_tbl_file) || ofile_FileOpenFailure($out_tbl_file,     $sub_name, $!, "writing", $FH_HR);
 
   my $line_ctr = 0;
   while(my $line = <IN>) { 
@@ -658,7 +659,7 @@ sub output_tabular_file {
         }
       }
       else { 
-        ofile_FAIL("ERROR unable to parse non-comment line of $ribo_short_file:\n$line\n", "RIBO", 1, $FH_HR);
+        ofile_FAIL("ERROR unable to parse non-comment line of $ribo_short_file:\n$line\n", 1, $FH_HR);
       }
     }
     else { # comment line
@@ -731,7 +732,7 @@ sub parse_cmalign_file {
 
   my ($cmalign_file, $out_tbl_HHR, $FH_HR) = @_;
 
-  open(IN, $cmalign_file) || ofile_FileOpenFailure($cmalign_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $cmalign_file) || ofile_FileOpenFailure($cmalign_file, $sub_name, $!, "reading", $FH_HR);
 
   while(my $line = <IN>) { 
 ##                                                                           running time (s)                 
@@ -746,7 +747,7 @@ sub parse_cmalign_file {
       $line =~ s/^\s+//; # remove leading whitespace
       $line =~ s/\s+$//; # remove trailing whitespace
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 12) { ofile_FAIL("ERROR in $sub_name, unexpected number of tokens on cmalign output file line: $line", "RIBO", 1, $FH_HR);  }
+      if(scalar(@el_A) != 12) { ofile_FAIL("ERROR in $sub_name, unexpected number of tokens on cmalign output file line: $line", 1, $FH_HR);  }
       my ($seqname, $cmfrom, $cmto) = ($el_A[1], $el_A[3], $el_A[4]);
       $out_tbl_HHR->{$seqname}{"pred_cmfrom"} = $cmfrom;
       $out_tbl_HHR->{$seqname}{"pred_cmto"}   = $cmto;
@@ -802,18 +803,18 @@ sub parse_stk_file {
   # first pass through the file to get the RF line:
   my $line;
   my $rfstr = "";
-  open(IN, $stk_file) || ofile_FileOpenFailure($stk_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $stk_file) || ofile_FileOpenFailure($stk_file, $sub_name, $!, "reading", $FH_HR);
   while($line = <IN>) { 
     if($line =~ m/^#=GC RF\s+(\S+)/) { 
       if($rfstr ne "") { 
-        ofile_FAIL("ERROR in $sub_name, more than one RF line, alignment is not in Pfam format", "RIBO", 1, $FH_HR); 
+        ofile_FAIL("ERROR in $sub_name, more than one RF line, alignment is not in Pfam format", 1, $FH_HR); 
       }
       $rfstr = $1;
     }
   }
   close(IN);
   if($rfstr eq "") { 
-    ofile_FAIL("ERROR in $sub_name, no RF line found, alignment is not in Pfam format", "RIBO", 1, $FH_HR); 
+    ofile_FAIL("ERROR in $sub_name, no RF line found, alignment is not in Pfam format", 1, $FH_HR); 
   }
 
   # make a map of alignment positions to nongap RF positions
@@ -847,14 +848,14 @@ sub parse_stk_file {
   # $apos_final_rfpos is the alignment position that is the final nongap in the RF string
 
   # second pass through alignment
-  open(IN, $stk_file) || ofile_FAIL("ERROR unable to open cmalign file $stk_file for reading", "RIBO", 1, $FH_HR);
+  open(IN, $stk_file) || ofile_FAIL("ERROR unable to open cmalign file $stk_file for reading", 1, $FH_HR);
   while($line = <IN>) { 
     if($line !~ m/^#/ && $line =~ m/\w/) { 
       # a sequence line
       if($line =~ /(\S+)\s+(\S+)/) { 
         my ($seqname, $seqstr) = ($1, $2);
         if(! exists $out_tbl_HHR->{$seqname}) { 
-          ofile_FAIL("ERROR found sequence in alignment $stk_file without an entry in the output table", "RIBO", 1, $FH_HR); 
+          ofile_FAIL("ERROR found sequence in alignment $stk_file without an entry in the output table", 1, $FH_HR); 
         }
 
         my $i_before_first_rfpos = 0; # number of insertions before RF position 1
@@ -1049,8 +1050,8 @@ sub subset_from_insert_or_el_or_cmalign_file {
 
   my ($master_file, $sub_file, $AR, $cmalign_flag, $FH_HR) = @_;
 
-  open(IN,  $master_file)   || ofile_FileOpenFailure($master_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
-  open(OUT, ">", $sub_file) || ofile_FileOpenFailure($sub_file,    "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN,  $master_file)   || ofile_FileOpenFailure($master_file, $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $sub_file) || ofile_FileOpenFailure($sub_file,    $sub_name, $!, "reading", $FH_HR);
 
 
   my $col_idx = ($cmalign_flag) ? 1 : 0; # if cmalign file, column 1 has sequence name, else column 0 does
@@ -1076,11 +1077,11 @@ sub subset_from_insert_or_el_or_cmalign_file {
         $line =~ s/\s+$//; # remove trailing whitespace
         my @el_A = split(/\s+/, $line); 
         if(scalar(@el_A) <= $col_idx) { 
-          ofile_FAIL("ERROR in $sub_name, unable to parse line, too few elements: $line", "RIBO", 1, $FH_HR);
+          ofile_FAIL("ERROR in $sub_name, unable to parse line, too few elements: $line", 1, $FH_HR);
         }
         if(exists $H{$el_A[$col_idx]}) { 
           if($H{$el_A[$col_idx]} != 1) { 
-            ofile_FAIL("ERROR in $sub_name, read $el_A[$col_idx] more than once: $line", "RIBO", 1, $FH_HR);
+            ofile_FAIL("ERROR in $sub_name, read $el_A[$col_idx] more than once: $line", 1, $FH_HR);
           }
           $print_flag = 1; 
           $H{$el_A[$col_idx]} = 0;
@@ -1105,7 +1106,7 @@ sub subset_from_insert_or_el_or_cmalign_file {
     }
   }
   if($failstr ne "") { 
-    ofile_FAIL("ERROR in $sub_name, at least one sequence not found in $master_file:\n$failstr", "RIBO", 1, $FH_HR);
+    ofile_FAIL("ERROR in $sub_name, at least one sequence not found in $master_file:\n$failstr", 1, $FH_HR);
   }
 
   return;

@@ -7,13 +7,13 @@ use Time::HiRes qw(gettimeofday);
 # ribotest.pl :: test ribovore scripts [TEST SCRIPT]
 # Usage: ribotest.pl [-options] <input test file e.g. testfiles/testin.1> <output directory to create>
 
-require "epn-test.pm";
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribovore_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
+my $env_riboscripts_dir = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 
 #my %execs_H = (); # hash with paths to all required executables
 #$execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
@@ -22,7 +22,7 @@ my $env_ribovore_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
 #ribo_ValidateExecutableHash(\%execs_H);
  
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -58,7 +58,8 @@ $opt_group_desc_H{"2"} = "options for defining variables in testing files";
 #       option       type        default                group  requires incompat          preamble-output                                              help-output    
 #opt_Add("--dirbuild",   "string",  undef,                    2,   undef, undef,       "build directory, replaces !dirbuild! in test file with <s>", "build directory, replaces !dirbuild! in test file with <s>", \%opt_HH, \@opt_order_A);
 $opt_group_desc_H{"3"} = "other options";
-opt_Add("--keep",       "boolean", 0,                        3,    undef, undef,      "leaving intermediate files on disk", "do not remove intermediate files, keep them all on disk", \%opt_HH, \@opt_order_A);
+opt_Add("--rmout",      "boolean", 0,                        2,    undef, "-s",       "if output files listed in testin file already exist, remove them", "if output files listed in testin file already exist, remove them", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",       "boolean", 0,                        2,    undef, undef,      "leaving intermediate files on disk", "do not remove intermediate files, keep them all on disk", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
@@ -71,15 +72,15 @@ my $options_okay =
                 'f'            => \$GetOptions_H{"-f"},
                 's'            => \$GetOptions_H{"-s"},
 #                'dirbuild=s'   => \$GetOptions_H{"--dirbuild"},
+                'rmout'        => \$GetOptions_H{"--rmout"},
                 'keep'         => \$GetOptions_H{"--keep"});
 
-my $total_seconds = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable    = $0;
 my $date          = scalar localtime();
 my $version       = "0.40";
 my $releasedate   = "June 2020";
 my $package_name  = "ribovore";
-my $pkgstr        = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -111,14 +112,14 @@ opt_ValidateSet(\%opt_HH, \@opt_order_A);
 #############################
 # create the output directory
 #############################
-my $cmd;              # a command to run with runCommand()
+my $cmd;              # a command to run with utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 if($dir_out !~ m/\/$/) { $dir_out =~ s/\/$//; } # remove final '/' if it exists
                 
 if(-d $dir_out) { 
   $cmd = "rm -rf $dir_out";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir_out directory exists but -f not used
     die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -127,7 +128,7 @@ if(-d $dir_out) {
 elsif(-e $dir_out) { 
   $cmd = "rm $dir_out";
   if(opt_Get("-f", \%opt_HH)) { 
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); push(@early_cmd_A, $cmd); 
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
   else { # $dir_out file exists but -f not used
     die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -136,7 +137,7 @@ elsif(-e $dir_out) {
 
 # create the dir
 $cmd = "mkdir $dir_out";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
+utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef);
 push(@early_cmd_A, $cmd);
 
 my $dir_tail = $dir_out;
@@ -150,7 +151,7 @@ my $out_root = $dir_out . "/" . $dir_tail . ".ribotest";
 my @arg_desc_A = ("test file", "output directory name");
 my @arg_A      = ($test_file, $dir_out);
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"} = $env_ribovore_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"} = $env_riboscripts_dir;
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -167,9 +168,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "RIBO", "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -192,13 +193,13 @@ my @desc_A     = (); # array of the descriptions for the commands
 my @outfile_AA = (); # array of arrays of output files to compare for each command
 my @expfile_AA = (); # array of arrays of expected files to compare output to for each command
 my @rmdir_AA   = (); # array of directories to remove after each command is completed
-my $ncmd = test_ParseTestFile($test_file, $pkgstr, \@cmd_A, \@desc_A, \@outfile_AA, \@expfile_AA, \@rmdir_AA, \%opt_HH, $ofile_info_HH{"FH"});
+my $ncmd = test_ParseTestFile($test_file, \@cmd_A, \@desc_A, \@outfile_AA, \@expfile_AA, \@rmdir_AA, \%opt_HH, $ofile_info_HH{"FH"});
 
 my $npass = 0;
 my $nfail = 0;
 
-# TODO: I SHOULD PUT THIS INTO A FUNCTION IN epn-test.pm (e.g. test_RunTestFile) but currently it requires
-# a ribo_RunCommand() call in the rmdir section. 
+# TODO: I SHOULD PUT THIS INTO A FUNCTION IN sqp_opts.pm (e.g. test_RunTestFile) but currently it requires
+# a utl_RunCommand() call in the rmdir section. 
 # I could get around this by adding ofile_RemoveDir() and ofile_RemoveFile() functions.
 my $start_secs = undef;
 for(my $i = 1; $i <= $ncmd; $i++) { 
@@ -216,14 +217,14 @@ for(my $i = 1; $i <= $ncmd; $i++) {
   else { 
     # -s not used, run command
     $start_secs = ofile_OutputProgressPrior(sprintf("Running command %2d [%20s]", $i, $desc_A[($i-1)]), $progress_w, $log_FH, *STDOUT);
-    ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+    utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   }
 
   my $nout = scalar(@{$outfile_AR});
   for(my $j = 0; $j < $nout; $j++) { 
     my $diff_file = $out_root . "." . $i . "." . ($j+1) . ".diff";
-    my $pass = test_DiffTwoFiles($outfile_AR->[$j], $expfile_AR->[$j], $diff_file, $pkgstr, $ofile_info_HH{"FH"});
+    my $pass = test_DiffTwoFiles($outfile_AR->[$j], $expfile_AR->[$j], $diff_file, $ofile_info_HH{"FH"});
     if($pass) { $npass++; }
     else      { $nfail++; }
   }
@@ -232,7 +233,7 @@ for(my $i = 1; $i <= $ncmd; $i++) {
     my $nrmdir = (defined $rmdir_AR) ? scalar(@{$rmdir_AR}) : 0;
     for(my $k = 0; $k < $nrmdir; $k++) { 
       ofile_OutputString($log_FH, 1, sprintf("#\t%-60s ... ", "removing directory $rmdir_AR->[$k]"));
-      ribo_RunCommand("rm -rf $rmdir_AR->[$k]", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"}); 
+      utl_RunCommand("rm -rf $rmdir_AR->[$k]", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); 
       ofile_OutputString($log_FH, 1, "done\n");
     }
   }
@@ -249,10 +250,242 @@ if($overall_pass) {
 }
 else { 
   ofile_OutputString($log_FH, 1, sprintf("# FAIL: %d of %d files were not created correctly.\n", $nfail, $npass+$nfail));
-  ofile_FAIL("ERROR, at least one test FAILed", "RIBO", 1, undef);
+  ofile_FAIL("ERROR, at least one test FAILed", 1, undef);
 }
 ofile_OutputString($log_FH, 1, sprintf("#\n"));
 
-$total_seconds += ribo_SecondsSinceEpoch();
-ofile_OutputConclusionAndCloseFiles($total_seconds, $pkgstr, $dir_out, \%ofile_info_HH);
+$total_seconds += ofile_SecondsSinceEpoch();
+ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0);
+
+#####################################################################
+# SUBROUTINES 
+#####################################################################
+
+#################################################################
+# Subroutine:  test_ParseTestFile()
+# Incept:      EPN, Wed May 16 16:03:40 2018
+#
+# Purpose:     Parse an input test file and store the relevant information
+#              in passed in array references.
+#
+# Arguments:
+#   $testfile:    name of file to parse
+#   $cmd_AR:      ref to array of commands to fill here
+#   $desc_AR:     ref to array of descriptions to fill here
+#   $outfile_AAR: ref to 2D array of output files to fill here
+#   $expfile_AAR: ref to 2D array of expected files to fill here
+#   $rmdir_AAR:   ref to 2D array of directories to remove after calling each command
+#   $opt_HHR:     ref to 2D hash of option values, see top of epn-options.pm for description
+#   $FH_HR:       ref to hash of file handles, including "log" and "cmd"
+#
+# Returns:    number of commands read in $testfile
+#
+# Dies:       - if any of the expected files do not exist
+#             - if number of expected files is not equal to number of output files
+#               for any command
+#             - if there are 0 output files for a given command
+#             - if output file already exists
+#################################################################
+sub test_ParseTestFile { 
+  my $sub_name = "test_ParseTestFile";
+  my $nargs_expected = 8;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($testfile, $cmd_AR, $desc_AR, $outfile_AAR, $expfile_AAR, $rmdir_AAR, $opt_HHR, $FH_HR) = @_;
+
+  open(IN, $testfile) || ofile_FileOpenFailure($testfile, $sub_name, $!, "reading", $FH_HR);
+  my $ncmd = 0;
+  my $ndesc = 0;
+  my $outfile;
+  my $expfile;
+  my $rmdir;
+
+  while(my $line = <IN>) { 
+    if(($line !~ m/^\#/) && ($line =~ m/\w/)) { 
+      # example input file:
+      # # comment line (ignored)
+      # command: perl $DNAORGDIR/dnaorg_scripts/dnaorg_classify.pl -f -A /panfs/pan1/dnaorg/virseqannot/dnaorg-build-directories/norovirus-builds --infasta testfiles/noro.9.fa --dirbuild /panfs/pan1/dnaorg/virseqannot/dnaorg-build-directories/norovirus-builds --dirout test-noro.9
+      # out: test-noro.9/test-noro.9-NC_001959.dnaorg_annotate.sqtable 
+      # exp: testfiles/testout.1/test-noro.9/test-noro.9-NC_001959.dnaorg_annotate.sqtable 
+      chomp $line;
+      if($line =~ m/\r$/) { chop $line; } # remove ^M if it exists
+
+      if($line =~ s/^command\:\s+//) { 
+        my $cmd = $line;
+        if($ncmd > 0) { 
+          # make sure we have read >= 1 outfiles and expfiles for previous command
+          if(! (@{$outfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any out: lines for command " . ($ncmd+1), 1, $FH_HR); }
+          if(! (@{$expfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any exp: lines for command " . ($ncmd+1), 1, $FH_HR); }
+          my $nout_prv = scalar(@{$outfile_AAR->[($ncmd-1)]});
+          my $nexp_prv = scalar(@{$expfile_AAR->[($ncmd-1)]});
+          if($nout_prv != $nexp_prv) { 
+            ofile_FAIL("ERROR different number of output and expected lines for command " . ($ncmd+1), 1, $FH_HR);
+          }
+        }
+        # replace !<s>! with value of --<s> from options, die if it wasn't set or doesn't exist
+        while($cmd =~ /\!(\w+)\!/) { 
+          my $var = $1;
+          my $varopt = "--" . $var;
+          if(! opt_Exists($varopt, $opt_HHR)) { 
+            ofile_FAIL("ERROR trying to replace !$var! in test file but option --$var does not exist in command line options", 1, $FH_HR); 
+          }
+          if(! opt_IsUsed($varopt, $opt_HHR)) { 
+            ofile_FAIL("ERROR trying to replace !$var! in test file but option --$var was not specified on the command line, please rerun with --$var", 1, $FH_HR); 
+          }
+          my $replacevalue = opt_Get($varopt, $opt_HHR);
+          $cmd =~ s/\!$var\!/$replacevalue/g;
+        }
+        push(@{$cmd_AR}, $cmd); 
+        $ncmd++;
+      }
+      elsif($line =~ s/^desc\:\s+//) { 
+        my $desc = $line;
+        push(@{$desc_AR}, $desc); 
+        $ndesc++;
+      }
+      elsif($line =~ s/^out\:\s+//) { 
+        $outfile = $line;
+        $outfile =~ s/^\s+//;
+        $outfile =~ s/\s+$//;
+        if($outfile =~ m/\s/) { ofile_FAIL("ERROR output file has spaces: $outfile", 1, $FH_HR); }
+        if(scalar(@{$outfile_AAR}) < $ncmd) { 
+          @{$outfile_AAR->[($ncmd-1)]} = ();
+        }
+        push(@{$outfile_AAR->[($ncmd-1)]}, $outfile);
+        if((opt_IsUsed("-s", $opt_HHR)) && (opt_Get("-s", $opt_HHR))) { 
+          # -s used, we aren't running commands, just comparing files, output files must already exist
+          if(! -e $outfile) { ofile_FAIL("ERROR, output file $outfile does not already exist (and -s used)", 1, $FH_HR); }
+        }
+        elsif((opt_IsUsed("--rmout", $opt_HHR)) && (opt_Get("--rmout", $opt_HHR))) { 
+          # --rmout used, remove any file that already exists
+          if(-e $outfile) { utl_FileRemoveUsingSystemRm($outfile, "ribotest.pl", $opt_HHR, $FH_HR); }
+        }
+        else { 
+          # -s not used
+          if(-e $outfile) { ofile_FAIL("ERROR, output file $outfile already exists (and -s not used)", 1, $FH_HR); }
+        }
+      }
+      elsif($line =~ s/^exp\:\s+//) { 
+        $expfile = $line;
+        $expfile =~ s/^\s+//;
+        $expfile =~ s/\s+$//;
+        # replace @<s>@ with value of $ENV{'<s>'}
+        while($expfile =~ /\@(\w+)\@/) { 
+          my $envvar = $1;
+          my $replacevalue = $ENV{"$envvar"};
+          $expfile =~ s/\@$envvar\@/$replacevalue/g;
+        }
+        if($expfile =~ m/\s/) { ofile_FAIL("ERROR expected file has spaces: $expfile", 1, $FH_HR) }
+        if(scalar(@{$expfile_AAR}) < $ncmd) { 
+          @{$expfile_AAR->[($ncmd-1)]} = ();
+        }
+        push(@{$expfile_AAR->[($ncmd-1)]}, $expfile);
+        if(! -e $expfile) { ofile_FAIL("ERROR, expected file $expfile does not exist", 1, $FH_HR); }
+      }
+      elsif($line =~ s/^rmdir\:\s+//) { 
+        $rmdir = $line;
+        $rmdir =~ s/^\s+//;
+        $rmdir =~ s/\s+$//;
+        if(! defined $rmdir_AAR->[($ncmd-1)]) { 
+          @{$rmdir_AAR->[($ncmd-1)]} = ();
+        }
+        push(@{$rmdir_AAR->[($ncmd-1)]}, "$rmdir");
+      }
+      else { 
+        ofile_FAIL("ERROR unable to parse line $line in $testfile", 1, $FH_HR);
+      }
+    }
+  }
+  close(IN);
+
+  if($ndesc != $ncmd) { ofile_FAIL("ERROR did not read same number of descriptions and commands", 1, $FH_HR); }
+
+  # for final command, check that number of exp and out files is equal
+  if(! (@{$outfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any out: lines for command " . ($ncmd+1), 1, $FH_HR); }
+  if(! (@{$expfile_AAR->[($ncmd-1)]})) { ofile_FAIL("ERROR did not read any exp: lines for command " . ($ncmd+1), 1, $FH_HR); }
+  my $nout_prv = scalar(@{$outfile_AAR->[($ncmd-1)]});
+  my $nexp_prv = scalar(@{$expfile_AAR->[($ncmd-1)]});
+  if($nout_prv != $nexp_prv) { 
+    ofile_FAIL("ERROR different number of output and expected lines for command " . ($ncmd+1), 1, $FH_HR);
+  }
+
+  return $ncmd;
+}
+
+#################################################################
+# Subroutine:  test_DiffTwoFiles()
+# Incept:      EPN, Thu May 17 14:24:06 2018
+#
+# Purpose:     Diff two files, and output whether they are identical or not.
+#
+# Arguments:
+#   $out_file:    name of output file
+#   $exp_file:    name of expected file
+#   $diff_file:   output file for diff command
+#   $FH_HR:       REF to hash of file handles, including "log" and "cmd"
+#
+# Returns:    '1' if $outfile is identical to $expfile as determined by diff
+#
+# Dies:       If an expected file does not exist or is empty.
+#
+#################################################################
+sub test_DiffTwoFiles { 
+  my $sub_name = "test_DiffTwoFiles";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($out_file, $exp_file, $diff_file, $FH_HR) = @_;
+
+  my $out_file_exists   = (-e $out_file) ? 1 : 0;
+  my $exp_file_exists   = (-e $exp_file) ? 1 : 0;
+  my $out_file_nonempty = (-s $out_file) ? 1 : 0;
+  my $exp_file_nonempty = (-s $exp_file) ? 1 : 0;
+
+  my $conclusion = "";
+  my $pass = 0;
+
+  if(! $exp_file_exists) { 
+    ofile_FAIL("ERROR in $sub_name, expected file $exp_file does not exist", 1, $FH_HR) ;
+  }
+  if(! $exp_file_nonempty) { 
+    ofile_FAIL("ERROR in $sub_name, expected file $exp_file exists but is empty", 1, $FH_HR);
+  }
+    
+  ofile_OutputString($FH_HR->{"log"}, 1, sprintf("#\t%-60s ... ", "checking $out_file"));
+
+  if($out_file_nonempty) { 
+    my $cmd = "diff -U 0 $out_file $exp_file > $diff_file";
+    # don't use runCommand() because diff 'fails' if files are not identical
+    ofile_OutputString($FH_HR->{"cmd"}, 0, "$cmd\n");
+    system($cmd);
+    if(-s $diff_file) { 
+      # copy the two files here:
+      my $copy_of_out_file = $diff_file . ".out";
+      my $copy_of_exp_file = $diff_file . ".exp";
+      utl_RunCommand("cp $out_file $copy_of_out_file", 0, 0, $FH_HR);
+      utl_RunCommand("cp $exp_file $copy_of_exp_file", 0, 0, $FH_HR);
+      # analyze the diff file and print out how many lines 
+      if($out_file =~ m/\.sqtable/ && $exp_file =~ m/\.sqtable/) { 
+        my $sqtable_diff_file = $diff_file . ".man";
+        test_DnaorgCompareTwoSqtableFiles($out_file, $exp_file, $sqtable_diff_file, $FH_HR);
+        $conclusion = "FAIL [files differ, see $sqtable_diff_file]";
+      }
+      else { 
+        $conclusion = "FAIL [files differ, see $diff_file]";
+      }
+    }
+    else { 
+      $conclusion = "pass";
+      $pass = 1;
+    }
+  }
+  else { 
+    $conclusion = ($out_file_exists) ? "FAIL [output file exists but is empty]" : "FAIL [output file does not exist]";
+  }
+
+  ofile_OutputString($FH_HR->{"log"}, 1, "$conclusion\n");
+
+  return $pass;
+}
+

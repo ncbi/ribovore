@@ -7,32 +7,33 @@ use Time::HiRes qw(gettimeofday);
 # ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
 # Usage: ribosensor.pl [-options] <fasta file to annotate> <output directory>\n";
 
-require "epn-options.pm";
-require "epn-ofile.pm";
 require "ribo.pm";
+require "sqp_opts.pm";
+require "sqp_ofile.pm";
+require "sqp_utils.pm";
 
 # make sure required environment variables are set
-my $env_ribotyper_dir    = ribo_VerifyEnvVariableIsValidDir("RIBODIR");
-my $env_sensor_dir       = ribo_VerifyEnvVariableIsValidDir("SENSORDIR");
-my $env_riboinfernal_dir = ribo_VerifyEnvVariableIsValidDir("RIBOINFERNALDIR");
-my $env_riboeasel_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOEASELDIR");
-my $env_riboblast_dir    = ribo_VerifyEnvVariableIsValidDir("RIBOBLASTDIR");
-my $env_ribotime_dir     = ribo_VerifyEnvVariableIsValidDir("RIBOTIMEDIR");
-my $df_model_dir         = $env_ribotyper_dir . "/models/";
+my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
+my $env_rrnasensor_dir   = utl_DirEnvVarValid("RRNASENSORDIR");
+my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
+my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
+my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
+my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
+my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"ribo"}               = $env_ribotyper_dir . "/ribotyper.pl";
-$execs_H{"rRNA_sensor_script"} = $env_sensor_dir    . "/rRNA_sensor_script";
+$execs_H{"ribo"}               = $env_riboscripts_dir . "/ribotyper.pl";
+$execs_H{"rRNA_sensor_script"} = $env_rrnasensor_dir  . "/rRNA_sensor_script";
 $execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
 $execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
 $execs_H{"blastdbcmd"}         = $env_riboblast_dir . "/blastdbcmd";
 $execs_H{"time"}               = $env_ribotime_dir  . "/time";
-ribo_ValidateExecutableHash(\%execs_H);
+utl_ExecHValidate(\%execs_H, undef);
 
 
 #########################################################
-# Command line and option processing using epn-options.pm
+# Command line and option processing using sqp_opts.pm
 #
 # opt_HH: 2D hash:
 #         1D key: option name (e.g. "-h")
@@ -125,7 +126,7 @@ my $options_okay =
                 'wait=s'       => \$GetOptions_H{"--wait"},
                 'errcheck'     => \$GetOptions_H{"--errcheck"});
 
-my $total_seconds          = -1 * ribo_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ribo_SecondsSinceEpoch call at end to get total time
+my $total_seconds          = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "0.40";
@@ -133,7 +134,6 @@ my $model_version_str = "0p30"; # model info file unchanged since version 0.30
 my $qsub_version_str  = "0p32"; # for qsubinfo file only
 my $releasedate       = "June 2020";
 my $package_name      = "ribovore";
-my $pkgstr            = "RIBO";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -162,7 +162,7 @@ opt_SetFromUserHash(\%GetOptions_H, \%opt_HH);
 # validate options (check for conflicts)
 opt_ValidateSet(\%opt_HH, \@opt_order_A);
 
-my $cmd  = undef;                    # a command to be run by ribo_RunCommand()
+my $cmd  = undef;                    # a command to be run by utl_RunCommand()
 my $ncpu = opt_Get("-n" , \%opt_HH); # number of CPUs to use with search command (default 0: --cpu 0)
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = (); # array of files to remove at end
@@ -189,7 +189,7 @@ else {  # --skipsearch not used, normal case
       die "ERROR you used --psave but directory $dir_out already exists.\nYou can either run with --skipsearch to create the psave file and not redo the searches OR\nremove the $dir_out directory and then rerun with --psave if you really want to redo the search steps";
     }
     elsif(opt_Get("-f", \%opt_HH)) { 
-      ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); 
+      utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); 
     }
     else { 
       die "ERROR directory named $dir_out already exists. Remove it, or use -f to overwrite it."; 
@@ -197,14 +197,14 @@ else {  # --skipsearch not used, normal case
   }
   elsif(-e $dir_out) { 
     $cmd = "rm $dir_out";
-    if(opt_Get("-f", \%opt_HH)) { ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef); }
+    if(opt_Get("-f", \%opt_HH)) { utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); }
     else                        { die "ERROR a file named $dir_out already exists. Remove it, or use -f to overwrite it."; }
   }
 }
 # if $dir_out does not exist, create it
 if(! -d $dir_out) { 
   $cmd = "mkdir $dir_out";
-  ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), undef);
+  utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef);
 }
 
 my $dir_out_tail = $dir_out;
@@ -225,8 +225,8 @@ push(@arg_desc_A, "output directory name");
 push(@arg_A, $dir_out);
 
 my %extra_H    = ();
-$extra_H{"\$RIBODIR"}         = $env_ribotyper_dir;
-$extra_H{"\$SENSORDIR"}       = $env_sensor_dir;
+$extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
+$extra_H{"\$RRNASENSORDIR"}   = $env_rrnasensor_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 $extra_H{"\$RIBOBLASTDIR"}    = $env_riboblast_dir;
@@ -247,9 +247,9 @@ my %ofile_info_HH = ();  # hash of information on output files we created,
                          #  "cmd": command file with list of all commands executed
 
 # open the list, log and command files 
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "list", $out_root . ".list", 1, "List and description of all output files");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "log",  $out_root . ".log",  1, "Output printed to screen");
-ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, $pkgstr, "cmd",  $out_root . ".cmd",  1, "List of executed commands");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "list", $out_root . ".list", 1, 1, "List and description of all output files");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "log",  $out_root . ".log",  1, 1, "Output printed to screen");
+ofile_OpenAndAddFileToOutputInfo(\%ofile_info_HH, "cmd",  $out_root . ".cmd",  1, 1, "List of executed commands");
 my $log_FH = $ofile_info_HH{"FH"}{"log"};
 my $cmd_FH = $ofile_info_HH{"FH"}{"cmd"};
 # output files are all open, if we exit after this point, we'll need
@@ -276,18 +276,18 @@ my $qsubinfo_file = undef;
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
 else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
-ribo_CheckIfFileExistsAndIsNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+utl_FileValidateExistsAndNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "default model info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($modelinfo_file, "default model info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
 else { # -i used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
 if(! opt_IsUsed("-q", \%opt_HH)) {
-  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
 else { # -q used on the command line
-  ribo_CheckIfFileExistsAndIsNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
 }
 # we check for the existence of model file after we parse the model info file
 
@@ -314,14 +314,14 @@ my $sensor_indi_FH       = undef; # output file handle for gpipe file sorted by 
 my $ribo_indi_FH         = undef; # output file handle for ribotyper gpipe file sorted by input sequence index
 my $combined_out_FH      = undef; # output file handle for the combined output file
 my $combined_gpipe_FH    = undef; # output file handle for the combined gpipe file
-open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "RIBO", "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
-my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_sensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
+my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_rrnasensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
 
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
@@ -372,10 +372,10 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $start_secs = ofile_OutputProgressPrior("Partitioning sequence file based on sequence lengths", $progress_w, $log_FH, *STDOUT);
   # check for SSI index file for the sequence file,
   # if it doesn't exist, create it
-  if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
-    ribo_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
-    if(ribo_CheckIfFileExistsAndIsNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
-      ofile_FAIL("ERROR, tried to create $ssi_file, but failed", "RIBO", 1, $ofile_info_HH{"FH"}); 
+  if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
+    utl_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
+      ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $ofile_info_HH{"FH"}); 
     }
   }
 }
@@ -433,9 +433,9 @@ my $ribo_shortfile = $ribo_dir_out . "/ribo-out.ribotyper.short.out";
 my $ribo_logfile   = $ribo_dir_out . "/ribo-out.ribotyper.log";
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior("Running ribotyper on full sequence file", $progress_w, $log_FH, *STDOUT);
-  ribo_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+  utl_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   $ribo_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "ribostdout",  $ribo_stdoutfile, 0, "ribotyper stdout output");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "ribostdout",  $ribo_stdoutfile, 0, 1, "ribotyper stdout output");
 }  
 # if -p used, overwrite ribo_secs with summed seconds
 if(opt_Get("-p", \%opt_HH)) { 
@@ -490,7 +490,7 @@ for($i = 0; $i < $nseq_parts; $i++) {
       $sensor_p_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
 
       $sensor_secs += ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, "rRNA_sensor stdout output for length class" . ($i+1));
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, 1, "rRNA_sensor stdout output for length class" . ($i+1));
       if(! opt_IsUsed("--keep", \%opt_HH)) { # remove the fasta files that rRNA_sensor created
         my $sensor_mid_fafile = $sensor_dir_out_A[$i] . "/middle_queries.fsa";
         my $sensor_out_fafile = $sensor_dir_out_A[$i] . "/outlier_queries.fsa";
@@ -621,18 +621,18 @@ output_headers_without_fails_to($sensor_indi_FH, \%width_H, $ofile_info_HH{"FH"}
 close($sensor_indi_FH);
 
 $cmd = "sort -n $unsrt_sensor_indi_file >> $sensor_indi_file";
-ribo_RunCommand($cmd, opt_Get("-v", \%opt_HH), $ofile_info_HH{"FH"});
+utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 open($sensor_indi_FH, ">>", $sensor_indi_file) || die "ERROR, unable to open $sensor_indi_file for appending";
 output_tail_without_fails_to($sensor_indi_FH, \%opt_HH); 
 close($sensor_indi_FH);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "sensorout", $sensor_indi_file, 1, "summary of rRNA_sensor results");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sensorout", $sensor_indi_file, 1, 1, "summary of rRNA_sensor results");
 
 # convert ribotyper output to gpipe 
 output_headers_without_fails_to($ribo_indi_FH, \%width_H, $ofile_info_HH{"FH"});
 convert_ribo_short_to_indi_file($ribo_indi_FH, $ribo_shortfile, \@herror_A, \%seqidx_H, \%width_H, \%opt_HH);
 output_tail_without_fails_to($ribo_indi_FH, \%opt_HH); 
 close($ribo_indi_FH);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "riboout", $ribo_indi_file, 1, "summary of ribotyper results");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "riboout", $ribo_indi_file, 1, 1, "summary of ribotyper results");
 
 initialize_hash_of_hash_of_counts(\%outcome_ct_HH, \@outcome_type_A, \@outcome_cat_A);
 initialize_hash_of_hash_of_counts(\%herror_ct_HH,  \@outcome_type_A, \@herror_A);
@@ -654,8 +654,8 @@ close($combined_out_FH);
 close($combined_gpipe_FH);
 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "combinedout",   $combined_out_file,   1, "summary of combined rRNA_sensor and ribotyper results (original errors)");
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "RIBO", "combinedgpipe", $combined_gpipe_file, 1, "summary of combined rRNA_sensor and ribotyper results (GPIPE errors)");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedout",   $combined_out_file,   1, 1, "summary of combined rRNA_sensor and ribotyper results (original errors)");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedgpipe", $combined_gpipe_file, 1, 1, "summary of combined rRNA_sensor and ribotyper results (GPIPE errors)");
 
 # remove files we do not want anymore, then exit
 foreach my $file (@to_remove_A) { 
@@ -680,7 +680,7 @@ output_error_counts($log_FH, "Per-program error counts:", $tot_nseq, \%{$herror_
 output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 output_error_counts($log_FH, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
-$total_seconds += ribo_SecondsSinceEpoch();
+$total_seconds += ofile_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
@@ -690,7 +690,7 @@ if((opt_Get("--psave", \%opt_HH)) && ($nseq_passed > 0)) {
   printf("#\n# The $nseq_passed sequences that passed (with $nseq_revcomped minus strand sequences\n# reverse complemented) saved to file $passes_seq_file\n");
 }
 
-ofile_OutputConclusionAndCloseFiles($total_seconds, "RIBO", $dir_out, \%ofile_info_HH);
+ofile_OutputConclusionAndCloseFilesOk($total_seconds, $dir_out, \%ofile_info_HH);
 exit(0); 
 
 ###############
@@ -750,7 +750,7 @@ sub fetch_seqs_in_length_range {
 
   if($nseq > 0 && ($do_fetch)) { 
     my $sfetch_cmd = $sfetch_exec . " -f $seq_file $sfetch_file > $subseq_file"; 
-    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    utl_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
   }
 
   return ($nseq, $nnt);
@@ -941,10 +941,10 @@ sub output_headers_without_fails_to {
 
   my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
-  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-", $FH_HR);
-  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-", $FH_HR);
+  my $index_dash_str  = "#" . utl_StringMonoChar($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = utl_StringMonoChar($width_HR->{"target"}, "-", $FH_HR);
+  my $tax_dash_str    = utl_StringMonoChar($width_HR->{"taxonomy"}, "-", $FH_HR);
+  my $strand_dash_str = utl_StringMonoChar($width_HR->{"strand"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %-*s  %4s  %s\n", 
               $width_HR->{"index"},    "#idx", 
@@ -981,10 +981,10 @@ sub output_headers_with_fails_to {
 
   my ($FH, $width_HR, $FH_HR) = (@_);
 
-  my $index_dash_str  = "#" . ribo_GetMonoCharacterString($width_HR->{"index"}-1, "-", $FH_HR);
-  my $target_dash_str = ribo_GetMonoCharacterString($width_HR->{"target"}, "-", $FH_HR);
-  my $tax_dash_str    = ribo_GetMonoCharacterString($width_HR->{"taxonomy"}, "-", $FH_HR);
-  my $strand_dash_str = ribo_GetMonoCharacterString($width_HR->{"strand"}, "-", $FH_HR);
+  my $index_dash_str  = "#" . utl_StringMonoChar($width_HR->{"index"}-1, "-", $FH_HR);
+  my $target_dash_str = utl_StringMonoChar($width_HR->{"target"}, "-", $FH_HR);
+  my $tax_dash_str    = utl_StringMonoChar($width_HR->{"taxonomy"}, "-", $FH_HR);
+  my $strand_dash_str = utl_StringMonoChar($width_HR->{"strand"}, "-", $FH_HR);
 
   printf $FH ("%-*s  %-*s  %-*s  %-*s  %4s  %9s  %s\n", 
               $width_HR->{"index"},    "#idx", 
@@ -1798,12 +1798,12 @@ sub output_outcome_counts {
                   $width_H{"unmapped"},  "unmapped");
   # line 2
   printf $FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n", 
-                  $width_H{"type"},      ribo_GetMonoCharacterString($width_H{"type"}, "-", $FH_HR),
-                  $width_H{"total"},     ribo_GetMonoCharacterString($width_H{"total"}, "-", $FH_HR),
-                  $width_H{"pass"},      ribo_GetMonoCharacterString($width_H{"pass"}, "-", $FH_HR),
-                  $width_H{"indexer"},   ribo_GetMonoCharacterString($width_H{"indexer"}, "-", $FH_HR),
-                  $width_H{"submitter"}, ribo_GetMonoCharacterString($width_H{"submitter"}, "-", $FH_HR),
-                  $width_H{"unmapped"},  ribo_GetMonoCharacterString($width_H{"unmapped"}, "-", $FH_HR));
+                  $width_H{"type"},      utl_StringMonoChar($width_H{"type"}, "-", $FH_HR),
+                  $width_H{"total"},     utl_StringMonoChar($width_H{"total"}, "-", $FH_HR),
+                  $width_H{"pass"},      utl_StringMonoChar($width_H{"pass"}, "-", $FH_HR),
+                  $width_H{"indexer"},   utl_StringMonoChar($width_H{"indexer"}, "-", $FH_HR),
+                  $width_H{"submitter"}, utl_StringMonoChar($width_H{"submitter"}, "-", $FH_HR),
+                  $width_H{"unmapped"},  utl_StringMonoChar($width_H{"unmapped"}, "-", $FH_HR));
   
   foreach $type ("RPSP", "RPSF", "RFSP", "RFSF", "*all*") { 
     if($type eq "*all*") { print $FH "#\n"; }
@@ -1881,9 +1881,9 @@ sub output_error_counts {
 
   # line 3
   printf $FH ("# %-*s  %-*s  %*s\n", 
-                  $width_H{"error"},    ribo_GetMonoCharacterString($width_H{"error"}, "-", $FH_HR),
-                  $width_H{"seqs"},     ribo_GetMonoCharacterString($width_H{"seqs"}, "-", $FH_HR),
-                  $width_H{"fraction"}, ribo_GetMonoCharacterString($width_H{"fraction"}, "-", $FH_HR));
+                  $width_H{"error"},    utl_StringMonoChar($width_H{"error"}, "-", $FH_HR),
+                  $width_H{"seqs"},     utl_StringMonoChar($width_H{"seqs"}, "-", $FH_HR),
+                  $width_H{"fraction"}, utl_StringMonoChar($width_H{"fraction"}, "-", $FH_HR));
 
   foreach $error (@{$key_AR}) { 
     if(($ct_HR->{$error} > 0) || ($error eq "CLEAN")) { 
@@ -2049,12 +2049,12 @@ sub output_timing_statistics {
   
   # line 2
   printf $FH ("# %-*s  %*s  %*s  %*s  %*s  %*s\n",
-                  $width_H{"stage"},    ribo_GetMonoCharacterString($width_H{"stage"},    "-", $FH_HR),
-                  $width_H{"nseq"},     ribo_GetMonoCharacterString($width_H{"nseq"},     "-", $FH_HR),
-                  $width_H{"seqsec"},   ribo_GetMonoCharacterString($width_H{"seqsec"},   "-", $FH_HR),
-                  $width_H{"ntsec"},    ribo_GetMonoCharacterString($width_H{"ntsec"},    "-", $FH_HR),
-                  $width_H{"ntseccpu"}, ribo_GetMonoCharacterString($width_H{"ntseccpu"}, "-", $FH_HR),
-                  $width_H{"total"},    ribo_GetMonoCharacterString($width_H{"total"},    "-", $FH_HR));
+                  $width_H{"stage"},    utl_StringMonoChar($width_H{"stage"},    "-", $FH_HR),
+                  $width_H{"nseq"},     utl_StringMonoChar($width_H{"nseq"},     "-", $FH_HR),
+                  $width_H{"seqsec"},   utl_StringMonoChar($width_H{"seqsec"},   "-", $FH_HR),
+                  $width_H{"ntsec"},    utl_StringMonoChar($width_H{"ntsec"},    "-", $FH_HR),
+                  $width_H{"ntseccpu"}, utl_StringMonoChar($width_H{"ntseccpu"}, "-", $FH_HR),
+                  $width_H{"total"},    utl_StringMonoChar($width_H{"total"},    "-", $FH_HR));
   
   
 
@@ -2075,7 +2075,7 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   $tot_nseq / $ribo_secs2print,
                 $width_H{"ntsec"},    $tot_nnt  / $ribo_secs2print, 
                 $width_H{"ntseccpu"}, ($tot_nnt  / $ribo_secs2print) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($ribo_secs2print));
+                $width_H{"total"},    ofile_FormatTimeString($ribo_secs2print));
   }
      
   $stage = "sensor";
@@ -2095,7 +2095,7 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   $tot_nseq / $sensor_secs2print,
                 $width_H{"ntsec"},    $tot_nnt  / $sensor_secs2print, 
                 $width_H{"ntseccpu"}, ($tot_nnt  / $sensor_secs2print) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($sensor_secs2print));
+                $width_H{"total"},    ofile_FormatTimeString($sensor_secs2print));
   }
 
   $stage = "total";
@@ -2106,7 +2106,7 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   "-",
                 $width_H{"ntsec"},    "-",
                 $width_H{"ntseccpu"}, "-",
-                $width_H{"total"},    ribo_GetTimeString($tot_secs));
+                $width_H{"total"},    ofile_FormatTimeString($tot_secs));
   }
   else { 
     printf $FH ("  %-*s  %*d  %*.1f  %*.1f  %*.1f  %*s\n", 
@@ -2115,13 +2115,13 @@ sub output_timing_statistics {
                 $width_H{"seqsec"},   $tot_nseq / $tot_secs,
                 $width_H{"ntsec"},    $tot_nnt  / $tot_secs, 
                 $width_H{"ntseccpu"}, ($tot_nnt  / $tot_secs) / $ncpu, 
-                $width_H{"total"},    ribo_GetTimeString($tot_secs));
+                $width_H{"total"},    ofile_FormatTimeString($tot_secs));
   }
 
   printf $FH ("#\n");
   if(opt_Get("-p", $opt_HHR)) { 
     printf $FH ("# 'ribotyper' and 'sensor' timing statistics are summed elapsed time of multiple jobs [-p]\n");
-    printf $FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ribo_GetTimeString($ribo_secs + $sensor_secs));
+    printf $FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ofile_FormatTimeString($ribo_secs + $sensor_secs));
     printf $FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
     printf $FH ("#\n");
   }
@@ -2226,7 +2226,7 @@ sub fetch_seqs_given_gpipe_file {
     else { 
       $sfetch_cmd = $sfetch_exec . " -f $seq_file $sfetch_file > $subseq_file"; 
     }
-    ribo_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), $FH_HR);
+    utl_RunCommand($sfetch_cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
   }
 
   return ($nseq, $nseq_revcomped);
@@ -2496,8 +2496,8 @@ sub human_to_gpipe_fail_message {
 #   $modelinfo_file:    file to parse
 #   $blastdbcmd:        path to 'blastdbcmd' executable
 #   $in_mode:           mode we are running, default is "16S"
-#   $df_ribo_model_dir: default $RIBODIR/models directory, where default models should be
-#   $df_sensor_dir:     default $SENSORDIR directory, where default blast DBs should be
+#   $df_ribo_model_dir: default $RIBOSCRIPTSDIR/models directory, where default models should be
+#   $df_rrnasensor_dir: default $RRNASENSORDIR directory, where default blast DBs should be
 #   $opt_HHR:           ref to 2D hash of cmdline options (needed to determine if -i was used)
 #   $FH_HR:             ref to hash of file handles, including "cmd"
 #
@@ -2518,7 +2518,7 @@ sub parse_modelinfo_file {
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $blastdbcmd, $in_mode, $df_ribo_model_dir, $df_sensor_dir, $opt_HHR, $FH_HR) = @_;
+  my ($modelinfo_file, $blastdbcmd, $in_mode, $df_ribo_model_dir, $df_rrnasensor_dir, $opt_HHR, $FH_HR) = @_;
 
   my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
   my $modelinfo_in_df;     # flag for whether we found model info file in default dir or not
@@ -2533,7 +2533,7 @@ sub parse_modelinfo_file {
   # either be in this directory or in $ribo_model_dir
   my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
   if($opt_i_used) { 
-    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
+    $non_df_modelinfo_dir = ofile_GetDirPath($modelinfo_file);
   }
 
   # actually parse modelinfo file: 
@@ -2543,23 +2543,23 @@ sub parse_modelinfo_file {
   # 18S 18S_centroids.1091 ribo.0p20.modelinfo ribosensor.0p30.ssu-euk.accept
   # ---
   my $found_mode = 0;
-  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, "RIBO", $sub_name, $!, "reading", $FH_HR);
+  open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
   while(my $line = <IN>) { 
     if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
       chomp $line;
       my @el_A = split(/\s+/, $line);
       if(scalar(@el_A) != 4) { 
-        ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", "RIBO", 1, $FH_HR);
+        ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
       }
       my($mode, $sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = (@el_A);
       if($mode eq $in_mode) { # we found our mode, now verify that required files exist
         if($found_mode) { 
-          ofile_FAIL("ERROR in $sub_name, two lines match mode $in_mode", "RIBO", 1, $ofile_info_HH{"FH"});
+          ofile_FAIL("ERROR in $sub_name, two lines match mode $in_mode", 1, $ofile_info_HH{"FH"});
         }
         $found_mode = 1;
         $ret_sensor_blastdb = $sensor_blastdb; # we don't verify that this exists
         # make sure this blastdb exists, if this command does not fail, then it does
-        ribo_RunCommand("$blastdbcmd -info -db $ret_sensor_blastdb > /dev/null", opt_Get("-v", $opt_HHR), $ofile_info_HH{"FH"});
+        utl_RunCommand("$blastdbcmd -info -db $ret_sensor_blastdb > /dev/null", opt_Get("-v", $opt_HHR), 0, $ofile_info_HH{"FH"});
 
         # make sure that the ribotyper modelinfo file exists, either in $df_ribo_model_dir or, if
         # -i was used, in the same directory that $modelinfo_file is in
@@ -2568,20 +2568,20 @@ sub parse_modelinfo_file {
         if($opt_i_used) { 
           my $non_df_ribo_modelinfo_file = $non_df_modelinfo_dir . $ribo_modelinfo_file;
           my $non_df_ribo_accept_file    = $non_df_modelinfo_dir . $ribo_accept_file;
-          my $modelinfo_in_nondf = ribo_CheckIfFileExistsAndIsNonEmpty($non_df_ribo_modelinfo_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-          my $modelinfo_in_df    = ribo_CheckIfFileExistsAndIsNonEmpty($df_ribo_modelinfo_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-          my $accept_in_nondf    = ribo_CheckIfFileExistsAndIsNonEmpty($non_df_ribo_accept_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-          my $accept_in_df       = ribo_CheckIfFileExistsAndIsNonEmpty($df_ribo_accept_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $modelinfo_in_nondf = utl_FileValidateExistsAndNonEmpty($non_df_ribo_modelinfo_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $modelinfo_in_df    = utl_FileValidateExistsAndNonEmpty($df_ribo_modelinfo_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $accept_in_nondf    = utl_FileValidateExistsAndNonEmpty($non_df_ribo_accept_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $accept_in_df       = utl_FileValidateExistsAndNonEmpty($df_ribo_accept_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
 
           # check for modelinfo file: if it exists in both places, use the -i specified version
           if(($modelinfo_in_nondf == 0) && ($modelinfo_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
           }
           elsif(($modelinfo_in_nondf == -1) && ($modelinfo_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif(($modelinfo_in_nondf == 0) && ($modelinfo_in_df == -1)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif($modelinfo_in_nondf == 1) { 
             $ret_ribo_modelinfo_file = $non_df_ribo_modelinfo_file;
@@ -2590,18 +2590,18 @@ sub parse_modelinfo_file {
             $ret_ribo_modelinfo_file = $df_ribo_modelinfo_file;
           }
           else { 
-            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_modelinfo_file, unexpected situation (in_nondf: $modelinfo_in_nondf, in_df: $modelinfo_in_df)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_modelinfo_file, unexpected situation (in_nondf: $modelinfo_in_nondf, in_df: $modelinfo_in_df)\n", 1, $ofile_info_HH{"FH"});
           }
 
           # check for accept file: if it exists in both places, use the -i specified version
           if(($accept_in_nondf == 0) && ($accept_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model info file $ribo_modelinfo_file, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_ribo_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
           }
           elsif(($accept_in_nondf == -1) && ($accept_in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $non_df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif(($accept_in_nondf == 0) && ($accept_in_df == -1)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for model file $ribo_modelinfo_file, it exists as $df_ribo_modelinfo_file but is empty", 1, $ofile_info_HH{"FH"});
           }
           elsif($accept_in_nondf == 1) { 
             $ret_ribo_accept_file = $non_df_ribo_accept_file;
@@ -2610,12 +2610,12 @@ sub parse_modelinfo_file {
             $ret_ribo_accept_file = $df_ribo_accept_file;
           }
           else { 
-            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_accept_file, unexpected situation (in_nondf: $accept_in_nondf, in_df: $accept_in_df)\n", "RIBO", 1, $ofile_info_HH{"FH"});
+            ofile_FAIL("ERROR in $sub_name, looking for ribotyper modelinfo file $ribo_accept_file, unexpected situation (in_nondf: $accept_in_nondf, in_df: $accept_in_df)\n", 1, $ofile_info_HH{"FH"});
           }
         } #end of 'if($opt_is_used)'
         else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
-          ribo_CheckIfFileExistsAndIsNonEmpty($df_ribo_modelinfo_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
-          ribo_CheckIfFileExistsAndIsNonEmpty($df_ribo_accept_file, "accept file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
+          utl_FileValidateExistsAndNonEmpty($df_ribo_modelinfo_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
+          utl_FileValidateExistsAndNonEmpty($df_ribo_accept_file, "accept file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
           $ret_ribo_modelinfo_file = $df_ribo_modelinfo_file;
           $ret_ribo_accept_file = $df_ribo_accept_file;
         }
@@ -2626,10 +2626,10 @@ sub parse_modelinfo_file {
 
   if(! $found_mode) { 
     if($opt_i_used) { 
-      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin modelinfo file $modelinfo_file (specified with -i)", "RIBO", 1, $FH_HR); 
+      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin modelinfo file $modelinfo_file (specified with -i)", 1, $FH_HR); 
     }
     else { 
-      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin default modelinfo file. Is your RIBODIR env variable set correctly?", "RIBO", 1, $FH_HR);
+      ofile_FAIL("ERROR in $sub_name, didn't find mode $in_mode listed as first token\nin default modelinfo file. Is your RIBOSCRIPTSDIR env variable set correctly?", 1, $FH_HR);
     }
   }
 

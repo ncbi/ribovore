@@ -1,0 +1,164 @@
+# Explanation of columns:
+# Column  1: 'idx':     index of sequence in input file
+# Column  2: 'seqname': name of sequence
+# Column  3: 'seqlen':  length of sequence
+# Column  4: 'staxid':  taxid of sequence (species level), '-' if all taxid related steps were skipped
+# Column  5: 'otaxid':  taxid of sequence (order level), '-' if all taxid related steps were skipped
+# Column  6: 'ctaxid':  taxid of sequence (class level), '-' if all taxid related steps were skipped
+# Column  7: 'ptaxid':  taxid of sequence (phylum level), '-' if all taxid related steps were skipped
+# Column  8: 'p/f':     PASS if sequence passed all filters and ingroup analysis else FAIL
+# Column  9: 'clust':   'R' if sequence selected as representative of a cluster, 'NR' if not
+# Column 10: 'special': '-' for all sequences because --special not used
+# Column 11: 'failstr': '-' for PASSing sequences, else list of reasons for FAILure, see below
+#
+# Possible substrings in 'failstr' column 11, each substring separated by ';;':
+# 'ambig[<d>]':            contains <d> ambiguous nucleotides, which exceeds maximum allowed
+# 'not-in-tax-tree':       sequence taxid is not present in the input NCBI taxonomy tree
+# 'not-specified-species': sequence does not belong to a specified species according to NCBI taxonomy
+# 'vecscreen-match[<s>]':  vecscreen reported match to vector of strength <s>
+# 'blastrepeat[<s>]':      repetitive sequence identified by blastn
+#                          <s> = <s1>,<s2>,...<sI>...<sN> for N >= 1, where
+#                          <sI> = <c1>|e=<g1>|len=<d1>|<d2>..<d3>/<d4>..<d5>|pid=<f1>|ngap=<d6>
+#                          <c1> = + for positive strand, - for negative strand
+#                          <g1> = E-value of hit
+#                          <d1> = maximum of query length and subject length in hit alignment
+#                          <d2>..<d3> = query coordinates of hit
+#                          <d4>..<d5> = subject coordinates of hit
+#                          <f1> = fractional identity of hit alignment
+#                          <d6> = number of gaps in hit alignment
+# 'ribotyper2[<s>]:        ribotyper (riboaligner) failure with unexpected features listed in <s>
+#                          see db100vec/db100vec.ribodbmaker-ra/db100vec-ra.ribotyper.long.out
+#                          for explanation of unexpected features
+# 'riboaligner[<s>]:       riboaligner failure because of sequence length classification
+#                          <s>=full-extra:5pins:<d1>:3pins<d2>:
+#                                                  alignment spans full model with <d1> > 0 nt extra before first model
+#                                                  position and/or <d2> > 0 nt extra after final model position
+#                          <s>=full-ambig-more:    alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                  has indels in first and/or final 10 model positions and
+#                                                  insertions outnumber deletions at 5' and/or 3' end
+#                          <s>=full-ambig-less:    alignment spans full model with 0 nt extra on 5' or 3' end but
+#                                                  has indels in first and/or final 10 model positions and
+#                                                  and insertions do not outnumber deletions at 5' and/or 3' end
+#                          <s>=5flush-extra:5pins<d>:
+#                                                  alignment extends to first but not final model position
+#                                                  with <d> > 0 nt extra before first model position
+#                          <s>=5flush-ambig-more:    alignment extends to first but not final model position
+#                                                  and has indels in first 10 model positions and
+#                                                  insertions outnumber deletions at 5' end
+#                          <s>=5flush-ambig-less:    alignment extends to first but not final model position
+#                                                  and has indels in first 10 model positions and
+#                                                  insertions do not outnumber deletions at 5' end
+#                          <s>=3flush-extra:3pins:<d>:
+#                                                  alignment extends to final but not first model position
+#                                                  with <d> > 0 nt extra after final model position
+#                          <s>=3flush-ambig-more:    alignment extends to final but not first model position
+#                                                  and has indels in final 10 model positions and
+#                                                  insertions outnumber deletions at 3' end
+#                          <s>=3flush-ambig-less:    alignment extends to final but not first model position
+#                                                  and has indels in final 10 model positions and
+#                                                  insertions do not outnumber deletions at 3' end
+# 'mdlspan[<d1>-<d2>]:     alignment of sequence does not span required model positions, model span is <d1> to <d2>
+# 'ingroup-analysis[<s>]:  sequence failed ingroup analysis
+#                          if <s> includes 'type=<s1>', sequence was classified as type <s1>
+#                          see db100vec/db100vec.ribodbmaker.ingrup.order.alipid.sum.tab.txt for explanation of types
+#idx  seqname     seqlen   staxid   otaxid   ctaxid   ptaxid   p/f  clust  special  failstr
+1     KC674542.1    1809   175245        1        1        1  FAIL      -        -  not-specified-species;;vecscreen-match[None];;ribotyper2[*LowCoverage:(0.972<0.990);];;
+2     EU278606.1    1737   209559     5042   147545     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.990<0.990);];;
+3     AB034910.1    1763    36909     4892     4891     4890  PASS      R        -  -
+4     KC670242.1    1741   175245        1        1        1  FAIL      -        -  not-specified-species;;
+5     MG520986.1    1063  1821266    92860   147541     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.678<0.990);*MultipleHits:(2:SI[M:-1(568..568),S:338(510..847)]);];;
+6     DQ677995.1    1644    45130    92860   147541     4890  FAIL      -        -  mdlspan[86-1781];;
+7     KX352732.1    1280   586133        1        1     6029  FAIL      -        -  ribotyper2[*UnacceptableModel:(SSU_rRNA_microsporidia);*LowCoverage:(0.981<0.990);];;
+8     AB220232.1    1723   112178    37989   147550     4890  PASS      R        -  -
+9     KC674843.1    1736   175245        1        1        1  FAIL      -        -  not-specified-species;;
+10    JX644478.1    1042   443158     4827  2212703  1913637  FAIL      -        -  mdlspan[68-1117];;
+11    KC671420.1    1741   175245        1        1        1  FAIL      -        -  not-specified-species;;
+12    HF968783.1    1712     4874   214509   214506  1913637  PASS      R        -  -
+13    EF638685.1    1330   175247        1        1     4761  FAIL      -        -  not-specified-species;;mdlspan[353-1729];;
+14    KC672143.1    1741   175245        1        1        1  FAIL      -        -  not-specified-species;;
+15    KX092113.1    1442  1928840     5338   155619     5204  FAIL      -        -  mdlspan[347-1821];;
+16    EF638553.1    1361   175244        1        1     5204  FAIL      -        -  not-specified-species;;mdlspan[322-1729];;
+17    HM799815.1    1754   175244        1        1     5204  FAIL      -        -  ambig[100>5];;not-specified-species;;ribotyper2[*LowCoverage:(0.944<0.990);*MultipleHits:(2:NH[M:86(883..968),S:99(824..922)]);];;
+18    KC672092.1    1780   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.976<0.990);];;
+19    DQ646548.1    1774   353017     5185   147549     4890  PASS      R        -  -
+20    AY640212.1    1736    45567     4892     4891     4890  PASS      R        -  -
+21    EU107180.1    1770    47165    47162   147548     4890  PASS      R        -  -
+22    AB758270.1    1102   280754     5125   147550     4890  FAIL      -        -  mdlspan[35-1160];;
+23    FJ824759.1    1134    55181   451869   147541     4890  FAIL      -        -  mdlspan[20-1173];;
+24    KC671358.1    1765   175245        1        1        1  FAIL      -        -  not-specified-species;;
+25    KC675106.1    1743   175245        1        1        1  FAIL      -        -  not-specified-species;;
+26    AJ232952.1    1752    82112    34395   147545     4890  FAIL      -        -  not-specified-species;;
+27    AB048279.1    1780   137040    37989   147550     4890  PASS      R        -  -
+28    AF242261.1    1818    57086  1302181   147547     4890  FAIL      -        -  ambig[126>5];;ribotyper2[*LowCoverage:(0.909<0.990);*MultipleHits:(2:NH[M:123(445..567),S:166(444..609)]);];;
+29    AY657012.1    1774   282310   452343   155619     5204  PASS      R        -  -
+30    DQ457647.1    1785   378279     5338   155619     5204  PASS      R        -  -
+31    GU187642.1    1799     5372    68889   155619     5204  FAIL      -        -  ribotyper2[*LowCoverage:(0.972<0.990);];;
+32    KC669941.1    1744   175245        1        1        1  FAIL      -        -  not-specified-species;;
+33    AJ560302.1    1684   178876     5234   155616     5204  FAIL      -        -  mdlspan[22-1752];;
+34    AB002062.1    1771    41900     5042   147545     4890  PASS      R        -  -
+35    KT259197.1    1075   327282     5178   147548     4890  FAIL      -        -  mdlspan[21-1115];;
+36    KC670223.1    1782   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.976<0.990);];;
+37    GU004234.1    1518   885918   292491   147548     4890  FAIL      -        -  not-specified-species;;mdlspan[216-1779];;
+38    KX822287.1    1599    13202    34395   147545     4890  FAIL      -        -  mdlspan[146-1794];;
+39    KM067414.1    1559   915490    34478   451435     4761  FAIL      -        -  not-specified-species;;mdlspan[196-1800];;
+40    HQ888690.1    1774    64504     4805   451460   451459  FAIL      -        -  ribotyper2[*LowCoverage:(0.977<0.990);];;
+41    HM134241.1    1031   800540     5125   147550     4890  FAIL      -        -  mdlspan[74-1126];;
+42    JN940342.1    1056  1125782   452342   155619     5204  FAIL      -        -  not-specified-species;;mdlspan[59-1131];;
+43    FJ553065.1    1005   427885     5338   155619     5204  FAIL      -        -  not-specified-species;;ribotyper2[*LowScore:(0.42<0.50);*LowCoverage:(0.360<0.990);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:22.5/165-1005:+);];;
+44    KC674878.1    1784   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.976<0.990);];;
+45    KM492859.1    1246   665967        1   147550     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.932<0.990);*MultipleHits:(2:SI[M:-1(407..407),S:75(270..344)]);];;
+46    AY242195.1    1715   234489     4892     4891     4890  FAIL      -        -  not-specified-species;;
+47    KF188426.1    1093     5098     5042   147545     4890  FAIL      -        -  mdlspan[39-1153];;
+48    AF277017.1    1825   133391    61421  2219693  1913638  PASS      R        -  -
+49    EU011680.1    1713    50262     4892     4891     4890  PASS      R        -  -
+50    KP125031.1    1020  1187910    92860   147541     4890  FAIL      -        -  mdlspan[75-1115];;
+51    KC672190.1    1787   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.973<0.990);];;
+52    AB797249.1    1027   690888    92860   147541     4890  FAIL      -        -  mdlspan[68-1115];;
+53    AM494997.1    1683  1301327   107465   147547     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.945<0.990);*MultipleHits:(2:SI[M:-1(1512..1512),S:68(1359..1426)]);];;
+54    EF550439.1    1670   461316     4892     4891     4890  FAIL      -        -  not-specified-species;;mdlspan[72-1791];;
+55    HG796132.1    1031   175245        1        1        1  FAIL      -        -  not-specified-species;;mdlspan[579-1657];;
+56    AB013514.1    1748    78172     4892     4891     4890  PASS      R        -  -
+57    KT356200.1    1671  1768186     5125   147550     4890  FAIL      -        -  not-specified-species;;mdlspan[49-1774];;
+58    KX822310.1    1510  1758293    34395   147545     4890  FAIL      -        -  mdlspan[259-1813];;
+59    MF318998.1    1104    40426   139380   155619     5204  FAIL      -        -  mdlspan[52-1171];;
+60    DQ519026.1    1697    54100     4892     4891     4890  FAIL      -        -  mdlspan[76-1816];;
+61    FJ554162.1    1107   316342    34395   147545     4890  FAIL      -        -  not-specified-species;;ribotyper2[*LowScore:(0.36<0.50);*LowCoverage:(0.332<0.990);*MultipleHits:(2:SI[M:-7(1680..1686),S:211(195..405)]);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:20.3/267-1107:+);];;
+62    AY251104.2    1743   237192   134362   147541     4890  PASS      R        -  -
+63    FJ763542.1    1653   637492     4892     4891     4890  FAIL      -        -  not-specified-species;;
+64    HM486991.1    1344   175245        1        1        1  FAIL      -        -  not-specified-species;;mdlspan[322-1726];;
+65    KP322969.1    2758    88839    62914   452283     5204  FAIL      -        -  ribotyper2[*LowCoverage:(0.628<0.990);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:496.3/1387-2758:+);];;
+66    KC673971.1    1786   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.978<0.990);];;
+67    AB053234.2    1747   324740     4892     4891     4890  FAIL      -        -  ambig[7>5];;
+68    HQ263224.1    1726   175245        1        1        1  FAIL      -        -  not-specified-species;;
+69    JQ302884.1    1802   133412    61421  2219693  1913638  FAIL      -        -  mdlspan[66-1779];;
+70    AB746210.1    1677     5580     5014   147541     4890  FAIL      -        -  mdlspan[66-1794];;
+71    AM268196.1    1766   453567  1133283   214506  1913637  FAIL      -        -  ambig[185>5];;ribotyper2[*LowCoverage:(0.896<0.990);*MultipleHits:(2:NH[M:182(838..1019),S:183(809..991)]);];;
+72    AB011052.1    1271    73167     5258   162484     5204  FAIL      -        -  ribotyper2[*MultipleHits:(2:NH[M:157(684..840),S:12(643..654)]);];;
+73    AY489697.1    1040   169388     5125   147550     4890  FAIL      -        -  mdlspan[30-1092];;
+74    KJ137258.1    2037   171509     5338   155619     5204  FAIL      -        -  ribotyper2[*LowCoverage:(0.789<0.990);*MultipleHits:(2:SI[M:0(1188..1189),S:425(1160..1584)]);];;
+75    KT921996.1    1071  1816478     4827  2212703  1913637  FAIL      -        -  ribotyper2[*LowCoverage:(0.988<0.990);];;
+76    KC680652.1    1107    40302        1        1     6029  FAIL      -        -  ribotyper2[*UnacceptableModel:(SSU_rRNA_microsporidia);];;
+77    EF109869.1    1221   231055    36750   214506  1913637  FAIL      -        -  not-specified-species;;mdlspan[409-1670];;
+78    KF061201.1    1697  1382202     4892     4891     4890  FAIL      -        -  mdlspan[75-1829];;
+79    KX354828.1    1179   281847        1        1  1031332  FAIL      -        -  mdlspan[476-1710];;
+80    DQ354565.3    1730   203904     5258   162484     5204  PASS      R        -  -
+81    DQ248951.1    1712     5188     5185   147549     4890  PASS      R        -  -
+82    AB069703.1    1659   168478     5042   147545     4890  FAIL      -        -  not-specified-species;;mdlspan[102-1813];;
+83    AY497756.1    1066     4909     4892     4891     4890  FAIL      -        -  mdlspan[160-1275];;
+84    KC674165.1    1778   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.978<0.990);];;
+85    EU754054.1    1020   300248    92860   147541     4890  FAIL      -        -  mdlspan[75-1116];;
+86    KC672270.1    1743   175245        1        1        1  FAIL      -        -  not-specified-species;;
+87    KC672118.1    1784   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.975<0.990);];;
+88    JQ260820.1    1712  1125746     5185   147549     4890  PASS      R        -  -
+89    AB797290.1    1023   178142    92860   147541     4890  FAIL      -        -  mdlspan[75-1118];;
+90    GU126739.1    1040   690520     4892     4891     4890  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.983<0.990);];;
+91    AF542179.1    1627   208437    34395   147545     4890  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.979<0.990);];;
+92    MF410242.1    1043  2008654   451869   147541     4890  FAIL      -        -  mdlspan[64-1126];;
+93    KC672704.1    1801   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.978<0.990);];;
+94    KC670867.1    1765   175245        1        1        1  FAIL      -        -  not-specified-species;;
+95    AB018129.2    1766    51931     4892     4891     4890  PASS      R        -  -
+96    MG829134.1    1057  2135269    92860   147541     4890  FAIL      -        -  mdlspan[46-1123];;
+97    AY426952.1    1656   246048     4892     4891     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.983<0.990);];;
+98    JX403626.1    1394  1308828     4892     4891     4890  FAIL      -        -  not-specified-species;;mdlspan[251-1704];;
+99    EU909435.1    1798    67723     5338   155619     5204  FAIL      -        -  ambig[14>5];;ribotyper2[*NoHits;];;
+100   EF550483.1    1666   135456     4892     4891     4890  FAIL      -        -  mdlspan[72-1793];;
