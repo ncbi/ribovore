@@ -9,7 +9,7 @@
 # Second token is the rRNA_sensor BLAST DB name for that mode.
 # Third token is the ribotyper.pl modelinfo file name for that mode.
 # Fourth token is the ribotyper.pl accept file name for that mode.
-16S 16S_centroids      ribo.0p20.modelinfo ribosensor.0p30.ssu-arc-bac.accept
-18S 18S_centroids.1091 ribo.0p20.modelinfo ribosensor.0p30.ssu-euk.accept
+16S 16S_centroids      ribotyper.modelinfo ribosensor.ssu-arc-bac.accept
+18S 18S_centroids.1091 ribotyper.modelinfo ribosensor.ssu-euk.accept
 
 

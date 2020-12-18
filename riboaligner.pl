@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+,#!/usr/bin/env perl
 use strict;
 use warnings;
 use Getopt::Long;
@@ -106,9 +106,9 @@ my $options_okay =
 my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.40";
-my $releasedate       = "June 2020";
-my $package_name      = "ribovore";
+my $version           = "1.0";
+my $releasedate       = "Jan 2021";
+my $package_name      = "Ribovore";
 my $ribotyper_model_version_str   = "0p20"; 
 my $riboaligner_model_version_str = "0p15";
 my $qsub_version_str  = "0p32"; 
