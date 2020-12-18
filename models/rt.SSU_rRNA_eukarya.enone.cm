@@ -11,7 +11,7 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Mon Mar  6 10:54:34 2017
-COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone RF01960.p7ml.enone.cm ../RF01960.12p2.stk
+COM      [1] cmbuild -F --p7ml --enone RF01960.p7ml.enone.cm ../RF01960.12p2.stk
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -7280,8 +7280,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Mon Mar  6 10:54:36 2017
-COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone RF01960.p7ml.enone.cm ../RF01960.12p2.stk
-COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone RF01960.p7ml.enone.cm ../RF01960.12p2.stk
+COM   [1] cmbuild -F --p7ml --enone RF01960.p7ml.enone.cm ../RF01960.12p2.stk
+COM   [2] cmbuild -F --p7ml --enone RF01960.p7ml.enone.cm ../RF01960.12p2.stk
 NSEQ  91
 EFFN  91.000000
 CKSUM 3445497107

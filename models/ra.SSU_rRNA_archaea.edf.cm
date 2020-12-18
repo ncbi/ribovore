@@ -10,8 +10,8 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Fri Jun 13 13:54:35 2014
-COM      [1] /nfs/production/xfam/rfam/software/bin/cmbuild -F CM SEED
-COM      [2] /nfs/production/xfam/rfam/software/bin/cmcalibrate --mpi CM
+COM      [1] cmbuild -F CM SEED
+COM      [2] cmcalibrate --mpi CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5773,7 +5773,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Fri Jun 13 13:54:45 2014
-COM   [1] /nfs/production/xfam/rfam/software/bin/cmbuild -F CM SEED
+COM   [1] cmbuild -F CM SEED
 NSEQ  86
 EFFN  1.346375
 CKSUM 2012181519

@@ -9,8 +9,8 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Mon Mar 13 14:41:54 2017
-COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml mito-plant.enone.final.cm mito-plant.final.stk
-COM      [2] /usr/local/infernal/1.1.2/bin/cmcalibrate --cpu 8 ribo.0p20.SSU_rRNA_mitochondria_plant.cm
+COM      [1] cmbuild --enone --p7ml mito-plant.enone.final.cm mito-plant.final.stk
+COM      [2] cmcalibrate --cpu 8 ribo.0p20.SSU_rRNA_mitochondria_plant.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -7666,8 +7666,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Mon Mar 13 14:41:56 2017
-COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml mito-plant.enone.final.cm mito-plant.final.stk
-COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild --enone --p7ml mito-plant.enone.final.cm mito-plant.final.stk
+COM   [1] cmbuild --enone --p7ml mito-plant.enone.final.cm mito-plant.final.stk
+COM   [2] cmbuild --enone --p7ml mito-plant.enone.final.cm mito-plant.final.stk
 NSEQ  4
 EFFN  4.000000
 CKSUM 568242560

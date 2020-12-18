@@ -9,7 +9,7 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Mon Mar  6 10:55:39 2017
-COM      [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone ssu.chl.170222.p7ml.enone.cm ../final.170222.chl.seed
+COM      [1] cmbuild -F --p7ml --enone ssu.chl.170222.p7ml.enone.cm ../final.170222.chl.seed
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5831,8 +5831,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Mon Mar  6 10:55:41 2017
-COM   [1] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone ssu.chl.170222.p7ml.enone.cm ../final.170222.chl.seed
-COM   [2] /panfs/pan1/infernal/notebook/17_0304_inf_cmbuild_p7ml_bug/infernal/src/cmbuild -F --p7ml --enone ssu.chl.170222.p7ml.enone.cm ../final.170222.chl.seed
+COM   [1] cmbuild -F --p7ml --enone ssu.chl.170222.p7ml.enone.cm ../final.170222.chl.seed
+COM   [2] cmbuild -F --p7ml --enone ssu.chl.170222.p7ml.enone.cm ../final.170222.chl.seed
 NSEQ  94
 EFFN  94.000000
 CKSUM 1379446501

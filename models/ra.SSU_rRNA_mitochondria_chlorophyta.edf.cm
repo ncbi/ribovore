@@ -9,8 +9,8 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Thu Jun  4 11:30:30 2020
-COM      [1] /usr/local/infernal/1.1.3/bin/cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.stk
-COM      [2] /usr/local/infernal/1.1.3/bin/cmcalibrate --cpu 4 riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm
+COM      [1] cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.stk
+COM      [2] cmcalibrate --cpu 4 riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5498,7 +5498,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Jun  4 11:30:33 2020
-COM   [1] /usr/local/infernal/1.1.3/bin/cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.stk
+COM   [1] cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_chlorophyta.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p20.SSU_rRNA_mitochondria_chlorophyta.stk
 NSEQ  2
 EFFN  1.417969
 CKSUM 1066599773

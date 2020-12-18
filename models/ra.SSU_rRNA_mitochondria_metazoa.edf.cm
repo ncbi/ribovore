@@ -9,8 +9,8 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Thu Jun  4 11:30:21 2020
-COM      [1] /usr/local/infernal/1.1.3/bin/cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p15.SSU_rRNA_mitochondria_metazoa.stk
-COM      [2] /usr/local/infernal/1.1.3/bin/cmcalibrate --cpu 4 riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm
+COM      [1] cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p15.SSU_rRNA_mitochondria_metazoa.stk
+COM      [2] cmcalibrate --cpu 4 riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -3793,7 +3793,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Jun  4 11:30:25 2020
-COM   [1] /usr/local/infernal/1.1.3/bin/cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p15.SSU_rRNA_mitochondria_metazoa.stk
+COM   [1] cmbuild -F riboaligner.0p40.SSU_rRNA_mitochondria_metazoa.cm /panfs/pan1/dnaorg/ssudetection/code/ribovore-install/ribovore/models/ribo.0p15.SSU_rRNA_mitochondria_metazoa.stk
 NSEQ  83
 EFFN  2.611481
 CKSUM 4201911036

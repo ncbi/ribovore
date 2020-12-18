@@ -10,8 +10,8 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Mon Jun 16 10:10:00 2014
-COM      [1] /usr/local/infernal/bin/cmbuild -F CM SEED
-COM      [2] /usr/local/infernal/bin/cmcalibrate --cpu 10 CM
+COM      [1] cmbuild -F CM SEED
+COM      [2] cmcalibrate --cpu 10 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -11536,8 +11536,8 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Mon Jun 16 10:10:36 2014
-COM   [1] /usr/local/infernal/bin/cmbuild -F CM SEED
-COM   [2] /usr/local/infernal/bin/cmcalibrate --cpu 10 CM
+COM   [1] cmbuild -F CM SEED
+COM   [2] cmcalibrate --cpu 10 CM
 NSEQ  102
 EFFN  1.621765
 CKSUM 427631880

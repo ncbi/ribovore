@@ -10,7 +10,7 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Mon Jul  7 20:14:34 2014
-COM      [1] /nfs/production/xfam/rfam/software/bin/cmbuild -F CM SEED
+COM      [1] cmbuild -F CM SEED
 COM      [2] cmcalibrate --cpu 40 --gtailn 200 CM.big.gt200
 PBEGIN   0.05
 PEND     0.05
@@ -13423,7 +13423,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Mon Jul  7 20:15:54 2014
-COM   [1] /nfs/production/xfam/rfam/software/bin/cmbuild -F CM SEED
+COM   [1] cmbuild -F CM SEED
 NSEQ  88
 EFFN  2.322998
 CKSUM 2873750914
