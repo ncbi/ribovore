@@ -24,7 +24,6 @@ IVERSION="1.1.4"
 IESLCLUSTERVERSION="1.1.2"
 # dependency git tag
 RVERSION="ribovore-$VERSION"
-TMPRVERSION="ribovore-0.40"
 
 # set defaults
 INPUTSYSTEM="?"
@@ -75,8 +74,7 @@ echo "Downloading ribovore ... "
 # ----------------------------------------------------------------------------
 git clone https://github.com/nawrockie/ribovore.git ribovore
 cd ribovore
-#git checkout release-$VERSION
-git checkout sequipize
+git checkout release-$VERSION
 rm -rf .git
 cd ..
 # ----------------------------------------------------------------------------
@@ -87,7 +85,7 @@ echo "Downloading rRNA_sensor ... "
 # ----------------------------------------------------------------------------
 git clone https://github.com/aaschaffer/rRNA_sensor.git rRNA_sensor
 cd rRNA_sensor
-git checkout ribovore-1.0-release
+git checkout release-0.14
 rm -rf .git
 cd ..
 # ----------------------------------------------------------------------------
@@ -187,10 +185,10 @@ echo "------------------------------------------------"
 
 # if linux, download vecscreen_plus_taxonomy
 if [ "$INPUTSYSTEM" = "linux" ]; then
-curl -k -L -o vecscreen_plus_taxonomy-$TMPRVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPRVERSION.zip; 
-unzip vecscreen_plus_taxonomy-$TMPRVERSION.zip; 
-mv vecscreen_plus_taxonomy-$TMPRVERSION vecscreen_plus_taxonomy
-rm vecscreen_plus_taxonomy-$TMPRVERSION.zip
+curl -k -L -o vecscreen_plus_taxonomy-$RVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$RVERSION.zip; 
+unzip vecscreen_plus_taxonomy-$RVERSION.zip; 
+mv vecscreen_plus_taxonomy-$RVERSION vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-$RVERSION.zip
 (cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
 else 
 echo "Not installing vecscreen_plus_taxonomy (only avaiable for Linux)"
