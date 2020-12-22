@@ -81,7 +81,6 @@ opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>\n";
-$usage      .= "\n";
 my $synopsis = "riboaligner.pl :: classify lengths of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 

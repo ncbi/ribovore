@@ -96,7 +96,6 @@ opt_Add("--errcheck",   "boolean", 0,                         4,     "-p", undef
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: ribosensor.pl [-options] <fasta file to annotate> <output directory>\n";
-$usage      .= "\n";
 my $synopsis = "ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 

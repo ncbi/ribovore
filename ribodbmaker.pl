@@ -194,7 +194,6 @@ opt_Add("--pcreclustr",  "boolean",  0,                     $g,"--prvcmd",      
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: ribodbmaker.pl [-options] <input fasta sequence file> <output directory>\n";
-$usage      .= "\n";
 my $synopsis = "ribodbmaker.pl :: create representative database of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'              => \$GetOptions_H{"-h"}, 

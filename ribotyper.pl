@@ -146,7 +146,6 @@ opt_Add("--onlyval",      "boolean", 0,                      12,  undef,   "--sk
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>\n";
-$usage      .= "\n";
 my $synopsis = "ribotyper.pl :: detect and classify ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
