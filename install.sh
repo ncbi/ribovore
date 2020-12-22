@@ -80,13 +80,14 @@ cd ..
 
 # rRNA_sensor
 echo "Downloading rRNA_sensor ... "
-#curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
+curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
+# to checkout a specific branch, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-git clone https://github.com/aaschaffer/rRNA_sensor.git rRNA_sensor
-cd rRNA_sensor
-git checkout release-0.14
-rm -rf .git
-cd ..
+#git clone https://github.com/aaschaffer/rRNA_sensor.git rRNA_sensor
+#cd rRNA_sensor
+#git checkout release-0.14
+#rm -rf .git
+#cd ..
 # ----------------------------------------------------------------------------
 
 # sequip
