@@ -48,15 +48,15 @@ generally less useful than the other models built from build strategy
 | `LSU_rRNA_archaea.RF02540.stk`          | 2 | `rt.LSU_rRNA_archaea.enone.cm`,                      `ra.LSU_rRNA_archaea.edf.cm`                     |      91 |       2990 | RF02540  | 12.2 |
 | `LSU_rRNA_bacteria.RF02541.stk`         | 2 | `rt.LSU_rRNA_bacteria.enone.cm`,                     `ra.LSU_rRNA_bacteria.edf.cm`                    |     102 |       2925 | RF02541  | 12.2 |
 | `LSU_rRNA_eukarya.RF02543.stk`          | 2 | `rt.LSU_rRNA_eukarya.enone.cm`,                      `ra.LSU_rRNA_eukarya.edf.cm`                     |      88 |       3401 | RF02543  | 12.2 |
-| `SSU_rRNA_mitochondria_metazoa.stk`     | 2 | `rt.SSU_rRNA_mitochondria_metazoa.enone.cm`,        `ra.SSU_rRNA_mitochondria_metazoa.edf.cm`       |      83 |        954 |       -  |    - |
-| `SSU_rRNA_mitochondria_amoeba.stk`      | 1 | `rt.SSU_rRNA_mitochondria_amoeba.enone.cm`,         `ra.SSU_rRNA_mitochondria_amoeba.edf.cm`        |       2 |       1861 |       -  |    - |
-| `SSU_rRNA_mitochondria_chlorophyta.stk` | 1 | `rt.SSU_rRNA_mitochondria_chlorophyta.enone.cm`,    `ra.SSU_rRNA_mitochondria_chlorophyta.edf.cm`   |       2 |       1200 |       -  |    - |
-| `SSU_rRNA_mitochondria_fungi.stk`       | 1 | `rt.SSU_rRNA_mitochondria_fungi.enone.cm`,          `ra.SSU_rRNA_mitochondria_fungi.edf.cm`         |       4 |       1603 |       -  |    - |
-| `SSU_rRNA_mitochondria_kinetoplast.stk` | 1 | `rt.SSU_rRNA_mitochondria_kinetoplast.enone.cm`,    `ra.SSU_rRNA_mitochondria_kinetoplast.edf.cm`   |       3 |        624 |       -  |    - |
-| `SSU_rRNA_mitochondria_plant.stk`       | 1 | `rt.SSU_rRNA_mitochondria_plant.enone.cm`,          `ra.SSU_rRNA_mitochondria_plant.edf.cm`         |       4 |       1951 |       -  |    - |
-| `SSU_rRNA_mitochondria_protist.stk`     | 1 | `rt.SSU_rRNA_mitochondria_protist.enone.cm`,        `ra.SSU_rRNA_mitochondria_protist.edf.cm`       |       2 |       1677 |       -  |    - |
+| `SSU_rRNA_mitochondria_metazoa.stk`     | 2 | `rt.SSU_rRNA_mitochondria_metazoa.enone.cm`,         `ra.SSU_rRNA_mitochondria_metazoa.edf.cm`        |      83 |        954 |       -  |    - |
+| `SSU_rRNA_mitochondria_amoeba.stk`      | 1 | `rt.SSU_rRNA_mitochondria_amoeba.enone.cm`,          `ra.SSU_rRNA_mitochondria_amoeba.edf.cm`         |       2 |       1861 |       -  |    - |
+| `SSU_rRNA_mitochondria_chlorophyta.stk` | 1 | `rt.SSU_rRNA_mitochondria_chlorophyta.enone.cm`,     `ra.SSU_rRNA_mitochondria_chlorophyta.edf.cm`    |       2 |       1200 |       -  |    - |
+| `SSU_rRNA_mitochondria_fungi.stk`       | 1 | `rt.SSU_rRNA_mitochondria_fungi.enone.cm`,           `ra.SSU_rRNA_mitochondria_fungi.edf.cm`          |       4 |       1603 |       -  |    - |
+| `SSU_rRNA_mitochondria_kinetoplast.stk` | 1 | `rt.SSU_rRNA_mitochondria_kinetoplast.enone.cm`,     `ra.SSU_rRNA_mitochondria_kinetoplast.edf.cm`    |       3 |        624 |       -  |    - |
+| `SSU_rRNA_mitochondria_plant.stk`       | 1 | `rt.SSU_rRNA_mitochondria_plant.enone.cm`,           `ra.SSU_rRNA_mitochondria_plant.edf.cm`          |       4 |       1951 |       -  |    - |
+| `SSU_rRNA_mitochondria_protist.stk`     | 1 | `rt.SSU_rRNA_mitochondria_protist.enone.cm`,         `ra.SSU_rRNA_mitochondria_protist.edf.cm`        |       2 |       1677 |       -  |    - |
 | `SSU_rRNA_chloroplast.stk`              | 2 | `rt.SSU_rRNA_chloroplast.enone.cm`,                  `ra.SSU_rRNA_chloroplast.edf.cm`                 |      94 |       1488 |       -  |    - |
-| `SSU_rRNA_chloroplast_pilostyles.stk`   | 1 | `rt.SSU_rRNA_chloroplast_pilostyles.enone.cm`,      `ra.SSU_rRNA_chloroplast_pilostyles.edf.cm`     |       1 |       1531 |       -  |    - |
+| `SSU_rRNA_chloroplast_pilostyles.stk`   | 1 | `rt.SSU_rRNA_chloroplast_pilostyles.enone.cm`,       `ra.SSU_rRNA_chloroplast_pilostyles.edf.cm`      |       1 |       1531 |       -  |    - |
 | `SSU_rRNA_cyanobacteria.stk`            | 2 | `rt.SSU_rRNA_cyanobacteria.enone.cm`,                `ra.SSU_rRNA_cyanobacteria.edf.cm`               |      49 |       1487 |       -  |    - |
 | `SSU_rRNA_apicoplast.stk`               | 1 | `rt.SSU_rRNA_apicoplast.enone.cm`,                   `ra.SSU_rRNA_apicoplast.edf.cm`                  |       3 |       1463 |       -  |    - |
 
