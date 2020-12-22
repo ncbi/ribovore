@@ -1,4 +1,4 @@
-# Ribovore model information <a name="top"></a>
+# <a name="top"></a> Ribovore model information 
 #### Version 1.0; January 2021
 #### https://github.com/ncbi/ribovore.git
 
@@ -89,7 +89,7 @@ in our testing.
 
 ---
 
-### `ribotyper.cm` a multi-model CM file
+###<a name="library"></a> `ribotyper.cm` a multi-model CM library file
 
 The `ribotyper.cm` file is a CM library of all models that begin with
 `rt` in the above [table](#table). This file is used in the first

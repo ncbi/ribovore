@@ -247,7 +247,7 @@ are used.
 You can tell which unexpected features cause sequences to FAIL for a
 particular ribotyper run by looking unexpected feature column (final
 column) of the short or long output files: those that cause failures
-will begin with the '*' character (e.g. "*no_hits") and those that do
+will begin with the '*' character (e.g. `*NoHits`) and those that do
 not cause failures will not begin with a "*". You can control which
 unexpected features cause failures using command line options as
 explained below in the descriptions of each unexpected feature.

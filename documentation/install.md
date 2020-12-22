@@ -73,7 +73,8 @@ install.sh>`)
 
 ---
 
-### Instructions for setting environment variables output by `install.sh`
+### <a name="environment"></a> Instructions for setting environment variables output by `install.sh`
+
 
 ```
 The final step is to update your environment variables.
