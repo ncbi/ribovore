@@ -96,7 +96,8 @@ echo "Downloading sequip ... "
 # ----------------------------------------------------------------------------
 git clone https://github.com/nawrockie/sequip.git sequip
 cd sequip
-git checkout develop
+#git checkout develop
+git checkout release-0.08
 rm -rf .git
 cd ..
 # ----------------------------------------------------------------------------
