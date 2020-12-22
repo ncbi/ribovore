@@ -293,10 +293,9 @@ my $options_okay =
 my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.40";
-my $riboaligner_model_version_str = "0p15"; 
-my $releasedate       = "June 2020";
-my $package_name      = "ribovore";
+my $version           = "1.0";
+my $releasedate       = "Jan 2020";
+my $package_name      = "Ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -494,7 +493,7 @@ if((opt_IsUsed("--msminstart", \%opt_HH)) && (opt_IsUsed("--msmaxstop", \%opt_HH
 
 my $in_riboopts1_file = undef;
 my $in_riboopts2_file = undef;
-my $df_ra_modelinfo_file = $df_model_dir . "riboaligner." . $riboaligner_model_version_str . ".all.modelinfo";
+my $df_ra_modelinfo_file = $df_model_dir . "riboaligner.rfam.modelinfo";
 my $ra_modelinfo_file = undef;
 my %execs_H = (); # key is name of program, value is path to the executable
 my $taxonomy_tree_six_column_file = undef;

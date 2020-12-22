@@ -129,11 +129,9 @@ my $options_okay =
 my $total_seconds          = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "0.40";
-my $model_version_str = "0p30"; # model info file unchanged since version 0.30
-my $qsub_version_str  = "0p32"; # for qsubinfo file only
-my $releasedate       = "June 2020";
-my $package_name      = "ribovore";
+my $version           = "1.0";
+my $releasedate       = "Jan 2021";
+my $package_name      = "Ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
 select *STDOUT;
@@ -265,12 +263,12 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence, modelinfo, and qsubinfo (if -q) files exist
-my $df_modelinfo_file = $df_model_dir . "ribosensor." . $model_version_str . ".modelinfo";
+my $df_modelinfo_file = $df_model_dir . "ribosensor.modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
 
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
@@ -2539,8 +2537,8 @@ sub parse_modelinfo_file {
   # actually parse modelinfo file: 
   # example lines:
   # ---
-  # 16S 16S_centroids      ribo.0p20.modelinfo ribosensor.0p30.ssu-arc-bac.accept
-  # 18S 18S_centroids.1091 ribo.0p20.modelinfo ribosensor.0p30.ssu-euk.accept
+  # 16S 16S_centroids      ribotyper.modelinfo ribosensor.ssu-arc-bac.accept
+  # 18S 18S_centroids.1091 ribotyper.modelinfo ribosensor.ssu-euk.accept
   # ---
   my $found_mode = 0;
   open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);

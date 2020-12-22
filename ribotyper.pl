@@ -217,8 +217,6 @@ my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, 
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "1.0";
-my $model_version_str = "0p20"; # models are unchanged since version 0.20, there are 18 of them
-my $qsub_version_str  = "0p32"; # qsub command file unchanged since version 0.32
 my $releasedate       = "Jan 2021";
 my $package_name      = "Ribovore";
 
@@ -408,12 +406,12 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence, qsubinfo and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "ribo." . $model_version_str . ".modelinfo";
+my $df_modelinfo_file = $df_model_dir . "ribotyper.modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
 
-my $df_qsubinfo_file = $df_model_dir . "ribo." . $qsub_version_str . ".qsubinfo";
+my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
 my $qsubinfo_file = undef;
 # if -p, check for existence of qsub info file
 if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
