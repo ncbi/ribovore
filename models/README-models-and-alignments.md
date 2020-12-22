@@ -11,16 +11,16 @@ Ribovore development.
 These alignments were created using 1 of 2 strategies:
 
 'Build strategy 1': alignment and consensus secondary structure was
-determined using 'Strategy 1' the CRW conversion strategy described in
+determined using the CRW conversion strategy described in
 the [SSU-ALIGN 0.1](http://eddylab.org/software/ssu-align/) user's
 guide using tools/scripts available on
 [GitHub](https://github.com/nawrockie/crw-conversion-tools). Sequences
 in that alignment derive from the [CRW
 website/database](http://www.rna.icmb.utexas.edu/) (reference [below](#crwref])).
 
-'Build strategy 2' below means: initial version of the alignment and
-consensus secondary structure and model was determined using 'Strategy
-1', but that model was used to create a new alignment and model using
+'Build strategy 2': initial version of the alignment and consensus
+secondary structure and model was determined using build strategy
+1, but that model was used to create a new alignment and model using
 the Rfam model building pipeline as of version 12.0, to search the
 Rfam database sequence database `Rfamseq` (a large database consisting
 of much of the GenBank nucleotide database) to find hits and removing
@@ -59,6 +59,8 @@ generally less useful than the other models built from build strategy
 | `SSU_rRNA_chloroplast_pilostyles.stk`   | 1 | `rt.SSU\_rRNA\_chloroplast\_pilostyles.enone.cm`,      `ra.SSU\_rRNA\_chloroplast\_pilostyles.edf.cm`     |       1 |       1531 |       -  |    - |
 | `SSU_rRNA_cyanobacteria.stk`            | 2 | `rt.SSU\_rRNA\_cyanobacteria.enone.cm`,                `ra.SSU\_rRNA\_cyanobacteria.edf.cm`               |      49 |       1487 |       -  |    - |
 | `SSU_rRNA_apicoplast.stk`               | 1 | `rt.SSU\_rRNA\_apicoplast.enone.cm`,                   `ra.SSU\_rRNA\_apicoplast.edf.cm`                  |       3 |       1463 |       -  |    - |
+
+All files listed in columns 1 and 3 can be found in the `ribovore/models` directory (`$RIBOSCRIPTSDIR/models` following installation).
 
 ---
 
@@ -140,6 +142,7 @@ For more information on `cmstat` see the [Infernal](https://eddylab.infernal.org
 ### CRW Reference <a name="crwref"></a>
 Cannone J.J., Subramanian S., Schnare M.N., Collett J.R., D'Souza L.M., Du Y., Feng B., Lin N., Madabusi L.V., MÜller K.M., Pande N., Shang Z., Yu N., and Gutell R.R. (2002). The Comparative RNA Web (CRW) Site: An Online Database of Comparative Sequence and Structure Information for Ribosomal, Intron, and Other RNAs. BioMed Central Bioinformatics, 3:2. [Correction: BioMed Central Bioinformatics. 3:15.]
 
+---
 
 #### Questions, comments or feature requests? Send a mail to eric.nawrocki@nih.gov.
                 
