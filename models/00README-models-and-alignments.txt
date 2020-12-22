@@ -1,6 +1,9 @@
-EPN, Mon Oct 15 10:53:32 2018
+EPN, Mon Dec 21 16:53:06 2020
+
+
 
 Source of alignments for ribotyper models:
+version 1.0
 
 Individual model files (second token is file size):
 <[(models)]> ls -ltr *cm | awk '{ printf("%s %s\n", $9, $5); }'

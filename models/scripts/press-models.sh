@@ -23,7 +23,7 @@ for m in \
     SSU_rRNA_mitochondria_plant \
     SSU_rRNA_mitochondria_protist \
     ; do
-    ./cmpress rt.$m.enone.cm > tmp.cm
-    ./cmpress ra.$m.edf.cm > tmp.cm
+    ./cmpress rt.$m.enone.cm
+    ./cmpress ra.$m.edf.cm
 done
 ./cmpress ribotyper.cm
