@@ -1,27 +1,11 @@
 # <a name="top"></a> `ribotyper.pl` example usage, command-line options and unexpected feature information
 
 * [`ribotyper.pl` example usage](#exampleusage)
-  * [example annotation of norovirus sequences](#examplebasic)
-  * [example of using `--alt_pass` to change alerts from fatal to non-fatal](#examplealtpass)
-  * [example of using `-p` to run in parallel mode](#exampleparallel)
-* [`ribotyper.pl` command-line options](#options)
-  * [basic options](#options-basic)
-  * [options for specifying expected sequence classification](#options-classification)
-  * [options for controlling which alerts are fatal](#options-fatal)
-  * [options related to model files](#options-modelfiles)
-  * [options for controlling output feature table](#options-featuretable)
-  * [options for controlling alert thresholds](#options-alerts)
-  * [options for controlling the alignment stage](#options-align)
-  * [options for controlling the blastx protein validation stage](#options-blastx)
-  * [options for using hmmer instead of blastx for protein validation](#options-hmmer)
-  * [options related to blastn-based seeded alignment acceleration strategy](#options-seed)
-  * [options related to pre-processing to replace Ns with expected nucleotides](#options-replace)
-  * [options related to parallelization on a compute farm/cluster](#options-parallel)
-  * [options for skipping stages](#options-skip)
-  * [options for additional output files](#options-output)
-  * [additional expert options](#options-expert)
-* [Basic Information on `v-annotate.pl` alerts](#alerts)
-* [Additional information on `v-annotate.pl` alerts](#alerts2)
+* [Unexpected features and reasons for a sequence to _FAIL_](#unexpectedfeatures)
+* [The ribotyper default model library](#library)
+* [ribotyper's two round search strategy](#strategy)
+* [Defining acceptable/questionable models](#acceptable)
+* [List of all command-line options](#options)
 
 ---
 
@@ -241,7 +225,7 @@ possible values in the `unexpected_features` column. These are explained more [b
 The `test/test.ribotyper.long.out` file is not shown because its lines are so wide, but it
 also includes brief descriptions of each column. An example is in testfiles/test.ribotyper.long.out
 
-### <a name="top"></a> unexpected features and reasons for a sequence to _FAIL_
+## <a name="unexpectedfeatures"></a> Unexpected features and reasons for a sequence to _FAIL_
 
 There are several 'unexpected features' of sequences that are detected
 and reported in the rightmost column of both the short and long output
@@ -270,12 +254,12 @@ explained below in the descriptions of each unexpected feature.
 
 List of unexpected features:
 
-1: "NoHits": No hits to any models above the minimum score threshold
+1. "NoHits": No hits to any models above the minimum score threshold
 were found. The minimum score threshold is 20 bits, which should find
 all legitimate SSU/LSU sequences, but this minimum score threshold is
-changeable to <x> with the --minbit <x>. ALWAYS CAUSES FAILURE.
+changeable to `<x>` with the `--minbit <x>`. ALWAYS CAUSES FAILURE.
 
-2: "MultipleFamilies": hit to two or more 'families'
+2. "MultipleFamilies": hit to two or more 'families'
 (e.g. SSU or LSU) exists for the same sequence. This would happen, for
 example, if a single sequence had a fragment of an SSU sequence and a
 fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
@@ -284,8 +268,8 @@ fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
 threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
 
 4. "DuplicateRegion": At least two hits overlap in model coordinates
-by P positions or more. The threshold P is 10 by default but can be
-changed to <n> with the --maxoverlap <n> option. ALWAYS CAUSES
+by `P` positions or more. The threshold `P` is 10 by default but can be
+changed to `<n>` with the `--maxoverlap <n>` option. ALWAYS CAUSES
 FAILURE.
 
 5. "InconsistentHits": The hits to the best model are
@@ -296,73 +280,72 @@ FAILURE.
 6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
---inaccept <s> option. If --inaccept is not used, this unexpected
-feature will never be reported. An example of using --inaccept is
-given below in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS
-section. ALWAYS CAUSES FAILURE.
+`--inaccept <s>` option. If `--inaccept` is not used, this unexpected
+feature will never be reported. An example of using `--inaccept` is
+given [below](#acceptable). ALWAYS CAUSES FAILURE.
 
 7. "QuestionableModel": Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
 can specify certain top-scoring models are 'questionable' using the
---inaccept <s> option. If --inaccept is not used, this unexpected
-feature will never be reported. An example of using --inaccept is
-given below in the DEFINING ACCEPTABLE/QUESTIONABLE MODELS
-section. ONLY CAUSES FAILURE IF THE --questfail OPTION IS ENABLED.
+`--inaccept <s>` option. If `--inaccept` is not used, this unexpected
+feature will never be reported. An example of using `--inaccept` is
+given [below](#acceptable). ONLY CAUSES FAILURE IF THE `--questfail`
+OPTION IS ENABLED.
 
 8. "MinusStrand": The best hit is on the minus strand. ONLY CAUSES
-FAILURE IF THE --minusfail OPTION IS ENABLED.
+FAILURE IF THE `--minusfail` OPTION IS ENABLED.
 
 9. "LowScore": the bits per nucleotide
 statistic (total bit score divided by length of total sequence (not
 just length of hit)) is below threshold. By default the threshold is
-0.5 bits per position, but this can be changed to <x> with the
-"--lowppossc <x>" option. ONLY CAUSES FAILURE IF THE --scfail OPTION
+0.5 bits per position, but this can be changed to `<x>` with the
+`--lowppossc <x>` option. ONLY CAUSES FAILURE IF THE `--scfail` OPTION
 IS ENABLED.
 
 10. "LowCoverage": the total coverage of all hits to the best model
 (summed length of all hits divided by total sequence length) is below
 threshold. By default the threshold is 0.86, but it can be changed to
-<x> with the --tcov <x> option; <x> should be between 0 and 1.
+`<x>` with the `--tcov <x>` option; `<x>` should be between 0 and 1.
 Additionally, one can set a different coverage threshold for 'short'
-sequences using the --tshortcov <x1> option, which must be used in
-combination with the --tshortlen <n> option which specifies that
-sequences less than or equal to <n> nucleotides in length will be
-subject to the coverage threshold <x1> from --tshortcov <x1>. ONLY
-CAUSES FAILURE IF THE --covfail OPTION IS ENABLED.
+sequences using the `--tshortcov <x1>` option, which must be used in
+combination with the `--tshortlen <n>` option which specifies that
+sequences less than or equal to `<n>` nucleotides in length will be
+subject to the coverage threshold `<x1>` from `--tshortcov <x1>`. ONLY
+CAUSES FAILURE IF THE `--covfail` OPTION IS ENABLED.
 
 11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
 threshold. By default this is the score per position difference, and
 the 'low' threshold is 0.10 bits per position, but this is changeable
-to <x> bits per position with the --lowpdiff option. The difference
-can be changed from bits per position to total bits with the --absdiff
-option. If --absdiff is used, the threshold is 100 bits, but
-changeable to <x> with the --lowadiff <x> option. ONLY CAUSES FAILURE
-IF THE --difffail OPTION IS ENABLED.
+to <x> bits per position with the `--lowpdiff` option. The difference
+can be changed from bits per position to total bits with the `--absdiff`
+option. If `--absdiff` is used, the threshold is 100 bits, but
+changeable to <x> with the `--lowadiff` <x> option. ONLY CAUSES FAILURE
+IF THE `--difffail` OPTION IS ENABLED.
 
 12. "VeryLowScoreDifference": the score
 difference between the top two domains is below the 'very low'
 threshold. By default this is the score per position difference, and
 the 'very low' threshold is 0.04 bits per position, but this is
-changeable to <x> bits per position with the --vlowpdiff option. The
+changeable to `<x>` bits per position with the `--vlowpdiff` option. The
 difference can be changed from bits per position to total bits with
-the --absdiff option. If --absdiff is used, the threshold is 40 bits,
-but changeable to <x> with the --vlowadiff <x> option. ONLY CAUSES
-FAILURE IF THE --difffail OPTION IS ENABLED.
+the `--absdiff` option. If `--absdiff` is used, the threshold is 40 bits,
+but changeable to <x> with the `--vlowadiff <x>` option. ONLY CAUSES
+FAILURE IF THE `--difffail` OPTION IS ENABLED.
 
 13. "MultipleHits": there are more than one hits to the
-best scoring model. ONLY CAUSES FAILURE IF THE --multfail OPTION IS
+best scoring model. ONLY CAUSES FAILURE IF THE `--multfail` OPTION IS
 ENABLED.
 
-14. "TooShort": the sequence is too short, less than <n1> nucleotides
+14. "TooShort": the sequence is too short, less than `<n1>` nucleotides
 in length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF
-THE --shortfail <n1> OPTION IS ENABLED.
+THE `--shortfail <n1>` OPTION IS ENABLED.
 
-15. "TooLong": the sequence is too long, more than <n2> nucleotides in
+15. "TooLong": the sequence is too long, more than `<n2>` nucleotides in
 length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE
---longfail <n2> OPTION IS ENABLED.
+`--longfail <n2>` OPTION IS ENABLED.
 
-### The ribotyper default model library
+### <a name="library"></a> The ribotyper default model library
 
 By default, ribotyper will use its default model library (installed in
 `$RIBOSCRIPTSDIR/models/ribotyper.cm`) which includes 15 SSU rRNA
@@ -407,7 +390,7 @@ of the listed domains.
 
 You can create your own `modelinfo` and CM files and use them with ribotyper, with the `-i` option.
 
-### ribotyper's two round search strategy
+###<a name="strategy"></a> ribotyper's two round search strategy
 
 ribotyper proceeds in two rounds. The first round is called the
 classification stage. In this round, all models are compared against
@@ -434,7 +417,7 @@ unexpected features, or only unexpected features that do not cause a
 FAIL, it will be designated as a PASS (see the UNEXPECTED FEATURES AND
 REASONS FOR FAILURE section for details).
 
-### Defining acceptable/questionable models
+### <a name="acceptable"></a> Defining acceptable/questionable models
 
 The user can provide an additional input file that specifies which
 models are 'acceptable' or 'questionable'. For GenBank, this usage can
@@ -458,7 +441,7 @@ and SSU_rRNA_cyanobacteria as 'acceptable' from model file 1 is:
 `$RIBOSCRIPTSDIR/models/ribotyper.ssu-arc-bac.accept`:
 
 ```
-<[20_1222_ribovore_1p0_release]> cat $RIBOSCRIPTSDIR/models/ribosensor.ssu-arc-bac.accept
+> cat $RIBOSCRIPTSDIR/models/ribosensor.ssu-arc-bac.accept
 # A list of 'acceptable' and 'questionable' models.
 # Each non-# prefixed line has 2 tokens, separated by a space.
 # First token is the name of a model. 
