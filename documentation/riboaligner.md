@@ -1,6 +1,6 @@
-# <a name="top"></a> `riboaligner.pl` example usage, command-line options and length classes
+# <a name="top"></a> `riboaligner` example usage, command-line options and length classes
 
-* [`riboaligner.pl` example usage](#exampleusage)
+* [`riboaligner` example usage](#exampleusage)
 * [Length classes](#lengthclasses)
 * [Example usage](#exampleusage)
 * [riboaligner modelinfo files](#modelinfo)
@@ -88,19 +88,19 @@ positions.
 
 ---
 
-## `riboaligner.pl` example usage <a name="exampleusage"></a>
+## `riboaligner` example usage <a name="exampleusage"></a>
 
-This example runs the script riboaligner.pl on a sample file of 11
+This example runs the script riboaligner on a sample file of 11
 sequences.
 
 Move into a directory in which you have write permission and execute
 the following command:
 
 ```
-> riboaligner.pl $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra
+> riboaligner $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra
 ```
 
-Like other Ribovore scripts, riboaligner.pl takes 2 required command
+Like other Ribovore scripts, riboaligner takes 2 required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -112,16 +112,16 @@ that you would like riboaligner to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
-option with riboaligner.pl, in which case the directory will be
+option with riboaligner, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```
-> riboaligner.pl -f $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra
+> riboaligner -f $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra
 ```
 
 You should see something like the following output:
 ```
-# riboaligner.pl :: classify lengths of ribosomal RNA sequences
+# riboaligner :: classify lengths of ribosomal RNA sequences
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Wed Dec 23 10:30:05 2020
@@ -233,17 +233,17 @@ guide](http://eddylab.org/infernal/Userguide.pdf).
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribotyper.pl by
+You can see all the available command line options to ribotyper by
 calling it at the command line with the -h option:
 
 ```
-> riboaligner.pl -h
-# riboaligner.pl :: classify lengths of ribosomal RNA sequences
+> riboaligner -h
+# riboaligner :: classify lengths of ribosomal RNA sequences
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Wed Dec 23 13:30:57 2020
 #
-Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>
+Usage: riboaligner [-options] <fasta file to annotate> <output file name root>
 
 basic options:
   -f     : force; if <output directory> exists, overwrite it
@@ -253,7 +253,7 @@ basic options:
   -i <s> : use model info file <s> instead of default
   --keep : keep all intermediate files that are removed by default
 
-options related to the internal call to ribotyper.pl:
+options related to the internal call to ribotyper:
   --riboopts <s> : read command line options to supply to ribotyper from file <s>
   --noscfail     : do not fail sequences in ribotyper with low scores
   --nocovfail    : do not fail sequences in ribotyper with low coverage

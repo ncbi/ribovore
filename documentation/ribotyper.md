@@ -1,6 +1,6 @@
-# <a name="top"></a> `ribotyper.pl` example usage, command-line options and unexpected feature information
+# <a name="top"></a> `ribotyper` example usage, command-line options and unexpected feature information
 
-* [`ribotyper.pl` example usage](#exampleusage)
+* [`ribotyper` example usage](#exampleusage)
 * [Unexpected features and reasons for a sequence to _FAIL_](#unexpectedfeatures)
 * [The ribotyper default model library](#library)
 * [ribotyper's two round search strategy](#strategy)
@@ -15,7 +15,7 @@ rRNA sequences in an input. A central assumption of the script is that
 or partial). Therefore, it is not well suited for identifying rRNAs in
 genome sequences or metagenomic datasets.
 
-ribotyper.pl compares each sequence to a library of profile HMMs built
+ribotyper compares each sequence to a library of profile HMMs built
 from representative alignments of SSU and LSU rRNA sequences.  Each
 profile HMM is a statistical model of the family it models
 (e.g. bacterial SSU rRNA) built from a multiple alignment of 50-100
@@ -32,18 +32,18 @@ gave it the highest score. See [models.md](models.md#top) for more
 information on the models ribotyper uses.
 
 
-## `ribotyper.pl` example usage <a name="exampleusage"></a>
+## `ribotyper` example usage <a name="exampleusage"></a>
 
-This example runs the script ribotyper.pl on a sample file of 16
+This example runs the script ribotyper on a sample file of 16
 sequences.
 
 Move into a directory in which you have write permission and execute the following command:
 
 ```
-> ribotyper.pl $RIBOSCRIPTSDIR/testfiles/example-16.fa test
+> ribotyper $RIBOSCRIPTSDIR/testfiles/example-16.fa test
 ```
 
-Like other Ribovore scripts, ribotyper.pl takes 2 required command
+Like other Ribovore scripts, ribotyper takes 2 required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -55,16 +55,16 @@ that you would like ribotyper to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
-option with ribotyper.pl, in which case the directory will be
+option with ribotyper, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```
-> ribotyper.pl -f $RIBOSCRIPTSDIR/testfiles/example-16.fa test
+> ribotyper -f $RIBOSCRIPTSDIR/testfiles/example-16.fa test
 ```
 
 You should see something like the following output:
 ```
-# ribotyper.pl :: detect and classify ribosomal RNA sequences
+# ribotyper :: detect and classify ribosomal RNA sequences
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Tue Dec 22 16:04:25 2020
@@ -234,7 +234,7 @@ explained below.
 
 There are 15 possible unexpected features that get reported, some of
 which are related to each other. 11 of the 15 can arise when
-ribotyper.pl is used with default arguments, and therefore appear in
+ribotyper is used with default arguments, and therefore appear in
 the example above; the other four can arise only when specific
 additional non-default arguments are used, as explained
 below. Therefore, the list of 15 feaures below, with long
@@ -466,7 +466,7 @@ To use this on the example run from above, use the `--inaccept`
 option:
 
 ```
-> ribotyper.pl -f --inaccept $RIBOSCRIPTSDIR/models/ribosensor.ssu-arc-bac.accept $RIBOSCRIPTSDIR/testfiles/example-16.fa test2
+> ribotyper -f --inaccept $RIBOSCRIPTSDIR/models/ribosensor.ssu-arc-bac.accept $RIBOSCRIPTSDIR/testfiles/example-16.fa test2
 ```
 
 Now, the short output file will set any family that was classified as
@@ -500,17 +500,17 @@ string `*UnacceptableModel` will be present in the
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribotyper.pl by
+You can see all the available command line options to ribotyper by
 calling it at the command line with the -h option:
 
 ```
-> ribotyper.pl -h
-# ribotyper.pl :: detect and classify ribosomal RNA sequences
+> ribotyper -h
+# ribotyper :: detect and classify ribosomal RNA sequences
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Tue Dec 22 16:56:29 2020
 #
-Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
+Usage: ribotyper [-options] <fasta file to annotate> <output directory>
 
 basic options:
   -f     : force; if <output directory> exists, overwrite it

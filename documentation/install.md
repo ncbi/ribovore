@@ -24,7 +24,7 @@ to install Ribovore. A good name for that directory is
 `ribovore-install`. Then move into that directory and run one of the
 following two commands depending on whether you are installing on a
 Linux or Mac/OSX system. *Note that you if you are installing on Mac/OSX the
-ribodbmaker.pl script will have limited functionality because vecscreen_plus_taxonomy
+ribodbmaker script will have limited functionality because vecscreen_plus_taxonomy
 can only be installed and run on linux systems.*
 
 ```
@@ -42,8 +42,8 @@ blast executable files that will be installed and also dictates
 whether the `vecscreen_plus_taxonomy` package will be
 installed. `vecscreen_plus_taxonomy` will be installed only for
 `linux` installations and consequently only `linux` installations will
-be able to use all features of `ribodbmaker.pl`. Mac/OSX installations
-will be able to run `ribodbmaker.pl` but only with specific flags that
+be able to use all features of `ribodbmaker`. Mac/OSX installations
+will be able to run `ribodbmaker` but only with specific flags that
 cause steps that require executable programs that get installed with
 `vecscreen_plus_taxonomy` to be skipped.
 
@@ -172,7 +172,7 @@ correctly. They should pass, as shown below.
 
 There is also a special test script `do-parallel-tests.sh` that you
 should run if you want to test if you can use the `-p` option with
-`ribotyper.pl`, `riboaligner.pl`, `riboaligner.pl` or `ribodbmaker.pl`
+`ribotyper`, `riboaligner`, `riboaligner` or `ribodbmaker`
 for parallelization on a cluster.  But this test will likely only work
 internally at NCBI or if you happen to have a compute farm set-up in a
 similar way at NCBI. See this [example](ribotyper.md#exampleparallel)
@@ -192,7 +192,7 @@ Below is an example of the expected output for
 `do-all-tests.sh` for a `linux` installation:
 
 ```
-# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:41:47 2020
@@ -227,7 +227,7 @@ Below is an example of the expected output for
 # 
 [ok]
 Success: all tests passed
-# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:42:15 2020
@@ -268,7 +268,7 @@ Success: all tests passed
 # 
 [ok]
 Success: all tests passed
-# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:43:48 2020
@@ -303,7 +303,7 @@ Success: all tests passed
 # 
 [ok]
 Success: all tests passed
-# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:44:40 2020
@@ -333,7 +333,7 @@ Success: all tests passed
 # 
 [ok]
 Success: all tests passed
-# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
+# ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (June 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:46:46 2020
@@ -377,10 +377,10 @@ figuring out why, email me at eric.nawrocki@nih.gov.
 ---
 ## Further information
 
-* [`riboaligner.pl` example usage and command-line options](aligner.md#top)
-* [`ribodbmaker.pl` example usage and command-line options](dbmaker.md#top)
-* [`ribosensor.pl` example usage and command-line options](sensor.md#top)
-* [`ribotyper.pl` example usage and command-line options](typer.md#top)
+* [`riboaligner` example usage and command-line options](aligner.md#top)
+* [`ribodbmaker` example usage and command-line options](dbmaker.md#top)
+* [`ribosensor` example usage and command-line options](sensor.md#top)
+* [`ribotyper` example usage and command-line options](typer.md#top)
 * [Ribovore output formats](formats.md#top)
 
 ---
