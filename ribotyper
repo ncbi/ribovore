@@ -5,8 +5,8 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-# ribotyper.pl :: detect and classify ribosomal RNA sequences
-# Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>
+# ribotyper :: detect and classify ribosomal RNA sequences
+# Usage: ribotyper [-options] <fasta file to annotate> <output directory>
 
 require "ribo.pm";
 require "sqp_opts.pm";
@@ -145,8 +145,8 @@ opt_Add("--onlyval",      "boolean", 0,                      12,  undef,   "--sk
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribotyper.pl [-options] <fasta file to annotate> <output directory>\n";
-my $synopsis = "ribotyper.pl :: detect and classify ribosomal RNA sequences";
+my $usage    = "Usage: ribotyper [-options] <fasta file to annotate> <output directory>\n";
+my $synopsis = "ribotyper :: detect and classify ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
@@ -235,7 +235,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter 'ribotyper.pl -h'\n\n";
+  print "\nTo see more help on available options, enter 'ribotyper -h'\n\n";
   exit(1);
 }
 my ($seq_file, $dir_out) = (@ARGV);
@@ -488,17 +488,17 @@ my $final_long_out_FH     = undef; # output file handle for final long output fi
 my $final_short_out_FH    = undef; # output file handle for final short output file
 
 
-open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || ofile_FileOpenFailure($r1_unsrt_long_out_FH,  "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || ofile_FileOpenFailure($r1_unsrt_short_out_FH, "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-open($r1_srt_long_out_FH,    ">", $r1_srt_long_out_file)    || ofile_FileOpenFailure($r1_srt_long_out_FH,    "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-open($r1_srt_short_out_FH,   ">", $r1_srt_short_out_file)   || ofile_FileOpenFailure($r1_srt_short_out_FH,   "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_unsrt_long_out_FH,  ">", $r1_unsrt_long_out_file)  || ofile_FileOpenFailure($r1_unsrt_long_out_FH,  "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_unsrt_short_out_FH, ">", $r1_unsrt_short_out_file) || ofile_FileOpenFailure($r1_unsrt_short_out_FH, "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_srt_long_out_FH,    ">", $r1_srt_long_out_file)    || ofile_FileOpenFailure($r1_srt_long_out_FH,    "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+open($r1_srt_short_out_FH,   ">", $r1_srt_short_out_file)   || ofile_FileOpenFailure($r1_srt_short_out_FH,   "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
 if(defined $alg2) { 
-  open($r2_unsrt_long_out_FH,  ">", $r2_unsrt_long_out_file)  || ofile_FileOpenFailure($r1_unsrt_long_out_FH,  "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-  open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || ofile_FileOpenFailure($r1_unsrt_short_out_FH, "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-  open($r2_srt_long_out_FH,    ">", $r2_srt_long_out_file)    || ofile_FileOpenFailure($r1_srt_long_out_FH,    "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-  open($r2_srt_short_out_FH,   ">", $r2_srt_short_out_file)   || ofile_FileOpenFailure($r1_srt_short_out_FH,   "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-  open($final_long_out_FH,     ">", $final_long_out_file)     || ofile_FileOpenFailure($final_long_out_FH,     "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
-  open($final_short_out_FH,    ">", $final_short_out_file)    || ofile_FileOpenFailure($final_short_out_FH,    "ribotyper.pl::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_unsrt_long_out_FH,  ">", $r2_unsrt_long_out_file)  || ofile_FileOpenFailure($r1_unsrt_long_out_FH,  "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_unsrt_short_out_FH, ">", $r2_unsrt_short_out_file) || ofile_FileOpenFailure($r1_unsrt_short_out_FH, "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_srt_long_out_FH,    ">", $r2_srt_long_out_file)    || ofile_FileOpenFailure($r1_srt_long_out_FH,    "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($r2_srt_short_out_FH,   ">", $r2_srt_short_out_file)   || ofile_FileOpenFailure($r1_srt_short_out_FH,   "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($final_long_out_FH,     ">", $final_long_out_file)     || ofile_FileOpenFailure($final_long_out_FH,     "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
+  open($final_short_out_FH,    ">", $final_short_out_file)    || ofile_FileOpenFailure($final_short_out_FH,    "ribotyper::Main", $!, "writing", $ofile_info_HH{"FH"});
 }
 my $have_evalues_r1 = determine_if_we_have_evalues(1, \%opt_HH, $ofile_info_HH{"FH"});
 my $have_evalues_r2 = determine_if_we_have_evalues(2, \%opt_HH, $ofile_info_HH{"FH"});
@@ -727,8 +727,8 @@ $cmd = "sort -n $r1_unsrt_long_out_file >> $r1_srt_long_out_file";
 utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
 # reopen them, and add tails to the output files
-open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
-open($r1_srt_short_out_FH, ">>", $r1_srt_short_out_file) || ofile_FileOpenFailure($r1_srt_short_out_FH, "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
+open($r1_srt_long_out_FH,  ">>", $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper::Main", $!, "appending", $ofile_info_HH{"FH"});
+open($r1_srt_short_out_FH, ">>", $r1_srt_short_out_file) || ofile_FileOpenFailure($r1_srt_short_out_FH, "ribotyper::Main", $!, "appending", $ofile_info_HH{"FH"});
 output_long_tail($r1_srt_long_out_FH, 1, \@ufeature_A, \%opt_HH, $ofile_info_HH{"FH"}); # 1: round 1 of searching
 output_short_tail($r1_srt_short_out_FH, \@ufeature_A, \%opt_HH);
 close($r1_srt_short_out_FH);
@@ -921,8 +921,8 @@ if(defined $alg2) {
 
   # reopen them, and add tails to the output files
   # now that we know the max sequence name length, we can output headers to the output files
-  open($r2_srt_long_out_FH,  ">>", $r2_srt_long_out_file)  || ofile_FileOpenFailure($r2_srt_long_out_FH,   "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
-  open($r2_srt_short_out_FH, ">>", $r2_srt_short_out_file) || ofile_FileOpenFailure($r2_srt_short_out_FH,  "ribotyper.pl::Main", $!, "appending", $ofile_info_HH{"FH"});
+  open($r2_srt_long_out_FH,  ">>", $r2_srt_long_out_file)  || ofile_FileOpenFailure($r2_srt_long_out_FH,   "ribotyper::Main", $!, "appending", $ofile_info_HH{"FH"});
+  open($r2_srt_short_out_FH, ">>", $r2_srt_short_out_file) || ofile_FileOpenFailure($r2_srt_short_out_FH,  "ribotyper::Main", $!, "appending", $ofile_info_HH{"FH"});
   output_long_tail($r2_srt_long_out_FH, 2, \@ufeature_A, \%opt_HH, $ofile_info_HH{"FH"}); # 2: round 2 of searching
   output_short_tail($r2_srt_short_out_FH, \@ufeature_A, \%opt_HH);
   close($r2_srt_short_out_FH);
@@ -953,10 +953,10 @@ my %class_stats_HH = (); # hash of hashes with summary statistics
 
 if(defined $alg2) { 
   $start_secs = ofile_OutputProgressPrior("Creating final output files", $progress_w, $log_FH, *STDOUT);
-  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
-  open($r1_srt_short_out_FH, $r1_srt_short_out_file) || ofile_FileOpenFailure($r1_srt_short_out_FH, "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
-  open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || ofile_FileOpenFailure($r2_srt_long_out_FH,  "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
-  open($r2_srt_short_out_FH, $r2_srt_short_out_file) || ofile_FileOpenFailure($r2_srt_short_out_FH, "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r1_srt_short_out_FH, $r1_srt_short_out_file) || ofile_FileOpenFailure($r1_srt_short_out_FH, "ribotyper::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r2_srt_long_out_FH,  $r2_srt_long_out_file)  || ofile_FileOpenFailure($r2_srt_long_out_FH,  "ribotyper::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r2_srt_short_out_FH, $r2_srt_short_out_file) || ofile_FileOpenFailure($r2_srt_short_out_FH, "ribotyper::Main", $!, "reading", $ofile_info_HH{"FH"});
   output_combined_short_or_long_file($final_short_out_FH, $r1_srt_short_out_FH, $r2_srt_short_out_FH, 1,  # 1: $do_short = TRUE
                                      undef, undef, \%width_H, \%opt_HH, $ofile_info_HH{"FH"});
   output_combined_short_or_long_file($final_long_out_FH,  $r1_srt_long_out_FH,  $r2_srt_long_out_FH,  0,  # 0: $do_short = FALSE
@@ -970,7 +970,7 @@ if(defined $alg2) {
 }
 else { 
   # no $alg2, so we only did one round of searching, fill the %class_stats_HH and %ufeature_ct_H stats hashes
-  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+  open($r1_srt_long_out_FH,  $r1_srt_long_out_file)  || ofile_FileOpenFailure($r1_srt_long_out_FH,  "ribotyper::Main", $!, "reading", $ofile_info_HH{"FH"});
   get_stats_from_long_file_for_sole_round($r1_srt_long_out_FH, \%class_stats_HH, \%ufeature_ct_H, \%opt_HH, $ofile_info_HH{"FH"});
 }
 
@@ -1029,7 +1029,7 @@ if($do_outseq || $do_outhit || $do_gapseq || $do_xgapseq) {
     # create a cmalign script that will align all the failing and passing hits
     my $hits_cmalign_script = $out_root . ".hits.cmalign.sh";
     my $ncmalign = 0;
-    open(CMALIGN, ">", $hits_cmalign_script) || ofile_FileOpenFailure($hits_cmalign_script, "ribotyper.pl::Main", $!, "reading", $ofile_info_HH{"FH"});
+    open(CMALIGN, ">", $hits_cmalign_script) || ofile_FileOpenFailure($hits_cmalign_script, "ribotyper::Main", $!, "reading", $ofile_info_HH{"FH"});
     foreach my $model (sort keys (%family_H)) { 
       foreach my $pf ("pass", "fail") { 
         my $fasta_key = "out.hits.fasta.$pf.$model";
@@ -4887,7 +4887,7 @@ sub fetch_pass_fail_per_model_seqs {
           utl_AToFile($out_HHAR->{$pf}{$wmodel}, $out_sfetch_file, 1, $ofile_info_HH{"FH"}); 
         }
         else { # hits
-          open(SFETCH, ">", $out_sfetch_file) || ofile_FileOpenFailure($out_sfetch_file, "ribotyper.pl::Main", $!, "reading", $ofile_info_HHR->{"FH"});
+          open(SFETCH, ">", $out_sfetch_file) || ofile_FileOpenFailure($out_sfetch_file, "ribotyper::Main", $!, "reading", $ofile_info_HHR->{"FH"});
           foreach my $nse (@{$out_HHAR->{$pf}{$wmodel}}) { 
             my ($valid, $name, $start, $end, undef) = ribo_NseBreakdown($nse);
             if(! $valid) { 

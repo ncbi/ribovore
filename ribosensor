@@ -4,8 +4,8 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-# ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# Usage: ribosensor.pl [-options] <fasta file to annotate> <output directory>\n";
+# ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
+# Usage: ribosensor [-options] <fasta file to annotate> <output directory>\n";
 
 require "ribo.pm";
 require "sqp_opts.pm";
@@ -22,7 +22,7 @@ my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
 my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
-$execs_H{"ribo"}               = $env_riboscripts_dir . "/ribotyper.pl";
+$execs_H{"ribo"}               = $env_riboscripts_dir . "/ribotyper";
 $execs_H{"rRNA_sensor_script"} = $env_rrnasensor_dir  . "/rRNA_sensor_script";
 $execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
@@ -95,8 +95,8 @@ opt_Add("--errcheck",   "boolean", 0,                         4,     "-p", undef
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribosensor.pl [-options] <fasta file to annotate> <output directory>\n";
-my $synopsis = "ribosensor.pl :: analyze ribosomal RNA sequences with profile HMMs and BLASTN";
+my $usage    = "Usage: ribosensor [-options] <fasta file to annotate> <output directory>\n";
+my $synopsis = "ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"},
@@ -148,7 +148,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, do dnaorg_annotate.pl -h\n\n";
+  print "\nTo see more help on available options, do ribosensor -h\n\n";
   exit(1);
 }
 my ($seq_file, $dir_out) = (@ARGV);
@@ -311,11 +311,11 @@ my $sensor_indi_FH       = undef; # output file handle for gpipe file sorted by 
 my $ribo_indi_FH         = undef; # output file handle for ribotyper gpipe file sorted by input sequence index
 my $combined_out_FH      = undef; # output file handle for the combined output file
 my $combined_gpipe_FH    = undef; # output file handle for the combined gpipe file
-open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "ribosensor.pl::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
 my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_rrnasensor_dir, \%opt_HH, $ofile_info_HH{"FH"});

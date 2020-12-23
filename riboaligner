@@ -22,7 +22,7 @@ $execs_H{"esl-sfetch"}   = $env_riboeasel_dir    . "/esl-sfetch";
 $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
 $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
-$execs_H{"ribotyper"}    = $env_riboscripts_dir  . "/ribotyper.pl";
+$execs_H{"ribotyper"}    = $env_riboscripts_dir  . "/ribotyper";
 $execs_H{"time"}         = $env_ribotime_dir  . "/time";
 utl_ExecHValidate(\%execs_H, undef);
 
@@ -64,7 +64,7 @@ opt_Add("-i",           "string",  undef,                    1,    undef, undef,
 opt_Add("--keep",       "boolean", 0,                        1,    undef, undef,      "keep all intermediate files",                      "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 # options related to the ribotyper call
-$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper.pl";
+$opt_group_desc_H{"2"} = "options related to the internal call to ribotyper";
 opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,      "read command line options for ribotyper from <s>",     "read command line options to supply to ribotyper from file <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
 opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
@@ -80,8 +80,8 @@ opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: riboaligner.pl [-options] <fasta file to annotate> <output file name root>\n";
-my $synopsis = "riboaligner.pl :: classify lengths of ribosomal RNA sequences";
+my $usage    = "Usage: riboaligner [-options] <fasta file to annotate> <output file name root>\n";
+my $synopsis = "riboaligner :: classify lengths of ribosomal RNA sequences";
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"}, 
                 'f'            => \$GetOptions_H{"-f"}, 
@@ -125,7 +125,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter 'riboaligner.pl -h'\n\n";
+  print "\nTo see more help on available options, enter 'riboaligner -h'\n\n";
   exit(1);
 }
 my ($seq_file, $dir_out) = (@ARGV);
@@ -254,7 +254,7 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
 # parse --riboopts file
 if(opt_IsUsed("--riboopts", \%opt_HH)) { 
   my $ribotyper_file = opt_Get("--riboopts", \%opt_HH);
-  open(RIBO, $ribotyper_file) || ofile_FileOpenFailure($ribotyper_file,  "ribolengtchecker.pl::Main", $!, "reading", $FH_HR);
+  open(RIBO, $ribotyper_file) || ofile_FileOpenFailure($ribotyper_file,  "riboaligner::Main", $!, "reading", $FH_HR);
   $extra_ribotyper_options = <RIBO>;
   chomp $extra_ribotyper_options;
   while(<RIBO>) { 
@@ -263,18 +263,18 @@ if(opt_IsUsed("--riboopts", \%opt_HH)) {
     }
   }
   if(($extra_ribotyper_options =~ m/^\-f/)          || ($extra_ribotyper_options =~ m/\s+-f/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -f, it will be used anyway", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner.pl instead", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--keep/)      || ($extra_ribotyper_options =~ m/\s+--keep/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --keep, use --keep with riboaligner instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-n/)          || ($extra_ribotyper_options =~ m/\s+-n/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -n, use -n option with riboaligner instead", 1, $FH_HR); }
   if(($extra_ribotyper_options =~ m/^\--scfail/)    || ($extra_ribotyper_options =~ m/\s+--scfail/))    { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --scfail, it will be used anyway", 1, $FH_HR); }
   if(($extra_ribotyper_options =~ m/^\--covfail/)   || ($extra_ribotyper_options =~ m/\s+--covfail/))   { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --covfail, it will be used anyway", 1, $FH_HR); }
   if(($extra_ribotyper_options =~ m/^\--minusfail/) || ($extra_ribotyper_options =~ m/\s+--minusfail/)) { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --minusfail, it will be used anyway", 1, $FH_HR); }
   if(($extra_ribotyper_options =~ m/^\--inaccept/)  || ($extra_ribotyper_options =~ m/\s+--inaccept/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --inaccept, it will be used anyway", 1, $FH_HR); }
   # options related to parallelization
-  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner.pl instead", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner.pl instead", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner.pl instead", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner.pl instead", 1, $FH_HR); }
-  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner.pl instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-p/)          || ($extra_ribotyper_options =~ m/\s+-p/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -p, use -p option with riboaligner instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\-q/)          || ($extra_ribotyper_options =~ m/\s+-q/))          { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include -q, use -q option with riboaligner instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--nkb/)       || ($extra_ribotyper_options =~ m/\s+--nkb/))       { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --nkb, use --nkb option with riboaligner instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--wait/)      || ($extra_ribotyper_options =~ m/\s+--wait/))      { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --wait, use --wait option with riboaligner instead", 1, $FH_HR); }
+  if(($extra_ribotyper_options =~ m/^\--errcheck/)  || ($extra_ribotyper_options =~ m/\s+--errcheck/))  { ofile_FAIL("ERROR with --riboopts, command-line options for ribotyper cannot include --errcheck, use --errcheck option with riboaligner instead", 1, $FH_HR); }
   close(RIBO);
 }
 
@@ -392,7 +392,7 @@ foreach $family (@family_order_A) {
   open($family_sfetch_FH_H{$family}, ">", $family_sfetch_filename_H{$family});
 }
 
-open(RIBO, $ribotyper_short_file) || ofile_FileOpenFailure($ribotyper_short_file,  "riboaligner.pl::Main", $!, "reading", $FH_HR);
+open(RIBO, $ribotyper_short_file) || ofile_FileOpenFailure($ribotyper_short_file,  "riboaligner::Main", $!, "reading", $FH_HR);
 while(my $line = <RIBO>) { 
   if($line !~ m/^\#/) { 
     my @el_A = split(/\s+/, $line);
@@ -509,7 +509,7 @@ foreach $family (@family_order_A) {
       $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
 
-      open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "riboaligner.pl::Main", $!, "writing", $FH_HR);
+      open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "riboaligner::Main", $!, "writing", $FH_HR);
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
         print OUT $seqname . "\n";
       }

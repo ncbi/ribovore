@@ -4,8 +4,8 @@ use warnings;
 use Getopt::Long;
 use Time::HiRes qw(gettimeofday);
 
-# ribotest.pl :: test ribovore scripts [TEST SCRIPT]
-# Usage: ribotest.pl [-options] <input test file e.g. testfiles/testin.1> <output directory to create>
+# ribotest :: test ribovore scripts [TEST SCRIPT]
+# Usage: ribotest [-options] <input test file e.g. testfiles/testin.1> <output directory to create>
 
 require "ribo.pm";
 require "sqp_opts.pm";
@@ -63,8 +63,8 @@ opt_Add("--keep",       "boolean", 0,                        2,    undef, undef,
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
-my $usage    = "Usage: ribotest.pl [-options] <input test file e.g. testfiles/testin.1> <output directory to create>\n";
-my $synopsis = "ribotest.pl :: test ribovore scripts [TEST SCRIPT]";
+my $usage    = "Usage: ribotest [-options] <input test file e.g. testfiles/testin.1> <output directory to create>\n";
+my $synopsis = "ribotest :: test ribovore scripts [TEST SCRIPT]";
 
 my $options_okay = 
     &GetOptions('h'            => \$GetOptions_H{"-h"},
@@ -98,7 +98,7 @@ if((! $options_okay) || ($GetOptions_H{"-h"})) {
 if(scalar(@ARGV) != 2) {   
   print "Incorrect number of command line arguments.\n";
   print $usage;
-  print "\nTo see more help on available options, enter 'ribotest.pl -h'\n\n";
+  print "\nTo see more help on available options, enter 'ribotest -h'\n\n";
   exit(1);
 }
 my ($test_file, $dir_out) = (@ARGV);
@@ -359,7 +359,7 @@ sub test_ParseTestFile {
         }
         elsif((opt_IsUsed("--rmout", $opt_HHR)) && (opt_Get("--rmout", $opt_HHR))) { 
           # --rmout used, remove any file that already exists
-          if(-e $outfile) { utl_FileRemoveUsingSystemRm($outfile, "ribotest.pl", $opt_HHR, $FH_HR); }
+          if(-e $outfile) { utl_FileRemoveUsingSystemRm($outfile, "ribotest", $opt_HHR, $FH_HR); }
         }
         else { 
           # -s not used
