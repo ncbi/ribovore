@@ -1,7 +1,7 @@
 # format of this file:
 # '#' prefixed files are comments, and are not parsed.
 # 'command:' prefix indicates remainder of line is a command to run
-# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'desc:' prefix indicates description of test for ribotest output        
 # 'out:' prefix indicates output file to check against an expected file
 # 'exp:' prefix indicates expected file to check against an output file
 # 'rmdir:' prefix indicates name of output directory to remove after 
@@ -12,7 +12,7 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribodbmaker.pl -f --model SSU.Eukarya --skipfribo1 --ribo2hmm fungi-ssu.r100.fa db100vec > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribodbmaker -f --model SSU.Eukarya --skipfribo1 --ribo2hmm fungi-ssu.r100.fa db100vec > /dev/null; rm fungi-ssu.r100.fa*
 desc: ribodbmaker-vec-1-100
 out: db100vec/db100vec.ribodbmaker.rdb.tbl
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/db100vec.ribodbmaker.rdb.tbl

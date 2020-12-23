@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-$RIBOSCRIPTSDIR/ribotest.pl -f $RIBOSCRIPTSDIR/testfiles/blastdb-univec.testin rt-blastdb
+$RIBOSCRIPTSDIR/ribotest -f $RIBOSCRIPTSDIR/testfiles/blastdb-univec.testin rt-blastdb
 if [ $? -eq 0 ]; then
    echo "Success: all tests passed"
    exit 0
