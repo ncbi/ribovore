@@ -11,7 +11,7 @@
 
 ribotyper is a tool for classifying and validating SSU and/or LSU
 rRNA sequences in an input. A central assumption of the script is that
-each input sequence is a SSU or LSU rRNA sequence (either full length
+ each input sequence is a SSU or LSU rRNA sequence (either full length
 or partial). Therefore, it is not well suited for identifying rRNAs in
 genome sequences or metagenomic datasets.
 
@@ -43,8 +43,8 @@ Move into a directory in which you have write permission and execute the followi
 > ribotyper.pl $RIBOSCRIPTSDIR/testfiles/example-16.fa test
 ```
 
-The script takes 2 required command line arguments. Optional arguments are
-explained later in this file.
+Like other Ribovore scripts, ribotyper.pl takes 2 required command
+line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
 The $RIBOSCRIPTSDIR environment variable should be defined in your
