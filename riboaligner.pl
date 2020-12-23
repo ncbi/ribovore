@@ -1,4 +1,4 @@
-,#!/usr/bin/env perl
+#!/usr/bin/env perl
 use strict;
 use warnings;
 use Getopt::Long;
@@ -216,7 +216,7 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence,qsubinfo and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "riboaligner.modelinfo";
+my $df_modelinfo_file = $df_model_dir . "riboaligner.ssu-arc-bac.modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) {
   $modelinfo_file = $df_modelinfo_file;
