@@ -5,6 +5,7 @@
 * [ribotyper errors in ribosensor](#ribotypererrors)
 * [GenBank errors in ribosensor](#genbankerrors)
 * [Using ribosensor for 18S eukaryotic SSU rRNA sequences](#18S)
+* [rRNA_sensor blastn databases](#blastdb)
 * [List of all command-line options](#options)
 ---
 
@@ -346,6 +347,24 @@ file which are eukaryotic SSU sequences:
 
 Currently, 16S (default) and 18S are the only two available modes, but we hope to
 add additional modes in the future.
+
+---
+
+---
+
+### <a name="options"></a>rRNA_sensor blastn databases
+
+rRNA_sensor includes two blastn databases: one with 1267 sequences for
+16S SSU rRNA (archaeal and bacterial) and one with 1091 sequences for
+eukaryotic 18S SSU rRNA. These were created by clustering larger
+datasets and only keeping one sequence from each cluster as described
+more in the Ribovore 1.0 paper. Following Ribovore installation, the
+FASTA files for these databases will be available here:
+
+```
+$RIBOINSTALLDIR/rRNA_sensor/16S_centroids.fa
+$RIBOINSTALLDIR/rRNA_sensor/18S_centroids.1091.fa 
+```
 
 ---
 
