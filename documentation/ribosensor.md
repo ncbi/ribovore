@@ -4,6 +4,7 @@
 * [rRNA_sensor errors in ribosensor](#rrnasensorerrors)
 * [ribotyper errors in ribosensor](#ribotypererrors)
 * [GenBank errors in ribosensor](#genbankerrors)
+* [Using ribosensor for 18S eukaryotic SSU rRNA sequences](#18S)
 * [List of all command-line options](#options)
 ---
 
@@ -254,7 +255,7 @@ The possible rRNA_sensor errors are listed in the table below, along with the [G
 As an exception, the first four rRNA_sensor errors (labelled with '*') do not trigger a GenBank error
 and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor)
 if either (a) the sequence is 'RPSF' (passes ribotyper and fails rRNA\_sensor) and
-the {\tt -c} option is \emph{not} used with ribosensor.pl or (b)
+the {\tt -c} option is \emph{not} used with ribosensor or (b)
 the sequence is 'RFSF' (fails both ribotyper and rRNA\_sensor) and
 R_UnacceptableModel or R_QuestionableModel ribotyper errors are also reported.
 
@@ -310,6 +311,40 @@ ribotyper and fails rRNA_sensor) and the `-c` option is
 R_QuestionableModel are also reported. '+': these ribotyper errors do
 not trigger a GenBank error if sequence is 'RFSP' (fails ribotyper and
 passes rRNA_sensor);
+
+---
+
+### <a name="options"></a>Using ribosensor for 18S eukaryotic SSU rRNA sequences
+
+The above example run on the `example-16.fa` file runs ribosensor in
+its default *mode* for validation of 16S SSU rRNA sequences from
+bacteria or archaea. Alterntatively, ribosensor can be run in 18S mode
+to validate 18S SSU rRNA eukaryotic sequences using the command line
+option `-m 18S`. For example, we can run ribosensor on the same input file
+in 18S mode with the following command:
+
+```
+ribosensor -m 18S $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
+```
+
+In this case, only 4 sequences pass. These are 4 of the 16 sequences in the input
+file which are eukaryotic SSU sequences:
+
+```
+# GPIPE error counts:
+#
+#                                number   fraction
+# error                          of seqs   of seqs
+# -----------------------------  -------  --------
+  CLEAN                                4   0.25000
+  SEQ_HOM_NotSSUOrLSUrRNA              1   0.06250
+  SEQ_HOM_LengthLong                   1   0.06250
+  SEQ_HOM_TaxNotExpectedSSUrRNA       10   0.62500
+  SEQ_HOM_LowCoverage                  1   0.06250
+```
+
+Currently, 16S (default) and 18S are the only two available modes, but we hope to
+add additional modes in the future.
 
 ---
 
