@@ -128,9 +128,9 @@ You should see something like the following output:
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Wed Dec 23 10:30:05 2020
-# $RIBOEASELDIR:     /Users/nawrockie/tmp/ribovore-install/infernal/binaries
-# $RIBOINFERNALDIR:  /Users/nawrockie/tmp/ribovore-install/infernal/binaries
-# $RIBOSCRIPTSDIR:   /Users/nawrockie/tmp/ribovore-install/ribovore
+# $RIBOEASELDIR:     /usr/local/src/ribovore-install/infernal/binaries
+# $RIBOINFERNALDIR:  /usr/local/src/ribovore-install/infernal/binaries
+# $RIBOSCRIPTSDIR:   /usr/local/src/ribovore-install/ribovore
 #
 # target sequence input file:  /Users/nawrockie/tmp/ribovore-install/ribovore/testfiles/example-ra-11.fa
 # output directory name:       test-ra

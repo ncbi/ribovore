@@ -292,10 +292,10 @@ else { # -q used on the command line
 # define and open output files
 ##############################
 my $unsrt_sensor_indi_file  = $out_root . ".sensor.unsrt.out"; # ribosensor-processed, unsorted sensor output
-my $sensor_indi_file        = $out_root . ".sensor.out";       # ribosensor-processed, sorted 'gpipe' format sensor output
+my $sensor_indi_file        = $out_root . ".sensor.out";       # ribosensor-processed, sorted 'genbank' format sensor output
 my $ribo_indi_file          = $out_root . ".ribo.out";         # ribosensor-processed, ribotyper output
 my $combined_out_file       = $out_root . ".out";              # ribosensor-processed, sensor+ribotyper combined output, human readable
-my $combined_gpipe_file     = $out_root . ".gpipe";            # ribosensor-processed, sensor+ribotyper combined output, machine readable with gpipe errors 
+my $combined_genbank_file     = $out_root . ".gbank";          # ribosensor-processed, sensor+ribotyper combined output, machine readable with genbank errors 
 my $passes_sfetch_file      = $out_root . ".pass.sfetch";      # input file for esl-sfetch that will fetch all sequences that passed 
 my $passes_seq_file         = $out_root . ".pass.fa";          # all sequences that passed as a FASTA-formatted file 
 
@@ -306,16 +306,16 @@ if(! opt_Get("--keep", \%opt_HH)) {
   }
 }
 
-my $unsrt_sensor_indi_FH = undef; # output file handle for unsorted sensor gpipe file
-my $sensor_indi_FH       = undef; # output file handle for gpipe file sorted by input sequence index
-my $ribo_indi_FH         = undef; # output file handle for ribotyper gpipe file sorted by input sequence index
+my $unsrt_sensor_indi_FH = undef; # output file handle for unsorted sensor genbank file
+my $sensor_indi_FH       = undef; # output file handle for genbank file sorted by input sequence index
+my $ribo_indi_FH         = undef; # output file handle for ribotyper genbank file sorted by input sequence index
 my $combined_out_FH      = undef; # output file handle for the combined output file
-my $combined_gpipe_FH    = undef; # output file handle for the combined gpipe file
+my $combined_genbank_FH    = undef; # output file handle for the combined genbank file
 open($unsrt_sensor_indi_FH, ">", $unsrt_sensor_indi_file) || ofile_FileOpenFailure($unsrt_sensor_indi_file, "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
 open($sensor_indi_FH,       ">", $sensor_indi_file)       || ofile_FileOpenFailure($sensor_indi_file,       "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
 open($ribo_indi_FH,         ">", $ribo_indi_file)         || ofile_FileOpenFailure($ribo_indi_file,         "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
 open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailure($combined_out_file,      "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
-open($combined_gpipe_FH,    ">", $combined_gpipe_file)    || ofile_FileOpenFailure($combined_gpipe_file,    "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
+open($combined_genbank_FH,    ">", $combined_genbank_file)    || ofile_FileOpenFailure($combined_genbank_file,    "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
 my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_rrnasensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
@@ -521,10 +521,10 @@ my %herror_ct_HH   = ();   # 2D hash of counts of 'human' error types,
                            # value is count
 my %herror_failsto_H = (); # hash that explains if each human error fails to "submitter" or "indexer",
                            # key is $herror from @herror_A, value is "NONE, "submitter" or "indexer"
-my @gerror_A       = ();   # array of 'gpipe' error types, in order they should be output
-my %gerror_ct_HH   = ();   # 2D hash of counts of 'gpipe' error types, 
+my @gerror_A       = ();   # array of 'genbank' error types, in order they should be output
+my %gerror_ct_HH   = ();   # 2D hash of counts of 'genbank' error types, 
                            # 1D key is outcome type, e.g. "RPSF", 
-                           # 2D key is gpipe error type, an element from @gerror_A
+                           # 2D key is genbank error type, an element from @gerror_A
                            # value is count
 my @RPSF_ignore_A  = ();   # array of human errors to ignore for sequences that pass ribotyper and
                            # fail sensor (RPSF)
@@ -571,7 +571,7 @@ my @submitter_A    = ();   # array of human errors that fail to submitter rather
                  "SEQ_HOM_LowCoverage",
                  "SEQ_HOM_MultipleHits");
 
-# hard-coded list of errors that we ignore when triggering GPIPE
+# hard-coded list of errors that we ignore when triggering GENBANK
 # errors if sequence is RPSF (pass ribotyper, fail sensor) and -c not
 # used
 @RPSF_ignore_A = ("S_NoHits", 
@@ -579,12 +579,12 @@ my @submitter_A    = ();   # array of human errors that fail to submitter rather
                   "S_NoSimilarity",
                   "S_LowSimilarity");
 
-# hard-coded list of errors that we ignore when triggering GPIPE
+# hard-coded list of errors that we ignore when triggering GENBANK
 # errors if sequence is RFSP (fail ribotyper, pass sensor)
 @RFSP_ignore_A = ("R_MultipleHits");
 
 # hard-coded list of errors that we ignore (if other errors are also
-# observed) when triggering GPIPE errors if sequence is RFSF (fail
+# observed) when triggering GENBANK errors if sequence is RFSF (fail
 # ribotyper, fail sensor), key is error to ignore, value is array of
 # other errors, if any of the other errors are present we ignore the
 # key error
@@ -603,12 +603,12 @@ my @submitter_A    = ();   # array of human errors that fail to submitter rather
 # create the failsto hash, mapping each error type to indexer or submitter
 define_failsto_hash(\@herror_A, \@indexer_A, \%herror_failsto_H);
   
-# create the map of gpipe errors to human errors
-my %gpipe2human_HH = ();
-define_gpipe_to_human_map(\%gpipe2human_HH, \@gerror_A, \@herror_A);
+# create the map of genbank errors to human errors
+my %genbank2human_HH = ();
+define_genbank_to_human_map(\%genbank2human_HH, \@gerror_A, \@herror_A);
 
 $start_secs = ofile_OutputProgressPrior("Parsing and combining rRNA_sensor and ribotyper output", $progress_w, $log_FH, *STDOUT);
-# parse rRNA_sensor file to create gpipe format file
+# parse rRNA_sensor file to create genbank format file
 # first unsorted, then sort it.
 parse_sensor_files($unsrt_sensor_indi_FH, \@sensor_classfile_fullpath_A, \@cpart_minlen_A, \@cpart_maxlen_A, \%seqidx_H, \%seqlen_H, \%width_H, \%opt_HH);
 close($unsrt_sensor_indi_FH);
@@ -624,7 +624,7 @@ output_tail_without_fails_to($sensor_indi_FH, \%opt_HH);
 close($sensor_indi_FH);
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sensorout", $sensor_indi_file, 1, 1, "summary of rRNA_sensor results");
 
-# convert ribotyper output to gpipe 
+# convert ribotyper output to genbank 
 output_headers_without_fails_to($ribo_indi_FH, \%width_H, $ofile_info_HH{"FH"});
 convert_ribo_short_to_indi_file($ribo_indi_FH, $ribo_shortfile, \@herror_A, \%seqidx_H, \%width_H, \%opt_HH);
 output_tail_without_fails_to($ribo_indi_FH, \%opt_HH); 
@@ -637,22 +637,22 @@ initialize_hash_of_hash_of_counts(\%gerror_ct_HH,  \@outcome_type_A, \@gerror_A)
 
 # combine sensor and ribotyper indi output files to get combined output file
 output_headers_with_fails_to   ($combined_out_FH,   \%width_H, $ofile_info_HH{"FH"});
-output_headers_without_fails_to($combined_gpipe_FH, \%width_H, $ofile_info_HH{"FH"});
-combine_gpipe_files($combined_out_FH, $combined_gpipe_FH, $sensor_indi_file, $ribo_indi_file, 
-                    \@gerror_A, \%gpipe2human_HH, \%outcome_ct_HH, 
+output_headers_without_fails_to($combined_genbank_FH, \%width_H, $ofile_info_HH{"FH"});
+combine_genbank_files($combined_out_FH, $combined_genbank_FH, $sensor_indi_file, $ribo_indi_file, 
+                    \@gerror_A, \%genbank2human_HH, \%outcome_ct_HH, 
                     \%herror_ct_HH, \%gerror_ct_HH, 
                     (opt_Get("-c", \%opt_HH) ? undef : \@RPSF_ignore_A), # only ignore some sensor errors if -c not used
                     \@RFSP_ignore_A,  # list of ribotyper errors to ignore if sensor pass
                     \%RFSF_ignore_HA, # list of errors to ignore if RFSF, if other errors are observed
                     \%herror_failsto_H, \%width_H, \%opt_HH);
 output_tail_with_fails_to   ($combined_out_FH,   \%opt_HH); 
-output_tail_without_fails_to($combined_gpipe_FH, \%opt_HH); 
+output_tail_without_fails_to($combined_genbank_FH, \%opt_HH); 
 close($combined_out_FH);
-close($combined_gpipe_FH);
+close($combined_genbank_FH);
 
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedout",   $combined_out_file,   1, 1, "summary of combined rRNA_sensor and ribotyper results (original errors)");
-ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedgpipe", $combined_gpipe_file, 1, 1, "summary of combined rRNA_sensor and ribotyper results (GPIPE errors)");
+ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "combinedgenbank", $combined_genbank_file, 1, 1, "summary of combined rRNA_sensor and ribotyper results (GENBANK errors)");
 
 # remove files we do not want anymore, then exit
 foreach my $file (@to_remove_A) { 
@@ -665,7 +665,7 @@ foreach my $file (@to_remove_A) {
 my $nseq_passed    = 0; # number of sequences 
 my $nseq_revcomped = 0; # number of sequences reverse complemented
 if(opt_Get("--psave", \%opt_HH)) { 
-  ($nseq_passed, $nseq_revcomped) = fetch_seqs_given_gpipe_file("esl-sfetch", $seq_file, $combined_out_file, "pass", 6, 1, $passes_sfetch_file, $passes_seq_file, \%seqlen_H, \%opt_HH, $ofile_info_HH{"FH"});
+  ($nseq_passed, $nseq_revcomped) = fetch_seqs_given_genbank_file("esl-sfetch", $seq_file, $combined_out_file, "pass", 6, 1, $passes_sfetch_file, $passes_seq_file, \%seqlen_H, \%opt_HH, $ofile_info_HH{"FH"});
 }
 
 output_outcome_counts(*STDOUT, \%outcome_ct_HH, $ofile_info_HH{"FH"});
@@ -674,15 +674,15 @@ output_outcome_counts($log_FH, \%outcome_ct_HH, $ofile_info_HH{"FH"});
 output_error_counts(*STDOUT, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
 output_error_counts($log_FH, "Per-program error counts:", $tot_nseq, \%{$herror_ct_HH{"*all*"}}, \@herror_A, $ofile_info_HH{"FH"});
 
-output_error_counts(*STDOUT, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
-output_error_counts($log_FH, "GPIPE error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
+output_error_counts(*STDOUT, "GENBANK error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
+output_error_counts($log_FH, "GENBANK error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
 $total_seconds += ofile_SecondsSinceEpoch();
 output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
 
 printf("#\n# Human readable error-based output saved to file $combined_out_file\n");
-printf("# GPIPE error-based output saved to file $combined_gpipe_file\n");
+printf("# GENBANK error-based output saved to file $combined_genbank_file\n");
 if((opt_Get("--psave", \%opt_HH)) && ($nseq_passed > 0)) { 
   printf("#\n# The $nseq_passed sequences that passed (with $nseq_revcomped minus strand sequences\n# reverse complemented) saved to file $passes_seq_file\n");
 }
@@ -868,7 +868,7 @@ sub parse_sensor_files {
           }
         }
         if($failmsg eq "") { $failmsg = "-"; }
-        output_gpipe_line_without_fails_to($FH, $seqidx_HR->{$seqid}, $seqid, "?", $strand, $passfail, $failmsg, $width_HR, $opt_HHR);
+        output_genbank_line_without_fails_to($FH, $seqidx_HR->{$seqid}, $seqid, "?", $strand, $passfail, $failmsg, $width_HR, $opt_HHR);
       }
     }
   }
@@ -917,7 +917,7 @@ sub determine_coverage_threshold {
 # Subroutine : output_headers_without_fails_to()
 # Incept:      EPN, Sat May 13 05:51:17 2017
 #
-# Purpose:     Output column headers to a gpipe format output
+# Purpose:     Output column headers to a genbank format output
 #              file for either sensor or ribotyper.
 #              
 # Arguments: 
@@ -1078,7 +1078,7 @@ sub output_tail_with_fails_to {
 # Subroutine : output_errors_explanation()
 # Incept:      EPN, Mon May 15 05:25:51 2017
 #
-# Purpose:     Output explanation of error(s) in a gpipe file.
+# Purpose:     Output explanation of error(s) in a genbank file.
 #              
 # Arguments: 
 #   $FH:       file handle to output to
@@ -1113,7 +1113,7 @@ sub output_errors_explanation {
 # Incept:      EPN, Mon May 15 05:35:28 2017
 #
 # Purpose:     Convert a ribotyper short format output file 
-#              to gpipe format. 
+#              to genbank format. 
 #
 # Arguments: 
 #   $FH:             filehandle to output to
@@ -1183,7 +1183,7 @@ sub convert_ribo_short_to_indi_file {
         if($passfail ne "PASS") { 
           die "ERROR in $sub_name, sequence $seqid has no unexpected features, but does not PASS:\n$line\n";
         }
-        output_gpipe_line_without_fails_to($FH, $idx, $seqid, $class, $strand, $passfail, "-", $width_HR, $opt_HHR);
+        output_genbank_line_without_fails_to($FH, $idx, $seqid, $class, $strand, $passfail, "-", $width_HR, $opt_HHR);
       }
       else { # ufeature_str ne "-", prepend an "R_" to each unexpected feature
         @ufeature_A = split(";", $ufeature_str);
@@ -1206,7 +1206,7 @@ sub convert_ribo_short_to_indi_file {
           }
           $failmsg = "-"; 
         }
-        output_gpipe_line_without_fails_to($FH, $idx, $seqid, $class, $strand, $passfail, $failmsg, $width_HR, $opt_HHR);
+        output_genbank_line_without_fails_to($FH, $idx, $seqid, $class, $strand, $passfail, $failmsg, $width_HR, $opt_HHR);
       } # end of else entered if $ufeature_str ne "-"
     }
   }
@@ -1215,10 +1215,10 @@ sub convert_ribo_short_to_indi_file {
 }
   
 #################################################################
-# Subroutine : output_gpipe_line_with_fails_to()
+# Subroutine : output_genbank_line_with_fails_to()
 # Incept:      EPN, Mon May 15 05:46:28 2017
 #
-# Purpose:     Output a single line to a gpipe file file handle.
+# Purpose:     Output a single line to a genbank file file handle.
 #
 # Arguments: 
 #   $FH:                 filehandle to output to
@@ -1239,9 +1239,9 @@ sub convert_ribo_short_to_indi_file {
 # Dies:        never
 #
 ################################################################# 
-sub output_gpipe_line_with_fails_to { 
+sub output_genbank_line_with_fails_to { 
   my $nargs_expected = 11;
-  my $sub_name = "output_gpipe_line_with_fails_to";
+  my $sub_name = "output_genbank_line_with_fails_to";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
   my ($FH, $idx, $seqid, $class, $strand, $passfail, $failmsg, $doctored_failmsg, $herror_failsto_HR, $width_HR, $opt_HHR) = (@_);
 
@@ -1259,10 +1259,10 @@ sub output_gpipe_line_with_fails_to {
 }
 
 #################################################################
-# Subroutine : output_gpipe_line_without_fails_to()
+# Subroutine : output_genbank_line_without_fails_to()
 # Incept:      EPN, Mon May 22 13:55:26 2017
 #
-# Purpose:     Output a single line to a gpipe file file handle.
+# Purpose:     Output a single line to a genbank file file handle.
 #
 # Arguments: 
 #   $FH:          filehandle to output to
@@ -1280,9 +1280,9 @@ sub output_gpipe_line_with_fails_to {
 # Dies:        never
 #
 ################################################################# 
-sub output_gpipe_line_without_fails_to { 
+sub output_genbank_line_without_fails_to { 
   my $nargs_expected = 9;
-  my $sub_name = "output_gpipe_line_without_fails_to";
+  my $sub_name = "output_genbank_line_without_fails_to";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
   my ($FH, $idx, $seqid, $class, $strand, $passfail, $failmsg, $width_HR, $opt_HHR) = (@_);
 
@@ -1297,19 +1297,19 @@ sub output_gpipe_line_without_fails_to {
 }
 
 #################################################################
-# Subroutine : combine_gpipe_files()
+# Subroutine : combine_genbank_files()
 # Incept:      EPN, Mon May 15 09:08:38 2017
 #
-# Purpose:     Combine the information in two gpipe files, one
+# Purpose:     Combine the information in two genbank files, one
 #              from sensor and one from ribotyper into a single file.
 #
 # Arguments: 
 #   $out_FH:            filehandle to output 'human' readable file to 
-#   $gpipe_FH:          filehandle to output gpipe file to 
-#   $sensor_gpipe_file: name of sensor gpipe file to read
-#   $ribo_gpipe_file:   name of ribotyper gpipe file to read
-#   $gerror_AR:         ref to array of gpipe errors
-#   $g2h_HHR:           ref to 2D hash, key1: gpipe error, key2: human error,
+#   $genbank_FH:          filehandle to output genbank file to 
+#   $sensor_genbank_file: name of sensor genbank file to read
+#   $ribo_genbank_file:   name of ribotyper genbank file to read
+#   $gerror_AR:         ref to array of genbank errors
+#   $g2h_HHR:           ref to 2D hash, key1: genbank error, key2: human error,
 #                       value: '1' if key1 is triggered by key2.
 #   $outcome_ct_HHR:    ref to 2D hash of counts of outcomes,
 #                       1D key: "RPSP", "RPSF", "RFSP", "RFSF", "*all*"
@@ -1319,9 +1319,9 @@ sub output_gpipe_line_without_fails_to {
 #                       1D key: "RPSP", "RPSF", "RFSP", "RFSF", "*all*"
 #                       2D key: name of human error (e.g. 'R_NoHits')
 #                       values: counts of sequences
-#   $gerror_ct_HHR      ref to 2D hash of counts of gpipe errors
+#   $gerror_ct_HHR      ref to 2D hash of counts of genbank errors
 #                       1D key: "RPSP", "RPSF", "RFSP", "RFSF", "*all*"
-#                       2D key: name of gpipe error (e.g. 'SEQ_HOM_NotSSUOrLSUrRNA')
+#                       2D key: name of genbank error (e.g. 'SEQ_HOM_NotSSUOrLSUrRNA')
 #                       values: counts of sequences
 #   $RPSF_ignore_AR:    ref to array of sensor    errors to ignore if RPSF (ribotyper pass, sensor fail)
 #   $RFSP_ignore_AR:    ref to array of ribotyper errors to ignore if RFSP (ribotyper fail, sensor pass)
@@ -1334,14 +1334,14 @@ sub output_gpipe_line_without_fails_to {
 # 
 # Returns:     void
 #
-# Dies:        if there's a problem parsing the gpipe files
+# Dies:        if there's a problem parsing the genbank files
 #
 ################################################################# 
-sub combine_gpipe_files { 
+sub combine_genbank_files { 
   my $nargs_expected = 15;
-  my $sub_name = "combine_gpipe_files";
+  my $sub_name = "combine_genbank_files";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
-  my ($out_FH, $gpipe_FH, $sensor_gpipe_file, $ribo_gpipe_file, $gerror_AR, $g2h_HHR, $outcome_ct_HHR, $herror_ct_HHR, $gerror_ct_HHR, $RPSF_ignore_AR, $RFSP_ignore_AR, $RFSF_ignore_HAR, $herror_failsto_HR, $width_HR, $opt_HHR) = (@_);
+  my ($out_FH, $genbank_FH, $sensor_genbank_file, $ribo_genbank_file, $gerror_AR, $g2h_HHR, $outcome_ct_HHR, $herror_ct_HHR, $gerror_ct_HHR, $RPSF_ignore_AR, $RFSP_ignore_AR, $RFSF_ignore_HAR, $herror_failsto_HR, $width_HR, $opt_HHR) = (@_);
 
   my @sel_A    = ();    # array of elements on a sensor line
   my @rel_A    = ();    # array of elements on a ribotyper line
@@ -1355,7 +1355,7 @@ sub combine_gpipe_files {
   my ($sfailmsg,  $rfailmsg,  $failmsg);  # a sensor, ribotyper, and combined output failure message
   my $doctored_failmsg;     # combined failmsg with errors to ignore removed
   my $found_reqd_error;     # '1' if we find a required error necessary for ignoring a different error (for processing %RFSF_ignore_HAR)
-  my $gpipe_failmsg;        # doctored_failmsg converted to gpipe errors
+  my $genbank_failmsg;        # doctored_failmsg converted to genbank errors
   my $i;                    # a counter
   my $slidx    = 0;         # line number in sensor file we're currently on
   my $rlidx    = 0;         # line number in ribotyper file we're currently on
@@ -1367,8 +1367,8 @@ sub combine_gpipe_files {
   my $error = undef;        # a single error
   my $error2 = undef;       # a different single error
 
-  open(SIN, $sensor_gpipe_file) || die "ERROR unable to open $sensor_gpipe_file for reading in $sub_name"; 
-  open(RIN, $ribo_gpipe_file)   || die "ERROR unable to open $ribo_gpipe_file for reading in $sub_name"; 
+  open(SIN, $sensor_genbank_file) || die "ERROR unable to open $sensor_genbank_file for reading in $sub_name"; 
+  open(RIN, $ribo_genbank_file)   || die "ERROR unable to open $ribo_genbank_file for reading in $sub_name"; 
 
   # we know that the first few lines of both files are comment lines, that begin with "#", chew them up
   $sline = <SIN>;
@@ -1402,8 +1402,8 @@ sub combine_gpipe_files {
       my @sel_A = split(/\s+/, $sline);
       my @rel_A = split(/\s+/, $rline);
 
-      if(scalar(@sel_A) != 6) { die "ERROR in $sub_name, unable to parse sensor gpipe line: $sline"; }
-      if(scalar(@rel_A) != 6) { die "ERROR in $sub_name, unable to parse ribotyper gpipe line: $rline"; }
+      if(scalar(@sel_A) != 6) { die "ERROR in $sub_name, unable to parse sensor genbank line: $sline"; }
+      if(scalar(@rel_A) != 6) { die "ERROR in $sub_name, unable to parse ribotyper genbank line: $rline"; }
 
       ($sidx, $sseqid, $sclass, $sstrand, $spassfail, $sfailmsg) = (@sel_A);
       ($ridx, $rseqid, $rclass, $rstrand, $rpassfail, $rfailmsg) = (@rel_A);
@@ -1472,11 +1472,11 @@ sub combine_gpipe_files {
           }
         }
       }
-      $gpipe_failmsg = human_to_gpipe_fail_message($doctored_failmsg, $g2h_HHR, $gerror_AR);
+      $genbank_failmsg = human_to_genbank_fail_message($doctored_failmsg, $g2h_HHR, $gerror_AR);
 
-      $failsto_str = output_gpipe_line_with_fails_to($out_FH, $sidx, $sseqid, $rclass, $strand, $passfail, $failmsg, $doctored_failmsg,
+      $failsto_str = output_genbank_line_with_fails_to($out_FH, $sidx, $sseqid, $rclass, $strand, $passfail, $failmsg, $doctored_failmsg,
                                                      $herror_failsto_HR, $width_HR, $opt_HHR); 
-      output_gpipe_line_without_fails_to($gpipe_FH, $sidx, $sseqid, $rclass, $strand, $passfail, $gpipe_failmsg, $width_HR, $opt_HHR); 
+      output_genbank_line_without_fails_to($genbank_FH, $sidx, $sseqid, $rclass, $strand, $passfail, $genbank_failmsg, $width_HR, $opt_HHR); 
 
       $out_lidx++;
       # update counts of outcomes 
@@ -1488,8 +1488,8 @@ sub combine_gpipe_files {
       # update counts of errors
       update_error_count_hash(\%{$herror_ct_HHR->{"*all*"}},   ($failmsg eq "-") ? "CLEAN" : $failmsg);
       update_error_count_hash(\%{$herror_ct_HHR->{$passfail}}, ($failmsg eq "-") ? "CLEAN" : $failmsg);
-      update_error_count_hash(\%{$gerror_ct_HHR->{"*all*"}},   ($gpipe_failmsg eq "-") ? "CLEAN" : $gpipe_failmsg);
-      update_error_count_hash(\%{$gerror_ct_HHR->{$passfail}}, ($gpipe_failmsg eq "-") ? "CLEAN" : $gpipe_failmsg);
+      update_error_count_hash(\%{$gerror_ct_HHR->{"*all*"}},   ($genbank_failmsg eq "-") ? "CLEAN" : $genbank_failmsg);
+      update_error_count_hash(\%{$gerror_ct_HHR->{$passfail}}, ($genbank_failmsg eq "-") ? "CLEAN" : $genbank_failmsg);
 
       # get new lines
       $sline = <SIN>;
@@ -1499,10 +1499,10 @@ sub combine_gpipe_files {
     }
     # check for some unexpected errors
     elsif(($have_sline) && (! $have_rline)) { 
-      die "ERROR in $sub_name, ran out of sequences from ribotyper gpipe file before sensor gpipe file";
+      die "ERROR in $sub_name, ran out of sequences from ribotyper genbank file before sensor genbank file";
     }
     elsif((! $have_sline) && ($have_rline)) { 
-      die "ERROR in $sub_name, ran out of sequences from sensor gpipe file before ribotyper gpipe file"; 
+      die "ERROR in $sub_name, ran out of sequences from sensor genbank file before ribotyper genbank file"; 
     }
     else { # don't have either line
       $keep_going = 0;
@@ -1520,11 +1520,11 @@ sub combine_gpipe_files {
 # Subroutine : determine_fails_to_string()
 # Incept:      EPN, Mon May 15 10:42:52 2017
 #
-# Purpose:     Based on the human gpipe errors, determine if 
+# Purpose:     Based on the human genbank errors, determine if 
 #              we fail to indexer or submitter. If there are
 #              any indexer errors, then we fail to indexer.
 
-#              Input is a string that includes all human gpipe errors separated
+#              Input is a string that includes all human genbank errors separated
 #              by semi-colons, determine if this sequence either:
 #              1) passes             (return "pass")
 #              2) fails to indexer   (return "indexer")
@@ -1601,7 +1601,7 @@ sub determine_fails_to_string {
 #              RFSP: fails ribotyper, passes sensor
 #              RFSF: fails both ribotyper and sensor
 # 
-#              And a string that includes all gpipe errors separated
+#              And a string that includes all genbank errors separated
 #              by semi-colons, determine if this sequence either:
 #              1) passes             (return "PASS")
 #              2) fails to indexer   (return "indexer")
@@ -1609,7 +1609,7 @@ sub determine_fails_to_string {
 #             
 # Arguments: 
 #   $pftype:      "RPSP", "RPSF", "RFSP", or "RFSF"
-#   $failmsg:     all gpipe error separated by ";"
+#   $failmsg:     all genbank error separated by ";"
 #   $opt_HHR:     ref to 2D hash of cmdline options
 #
 # Returns:     "pass", "indexer", or "submitter" 
@@ -2128,16 +2128,16 @@ sub output_timing_statistics {
 }
 
 #################################################################
-# Subroutine: fetch_seqs_given_gpipe_file()
+# Subroutine: fetch_seqs_given_genbank_file()
 # Incept:     EPN, Tue May 16 11:38:57 2017
 #
-# Purpose:    Fetch sequences to a file given the gpipe output file
+# Purpose:    Fetch sequences to a file given the genbank output file
 #             based on the sequence type.
 #
 # Arguments:
 #   $sfetch_exec: path to esl-sfetch executable
 #   $seq_file:    sequence file to fetch from 
-#   $gpipe_file:  the gpipe file to parse to determine what sequences
+#   $genbank_file:  the genbank file to parse to determine what sequences
 #                 to fetch
 #   $string:      string to match in column $column of sequences to fetch
 #   $column:      column to look for $string in (<= 7)
@@ -2155,12 +2155,12 @@ sub output_timing_statistics {
 # Dies:     The argument column has an unexpected value.
 #
 #################################################################
-sub fetch_seqs_given_gpipe_file { 
-  my $sub_name = "fetch_seqs_given_gpipe_file()";
+sub fetch_seqs_given_genbank_file { 
+  my $sub_name = "fetch_seqs_given_genbank_file()";
   my $nargs_expected = 11;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sfetch_exec, $seq_file, $gpipe_file, $string, $column, $do_revcomp, $sfetch_file, $subseq_file, $seqlen_HR, $opt_HHR, $FH_HR) = (@_);
+  my ($sfetch_exec, $seq_file, $genbank_file, $string, $column, $do_revcomp, $sfetch_file, $subseq_file, $seqlen_HR, $opt_HHR, $FH_HR) = (@_);
 
   my @el_A           = ();    # array of the space delimited tokens in a line
   my $nseq           = 0;     # number of sequences fetched
@@ -2173,10 +2173,10 @@ sub fetch_seqs_given_gpipe_file {
     die "ERROR in $sub_name, invalid column: $column, should be between 1 and 7"; 
   }
 
-  open(GPIPE,        $gpipe_file) || die "ERROR in $sub_name, unable to open $gpipe_file for reading";
+  open(GENBANK,        $genbank_file) || die "ERROR in $sub_name, unable to open $genbank_file for reading";
   open(SFETCH, ">", $sfetch_file) || die "ERROR in $sub_name, unable to open $sfetch_file for writing";
 
-  while(my $line = <GPIPE>) { 
+  while(my $line = <GENBANK>) { 
     # example lines
     ##idx   sequence                                      taxonomy               strnd              type    failsto  error(s)
     ##----  --------------------------------------------  ---------------------  -----------------  ----  ---------  --------
@@ -2196,7 +2196,7 @@ sub fetch_seqs_given_gpipe_file {
 
         if($do_revcomp) { 
           # determine if sequence is minus strand:
-          $strand = determine_strand_given_gpipe_strand($el_A[3], $el_A[4]);
+          $strand = determine_strand_given_genbank_strand($el_A[3], $el_A[4]);
           if($strand eq "minus") { 
             printf SFETCH ("$seqid  $seqlen 1 $seqid\n");
             $nseq_revcomped++;
@@ -2212,7 +2212,7 @@ sub fetch_seqs_given_gpipe_file {
       }
     }
   }
-  close(GPIPE);
+  close(GENBANK);
   close(SFETCH);
 
   if($nseq > 0) { 
@@ -2230,10 +2230,10 @@ sub fetch_seqs_given_gpipe_file {
 }
 
 #################################################################
-# Subroutine: determine_strand_given_gpipe_strand()
+# Subroutine: determine_strand_given_genbank_strand()
 # Incept:     EPN, Tue May 16 15:30:53 2017
 #
-# Purpose:    Given the strand field for a sequence from the GPIPE file,
+# Purpose:    Given the strand field for a sequence from the GENBANK file,
 #             determine if it is 'minus' or 'plus' strand. 
 #
 # Arguments:
@@ -2250,8 +2250,8 @@ sub fetch_seqs_given_gpipe_file {
 #        syntactic specification above.
 #
 #################################################################
-sub determine_strand_given_gpipe_strand { 
-  my $sub_name = "determine_strand_given_gpipe_strand()";
+sub determine_strand_given_genbank_strand { 
+  my $sub_name = "determine_strand_given_genbank_strand()";
   my $nargs_expected = 2;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
@@ -2290,7 +2290,7 @@ sub determine_strand_given_gpipe_strand {
 }
 
 #################################################################
-# Subroutine: define_gpipe_to_human_map()
+# Subroutine: define_genbank_to_human_map()
 # Incept:     EPN, Mon May 22 10:28:37 2017
 #
 # Purpose:    Define the hard-coded mapping between machine and human errors.
@@ -2306,8 +2306,8 @@ sub determine_strand_given_gpipe_strand {
 # Dies:     Never.
 #
 #################################################################
-sub define_gpipe_to_human_map { 
-  my $sub_name = "define_gpipe_to_human_map()";
+sub define_genbank_to_human_map { 
+  my $sub_name = "define_genbank_to_human_map()";
   my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
@@ -2414,16 +2414,16 @@ sub define_failsto_hash {
 }
 
 #################################################################
-# Subroutine: human_to_gpipe_fail_message()
+# Subroutine: human_to_genbank_fail_message()
 # Incept:     EPN, Mon May 22 10:46:43 2017
 #
 # Purpose:    Given an human fail message, convert it to a 'machine' one.
 #
 # Arguments:
 #   $h_failmsg:  the human readable fail message
-#   $g2h_HHR:    ref to 2D hash, key1: gpipe error, key2: human error,
+#   $g2h_HHR:    ref to 2D hash, key1: genbank error, key2: human error,
 #                value: '1' if key1 is triggered by key2.
-#   $g_AR:       ref to array of gpipe errors, in order we want them
+#   $g_AR:       ref to array of genbank errors, in order we want them
 #                output
 #
 # Returns:  The machine fail message.
@@ -2431,16 +2431,16 @@ sub define_failsto_hash {
 # Dies:     If an error string is not recognized
 #
 #################################################################
-sub human_to_gpipe_fail_message { 
-  my $sub_name = "human_to_gpipe_fail_message()";
+sub human_to_genbank_fail_message { 
+  my $sub_name = "human_to_genbank_fail_message()";
   my $nargs_expected = 3;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
   my ($h_failmsg, $g2h_HHR, $g_AR) = (@_);
 
-  my $gerr    = undef; # a gpipe error
+  my $gerr    = undef; # a genbank error
   my $herr    = undef; # a human error
-  my $i       = 0;     # counter over gpipe errors
+  my $i       = 0;     # counter over genbank errors
   my $j       = 0;     # counter over human errors
   my @herr_A  = ();    # array of human errors
   my $n_herr  = 0;     # size of @herr_A
@@ -2470,7 +2470,7 @@ sub human_to_gpipe_fail_message {
         }
         if($g2h_HHR->{$gerr}{$herr} == 1) { 
           $ret_str .= $gerr . ";";
-          $j = $n_herr; # breaks loop because we only want to print each GPIPE error once
+          $j = $n_herr; # breaks loop because we only want to print each GENBANK error once
         }
       }
     }
