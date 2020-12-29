@@ -48,7 +48,8 @@ line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
 The $RIBOSCRIPTSDIR environment variable should be defined in your
-`.bashrc` or `.cshrc` as explained in `install.md`(install.md#environment).
+`.bashrc` or `.cshrc` as explained in the [installation
+documentation](install.md#environment).
 
 The second required argument is the name of the output subdirectory
 that you would like ribotyper to create. Output files will be placed
@@ -152,7 +153,7 @@ The two file types are a 'short' file of 6 columns, and a 'long' file
 with 20 columns with more information. Each file includes a
 description of the columns at the end of the file.
 
-The short file is included below. Note that the meaning of the columns are briefly explained
+<a name="short"></a> The short file is included below. Note that the meaning of the columns are briefly explained
 in comment lines (prefixed with `#`) after the tabular output, along with explanations of
 possible values in the `unexpected_features` column. These are explained more [below](#unexpectedfeatures).
 ```

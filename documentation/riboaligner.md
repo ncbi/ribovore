@@ -22,7 +22,7 @@ classes](#lengthclasses) are included below.
 
 ---
 
-## <a name="lengthclasses"></a> Length classes determined by Riboaligner.
+## <a name="lengthclasses"></a> Length classes determined by riboaligner
 
 Each of the CMs and profile HMMs used by Ribovore have a predefined
 set of reference positions, each of which corresponds to a position in
@@ -43,44 +43,46 @@ and final model reference position as well as by how many insertion and
 deletions occur in the first and final ten model reference
 positions. 
 
-* partial: does not extend to first model position or final model position
-* full-exact: spans full model with zero insertions 5' of
+The 11 length classes are:
+
+* *partial*: does not extend to first model position or final model position
+* *full-exact*: spans full model with zero insertions 5' of
   first model position and zero insertions 3' of the final
   model position and no insertions or deletions in the first or final 10 model positions
-* full-extra: spans full model but has at least one insertion
+* *full-extra*: spans full model but has at least one insertion
   5' of the first model position and/or 3' of the final model position
-* full-ambig-more: spans full model and has zero insertions 5' of
+* *full-ambig-more*: spans full model and has zero insertions 5' of
   the first model position but has insertions and/or deletions in the
   first and/or final 10 model positions and the insertions outnumber
   the deletions within those 10 model positions at the 5' and 3' ends.
-* full-ambig-less: spans full model and zero insertions 5' of
+* *full-ambig-less*: spans full model and zero insertions 5' of
   the first model position but has insertions and/or deletions in the
   first and/or final 10 model positions and the deletions outnumber
   the insertions at the 5' and 3' ends. 
-* 5flush-exact: alignment extends to first but not final model
+* *5flush-exact*: alignment extends to first but not final model
   position, and has zero insertions 5' of first model position
-* 5flush-extra: alignment extends to first but not final model
+* *5flush-extra*: alignment extends to first but not final model
   position and has at least one insertion 5' of the first model position
-* 5flush-ambig-more: alignment extends to first but not final model
+* *5flush-ambig-more*: alignment extends to first but not final model
   position and has zero insertions 5' of the first model position but
   has insertions and/or deletions in the first 10 model positions and
   the insertions outnumber the deletions within those 10 model
   positions at the 5' end.
-* 5flush-ambig-less: alignment extends to first but not final model
+* *5flush-ambig-less*: alignment extends to first but not final model
   position and has zero insertions 5' of the first model position but
   has insertions and/or deletions in the first 10 model positions and
   the deletions are equal to or outnumber the insertions within those 10 model
   positions at the 5' end.
-* 3flush-exact: alignment extends to final but not first model
+* *3flush-exact*: alignment extends to final but not first model
   position, and has zero insertions 3' of final model position
-* 3flush-extra: alignment extends to final but not first model
+* *3flush-extra*: alignment extends to final but not first model
   position and has at least one insertion 3' of the final model position
-* 3flush-ambig-more: alignment extends to final but not first model
+* *3flush-ambig-more*: alignment extends to final but not first model
   position and has zero insertions 3' of the final model position but
   has insertions and/or deletions in the final 10 model positions and
   the insertions outnumber the deletions within those 10 model
   positions at the 3' end.
-* 3flush-ambig-less: alignment extends to final but not first model
+* *3flush-ambig-less*: alignment extends to final but not first model
   position and has zero insertions 3' of the final model position but
   has insertions and/or deletions in the final 10 model positions and
   the deletions are equal to or outnumber the insertions within those 10 model
@@ -105,7 +107,8 @@ line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
 The $RIBOSCRIPTSDIR environment variable should be defined in your
-`.bashrc` or `.cshrc` as explained in `install.md`(install.md#environment).
+`.bashrc` or `.cshrc` as explained in the [installation
+documentation](install.md#environment).
 
 The second required argument is the name of the output subdirectory
 that you would like riboaligner to create. Output files will be placed
@@ -227,7 +230,79 @@ guide](http://eddylab.org/infernal/Userguide.pdf).
 
 ---
 
-###<a name="modelinfo"></a> riboaligner modelinfo file
+###<a name="modelinfo"></a> riboaligner modelinfo files
+
+The default riboaligner modelinfo file is in `$RIBOSCRIPTSDIR/models/riboaligner.modelinfo`:
+
+```
+> cat $RIBOSCRIPTSDIR/models/riboaligner.modelinfo 
+# each line has information on 1 family and has 4 or more tokens:
+# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
+# token 2: CM file name for this family
+# token 3: integer, consensus length for the CM for this family
+# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
+#                corresponding model in the ribotyper modelinfo file to be used
+#
+SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
+SSU.Eukarya           ra.SSU_rRNA_eukarya.edf.cm                    1851 SSU_rRNA_eukarya
+LSU.Archaea           ra.LSU_rRNA_archaea.edf.cm                    2990 LSU_rRNA_archaea
+LSU.Bacteria          ra.LSU_rRNA_bacteria.edf.cm                   2925 LSU_rRNA_bacteria
+SSU.Euk-Microsporidia ra.SSU_rRNA_microsporidia.edf.cm              1312 SSU_rRNA_microsporidia
+LSU.Eukarya           ra.LSU_rRNA_eukarya.edf.cm                    3401 LSU_rRNA_eukarya 
+SSU.Chloroplast       ra.SSU_rRNA_chloroplast.edf.cm                1488 SSU_rRNA_chloroplast SSU_rRNA_chloroplast_pilostyles
+SSU.Mito-Metazoa      ra.SSU_rRNA_mitochondria_metazoa.edf.cm        955 SSU_rRNA_mitochondria_metazoa
+SSU.Euk-Apicoplast    ra.SSU_rRNA_apicoplast.edf.cm                 1463 SSU_rRNA_apicoplast
+SSU.Mito-Amoeba       ra.SSU_rRNA_mitochondria_amoeba.edf.cm        1956 SSU_rRNA_mitochondria_amoeba
+SSU.Mito-Chlorophyta  ra.SSU_rRNA_mitochondria_chlorophyta.edf.cm   1376 SSU_rRNA_mitochondria_chlorophyta
+SSU.Mito-Fungi        ra.SSU_rRNA_mitochondria_fungi.edf.cm         1589 SSU_rRNA_mitochondria_fungi
+SSU.Mito-Kinetoplast  ra.SSU_rRNA_mitochondria_kinetoplast.edf.cm    624 SSU_rRNA_mitochondria_kinetoplast
+SSU.Mito-Plant        ra.SSU_rRNA_mitochondria_plant.edf.cm         1951 SSU_rRNA_mitochondria_plant
+SSU.Mito-Protist      ra.SSU_rRNA_mitochondria_protist.edf.cm       1669 SSU_rRNA_mitochondria_protist
+```
+
+The comment (`#`-prefixed) lines at the top of the file explain the
+format.  The first token corresponds to a concatenation of columns 2
+and 3 (`family` and `domain`) in the ribotyper modelinfo file, which
+is the family and domain of each model. Sequences with output in the
+`classification` column of ribotyper [output files with the suffix
+`.short.out`](#ribotyper.md#short) that match the value in this first
+token will be aligned to the CM in the file listed as the second token
+of this riboaligner modelinfo file.
+
+Any sequences in the riboaligner input sequence file that are
+classified to any family/domain in ribotyper that is not listed in the
+modelinfo file will not be aligned. The default riboaligner modelinfo
+file includes all models from the ribotyper modelinfo file. You can
+make your own riboaligner modelinfo files with fewer or different
+family/domains and models than those listed in the default file.
+
+For example, the file `$RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo` only
+includes information for SSU rRNA for bacteria and archaea:
+
+```
+> cat $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo 
+# each line has information on 1 family and has 4 or more tokens:
+# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
+# token 2: CM file name for this family
+# token 3: integer, consensus length for the CM for this family
+# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
+#                corresponding model in the ribotyper modelinfo file to be used
+#
+SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
+```
+
+You can use this file with riboaligner with the `-i` option like this:
+```
+riboaligner -i $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo -f $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra2
+```
+
+
+
+
+
+
 
 ---
 
