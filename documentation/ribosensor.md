@@ -277,9 +277,9 @@ with the [GenBank errors](#genbankerrors) they associate with.
 | R_InconsistentHits       | SEQ_HOM_MisAsHitOrder            | hits are in different order in sequence and model |
 | R_DuplicateRegion        | SEQ_HOM_MisAsDupRegion           | hits overlap by 10 or more model positions |
 | R_UnacceptableModel      | SEQ_HOM_TaxNotExpectedSSUrRNA    | best hit is to model other than expected set; 16S expected set: SSU.Archaea, SSU.Bacteria, SSU.Cyanobacteria, SSU.Chloroplast; 18S expected set: SSU.Eukarya; |
-| R_LowCoverage            | SEQ_HOM_LowCoverage              | coverage of all hits is < 0.80 (if <= 350nt$) or 0.86 (if $>350nt$) |
-| R_QuestionableModel^+    | SEQ_HOM_TaxQuestionableSSUrRNA   | best hit is to a 'questionable' model (if mode is 16S: SSU.Chloroplast, if mode is 18S, does not apply) | 
-| R_MultipleHits+$         | SEQ_HOM_MultipleHits             | more than 1 hit reported | 
+| R_LowCoverage            | SEQ_HOM_LowCoverage              | coverage of all hits is < 0.80 (if <= 350nt) or 0.86 (if > 350nt) |
+| R_QuestionableModel+    | SEQ_HOM_TaxQuestionableSSUrRNA   | best hit is to a 'questionable' model (if mode is 16S: SSU.Chloroplast, if mode is 18S, does not apply) | 
+| R_MultipleHits+         | SEQ_HOM_MultipleHits             | more than 1 hit reported | 
 
 As an exception, the final two errors (labelled with '+') do not trigger a GenBank error
 and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor) 
@@ -292,16 +292,16 @@ triggered by one or more rRNA_sensor and/or ribotyper errors as shown in the tab
 
 | GenBank error                   | fails to  |  triggering rRNA_sensor/ribotyper errors | 
 |---------------------------------|-----------|------------------------------------------|
-| SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits$^{*}$, R_NoHits |
-| SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity$^{*}$, S_LowSimilarity$^{*}$, S_LowScore$^{*}$, R_LowScore |
+| SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits*, R_NoHits |
+| SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity*, S_LowSimilarity*, S_LowScore*, R_LowScore |
 | SEQ_HOM_SSUAndLSUrRNA           | submitter | R_MultipleFamilies |
 | SEQ_HOM_MisAsBothStrands        | submitter | S_BothStrands, R_BothStrands |
 | SEQ_HOM_MisAsHitOrder           | submitter | R_InconsistentHits |
 | SEQ_HOM_MisAsDupRegion          | submitter | R_DuplicateRegion |
 | SEQ_HOM_TaxNotExpectedSSUrRNA   | submitter | R_UnacceptableModel |
-| SEQ_HOM_TaxQuestionableSSUrRNA  | indexer   | R_QuestionableModel$^{+}$ |
+| SEQ_HOM_TaxQuestionableSSUrRNA  | indexer   | R_QuestionableModel+ |
 | SEQ_HOM_LowCoverage             | indexer   | R_LowCoverage |
-| SEQ_HOM_MultipleHits            | indexer   | S_MultipleHits, R_MultipleHits$^{+}$ |
+| SEQ_HOM_MultipleHits            | indexer   | S_MultipleHits, R_MultipleHits+ |
 
 There are two classes of exceptions marked by two different
 superscripts in the table: '*': these rRNA_sensor errors do not
@@ -325,7 +325,7 @@ option `-m 18S`. For example, we can run ribosensor on the same input file
 in 18S mode with the following command:
 
 ```
-ribosensor -m 18S $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
+> ribosensor -m 18S $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
 ```
 
 In this case, only 4 sequences pass. These are 4 of the 16 sequences in the input
