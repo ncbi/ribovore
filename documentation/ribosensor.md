@@ -254,9 +254,9 @@ The possible rRNA_sensor errors are listed in the table below, along with the [G
 
 As an exception, the first four rRNA_sensor errors (labelled with '*') do not trigger a GenBank error
 and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor)
-if either (a) the sequence is 'RPSF' (passes ribotyper and fails rRNA\_sensor) and
-the {\tt -c} option is \emph{not} used with ribosensor or (b)
-the sequence is 'RFSF' (fails both ribotyper and rRNA\_sensor) and
+if either (a) the sequence is 'RPSF' (passes ribotyper and fails rRNA_sensor) and
+the `-c` option is *not* used with ribosensor or (b)
+the sequence is 'RFSF' (fails both ribotyper and rRNA_sensor) and
 R_UnacceptableModel or R_QuestionableModel ribotyper errors are also reported.
 
 ## ribotyper errors in ribosensor <a name="ribotypererrors"></a>
@@ -291,6 +291,7 @@ A sequence fails ribosensor if it has one or more GenBank errors. Each GenBank e
 triggered by one or more rRNA_sensor and/or ribotyper errors as shown in the table below:
 
 | GenBank error                   | fails to  |  triggering rRNA_sensor/ribotyper errors | 
+|---------------------------------|-----------|------------------------------------------|
 | SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits$^{*}$, R_NoHits |
 | SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity$^{*}$, S_LowSimilarity$^{*}$, S_LowScore$^{*}$, R_LowScore |
 | SEQ_HOM_SSUAndLSUrRNA           | submitter | R_MultipleFamilies |
