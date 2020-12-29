@@ -1,11 +1,10 @@
 # <a name="top"></a> `ribosensor` example usage, command-line options and length classes
 
-* [`ribosensor` example usage](#exampleusage)
 * [Example usage](#exampleusage)
-* [rRNA_sensor errors in ribosensor]
-* [ribotyper errors in ribosensor]
-* [GenBank errors in ribosensor]
-
+* [rRNA_sensor errors in ribosensor](#rrnasensorerrors)
+* [ribotyper errors in ribosensor](#ribotypererrors)
+* [GenBank errors in ribosensor](#genbankerrors)
+* [List of all command-line options](#options)
 ---
 
 ribosensor combines ribotyper and another program, rRNA_sensor,
@@ -57,45 +56,42 @@ You should see something like the following output:
 # ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:              Tue Dec 29 09:37:20 2020
-# $RIBOBLASTDIR:     /usr/local/src/ribovore-install/ncbi-blast/bin
-# $RIBOEASELDIR:     /usr/local/src/ribovore-install/infernal/binaries
-# $RIBOINFERNALDIR:  /usr/local/src/ribovore-install/infernal/binaries
-# $RIBOSCRIPTSDIR:   /usr/local/src/ribovore-install/ribovore
-# $RIBOTIMEDIR:      /usr/bin
-# $RRNASENSORDIR:    /usr/local/src/ribovore-install/rRNA_sensor
+# date:    Tue Dec 29 14:56:08 2020
 #
-# target sequence input file:   /Users/nawrockie/tmp/ribovore-install/ribovore/testfiles/example-16.fa
-# output directory name:        test-rs
-# forcing directory overwrite:  yes [-f]
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Partitioning sequence file based on sequence lengths         ... done. [    0.0 seconds]
-# Running ribotyper on full sequence file                      ... done. [    3.6 seconds]
-# Running rRNA_sensor on seqs of length 351..600               ... done. [    0.2 seconds]
-# Running rRNA_sensor on seqs of length 601..inf               ... done. [    1.7 seconds]
-# Parsing and combining rRNA_sensor and ribotyper output       ... done. [    0.0 seconds]
-#
-# Outcome counts:
-#
-# type   total  pass  indexer  submitter  unmapped
-# -----  -----  ----  -------  ---------  --------
-  RPSP       8     8        0          0         0
-  RPSF       1     1        0          0         0
-  RFSP       0     0        0          0         0
-  RFSF       7     0        0          7         0
-#
-  *all*     16     9        0          7         0
-#
-# Per-program error counts:
-#
-#                      number   fraction
-# error                of seqs   of seqs
-# -------------------  -------  --------
-  CLEAN                      8   0.50000
-  S_NoHits                   1   0.06250
-  S_TooLong                  1   0.06250
-  S_LowScore                 5   0.31250
-  S_LowSimilarity            5   0.31250
+Usage: ribosensor [-options] <fasta file to annotate> <output directory>
+
+basic options:
+  -f           : force; if <output directory> exists, overwrite it
+  -m <s>       : set mode to <s>, possible <s> values are "16S" and "18S" [16S]
+  -c           : assert that sequences are from cultured organisms
+  -n <n>       : use <n> CPUs [0]
+  -v           : be verbose; output commands to stdout as they're run
+  -i <s>       : use model info file <s> instead of default
+  --keep       : keep all intermediate files that are removed by default
+  --skipsearch : skip search stages, use results from earlier run
+
+rRNA_sensor related options:
+  --Sminlen <n>    : set rRNA_sensor minimum sequence length to <n> [100]
+  --Smaxlen <n>    : set rRNA_sensor minimum sequence length to <n> [2000]
+  --Smaxevalue <x> : set rRNA_sensor maximum E-value to <x> [1e-40]
+  --Sminid1 <n>    : set rRNA_sensor minimum percent id for seqs <= 350 nt to <n> [75]
+  --Sminid2 <n>    : set rRNA_sensor minimum percent id for seqs [351..600] nt to <n> [80]
+  --Sminid3 <n>    : set rRNA_sensor minimum percent id for seqs > 600 nt to <n> [86]
+  --Smincovall <n> : set rRNA_sensor minimum coverage for all sequences to <n> [10]
+  --Smincov1 <n>   : set rRNA_sensor minimum coverage for seqs <= 350 nt to <n> [80]
+  --Smincov2 <n>   : set rRNA_sensor minimum coverage for seqs  > 350 nt to <n> [86]
+
+options for saving sequence subsets to files:
+  --psave : save passing sequences to a file
+
+options for parallelizing cmsearch on a compute farm:
+  -p         : parallelize ribotyper and rRNA_sensor on a compute farm
+  -q <s>     : use qsub info file <s> instead of default
+  -s <n>     : seed for random number generator is <n> [181]
+  --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
+  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
+  --errcheck : consider any farm stderr output as indicating a job failure
+
   R_NoHits                   1   0.06250
   R_UnacceptableModel        5   0.31250
   R_LowCoverage              1   0.06250
@@ -174,10 +170,12 @@ rRNA_sensor.
 Based on whether it passes or fails each of the two programs, each sequence is assigned
 one of four possible 'outcomes':
 
-* RPSP: passes both ribotyper and rRNA_sensor
-* RPSF: passes ribotyper and fails rRNA_sensor
-* RFSP: fails ribotyper and passes rRNA_sensor
-* RFSF: fails both ribotyper and rRNA_sensor
+| outcome | ribotyper pass/fail | rRNA_sensor pass/fail |
+|---------|---------------------|-----------------------|
+| RPSP    | PASS                | PASS                  |
+| RPSF    | PASS                | FAIL                  |
+| RFSP    | FAIL                | PASS                  |
+| RFSF    | FAIL                | FAIL                  |
 
 The counts of sequences for each outcome are output. For the above example the outcome counts are:
 ```
@@ -238,40 +236,11 @@ Finally, information on the number of GenBank errors is output
 
 GenBank errors are determined by combining the ribotyper and rRNA_sensor errors as explained [here](#genbankerrors).
 
+## rRNA_sensor errors in ribosensor <a name="rrnasensorerrors"></a>
 
-## rRNA_sensor errors
+Any sequence that receives one or more rRNA_sensor errors will be considered to have failed rRNA_sensor.
 
-For this example there will be two rRNA_sensor output files:
-```
-test-rs/sensor-2-out/sensor-class.2.out
-test-rs/sensor-3-out/sensor-class.3.out
-```
-
-(If any sequences 350 nucleotides or less existed in the input file,
-there would be a third file `test-rs/sensor-1-out/sensor-class.1.out`.)
-The format of these files is explained in the rRNA_sensor [README
-file](https://github.com/aaschaffer/rRNA_sensor/blob/master/README),
-but briefly:
-
-```
-Column 1 is the sequence name
-
-Column 2 is the classification.
-
-Column 3 is the strand of the sequence relative to the strand of the
-matching database 16S/18S sequence, or NA if there is no match.
-
-Column 4 is the number of local alignments between the sequence and
-the best matching database 16S/18S sequence, or NA if there is no
-match.
-
-Column 5 is the query coverage percentage of the best alignment
-between sequence and the best matching database 16S/1
-8S sequence, or NA if there is no match.
-```
-
-Per-sequence errors are then determined based on the values in these 5
-columns as shown in the table below:
+The possible rRNA_sensor errors are listed in the table below, along with the [GenBank errors](#genbankerrors) they associate with.
 
 | rRNA_sensor error    | associated GenBank error |  cause/explanation  |
 |----------------------|--------------------------|---------------------|
@@ -282,155 +251,108 @@ columns as shown in the table below:
 |S_BothStrands         | SEQ_HOM_MisAsBothStrands | hits on both strands ('mixed' in column 2) |
 |S_MultipleHits        | SEQ_HOM_MultipleHits     | more than 1 hit reported (column 4 value > 1) |
 
-Note that the first four rRNA_sensor errors (labelled with '*') do not trigger a GenBank error
- GenBank errors and are
-    ignored by ribosensor if either (a) the
-    sequence is 'RPSF' (passes ribotyper and fails rRNA\_sensor) and
-    the {\tt -c} option is \emph{not} used with ribosensor.pl or (b)
-    the sequence is 'RFSF' (fails both ribotyper and rRNA\_sensor) and
-    R\_UnacceptableModel or R\_QuestionableModel ribotyper errors are
-    also reported.}
+As an exception, the first four rRNA_sensor errors (labelled with '*') do not trigger a GenBank error
+and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor)
+if either (a) the sequence is 'RPSF' (passes ribotyper and fails rRNA\_sensor) and
+the {\tt -c} option is \emph{not} used with ribosensor.pl or (b)
+the sequence is 'RFSF' (fails both ribotyper and rRNA\_sensor) and
+R_UnacceptableModel or R_QuestionableModel ribotyper errors are also reported.
 
-passes or fails rRNA_sensor as follows:
+## ribotyper errors in ribosensor <a name="ribotypererrors"></a>
 
+ribotyper detects and reports up to 15 different types (depending on
+command-line arguments) of 'unexpected_features' for each sequence, as
+explained more [here](#ribotyper.md:unexpectedfeatures). In the
+context of ribosensor, 10 of these 15 types are detected by ribosensor
+and cause a sequence to fail ribotyper. They are listed below along
+with the [GenBank errors](#genbankerrors) they associate with.
 
+| ribotyper error          | associated GenBank error         | cause/explanation | 
+|--------------------------|----------------------------------|-------------------|
+| R_NoHits                 | SEQ_HOM_NotSSUOrLSUrRNA          | no hits reported |
+| R_MultipleFamilies       | SEQ_HOM_SSUAndLSUrRNA            | SSU and LSU hits |
+| R_LowScore               | SEQ_HOM_LowSimilarity            | bits/position score is < 0.5 |
+| R_BothStrands            | SEQ_HOM_MisAsBothStrands         | hits on both strands |
+| R_InconsistentHits       | SEQ_HOM_MisAsHitOrder            | hits are in different order in sequence and model |
+| R_DuplicateRegion        | SEQ_HOM_MisAsDupRegion           | hits overlap by 10 or more model positions |
+| R_UnacceptableModel      | SEQ_HOM_TaxNotExpectedSSUrRNA    | best hit is to model other than expected set; 16S expected set: SSU.Archaea, SSU.Bacteria, SSU.Cyanobacteria, SSU.Chloroplast; 18S expected set: SSU.Eukarya; |
+| R_LowCoverage            | SEQ_HOM_LowCoverage              | coverage of all hits is < 0.80 (if <= 350nt$) or 0.86 (if $>350nt$) |
+| R_QuestionableModel^+    | SEQ_HOM_TaxQuestionableSSUrRNA   | best hit is to a 'questionable' model (if mode is 16S: SSU.Chloroplast, if mode is 18S, does not apply) | 
+| R_MultipleHits+$         | SEQ_HOM_MultipleHits             | more than 1 hit reported | 
 
-As mentioned above, riboaligner runs ribotyper. The following two lines of the riboaligner output
-indicate the output file and output directory of that ribotyper run:
-```
-# ribotyper output saved as test-ra/test-ra.riboaligner.ribotyper.out
-# ribotyper output directory saved as test-ra/test-ra.riboaligner-rt
-```
+As an exception, the final two errors (labelled with '+') do not trigger a GenBank error
+and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor) 
+if the sequence is 'RFSP' (fails ribotyper but passes rRNA\_sensor).
 
-For each family/domain pair (e.g. SSU.Bacteria) all sequences that
-were classified to that family/domain by ribotyper are further classified into different length classes by ribotyper.
-For each length class, five files are created. These are listed in the output, for example:
-```
-# List file          for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.list
-# Alignment          for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.stk
-# Insert file        for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.ifile
-# EL file            for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.elfile
-# cmalign output     for      1 SSU.Bacteria full-ambig-more sequences saved in:   test-ra.riboaligner.SSU.Bacteria.full-ambig-more.cmalign
-```
+## GenBank errors in ribosensor <a name="genbankerrors"></a>
 
-The 'list' file simply lists all files for this length class and
-family/domain.  The alignment file is a
-[Stockholm](https://en.wikipedia.org/wiki/Stockholm_format) format
-alignment also described in http://eddylab.org/infernal/Userguide.pdf
-(section 9: "File and output formats"). The Insert and EL files are
-special output files from Infernal `cmalign` program each with
-comments at the top of the file explaining its format.  Finally, the
-cmalign output is the standard output from `cmalign` which is
-explained in the [Infernal user
-guide](http://eddylab.org/infernal/Userguide.pdf).
+A sequence fails ribosensor if it has one or more GenBank errors. Each GenBank error is
+triggered by one or more rRNA_sensor and/or ribotyper errors as shown in the table below:
 
----
+| GenBank error                   | fails to  |  triggering rRNA_sensor/ribotyper errors | 
+| SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits$^{*}$, R_NoHits |
+| SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity$^{*}$, S_LowSimilarity$^{*}$, S_LowScore$^{*}$, R_LowScore |
+| SEQ_HOM_SSUAndLSUrRNA           | submitter | R_MultipleFamilies |
+| SEQ_HOM_MisAsBothStrands        | submitter | S_BothStrands, R_BothStrands |
+| SEQ_HOM_MisAsHitOrder           | submitter | R_InconsistentHits |
+| SEQ_HOM_MisAsDupRegion          | submitter | R_DuplicateRegion |
+| SEQ_HOM_TaxNotExpectedSSUrRNA   | submitter | R_UnacceptableModel |
+| SEQ_HOM_TaxQuestionableSSUrRNA  | indexer   | R_QuestionableModel$^{+}$ |
+| SEQ_HOM_LowCoverage             | indexer   | R_LowCoverage |
+| SEQ_HOM_MultipleHits            | indexer   | S_MultipleHits, R_MultipleHits$^{+}$ |
 
-###<a name="modelinfo"></a> riboaligner modelinfo files
-
-The default riboaligner modelinfo file is in `$RIBOSCRIPTSDIR/models/riboaligner.modelinfo`:
-
-```
-> cat $RIBOSCRIPTSDIR/models/riboaligner.modelinfo 
-# each line has information on 1 family and has 4 or more tokens:
-# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
-# token 2: CM file name for this family
-# token 3: integer, consensus length for the CM for this family
-# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
-#                corresponding model in the ribotyper modelinfo file to be used
-#
-SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
-SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
-SSU.Eukarya           ra.SSU_rRNA_eukarya.edf.cm                    1851 SSU_rRNA_eukarya
-LSU.Archaea           ra.LSU_rRNA_archaea.edf.cm                    2990 LSU_rRNA_archaea
-LSU.Bacteria          ra.LSU_rRNA_bacteria.edf.cm                   2925 LSU_rRNA_bacteria
-SSU.Euk-Microsporidia ra.SSU_rRNA_microsporidia.edf.cm              1312 SSU_rRNA_microsporidia
-LSU.Eukarya           ra.LSU_rRNA_eukarya.edf.cm                    3401 LSU_rRNA_eukarya 
-SSU.Chloroplast       ra.SSU_rRNA_chloroplast.edf.cm                1488 SSU_rRNA_chloroplast SSU_rRNA_chloroplast_pilostyles
-SSU.Mito-Metazoa      ra.SSU_rRNA_mitochondria_metazoa.edf.cm        955 SSU_rRNA_mitochondria_metazoa
-SSU.Euk-Apicoplast    ra.SSU_rRNA_apicoplast.edf.cm                 1463 SSU_rRNA_apicoplast
-SSU.Mito-Amoeba       ra.SSU_rRNA_mitochondria_amoeba.edf.cm        1956 SSU_rRNA_mitochondria_amoeba
-SSU.Mito-Chlorophyta  ra.SSU_rRNA_mitochondria_chlorophyta.edf.cm   1376 SSU_rRNA_mitochondria_chlorophyta
-SSU.Mito-Fungi        ra.SSU_rRNA_mitochondria_fungi.edf.cm         1589 SSU_rRNA_mitochondria_fungi
-SSU.Mito-Kinetoplast  ra.SSU_rRNA_mitochondria_kinetoplast.edf.cm    624 SSU_rRNA_mitochondria_kinetoplast
-SSU.Mito-Plant        ra.SSU_rRNA_mitochondria_plant.edf.cm         1951 SSU_rRNA_mitochondria_plant
-SSU.Mito-Protist      ra.SSU_rRNA_mitochondria_protist.edf.cm       1669 SSU_rRNA_mitochondria_protist
-```
-
-The comment (`#`-prefixed) lines at the top of the file explain the
-format.  The first token corresponds to a concatenation of columns 2
-and 3 (`family` and `domain`) in the ribotyper modelinfo file, which
-is the family and domain of each model. Sequences with output in the
-`classification` column of ribotyper [output files with the suffix
-`.short.out`](#ribotyper.md#short) that match the value in this first
-token will be aligned to the CM in the file listed as the second token
-of this riboaligner modelinfo file.
-
-Any sequences in the riboaligner input sequence file that are
-classified to any family/domain in ribotyper that is not listed in the
-modelinfo file will not be aligned. The default riboaligner modelinfo
-file includes all models from the ribotyper modelinfo file. You can
-make your own riboaligner modelinfo files with fewer or different
-family/domains and models than those listed in the default file.
-
-For example, the file `$RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo` only
-includes information for SSU rRNA for bacteria and archaea:
-
-```
-> cat $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo 
-# each line has information on 1 family and has 4 or more tokens:
-# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
-# token 2: CM file name for this family
-# token 3: integer, consensus length for the CM for this family
-# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
-#                corresponding model in the ribotyper modelinfo file to be used
-#
-SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
-SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
-```
-
-You can use this file with riboaligner with the `-i` option like this:
-```
-riboaligner -i $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo -f $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra2
-```
-
-
-
-
-
-
+There are two classes of exceptions marked by two different
+superscripts in the table: '*': these rRNA_sensor errors do not
+trigger a GenBank error if: (a) the sequence is 'RPSF' (passes
+ribotyper and fails rRNA_sensor) and the `-c` option is
+*not* used with ribosensor or (b) the sequence is 'RFSF'
+(fails both ribotyper and rRNA_sensor) and R_UnacceptableModel or
+R_QuestionableModel are also reported. '+': these ribotyper errors do
+not trigger a GenBank error if sequence is 'RFSP' (fails ribotyper and
+passes rRNA_sensor);
 
 ---
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribotyper by
+You can see all the available command line options to ribosensor by
 calling it at the command line with the -h option:
 
 ```
-> riboaligner -h
-# riboaligner :: classify lengths of ribosomal RNA sequences
+> ribosensor -h
+# ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Dec 23 13:30:57 2020
+# date:    Tue Dec 29 14:56:08 2020
 #
-Usage: riboaligner [-options] <fasta file to annotate> <output file name root>
+Usage: ribosensor [-options] <fasta file to annotate> <output directory>
 
 basic options:
-  -f     : force; if <output directory> exists, overwrite it
-  -b <n> : number of positions <n> to look for indels at the 5' and 3' boundaries [10]
-  -v     : be verbose; output commands to stdout as they're run
-  -n <n> : use <n> CPUs [1]
-  -i <s> : use model info file <s> instead of default
-  --keep : keep all intermediate files that are removed by default
+  -f           : force; if <output directory> exists, overwrite it
+  -m <s>       : set mode to <s>, possible <s> values are "16S" and "18S" [16S]
+  -c           : assert that sequences are from cultured organisms
+  -n <n>       : use <n> CPUs [0]
+  -v           : be verbose; output commands to stdout as they're run
+  -i <s>       : use model info file <s> instead of default
+  --keep       : keep all intermediate files that are removed by default
+  --skipsearch : skip search stages, use results from earlier run
 
-options related to the internal call to ribotyper:
-  --riboopts <s> : read command line options to supply to ribotyper from file <s>
-  --noscfail     : do not fail sequences in ribotyper with low scores
-  --nocovfail    : do not fail sequences in ribotyper with low coverage
+rRNA_sensor related options:
+  --Sminlen <n>    : set rRNA_sensor minimum sequence length to <n> [100]
+  --Smaxlen <n>    : set rRNA_sensor minimum sequence length to <n> [2000]
+  --Smaxevalue <x> : set rRNA_sensor maximum E-value to <x> [1e-40]
+  --Sminid1 <n>    : set rRNA_sensor minimum percent id for seqs <= 350 nt to <n> [75]
+  --Sminid2 <n>    : set rRNA_sensor minimum percent id for seqs [351..600] nt to <n> [80]
+  --Sminid3 <n>    : set rRNA_sensor minimum percent id for seqs > 600 nt to <n> [86]
+  --Smincovall <n> : set rRNA_sensor minimum coverage for all sequences to <n> [10]
+  --Smincov1 <n>   : set rRNA_sensor minimum coverage for seqs <= 350 nt to <n> [80]
+  --Smincov2 <n>   : set rRNA_sensor minimum coverage for seqs  > 350 nt to <n> [86]
 
-options for parallelizing cmsearch and cmalign on a compute farm:
-  -p         : parallelize ribotyper and cmalign on a compute farm
+options for saving sequence subsets to files:
+  --psave : save passing sequences to a file
+
+options for parallelizing cmsearch on a compute farm:
+  -p         : parallelize ribotyper and rRNA_sensor on a compute farm
   -q <s>     : use qsub info file <s> instead of default
   -s <n>     : seed for random number generator is <n> [181]
   --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
