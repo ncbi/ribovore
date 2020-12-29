@@ -1,4 +1,4 @@
-# <a name="top"></a> `ribosensor` example usage, command-line options and length classes
+# <a name="top"></a> `ribosensor` example usage, command-line options and pass/fail criteria
 
 * [Example usage](#exampleusage)
 * [rRNA_sensor errors in ribosensor](#rrnasensorerrors)
@@ -58,48 +58,51 @@ You should see something like the following output:
 # ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Dec 29 14:56:08 2020
+# date:              Tue Dec 29 17:00:04 2020
+# $RIBOBLASTDIR:     /usr/local/src/ribovore-install/ncbi-blast/bin
+# $RIBOEASELDIR:     /usr/local/src/ribovore-install/infernal/binaries
+# $RIBOINFERNALDIR:  /usr/local/src/ribovore-install/infernal/binaries
+# $RIBOSCRIPTSDIR:   /usr/local/src/ribovore-install/ribovore
+# $RIBOTIMEDIR:      /usr/bin
+# $RRNASENSORDIR:    /usr/local/src/ribovore-install/rRNA_sensor
 #
-Usage: ribosensor [-options] <fasta file to annotate> <output directory>
-
-basic options:
-  -f           : force; if <output directory> exists, overwrite it
-  -m <s>       : set mode to <s>, possible <s> values are "16S" and "18S" [16S]
-  -c           : assert that sequences are from cultured organisms
-  -n <n>       : use <n> CPUs [0]
-  -v           : be verbose; output commands to stdout as they're run
-  -i <s>       : use model info file <s> instead of default
-  --keep       : keep all intermediate files that are removed by default
-  --skipsearch : skip search stages, use results from earlier run
-
-rRNA_sensor related options:
-  --Sminlen <n>    : set rRNA_sensor minimum sequence length to <n> [100]
-  --Smaxlen <n>    : set rRNA_sensor minimum sequence length to <n> [2000]
-  --Smaxevalue <x> : set rRNA_sensor maximum E-value to <x> [1e-40]
-  --Sminid1 <n>    : set rRNA_sensor minimum percent id for seqs <= 350 nt to <n> [75]
-  --Sminid2 <n>    : set rRNA_sensor minimum percent id for seqs [351..600] nt to <n> [80]
-  --Sminid3 <n>    : set rRNA_sensor minimum percent id for seqs > 600 nt to <n> [86]
-  --Smincovall <n> : set rRNA_sensor minimum coverage for all sequences to <n> [10]
-  --Smincov1 <n>   : set rRNA_sensor minimum coverage for seqs <= 350 nt to <n> [80]
-  --Smincov2 <n>   : set rRNA_sensor minimum coverage for seqs  > 350 nt to <n> [86]
-
-options for saving sequence subsets to files:
-  --psave : save passing sequences to a file
-
-options for parallelizing cmsearch on a compute farm:
-  -p         : parallelize ribotyper and rRNA_sensor on a compute farm
-  -q <s>     : use qsub info file <s> instead of default
-  -s <n>     : seed for random number generator is <n> [181]
-  --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
-  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
-  --errcheck : consider any farm stderr output as indicating a job failure
-
+# target sequence input file:   /usr/local/src/ribovore-install/ribovore/testfiles/example-16.fa
+# output directory name:        test-rs
+# forcing directory overwrite:  yes [-f]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Partitioning sequence file based on sequence lengths         ... done. [    0.0 seconds]
+# Running ribotyper on full sequence file                      ... done. [    3.9 seconds]
+# Running rRNA_sensor on seqs of length 351..600               ... done. [    0.3 seconds]
+# Running rRNA_sensor on seqs of length 601..inf               ... done. [    1.9 seconds]
+# Parsing and combining rRNA_sensor and ribotyper output       ... done. [    0.0 seconds]
+#
+# Outcome counts:
+#
+# type   total  pass  indexer  submitter  unmapped
+# -----  -----  ----  -------  ---------  --------
+  RPSP       8     8        0          0         0
+  RPSF       1     1        0          0         0
+  RFSP       0     0        0          0         0
+  RFSF       7     0        0          7         0
+#
+  *all*     16     9        0          7         0
+#
+# Per-program error counts:
+#
+#                      number   fraction
+# error                of seqs   of seqs
+# -------------------  -------  --------
+  CLEAN                      8   0.50000
+  S_NoHits                   1   0.06250
+  S_TooLong                  1   0.06250
+  S_LowScore                 5   0.31250
+  S_LowSimilarity            5   0.31250
   R_NoHits                   1   0.06250
   R_UnacceptableModel        5   0.31250
   R_LowCoverage              1   0.06250
 #
 #
-# GENBANK error counts:
+# GPIPE error counts:
 #
 #                                number   fraction
 # error                          of seqs   of seqs
@@ -116,13 +119,13 @@ options for parallelizing cmsearch on a compute farm:
 #
 # stage      num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
 # ---------  --------  -------  ----------  ----------  -----------------------
-  ribotyper        16      4.5      5968.5      5968.5              00:00:03.56
-  sensor           16      8.4     11221.3     11221.3              00:00:01.89
-  total            16      2.8      3654.0      3654.0              00:00:05.82
+  ribotyper        16      4.1      5402.0      5402.0              00:00:03.94
+  sensor           16      7.4      9872.4      9872.4              00:00:02.15
+  total            16      2.5      3329.6      3329.6              00:00:06.38
 #
 #
 # Human readable error-based output saved to file test-rs/test-rs.ribosensor.out
-# GENBANK error-based output saved to file test-rs/test-rs.ribosensor.gbank
+# GPIPE error-based output saved to file test-rs/test-rs.ribosensor.gpipe
 #
 # List and description of all output files saved in:                                  test-rs.ribosensor.list
 # Output printed to screen saved in:                                                  test-rs.ribosensor.log
@@ -130,11 +133,11 @@ options for parallelizing cmsearch on a compute farm:
 # summary of rRNA_sensor results saved in:                                            test-rs.ribosensor.sensor.out
 # summary of ribotyper results saved in:                                              test-rs.ribosensor.ribo.out
 # summary of combined rRNA_sensor and ribotyper results (original errors) saved in:   test-rs.ribosensor.out
-# summary of combined rRNA_sensor and ribotyper results (GENBANK errors) saved in:    test-rs.ribosensor.gbank
+# summary of combined rRNA_sensor and ribotyper results (GPIPE errors) saved in:      test-rs.ribosensor.gpipe
 #
 # All output files created in directory ./test-rs/
 #
-# Elapsed time:  00:00:05.82
+# Elapsed time:  00:00:06.38
 #                hh:mm:ss
 # 
 [ok]

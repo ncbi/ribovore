@@ -1,6 +1,7 @@
 # <a name="top"></a> `ribodbmaker` example usage, command-line options and customizability
 
-* [Example usage](#exampleusage)
+* [Example usage on Linux](#exampleusage)
+* [Example usage on Mac/OSX](#exampleusage)
 * [Restrictions on Mac/OSX](#macosx)
 * [Customizing ribodbmaker](#customize)
 * [Special considerations for large input datasets](#large)
@@ -18,18 +19,21 @@ default set of tests performed by ribodbmaker.
 
 ---
 
-## `ribodbmaker` example usage <a name="exampleusage"></a>
+## `ribodbmaker` example usage on Linux <a name="exampleusagelinux"></a>
 
-HERE HERE HERE 
-
-This example runs ribodbmaker on a sample file of 100 fungal 18S SSU
+This example runs ribodbmaker on a sample file of 10 fungal 18S SSU
 rRNA sequences.
+
+This command will only work if you've installed Ribovore on Linux
+because the vecscreen_plus_taxonomy program is only installed for
+Linux as it is not available for Mac/OSX. For example usage on Mac/OSX
+see [below](#exampleusagemacosx)
 
 Move into a directory in which you have write permission and execute
 the following command:
 
 ```
-> ribosensor $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
+> ribodbmaker --model SSU.Eukarya fungi-ssu.r10.fa db10
 ```
 
 Like other Ribovore scripts, ribosensor takes 2 required command
@@ -49,8 +53,21 @@ option with riboaligner, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```
-> ribosensor -f $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
+> ribodbmaker -f --model SSU.Eukarya fungi-ssu.r10.fa db10
 ```
+
+The `--model SSU.Eukarya` part of the command informs ribodbmaker that
+the goal of this run is to create a high quality dataset of eukaryotic
+SSU rRNA sequences. Any sequences that do not match best to a model in
+the SSU family and eukaryotic domain will fail.  This classification
+is accomplished by the ribotyper program, and any pair of values from
+columns 3 and 4 of the [default model info
+file](#ribotyper.md:library) can be used with the `--model` option.
+
+ribodbmaker will proceed over several steps as indicated in its output:
+
+
+
 
 You should see something like the following output:
 ```
@@ -93,7 +110,10 @@ options for parallelizing cmsearch on a compute farm:
   --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
   --errcheck : consider any farm stderr output as indicating a job failure
 
-  R_NoHits                   1   0.06250
+## `ribodbmaker` example usage on Linux <a name="exampleusagelinux"></a>
+
+
+R_NoHits                   1   0.06250
   R_UnacceptableModel        5   0.31250
   R_LowCoverage              1   0.06250
 #
