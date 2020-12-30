@@ -122,41 +122,41 @@ opt_Add("--max3pins",  "integer",  undef,            $g,        undef, "--skipfr
 opt_Add("--passlenclass","string", undef,            $g,        undef, "--skipfribo2",            "PASS seqs in riboaligner length classes in comma separated string <s>", "PASS seqs in riboaligner length classes in comma separated string <s>", \%opt_HH, \@opt_order_A);
 opt_Add("--faillenclass","string", undef,            $g,        undef, "--skipfribo2",            "FAIL seqs in riboaligner length classes in comma separated string <s>", "FAIL seqs in riboaligner length classes in comma separated string <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits:";
+$opt_group_desc_H{++$g} = "options for controlling the stage that filters based on model span of hits";
 #       option           type        default             group  requires  incompat                 preamble-output                                          help-output    
 opt_Add("--fmpos",       "integer",  60,                   $g,    undef, "--skipfmspan",           "aligned sequences must span from <n> to L - <n> + 1",   "aligned sequences must span from <n> to L - <n> + 1 for model of length L", \%opt_HH, \@opt_order_A);
 opt_Add("--fmlpos",      "integer",  undef,                $g,  "--fmrpos","--skipfmspan,--fmpos", "aligned sequences must begin at or 5' of position <n>", "aligned sequences must begin at or 5' of position <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--fmrpos",      "integer",  undef,                $g,  "--fmlpos","--skipfmspan,--fmpos", "aligned sequences must end at or 3' of position <n>",   "aligned sequences must end at or 3' of position <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--fmnogap",     "boolean",  0,                    $g,    undef, "--skipfmspan",           "require sequences do not have a gap at lpos and rpos",  "require sequences do not have a gap at lpos and rpos", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling clustering stage:";
+$opt_group_desc_H{++$g} = "options for controlling clustering stage";
 #       option           type        default             group  requires  incompat                               preamble-output                                                          help-output    
 opt_Add("--cfid",        "real",     0.995,                  $g,    undef, "--skipclustr",                        "set esl-cluster fractional identity to cluster at to <x>",              "set esl-cluster fractional identity to cluster at to <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--cdthresh",    "real",     0.0025,                  $g,    undef, "--skipclustr,--ccentroid,--cmaxlen",  "representative is longest seq within <x> distance of min distance seq", "representative is longest seq within <x> distance of min distance seq", \%opt_HH, \@opt_order_A);
 opt_Add("--cmaxlen",     "boolean",  0,                     $g,    undef, "--skipclustr,--cdthresh,--ccentroid", "representative is longest seq in cluster",                              "representative is longest seq within cluster", \%opt_HH, \@opt_order_A);
 opt_Add("--ccentroid",   "boolean",  0,                     $g,    undef, "--skipclustr,--cdthresh,--cmaxlen",   "representative is centroid (min distance seq)",                         "representative is centroid (min distance seq)", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options that affect the alignment from which percent identities are calculated:";
+$opt_group_desc_H{++$g} = "options that affect the alignment from which percent identities are calculated";
 #            option         type   default            group   requires  incompat              preamble-output                                                 help-output    
 opt_Add("--fullaln",   "boolean",  0,                    $g,     undef, undef,                "do not trim alnment to min reqd span before pid calcs",        "do not trim alignment to minimum required span before pid calculations", \%opt_HH, \@opt_order_A);
 opt_Add("--noprob",    "boolean",  0,                    $g,    undef,  undef,                "do not trim alnment based on post probs before pid calcs",     "do not trim alignment based on post probs before pid calculations", \%opt_HH, \@opt_order_A);
 opt_Add("--pthresh",   "real",     0.95,                 $g,    undef,"--noprob",             "posterior probability threshold for alnment trimming is <x>",  "posterior probability threshold for alnment trimming is <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--pfract",    "real",     0.95,                 $g,    undef,"--noprob",             "seq fraction threshold for post prob alnment trimming is <x>", "seq fraction threshold for post prob alnment trimming is <x>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid:";
+$opt_group_desc_H{++$g} = "options for reducing the number of passing sequences per taxid";
 #       option           type        default             group  requires  incompat              preamble-output                                                                     help-output    
 opt_Add("--fione",       "boolean",  0,                     $g,    undef, "--skipingrup",       "only allow 1 sequence per (species) taxid to survive ingroup filter",              "only allow 1 sequence per (species) taxid to survive ingroup filter", \%opt_HH, \@opt_order_A);
 opt_Add("--fimin",       "integer",  1,                     $g,"--fione", "--skipingrup",       "w/--fione, remove all sequences from species with < <n> sequences",                "w/--fione, remove all sequences from species with < <n> sequences", \%opt_HH, \@opt_order_A);
 opt_Add("--figroup",     "boolean",  0,                     $g,"--fione", "--skipingrup",       "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid",  "w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid", \%opt_HH, \@opt_order_A);
 opt_Add("--fithresh",    "real",     0.2,                  $g,"--fione", "--skipingrup",       "w/--fione, winning seq is longest seq within <x> percent id of max percent id",    "w/--fione, winning seq is longest seq within <x> percent id of max percent id", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for modifying the ingroup stage:";
+$opt_group_desc_H{++$g} = "options for modifying the ingroup stage";
 #       option           type        default             group  requires  incompat                     preamble-output                                                                        help-output    
 opt_Add("--indiffseqtax","boolean",  0,                     $g,    undef, "--skipingrup",              "only consider sequences from different seq taxids when computing averages and maxes", "only consider sequences from different seq taxids when computing averages and maxes", \%opt_HH, \@opt_order_A);
 opt_Add("--inminavgid",  "real",     99.8,                  $g,    undef, "--skipingrup",              "fail any sequence with average percent identity within species taxid below <x>",      "fail any sequence with average percent identity within species taxid below <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--innominavgid","boolean",  0,                     $g,    undef, "--skipingrup,--inminavgid", "do not fail sequences with avg percent identity within species below a minimum",      "do not fail sequences with avg percent identity within species taxid below a minimum", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling model span survival table output file:";
+$opt_group_desc_H{++$g} = "options for controlling model span survival table output file";
 #       option          type       default        group       requires incompat                            preamble-output                                                 help-output    
 opt_Add("--msstep",     "integer", 10,            $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set step size to <n>",            "for model span output table, set step size to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--msminlen",   "integer", 200,           $g,         undef, "--skipfribo2,--skipmstbl",           "for model span output table, set min length span to <n>",      "for model span output table, set min length span to <n>", \%opt_HH, \@opt_order_A);
@@ -168,11 +168,11 @@ opt_Add("--mslist",     "string",  undef,         $g,         undef, "--skipfrib
 opt_Add("--msclass",    "boolean", 0,             $g,    "--mslist", "--skipfribo2,--skipmstbl",           "w/--mslist, taxids in --mslist file are classes not orders",   "w/--mslist, taxids in --mslist file are classes not orders", \%opt_HH, \@opt_order_A);
 opt_Add("--msphylum",   "boolean", 0,             $g,    "--mslist", "--skipfribo2,--skipmstbl,--msclass", "w/--mslist, taxids in --mslist file are phyla not orders",     "w/--mslist, taxids in --mslist file are phyla not orders", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for changing sequence descriptions (deflines):";
+$opt_group_desc_H{++$g} = "options for changing sequence descriptions (deflines)";
 #       option           type        default             group  requires  incompat              preamble-output                                     help-output    
 opt_Add("--def",         "boolean",  0,                     $g, undef, "--skipftaxid,--skipfribo2,--prvcmd", "standardize sequence descriptions/deflines",       "standardize sequence descriptions/deflines", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "options for controlling maximum number of sequences to calculate percent identities for:";
+$opt_group_desc_H{++$g} = "options for controlling maximum number of sequences to calculate percent identities for";
 #       option           type        default   group  requires  incompat             preamble-output                                                        help-output    
 opt_Add("--pidmax",      "integer",  40000,    $g,    undef, "--prvcmd,--pidforce",  "set max number of seqs to compute percent identities for to <n>",     "set maximum number of seqs to compute percent identities for to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--pidforce",    "boolean",  0,        $g,    undef, "--prvcmd",             "force calculation of percent identities for any number of sequences", "force calculation of percent identities for any number of sequences", \%opt_HH, \@opt_order_A);
@@ -186,7 +186,7 @@ opt_Add("--nkb",        "integer", 100,                      $g,     "-p", undef
 opt_Add("--wait",       "integer", 1440,                     $g,     "-p", undef,      "allow <n> minutes for jobs on farm",                          "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
 opt_Add("--errcheck",   "boolean", 0,                        $g,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{++$g} = "advanced options for debugging and testing:";
+$opt_group_desc_H{++$g} = "advanced options for debugging and testing";
 #       option           type        default             group   requires        incompat               preamble-output                                               help-output    
 opt_Add("--prvcmd",      "boolean",  0,                     $g,     undef,        "-f,-p",              "do not execute commands; use output from previous run",      "do not execute commands; use output from previous run", \%opt_HH, \@opt_order_A);
 opt_Add("--pcreclustr",  "boolean",  0,                     $g,"--prvcmd",        "-f,-p,--skipclustr", "w/--prvcmd, recluster seqs and/or rechoose representatives", "w/--prvcmd, recluster seqs (--cfid) and/or rechoose representatives (--cdthresh or --cmaxlen)", \%opt_HH, \@opt_order_A);
@@ -293,7 +293,7 @@ my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, 
 my $executable        = $0;
 my $date              = scalar localtime();
 my $version           = "1.0";
-my $releasedate       = "Jan 2020";
+my $releasedate       = "Jan 2021";
 my $package_name      = "Ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -1407,15 +1407,7 @@ else {
   else { 
     if($do_clustr) { 
       my $stage_key = "clustr";
-      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Clustering surviving sequences", $progress_w, $log_FH, *STDOUT);
-      my $cluster_fid = opt_Get("--cfid", \%opt_HH);
-      my $cluster_did = 1.0 - $cluster_fid;
-      my $cluster_dist_file     = $out_root . "." . $stage_key . ".dist";
-      my $cluster_out_file      = $out_root . "." . $stage_key . ".esl-cluster";
-      my $cluster_in_list_file  = $out_root . "." . $stage_key . ".in.seqlist";
-      my $cluster_out_list_file = $out_root . "." . $stage_key . ".out.seqlist";
-      my $nin_clustr = 0;
-      
+
       if(! $do_ingrup) { 
         # we did not yet run esl-alimask and esl-alipid, so do that now
         if(! $do_prvcmd) { utl_RunCommand($alimask_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
@@ -1426,6 +1418,16 @@ else {
         ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
         ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "merged" . "alipid", "$rfonly_alipid_file", 0, 1, "esl-alipid output for $rfonly_stk_file");
       }
+
+      $start_secs = ofile_OutputProgressPrior("[Stage: $stage_key] Clustering surviving sequences", $progress_w, $log_FH, *STDOUT);
+      my $cluster_fid = opt_Get("--cfid", \%opt_HH);
+      my $cluster_did = 1.0 - $cluster_fid;
+      my $cluster_dist_file     = $out_root . "." . $stage_key . ".dist";
+      my $cluster_out_file      = $out_root . "." . $stage_key . ".esl-cluster";
+      my $cluster_in_list_file  = $out_root . "." . $stage_key . ".in.seqlist";
+      my $cluster_out_list_file = $out_root . "." . $stage_key . ".out.seqlist";
+      my $nin_clustr = 0;
+      
       
       # determine sequences that will be clustered and create a list file for them for input to esl-cluster
       open(LIST, ">", $cluster_in_list_file) || ofile_FileOpenFailure($cluster_in_list_file, "ribodbmaker:main()", $!, "writing", $ofile_info_HH{"FH"});
