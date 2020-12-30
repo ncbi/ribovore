@@ -3,12 +3,9 @@
 * [Limitations on Mac/OSX](#macosx)
 * [Example usage on Linux](#exampleusagelinux)
 * [Example usage on Mac/OSX](#exampleusagemacosx)
-* [Customizing ribodbmaker](#customize)
-  * [Customizing ribotyper runs within ribodbmaker](#ribotyper)
-  * [Customizing riboaligner runs within ribodbmaker](#riboaligner)
-* [Special considerations for large input datasets](#large)
 * [List of all command-line options](#options)
 * [Parallelizing with the -p option](#parallelize)
+* [Special considerations for large input datasets](#large)
 
 ---
 
@@ -288,6 +285,8 @@ that these have all been created in a new directory `db10/`:
 To see a list of all output files see the `db10/db10.ribodbmaker.list` file.
 To keep all intermediate files, many of which are normally deleted, use the `--keep` option.
 
+---
+
 * <a name="exampleusagemacosx"></a> [Example usage on Mac/OSX](#exampleusagemacosx)
 
 As mentioned above, ribodbmaker can only be run using special
@@ -300,294 +299,206 @@ require executables from the vecscreen_plus_taxonomy package.
 Execute the following command to perform an example run on Mac/OSX that uses these options:
 
 ```
-> 
-
-
-OLD BELOW
-Sequences that pass all stages are
-then further analyzed.
-
-| stage  | brief description | option to skip/include | 
-|--------|-------------------|------------------------|
-| fambig | sequences with too many ambiguous nucleotides fail | `--skipfambig` |
-| ftaxid | sequences without a specified species fail | `--skipfaxid` |
-| fvecsc | sequences with a non-weak VecScreen match fail |  `--skipfvecsc` |
-| fblast | sequences with a unexpected blastn hits against self fail |  `--skipfblast` |
-
-ribosensor outputs information on each step and how long it takes,
-followed by a list of output files.
-
-ribosensor first runs ribotyper as reported in the output:
-```
-# Running ribotyper on full sequence file                      ... done. [    3.6 seconds]
+> ribodbmaker -f --model SSU.Eukarya --skipftaxid --skipfvecsc --skipingrup --skipmstbl $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r10.fa db10novec 
 ```
 
-Next, rRNA_sensor is executed, up to three times, once for sequences
-350 nucleotides or shorter, once for sequences of length between 351
-and 600 nucleotides and once for sequences more than 600
-nucleotides. For each length range, different rRNA_sensor parameters
-are used determined to work well for that length range. For this
-example, there are zero sequences less than 351 nucleotides so
-rRNA_sensor is run only twice, as reported in the output:
-
-```
-# Running rRNA_sensor on seqs of length 351..600               ... done. [    0.2 seconds]
-# Running rRNA_sensor on seqs of length 601..inf               ... done. [    1.7 seconds]
-```
-
-Finally, the ribotyper and rRNA_sensor output is parsed to determine
-if each sequence passes or fails each program. Each sequence fails
-ribotyper if it receives one or more ribotyper errors (explained more
-[here](#ribotypererrors)) and otherwise passes ribotyper.  Each
-sequence fails rRNA_sensor if it receives one or more rRNA_sensor
-errors (explained more [here](#rrnasensorerrors)) and otherwise passes
-rRNA_sensor.
-
-Based on whether it passes or fails each of the two programs, each sequence is assigned
-one of four possible 'outcomes':
-
-| outcome | ribotyper pass/fail | rRNA_sensor pass/fail |
-|---------|---------------------|-----------------------|
-| RPSP    | PASS                | PASS                  |
-| RPSF    | PASS                | FAIL                  |
-| RFSP    | FAIL                | PASS                  |
-| RFSF    | FAIL                | FAIL                  |
-
-The counts of sequences for each outcome are output. For the above example the outcome counts are:
-```
-# Outcome counts:
-#
-# type   total  pass  indexer  submitter  unmapped
-# -----  -----  ----  -------  ---------  --------
-  RPSP       8     8        0          0         0
-  RPSF       1     1        0          0         0
-  RFSP       0     0        0          0         0
-  RFSF       7     0        0          7         0
-#
-  *all*     16     9        0          7         0
-```
-
-The 'pass' column indicates how many sequences in each outcome class 'pass' ribosensor.
-All RPSP sequences pass ribosensor. Some RPSF and RFSP sequences also pass ribosensor
-as explained more below. All RFSF sequences fail ribosensor.
-
-The ribosensor output also includes `Per-program error counts:`:
-```
-# Per-program error counts:
-#
-#                      number   fraction
-# error                of seqs   of seqs
-# -------------------  -------  --------
-  CLEAN                      8   0.50000
-  S_NoHits                   1   0.06250
-  S_TooLong                  1   0.06250
-  S_LowScore                 5   0.31250
-  S_LowSimilarity            5   0.31250
-  R_NoHits                   1   0.06250
-  R_UnacceptableModel        5   0.31250
-  R_LowCoverage              1   0.06250
-```
-
-The `CLEAN` row pertains to the RPSP sequences which had zero errors
-in both ribotyper and rRNA_sensor. The remaining rows are for
-ribotyper errors (those beginning with `R_`) or rRNA_sensor errors
-(those beginning with `S_`), and are explained in the sections below
-on [ribotyper errors](#ribotypererrors) and [rRNA_sensor
-errors](#rrnasensorerrors).
-
-Finally, information on the number of GenBank errors is output
-```
-# GENBANK error counts:
-#
-#                                number   fraction
-# error                          of seqs   of seqs
-# -----------------------------  -------  --------
-  CLEAN                                9   0.56250
-  SEQ_HOM_NotSSUOrLSUrRNA              1   0.06250
-  SEQ_HOM_LowSimilarity                1   0.06250
-  SEQ_HOM_LengthLong                   1   0.06250
-  SEQ_HOM_TaxNotExpectedSSUrRNA        5   0.31250
-  SEQ_HOM_LowCoverage                  1   0.06250
-```
-
-GenBank errors are determined by combining the ribotyper and rRNA_sensor errors as explained [here](#genbankerrors).
-
-## rRNA_sensor errors in ribosensor <a name="rrnasensorerrors"></a>
-
-Any sequence that receives one or more rRNA_sensor errors will be considered to have failed rRNA_sensor.
-
-The possible rRNA_sensor errors are listed in the table below, along with the [GenBank errors](#genbankerrors) they associate with.
-
-| rRNA_sensor error    | associated GenBank error |  cause/explanation  |
-|----------------------|--------------------------|---------------------|
-|S_NoHits*             | SEQ_HOM_NotSSUOrLSUrRNA  | no hits reported ('no' in column 2) | 
-|S_NoSimilarity*       | SEQ_HOM_LowSimilarity    | coverage (column 5) of best blast hit is < 10% |
-|S_LowSimilarity*      | SEQ_HOM_LowSimilarity    | coverage (column 5) of best blast hit is < 80% (is seq len <= 350 nt) or < 86% (if seq len > 350 nt) |
-|S_LowScore*           | SEQ_HOM_LowSimilarity    | either id percentage below length-dependent threshold (75%,80%,86%) or E-value above 1e-40 ('imperfect_match` in column 2) |
-|S_BothStrands         | SEQ_HOM_MisAsBothStrands | hits on both strands ('mixed' in column 2) |
-|S_MultipleHits        | SEQ_HOM_MultipleHits     | more than 1 hit reported (column 4 value > 1) |
-
-As an exception, the first four rRNA_sensor errors (labelled with '*') do not trigger a GenBank error
-and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor)
-if either (a) the sequence is 'RPSF' (passes ribotyper and fails rRNA_sensor) and
-the `-c` option is *not* used with ribosensor or (b)
-the sequence is 'RFSF' (fails both ribotyper and rRNA_sensor) and
-R_UnacceptableModel or R_QuestionableModel ribotyper errors are also reported.
-
-## ribotyper errors in ribosensor <a name="ribotypererrors"></a>
-
-ribotyper detects and reports up to 15 different types (depending on
-command-line arguments) of 'unexpected_features' for each sequence, as
-explained more [here](#ribotyper.md:unexpectedfeatures). In the
-context of ribosensor, 10 of these 15 types are detected by ribosensor
-and cause a sequence to fail ribotyper. They are listed below along
-with the [GenBank errors](#genbankerrors) they associate with.
-
-| ribotyper error          | associated GenBank error         | cause/explanation | 
-|--------------------------|----------------------------------|-------------------|
-| R_NoHits                 | SEQ_HOM_NotSSUOrLSUrRNA          | no hits reported |
-| R_MultipleFamilies       | SEQ_HOM_SSUAndLSUrRNA            | SSU and LSU hits |
-| R_LowScore               | SEQ_HOM_LowSimilarity            | bits/position score is < 0.5 |
-| R_BothStrands            | SEQ_HOM_MisAsBothStrands         | hits on both strands |
-| R_InconsistentHits       | SEQ_HOM_MisAsHitOrder            | hits are in different order in sequence and model |
-| R_DuplicateRegion        | SEQ_HOM_MisAsDupRegion           | hits overlap by 10 or more model positions |
-| R_UnacceptableModel      | SEQ_HOM_TaxNotExpectedSSUrRNA    | best hit is to model other than expected set; 16S expected set: SSU.Archaea, SSU.Bacteria, SSU.Cyanobacteria, SSU.Chloroplast; 18S expected set: SSU.Eukarya; |
-| R_LowCoverage            | SEQ_HOM_LowCoverage              | coverage of all hits is < 0.80 (if <= 350nt) or 0.86 (if > 350nt) |
-| R_QuestionableModel+    | SEQ_HOM_TaxQuestionableSSUrRNA   | best hit is to a 'questionable' model (if mode is 16S: SSU.Chloroplast, if mode is 18S, does not apply) | 
-| R_MultipleHits+         | SEQ_HOM_MultipleHits             | more than 1 hit reported | 
-
-As an exception, the final two errors (labelled with '+') do not trigger a GenBank error
-and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor) 
-if the sequence is 'RFSP' (fails ribotyper but passes rRNA\_sensor).
-
-## GenBank errors in ribosensor <a name="genbankerrors"></a>
-
-A sequence fails ribosensor if it has one or more GenBank errors. Each GenBank error is
-triggered by one or more rRNA_sensor and/or ribotyper errors as shown in the table below:
-
-| GenBank error                   | fails to  |  triggering rRNA_sensor/ribotyper errors | 
-|---------------------------------|-----------|------------------------------------------|
-| SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits*, R_NoHits |
-| SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity*, S_LowSimilarity*, S_LowScore*, R_LowScore |
-| SEQ_HOM_SSUAndLSUrRNA           | submitter | R_MultipleFamilies |
-| SEQ_HOM_MisAsBothStrands        | submitter | S_BothStrands, R_BothStrands |
-| SEQ_HOM_MisAsHitOrder           | submitter | R_InconsistentHits |
-| SEQ_HOM_MisAsDupRegion          | submitter | R_DuplicateRegion |
-| SEQ_HOM_TaxNotExpectedSSUrRNA   | submitter | R_UnacceptableModel |
-| SEQ_HOM_TaxQuestionableSSUrRNA  | indexer   | R_QuestionableModel+ |
-| SEQ_HOM_LowCoverage             | indexer   | R_LowCoverage |
-| SEQ_HOM_MultipleHits            | indexer   | S_MultipleHits, R_MultipleHits+ |
-
-There are two classes of exceptions marked by two different
-superscripts in the table: '*': these rRNA_sensor errors do not
-trigger a GenBank error if: (a) the sequence is 'RPSF' (passes
-ribotyper and fails rRNA_sensor) and the `-c` option is
-*not* used with ribosensor or (b) the sequence is 'RFSF'
-(fails both ribotyper and rRNA_sensor) and R_UnacceptableModel or
-R_QuestionableModel are also reported. '+': these ribotyper errors do
-not trigger a GenBank error if sequence is 'RFSP' (fails ribotyper and
-passes rRNA_sensor);
-
----
-
-### <a name="options"></a>Using ribosensor for 18S eukaryotic SSU rRNA sequences
-
-The above example run on the `example-16.fa` file runs ribosensor in
-its default *mode* for validation of 16S SSU rRNA sequences from
-bacteria or archaea. Alterntatively, ribosensor can be run in 18S mode
-to validate 18S SSU rRNA eukaryotic sequences using the command line
-option `-m 18S`. For example, we can run ribosensor on the same input file
-in 18S mode with the following command:
-
-```
-> ribosensor -m 18S $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
-```
-
-In this case, only 4 sequences pass. These are 4 of the 16 sequences in the input
-file which are eukaryotic SSU sequences:
-
-```
-# GPIPE error counts:
-#
-#                                number   fraction
-# error                          of seqs   of seqs
-# -----------------------------  -------  --------
-  CLEAN                                4   0.25000
-  SEQ_HOM_NotSSUOrLSUrRNA              1   0.06250
-  SEQ_HOM_LengthLong                   1   0.06250
-  SEQ_HOM_TaxNotExpectedSSUrRNA       10   0.62500
-  SEQ_HOM_LowCoverage                  1   0.06250
-```
-
-Currently, 16S (default) and 18S are the only two available modes, but we hope to
-add additional modes in the future.
-
----
-
----
-
-### <a name="options"></a>rRNA_sensor blastn databases
-
-rRNA_sensor includes two blastn databases: one with 1267 sequences for
-16S SSU rRNA (archaeal and bacterial) and one with 1091 sequences for
-eukaryotic 18S SSU rRNA. These were created by clustering larger
-datasets and only keeping one sequence from each cluster as described
-more in the Ribovore 1.0 paper. Following Ribovore installation, the
-FASTA files for these databases will be available here:
-
-```
-$RIBOINSTALLDIR/rRNA_sensor/16S_centroids.fa
-$RIBOINSTALLDIR/rRNA_sensor/18S_centroids.1091.fa 
-```
+The output is similar to that above for the Linux example run.  but
+with the taxid, vecscreen and ingroup stages skipped. See the [Linux
+example run](#exampleusagelinux) above for more details.
 
 ---
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribosensor by
-calling it at the command line with the -h option:
+You can see all the available command line options to ribodbmaker by
+calling it at the command line with the -h option, as shown below.
+
+There are many options, and they are split by category. Categories include:
+
+* basic options
+
+* options for skipping stages
+
+* options for excluding seqs based on taxid pre-clustering, but after filter and ingroup stages
+
+* options for controlling the stage that filters based on ambiguous nucleotides
+
+* options for controlling the stage that filters by taxid
+
+* options for controlling the stage that filters based on self-BLAST hits
+
+* options for controlling both ribotyper/riboaligner stages
+
+* options for controlling the first stage that filters based on ribotyper
+
+* options for controlling the second stage that filters based on ribotyper/riboaligner
+
+* options for controlling the stage that filters based on model span of hits
+
+* options for controlling clustering stage
+
+* options that affect the alignment from which percent identities are calculated
+
+* options for reducing the number of passing sequences per taxid
+
+* options for modifying the ingroup stage
+
+* options for controlling model span survival table output file
+
+* options for changing sequence descriptions (deflines)
+
+* options for controlling maximum number of sequences to calculate percent identities for
+
+* options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm
+
+* advanced options for debugging and testing
 
 ```
-> ribosensor -h
-# ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
+> ribodbmaker -h
+# ribodbmaker :: create representative database of ribosomal RNA sequences
 # Ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Dec 29 14:56:08 2020
+# date:    Wed Dec 30 10:52:23 2020
 #
-Usage: ribosensor [-options] <fasta file to annotate> <output directory>
+Usage: ribodbmaker [-options] <input fasta sequence file> <output directory>
 
 basic options:
-  -f           : force; if <output directory> exists, overwrite it
-  -m <s>       : set mode to <s>, possible <s> values are "16S" and "18S" [16S]
-  -c           : assert that sequences are from cultured organisms
-  -n <n>       : use <n> CPUs [0]
-  -v           : be verbose; output commands to stdout as they're run
-  -i <s>       : use model info file <s> instead of default
-  --keep       : keep all intermediate files that are removed by default
-  --skipsearch : skip search stages, use results from earlier run
+  -f            : force; if <output directory> exists, overwrite it
+  -v            : be verbose; output commands to stdout as they're run
+  -n <n>        : use <n> CPUs [1]
+  --keep        : keep all intermediate files that are removed by default
+  --special <s> : read list of special species taxids from <s>
+  --taxin <s>   : use taxonomy tree file <s> instead of default
 
-rRNA_sensor related options:
-  --Sminlen <n>    : set rRNA_sensor minimum sequence length to <n> [100]
-  --Smaxlen <n>    : set rRNA_sensor minimum sequence length to <n> [2000]
-  --Smaxevalue <x> : set rRNA_sensor maximum E-value to <x> [1e-40]
-  --Sminid1 <n>    : set rRNA_sensor minimum percent id for seqs <= 350 nt to <n> [75]
-  --Sminid2 <n>    : set rRNA_sensor minimum percent id for seqs [351..600] nt to <n> [80]
-  --Sminid3 <n>    : set rRNA_sensor minimum percent id for seqs > 600 nt to <n> [86]
-  --Smincovall <n> : set rRNA_sensor minimum coverage for all sequences to <n> [10]
-  --Smincov1 <n>   : set rRNA_sensor minimum coverage for seqs <= 350 nt to <n> [80]
-  --Smincov2 <n>   : set rRNA_sensor minimum coverage for seqs  > 350 nt to <n> [86]
+options for skipping stages:
+  --skipfambig : skip stage that filters based on ambiguous nucleotides
+  --skipftaxid : skip stage that filters by taxid
+  --skipfvecsc : skip stage that filters based on VecScreen
+  --skipfblast : skip stage that filters based on BLAST hits to self
+  --skipfribo1 : skip 1st stage that filters based on ribotyper
+  --skipfribo2 : skip 2nd stage that filters based on ribotyper/riboaligner
+  --skipfmspan : skip stage that filters based on model span of hits
+  --skipingrup : skip stage that performs ingroup analysis
+  --skipclustr : skip stage that clusters sequences surviving all filters
+  --skiplistms : skip stage that lists missing taxids
+  --skipmstbl  : skip stage that outputs model span tables
 
-options for saving sequence subsets to files:
-  --psave : save passing sequences to a file
+options for excluding seqs based on taxid pre-clustering, but after filter and ingroup stages:
+  --exclist <s> : exclude any seq w/a seq taxid listed in file <s>, post-filters/ingroup
 
-options for parallelizing cmsearch on a compute farm:
-  -p         : parallelize ribotyper and rRNA_sensor on a compute farm
+options for controlling the stage that filters based on ambiguous nucleotides:
+  --famaxn <n> : set maximum number of allowed ambiguous nts to <n> [5]
+  --famaxf <x> : set maximum fraction of allowed ambiguous nts to <x> [0.005]
+  --faonlyn    : enforce only max number of ambiguous nts
+  --faonlyf    : enforce only max fraction of ambiguous nts
+
+options for controlling the stage that filters by taxid:
+  --ftstrict : require all taxids for sequences exist in input NCBI taxonomy tree
+
+options for controlling the stage that filters based on self-BLAST hits:
+  --fbcsize <n>    : set num seqs for each BLAST run to <n> [20]
+  --fbcall         : do single BLAST run with all N seqs (CAUTION: slow for large N)
+  --fbword <n>     : set word_size for BLAST to <n> [20]
+  --fbevalue <x>   : set BLAST E-value cutoff to <x> [1]
+  --fbdbsize <n>   : set BLAST dbsize value to <n> [200000000]
+  --fbnominus      : do not consider BLAST self hits to minus strand
+  --fbmdiagok      : consider on-diagonal BLAST self hits to minus strand
+  --fbminuslen <n> : minimum length of BLAST self hit to minus strand is <n> [50]
+  --fbminuspid <x> : minimum percent id of BLAST self hit to minus strand is <x> [95]
+
+options for controlling both ribotyper/riboaligner stages:
+  --model <s>     : model to use is <s> (e.g. SSU.Eukarya)
+  --noscfail      : do not fail sequences in ribotyper with low scores
+  --lowppossc <x> : set --lowppossc <x> option for ribotyper to <x> [0.5]
+
+options for controlling the first stage that filters based on ribotyper:
+  --riboopts1 <s> : use ribotyper options listed in <s>
+  --ribodir1 <s>  : use pre-computed ribotyper dir <s>
+
+options for controlling the second stage that filters based on ribotyper/riboaligner:
+  --rainfo <s>       : use riboaligner model info file <s> instead of default
+  --nomultfail       : do not fail sequences in ribotyper with multiple hits
+  --nocovfail        : do not fail sequences in ribotyper with low coverage
+  --nodifffail       : do not fail sequences in ribotyper with low score difference
+  --tcov <x>         : set --tcov <x> option for ribotyper to <x> [0.99]
+  --ribo2hmm         : run ribotyper stage 2 in HMM-only mode (do not use --2slow)
+  --riboopts2 <s>    : use ribotyper options listed in <s>
+  --ribodir2 <s>     : use pre-computed riboaligner dir <s>
+  --max5pins <n>     : FAIL seqs with > <n> inserts before first model position
+  --max3pins <n>     : FAIL seqs with > <n> inserts after final model position
+  --passlenclass <s> : PASS seqs in riboaligner length classes in comma separated string <s>
+  --faillenclass <s> : FAIL seqs in riboaligner length classes in comma separated string <s>
+
+options for controlling the stage that filters based on model span of hits::
+  --fmpos <n>  : aligned sequences must span from <n> to L - <n> + 1 for model of length L [60]
+  --fmlpos <n> : aligned sequences must begin at or 5' of position <n>
+  --fmrpos <n> : aligned sequences must end at or 3' of position <n>
+  --fmnogap    : require sequences do not have a gap at lpos and rpos
+
+options for controlling clustering stage::
+  --cfid <x>     : set esl-cluster fractional identity to cluster at to <x> [0.995]
+  --cdthresh <x> : representative is longest seq within <x> distance of min distance seq [0.0025]
+  --cmaxlen      : representative is longest seq within cluster
+  --ccentroid    : representative is centroid (min distance seq)
+
+options that affect the alignment from which percent identities are calculated::
+  --fullaln     : do not trim alignment to minimum required span before pid calculations
+  --noprob      : do not trim alignment based on post probs before pid calculations
+  --pthresh <x> : posterior probability threshold for alnment trimming is <x> [0.95]
+  --pfract <x>  : seq fraction threshold for post prob alnment trimming is <x> [0.95]
+
+options for reducing the number of passing sequences per taxid::
+  --fione        : only allow 1 sequence per (species) taxid to survive ingroup filter
+  --fimin <n>    : w/--fione, remove all sequences from species with < <n> sequences [1]
+  --figroup      : w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid
+  --fithresh <x> : w/--fione, winning seq is longest seq within <x> percent id of max percent id [0.2]
+
+options for modifying the ingroup stage::
+  --indiffseqtax   : only consider sequences from different seq taxids when computing averages and maxes
+  --inminavgid <x> : fail any sequence with average percent identity within species taxid below <x> [99.8]
+  --innominavgid   : do not fail sequences with avg percent identity within species taxid below a minimum
+
+options for controlling model span survival table output file::
+  --msstep <n>     : for model span output table, set step size to <n> [10]
+  --msminlen <n>   : for model span output table, set min length span to <n> [200]
+  --msminstart <n> : for model span output table, set min start position to <n>
+  --msmaxstart <n> : for model span output table, set max start position to <n>
+  --msminstop <n>  : for model span output table, set min stop position to <n>
+  --msmaxstop <n>  : for model span output table, set max stop position to <n>
+  --mslist <s>     : re-sort model span table to prioritize taxids (orders) in file <s>
+  --msclass        : w/--mslist, taxids in --mslist file are classes not orders
+  --msphylum       : w/--mslist, taxids in --mslist file are phyla not orders
+
+options for changing sequence descriptions (deflines)::
+  --def : standardize sequence descriptions/deflines
+
+options for controlling maximum number of sequences to calculate percent identities for::
+  --pidmax <n> : set maximum number of seqs to compute percent identities for to <n> [40000]
+  --pidforce   : force calculation of percent identities for any number of sequences
+
+options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign on a compute farm:
+  -p         : parallelize ribotyper and riboaligner on a compute farm
   -q <s>     : use qsub info file <s> instead of default
   -s <n>     : seed for random number generator is <n> [181]
   --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
-  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
+  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [1440]
   --errcheck : consider any farm stderr output as indicating a job failure
 
+advanced options for debugging and testing::
+  --prvcmd     : do not execute commands; use output from previous run
+  --pcreclustr : w/--prvcmd, recluster seqs (--cfid) and/or rechoose representatives (--cdthresh or --cmaxlen)
+
 ---
+
+### <a name="large"></a>Special considerations for large datasets
+
+The running time of the ingroup and clustering stages scale with the
+square of the number of sequences, and as a result ribodbmaker may be
+very slow for datasets with more than 25,000 sequences. One way around
+this is to skip the ingroup and clustering stages with the
+`--skipingrup` and `--skipclustr` options. If you want to subsequently
+run the ingroup and clustering stages, you can then rerun ribodbmaker
+without these two `--skip` options on only the sequences that survive,
+which may be a significantly smaller number than in the initial set.
 
 #### Questions, comments or feature requests? Send a mail to eric.nawrocki@nih.gov.
