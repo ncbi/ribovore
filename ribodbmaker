@@ -2589,11 +2589,11 @@ sub parse_riboaligner_tbl_and_output_mdlspan_tbl {
   printf OUT ("# 13. num-surviving-phyla:     number of phylum taxids with >= 1 sequence that %s survives this span\n",                 ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
   printf OUT ("# 14. num-missing-phyla:       number of phylum taxids with >= 1 input sequence but 0 that %s and survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
   printf OUT ("# 15. surviving-orders:        comma-separated list of order taxids with >= 1 sequence that %s survives this span\n",             ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and"); 
-  printf OUT ("# 16. missing-orders:          comma-separated list of order taxids with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 16. missing-orders:          comma-separated list of order taxids (prepended with '-') with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
   printf OUT ("# 17. surviving-classes:       comma-separated list of class taxids with >= 1 sequence that %s survives this span\n",             ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and"); 
-  printf OUT ("# 18. missing-classes:         comma-separated list of class taxids with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 18. missing-classes:         comma-separated list of class taxids (prepended with '-') with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
   printf OUT ("# 19. surviving-phyla:         comma-separated list of phyla taxids with >= 1 sequence that %s survives this span\n",             ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and"); 
-  printf OUT ("# 20. missing-phyla:           comma-separated list of phyla taxids with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
+  printf OUT ("# 20. missing-phyla:           comma-separated list of phyla taxids (prepended with '-') with >= 1 input sequence but 0 that %s survives this span\n", ($out_key eq "pass") ? "passes all filters and" : "passes riboaligner and");
   print OUT ("#\n");
   print OUT "#length\t5'pos\t3'pos\tnum-surviving-seqs\tnum-seqs-not-surviving\tnum-seqs-within-range\tnum-seqs-not-considered(failed)\tnum-surviving-species\tnum-surviving-orders\tnum-missing-orders\tnum-surviving-classes\tnum-missing-classes\tnum-surviving-phyla\tnum-missing-phyla\tsurviving-orders\tmissing-orders\tsurviving-classes\tmissing-classes\tsurviving-phyla\tmissing-phyla\n";
   
