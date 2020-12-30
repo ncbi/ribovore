@@ -3,7 +3,6 @@
 * [Installation using `install.sh`](#install.sh)
 * [Setting environment variables](#environment)
 * [Verifying successful installation](#tests)
-* [Further information](#further)
 
 ---
 ## Ribovore installation using the `install.sh` script <a name="install"></a>
@@ -118,7 +117,7 @@ setenv RIBOEASELDIR "$RIBOINSTALLDIR/bin"
 setenv RIBOSEQUIPDIR "$RIBOINSTALLDIR/sequip"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
 setenv RIBOTIMEDIR /usr/bin
-setenv RRNASENSORDIR "/home/nawrocke/tmp/ribovore-install/rRNA_sensor"
+setenv RRNASENSORDIR "$RIBOSCRIPTSDIR/rRNA_sensor"
 setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
 setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 setenv VECPLUSDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
