@@ -1,6 +1,4 @@
 # <a name="top"></a> Ribovore model information 
-#### Version 1.0; January 2021
-#### https://github.com/ncbi/ribovore.git
 
 ### Sequence and structure-based ribosomal RNA alignments included with Ribovore 
 
