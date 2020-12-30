@@ -169,7 +169,8 @@ first 5 lines are for the preliminary (`prelim`) stage prior to any of the test 
 ```
 
 After the preliminary stage, each filter stage is carried out and the number of 
-sequences that pass and fail each stage is output to the screen:
+sequences that pass and fail each stage is output to the screen. (Most of these
+stages can be skipped using [command line options](#options).)
 
 ```
 # [Stage: fambig] Filtering based on ambiguous nucleotides                          ... done. [    0.0 seconds,      9 pass;      1 fail;]
@@ -182,7 +183,6 @@ sequences that pass and fail each stage is output to the screen:
 # [Stage: fmspan] Filtering out seqs based on model span                            ... done. [    0.0 seconds,      5 pass;      4 fail;]
 # [***Checkpoint] Creating lists that survived all filter stages                    ... done. [    0.0 seconds,      1 pass;      9 fail; ONLY PASSES ADVANCE]
 ```
-
 
 For each of these filter stages, each sequence is analyzed
 independently of all other sequences, and each sequence is analyzed at
@@ -218,20 +218,92 @@ it is possible that sequences will fail here.
 # [***OutputFile] Generating model span survival tables for PASSing seqs            ... done. [    1.0 seconds]
 ```
 
-Next, a model span surivival table is created. This file may be useful for 
-users that are attempting to determine what model span to use for filtering.
-The model span is the minimum required start and stop model positions
-that each aligned sequence must satisfy. By default, these are positions 
-60 and L-59 where L is the model length. They can be changed with the `--fmpos` or
-`--fmlpos` and `--fmrpos` [command-line options](#options).
+Next, a model span surivival table is created. This file may be useful
+for users that are attempting to determine what model span to use for
+filtering.  It includes comment (`#`-prefixed) lines explaining the
+file format at the top of the page.  The model span is the minimum
+required start and stop model positions that each aligned sequence
+must satisfy. By default, these are positions 60 and L-59 where L is
+the model length. They can be changed with the `--fmpos` or `--fmlpos`
+and `--fmrpos` [command-line options](#options). If you are not
+concerned about setting the model span parameters, then you can ignore
+the model span survival table.
 
+Finally, the surviving sequences are clustered based on sequence identity given the alignment.
+Again, with only 1 sequence this stage is irrelevant for this example but with larger 
+datasets, some sequences will be removed in this stage. As with most of the stages,
+the clustering stage can be skipped as explained below.
 
+```
 # [Stage: clustr] Clustering surviving sequences                                    ... done. [    0.0 seconds]
 # [***Checkpoint] Creating lists of seqs that survived clustering                   ... done. [    0.0 seconds,      1 pass;      0 fail;]
 #
 ```
 
+After all stages are complete some summary statistics are output explaining how many 
+sequences have survived and how many taxonomic groups are represented by those sequences:
 
+```
+# Number of input sequences:                                                 10  [listed in db10/db10.ribodbmaker.full.seqlist]
+# Number surviving all filter stages:                                         1  [listed in db10/db10.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                                          1  [listed in db10/db10.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number surviving clustering (number of clusters):                           1  [listed in db10/db10.ribodbmaker.surv_clustr.pass.seqlist]
+# Number in final set of surviving sequences:                                 1  [listed in db10/db10.ribodbmaker.final.pass.seqlist]
+# Number of phyla   represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.phylum.ct]
+# Number of classes represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.class.ct]
+# Number of orders  represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.order.ct]
+```
+
+And a list of output files with brief descriptions is output, note
+that these have all been created in a new directory `db10/`:
+
+```
+# Number of input sequences:                                                 10  [listed in db10/db10.ribodbmaker.full.seqlist]
+# Number surviving all filter stages:                                         1  [listed in db10/db10.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                                          1  [listed in db10/db10.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number surviving clustering (number of clusters):                           1  [listed in db10/db10.ribodbmaker.surv_clustr.pass.seqlist]
+# Number in final set of surviving sequences:                                 1  [listed in db10/db10.ribodbmaker.final.pass.seqlist]
+# Number of phyla   represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.phylum.ct]
+# Number of classes represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.class.ct]
+# Number of orders  represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.order.ct]
+#
+# Output printed to screen saved in:                                                          db10.ribodbmaker.log
+# List of executed commands saved in:                                                         db10.ribodbmaker.cmd
+# List and description of all output files saved in:                                          db10.ribodbmaker.list
+# list of 0 phyla lost in the ingroup analysis saved in:                                      db10.ribodbmaker.ingrup.phylum.lost.list
+# list of 0 classes lost in the ingroup analysis saved in:                                    db10.ribodbmaker.ingrup.class.lost.list
+# list of 0 orders lost in the ingroup analysis saved in:                                     db10.ribodbmaker.ingrup.order.lost.list
+# table summarizing number of sequences (all) for different model position spans saved in:    db10.ribodbmaker.all.mdlspan.survtbl
+# table summarizing number of sequences (pass) for different model position spans saved in:   db10.ribodbmaker.pass.mdlspan.survtbl
+# fasta file with final set of surviving sequences saved in:                                  db10.ribodbmaker.final.fa
+# tab-delimited file listing number of sequences per phylum taxid saved in:                   db10.ribodbmaker.phylum.ct
+# tab-delimited file listing number of sequences per class taxid saved in:                    db10.ribodbmaker.class.ct
+# tab-delimited file listing number of sequences per order taxid saved in:                    db10.ribodbmaker.order.ct
+# tab-delimited tabular output summary file saved in:                                         db10.ribodbmaker.tab.tbl
+# whitespace-delimited, more readable output summary file saved in:                           db10.ribodbmaker.rdb.tbl
+#
+# All output files created in directory ./db10/
+```
+
+To see a list of all output files see the `db10/db10.ribodbmaker.list` file.
+To keep all intermediate files, many of which are normally deleted, use the `--keep` option.
+
+* <a name="exampleusagemacosx"></a> [Example usage on Mac/OSX](#exampleusagemacosx)
+
+As mentioned above, ribodbmaker can only be run using special
+command-line options on Mac/OSX because the vecscreen_plus_taxonomy
+program is not available for Mac/OSX. Specifically, the options
+`--skipftaxid`, `--skipfvecsc`, `--skipingrup` and `--skipfmstbl` must
+be used to skip the taxid, vecscreen, and ingroup stages, all of which
+require executables from the vecscreen_plus_taxonomy package.
+
+Execute the following command to perform an example run on Mac/OSX that uses these options:
+
+```
+> 
+
+
+OLD BELOW
 Sequences that pass all stages are
 then further analyzed.
 
