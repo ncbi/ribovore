@@ -93,7 +93,7 @@ export RIBOBLASTDIR="$RIBOINSTALLDIR/ncbi-blast/bin"
 export RIBOTIMEDIR=/usr/bin
 export RRNASENSORDIR="$RIBOINSTALLDIR/rRNA_sensor"
 export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
-export PATH="$RIBOSCRIPTSDIR":"$RRNASENSORDIR":"$PATH"
+export PATH="$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 export VECPLUSDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
 
@@ -118,22 +118,21 @@ setenv RIBOEASELDIR "$RIBOINSTALLDIR/bin"
 setenv RIBOSEQUIPDIR "$RIBOINSTALLDIR/sequip"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
 setenv RIBOTIMEDIR /usr/bin
-setenv RRNASENSORDIR "$RIBOINSTALLDIR/rRNA_sensor"
+setenv RRNASENSORDIR "/home/nawrocke/tmp/ribovore-install/rRNA_sensor"
 setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
-setenv PATH "$RIBOSCRIPTSDIR":"$RRNASENSORDIR":"$PATH"
+setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 setenv VECPLUSDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
-setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASSENSORDIR":"$BLASTDB"
-
+setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
 After adding the setenv lines to your .cshrc file, source that file
 to update your current environment with the command:
 
 source ~/.cshrc
 
 (To determine which shell you use, type: 'echo $SHELL')
-********************************************************
 ```
 
-For MAC/OSX installations, the `VECPLUSDIR` line will be omitted, and the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`
+For Mac/OSX installations, the `VECPLUSDIR` line will be omitted, and
+the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`
 
 ---
 
@@ -156,28 +155,28 @@ setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR"
 And then execute `source ~/.bashrc`, `source ~/.zshrc`, or `source ~/.cshrc` again.
 
 ---
-## Verifying successful installation with test runs<a name="tests"></a>
+## <a name="tests"></a> Verifying successful installation with test runs
 
-Ribovore includes some tests you can run to make sure that
-your installation was successful and that your environment variables
-are set-up correctly. 
+Ribovore includes some tests you can run after setting your
+environment variables as explained above to make sure that your
+installation was successful and that your environment variables are
+set correctly.
 
 These are several shell scripts for running tests; with respect to the
 installation directory they are in the directory `ribovore/testfiles/` and
 start with `do-` and end with `.sh`.
 
-You should run the 
-`ribovore/testfiles/do-all-tests.sh` script to make sure Ribovore installed
-correctly. They should pass, as shown below.
+You should run the `$RIBOSCRIPTSDIR/testfiles/do-all-tests.sh` script
+to make sure Ribovore installed correctly. They should pass, as shown
+below.
 
 There is also a special test script `do-parallel-tests.sh` that you
 should run if you want to test if you can use the `-p` option with
-`ribotyper`, `riboaligner`, `riboaligner` or `ribodbmaker`
-for parallelization on a cluster.  But this test will likely only work
-internally at NCBI or if you happen to have a compute farm set-up in a
-similar way at NCBI. See this [example](ribotyper.md#exampleparallel)
-for more information.  `do-parallel-tests.sh` is **not** run
-as part of `do-all-tests.sh`.
+`ribotyper`, `ribosensor`, `riboaligner` or `ribodbmaker` for
+parallelization on a cluster.  But this test will likely only work
+internally at NCBI. See this [example](ribotyper.md#exampleparallel)
+for more information.  `do-parallel-tests.sh` is **not** run as part
+of `do-all-tests.sh`.
 
 To run all tests, execute:
 
@@ -189,13 +188,13 @@ This script can take up to several minutes to run.
 If something goes wrong, the script will likely exit quickly.
 
 Below is an example of the expected output for
-`do-all-tests.sh` for a `linux` installation:
+`do-all-tests.sh` for a linux installation:
 
 ```
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (June 2020)
+# ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:             Thu Dec 17 16:41:47 2020
+# date:             Wed Dec 30 16:58:49 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
 # test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribotyper.testin
@@ -228,7 +227,7 @@ Below is an example of the expected output for
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (June 2020)
+# ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:42:15 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -269,7 +268,7 @@ Success: all tests passed
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (June 2020)
+# ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:43:48 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -304,7 +303,7 @@ Success: all tests passed
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (June 2020)
+# ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:44:40 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -334,7 +333,7 @@ Success: all tests passed
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (June 2020)
+# ribovore 1.0 (Jan 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:46:46 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -373,15 +372,6 @@ Success: all tests passed
 This means that the test has passed. You should see similar 
 lines if you run the other tests. If you do not and need help
 figuring out why, email me at eric.nawrocki@nih.gov.
-
----
-## Further information
-
-* [`riboaligner` example usage and command-line options](aligner.md#top)
-* [`ribodbmaker` example usage and command-line options](dbmaker.md#top)
-* [`ribosensor` example usage and command-line options](sensor.md#top)
-* [`ribotyper` example usage and command-line options](typer.md#top)
-* [Ribovore output formats](formats.md#top)
 
 ---
 #### Questions, comments or feature requests? Send a mail to eric.nawrocki@nih.gov.

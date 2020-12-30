@@ -199,18 +199,6 @@ echo "------------------------------------------------"
 ###############################################
 # Message about setting environment variables
 ###############################################
-echo ""
-echo ""
-echo "If you want to use the ribodbmaker.pl script you will need to"
-echo "have vecscreen_plus_taxonomy installed. See below for instructions."
-echo ""
-echo "To install vecscreen_plus_taxonomy, run the script"
-echo " 'install-optional-vecscreen_plus_taxonomy-linux.sh' and follow"
-echo "the instructions output from that command to change the RIBOBLASTDIR"
-echo "environment variable. Note that vecscreen_plus_taxonomy can"
-echo "only be installed on Linux systems, which means that ribodbmaker.pl"
-echo "cannot currently be run on non-Linux systems (including Mac OS/X)."
-echo ""
 echo "********************************************************"
 echo ""
 echo "The final step is to update your environment variables."
