@@ -1,12 +1,15 @@
 # <a name="top"></a> `ribodbmaker` example usage, command-line options and customizability
 
-* [Example usage on Linux](#exampleusage)
-* [Example usage on Mac/OSX](#exampleusage)
-* [Restrictions on Mac/OSX](#macosx)
+* [Limitations on Mac/OSX](#macosx)
+* [Example usage on Linux](#exampleusagelinux)
+* [Example usage on Mac/OSX](#exampleusagemacosx)
 * [Customizing ribodbmaker](#customize)
+  * [Customizing ribotyper runs within ribodbmaker](#ribotyper)
+  * [Customizing riboaligner runs within ribodbmaker](#riboaligner)
 * [Special considerations for large input datasets](#large)
 * [List of all command-line options](#options)
 * [Parallelizing with the -p option](#parallelize)
+
 ---
 
 ribodbmaker is designed to create high quality sequence datasets of
@@ -19,7 +22,16 @@ default set of tests performed by ribodbmaker.
 
 ---
 
-## `ribodbmaker` example usage on Linux <a name="exampleusagelinux"></a>
+##  <a name="macosx"></a> Limitations on Mac/OSX
+
+One of the programs that ribodbmaker uses, vecscreen_plus_taxonomy, is
+not available for Mac/OSX. ribodbmaker still runs on Mac/OSX but in a
+limited capacity and specific command-line options are required. 
+See the [example Mac/OSX usage below](#exampleusagemacosx) for more information.
+
+---
+
+## ribodbmaker example usage on Linux <a name="exampleusagelinux"></a>
 
 This example runs ribodbmaker on a sample file of 10 fungal 18S SSU
 rRNA sequences.
@@ -66,98 +78,169 @@ file](#ribotyper.md:library) can be used with the `--model` option.
 
 ribodbmaker will proceed over several steps as indicated in its output:
 
-
-
-
-You should see something like the following output:
 ```
-# ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# Ribovore 1.0 (Jan 2021)
+# ribodbmaker :: create representative database of ribosomal RNA sequences
+# Ribovore 1.0 (Jan 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Tue Dec 29 14:56:08 2020
+# date:             Tue Dec 29 17:15:11 2020
+# $RIBOBLASTDIR:    /home/nawrocke/tmp/ribovore-install/ncbi-blast/bin
+# $RIBOEASELDIR:    /home/nawrocke/tmp/ribovore-install/infernal/binaries
+# $RIBOSCRIPTSDIR:  /home/nawrocke/tmp/ribovore-install/ribovore
+# $VECPLUSDIR:      /home/nawrocke/tmp/ribovore-install/vecscreen_plus_taxonomy
 #
-Usage: ribosensor [-options] <fasta file to annotate> <output directory>
-
-basic options:
-  -f           : force; if <output directory> exists, overwrite it
-  -m <s>       : set mode to <s>, possible <s> values are "16S" and "18S" [16S]
-  -c           : assert that sequences are from cultured organisms
-  -n <n>       : use <n> CPUs [0]
-  -v           : be verbose; output commands to stdout as they're run
-  -i <s>       : use model info file <s> instead of default
-  --keep       : keep all intermediate files that are removed by default
-  --skipsearch : skip search stages, use results from earlier run
-
-rRNA_sensor related options:
-  --Sminlen <n>    : set rRNA_sensor minimum sequence length to <n> [100]
-  --Smaxlen <n>    : set rRNA_sensor minimum sequence length to <n> [2000]
-  --Smaxevalue <x> : set rRNA_sensor maximum E-value to <x> [1e-40]
-  --Sminid1 <n>    : set rRNA_sensor minimum percent id for seqs <= 350 nt to <n> [75]
-  --Sminid2 <n>    : set rRNA_sensor minimum percent id for seqs [351..600] nt to <n> [80]
-  --Sminid3 <n>    : set rRNA_sensor minimum percent id for seqs > 600 nt to <n> [86]
-  --Smincovall <n> : set rRNA_sensor minimum coverage for all sequences to <n> [10]
-  --Smincov1 <n>   : set rRNA_sensor minimum coverage for seqs <= 350 nt to <n> [80]
-  --Smincov2 <n>   : set rRNA_sensor minimum coverage for seqs  > 350 nt to <n> [86]
-
-options for saving sequence subsets to files:
-  --psave : save passing sequences to a file
-
-options for parallelizing cmsearch on a compute farm:
-  -p         : parallelize ribotyper and rRNA_sensor on a compute farm
-  -q <s>     : use qsub info file <s> instead of default
-  -s <n>     : seed for random number generator is <n> [181]
-  --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
-  --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
-  --errcheck : consider any farm stderr output as indicating a job failure
-
-## `ribodbmaker` example usage on Linux <a name="exampleusagelinux"></a>
-
-
-R_NoHits                   1   0.06250
-  R_UnacceptableModel        5   0.31250
-  R_LowCoverage              1   0.06250
+# input sequence file:    /home/nawrocke/tmp/ribovore-install/ribovore/testfiles/fungi-ssu.r10.fa
+# output directory name:  db10
+# model to use is <s>:    SSU.Eukarya [--model]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# [Stage: prelim] Validating input files                                            ... done. [    0.0 seconds]
+# [Stage: prelim] Copying input fasta file                                          ... done. [    0.0 seconds]
+# [Stage: prelim] Reformatting names of sequences                                   ... done. [    0.0 seconds]
+# [Stage: prelim] Determining target sequence lengths                               ... done. [    0.1 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                  ... done. [   37.4 seconds]
+# [Stage: fambig] Filtering based on ambiguous nucleotides                          ... done. [    0.0 seconds,      9 pass;      1 fail;]
+# [Stage: ftaxid] Filtering for specified species                                   ... done. [    4.1 seconds,      5 pass;      5 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                       ... done. [    0.8 seconds,     10 pass;      0 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                      ... done. [    0.3 seconds,     10 pass;      0 fail;]
+# [Stage: fribo1] Running ribotyper                                                 ... done. [    5.4 seconds,      9 pass;      1 fail;]
+# [Stage: fribo2] Running riboaligner                                               ... done. [   38.7 seconds,      9 pass;      1 fail;]
+# [Stage: fribo2] Filtering out seqs riboaligner identified as too long             ... done. [    0.0 seconds,      9 pass;      0 fail;]
+# [Stage: fmspan] Filtering out seqs based on model span                            ... done. [    0.0 seconds,      5 pass;      4 fail;]
+# [***Checkpoint] Creating lists that survived all filter stages                    ... done. [    0.0 seconds,      1 pass;      9 fail; ONLY PASSES ADVANCE]
+# [Stage: ingrup] Determining percent identities in alignments                      ... done. [    0.0 seconds]
+# [Stage: ingrup] Performing ingroup analysis                                       ... done. [    0.8 seconds,      1 pass;      0 fail;]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                        ... done. [    0.0 seconds, 0 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                      ... done. [    0.0 seconds, 0 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                       ... done. [    0.0 seconds, 0 orders lost]
+# [***Checkpoint] Creating lists that survived ingroup analysis                     ... done. [    0.0 seconds,      1 pass;      0 fail; ONLY PASSES ADVANCE]
+# [***OutputFile] Generating model span survival tables for all seqs                ... done. [    1.9 seconds]
+# [***OutputFile] Generating model span survival tables for PASSing seqs            ... done. [    1.0 seconds]
+# [Stage: clustr] Clustering surviving sequences                                    ... done. [    0.0 seconds]
+# [***Checkpoint] Creating lists of seqs that survived clustering                   ... done. [    0.0 seconds,      1 pass;      0 fail;]
 #
+# Number of input sequences:                                                 10  [listed in db10/db10.ribodbmaker.full.seqlist]
+# Number surviving all filter stages:                                         1  [listed in db10/db10.ribodbmaker.surv_filters.pass.seqlist]
+# Number surviving ingroup analysis:                                          1  [listed in db10/db10.ribodbmaker.surv_ingrup.pass.seqlist]
+# Number surviving clustering (number of clusters):                           1  [listed in db10/db10.ribodbmaker.surv_clustr.pass.seqlist]
+# Number in final set of surviving sequences:                                 1  [listed in db10/db10.ribodbmaker.final.pass.seqlist]
+# Number of phyla   represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.phylum.ct]
+# Number of classes represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.class.ct]
+# Number of orders  represented in final set of surviving sequences:          1  [listed in final line of db10/db10.ribodbmaker.order.ct]
 #
-# GENBANK error counts:
+# Output printed to screen saved in:                                                          db10.ribodbmaker.log
+# List of executed commands saved in:                                                         db10.ribodbmaker.cmd
+# List and description of all output files saved in:                                          db10.ribodbmaker.list
+# list of 0 phyla lost in the ingroup analysis saved in:                                      db10.ribodbmaker.ingrup.phylum.lost.list
+# list of 0 classes lost in the ingroup analysis saved in:                                    db10.ribodbmaker.ingrup.class.lost.list
+# list of 0 orders lost in the ingroup analysis saved in:                                     db10.ribodbmaker.ingrup.order.lost.list
+# table summarizing number of sequences (all) for different model position spans saved in:    db10.ribodbmaker.all.mdlspan.survtbl
+# table summarizing number of sequences (pass) for different model position spans saved in:   db10.ribodbmaker.pass.mdlspan.survtbl
+# fasta file with final set of surviving sequences saved in:                                  db10.ribodbmaker.final.fa
+# tab-delimited file listing number of sequences per phylum taxid saved in:                   db10.ribodbmaker.phylum.ct
+# tab-delimited file listing number of sequences per class taxid saved in:                    db10.ribodbmaker.class.ct
+# tab-delimited file listing number of sequences per order taxid saved in:                    db10.ribodbmaker.order.ct
+# tab-delimited tabular output summary file saved in:                                         db10.ribodbmaker.tab.tbl
+# whitespace-delimited, more readable output summary file saved in:                           db10.ribodbmaker.rdb.tbl
 #
-#                                number   fraction
-# error                          of seqs   of seqs
-# -----------------------------  -------  --------
-  CLEAN                                9   0.56250
-  SEQ_HOM_NotSSUOrLSUrRNA              1   0.06250
-  SEQ_HOM_LowSimilarity                1   0.06250
-  SEQ_HOM_LengthLong                   1   0.06250
-  SEQ_HOM_TaxNotExpectedSSUrRNA        5   0.31250
-  SEQ_HOM_LowCoverage                  1   0.06250
+# All output files created in directory ./db10/
 #
-#
-# Timing statistics:
-#
-# stage      num seqs  seq/sec      nt/sec  nt/sec/cpu  total time             
-# ---------  --------  -------  ----------  ----------  -----------------------
-  ribotyper        16      4.5      5968.5      5968.5              00:00:03.56
-  sensor           16      8.4     11221.3     11221.3              00:00:01.89
-  total            16      2.8      3654.0      3654.0              00:00:05.82
-#
-#
-# Human readable error-based output saved to file test-rs/test-rs.ribosensor.out
-# GENBANK error-based output saved to file test-rs/test-rs.ribosensor.gbank
-#
-# List and description of all output files saved in:                                  test-rs.ribosensor.list
-# Output printed to screen saved in:                                                  test-rs.ribosensor.log
-# List of executed commands saved in:                                                 test-rs.ribosensor.cmd
-# summary of rRNA_sensor results saved in:                                            test-rs.ribosensor.sensor.out
-# summary of ribotyper results saved in:                                              test-rs.ribosensor.ribo.out
-# summary of combined rRNA_sensor and ribotyper results (original errors) saved in:   test-rs.ribosensor.out
-# summary of combined rRNA_sensor and ribotyper results (GENBANK errors) saved in:    test-rs.ribosensor.gbank
-#
-# All output files created in directory ./test-rs/
-#
-# Elapsed time:  00:00:05.82
+# Elapsed time:  00:01:30.80
 #                hh:mm:ss
 # 
 [ok]
 ```
+
+You may see one or more lines like this:
+
+```
+Warning: (1306.8) SAccGuide::AddRule: 25: ignoring refinement of E?? from gb_wgs_prot to unrecognized accession type gb_wgsv_prot
+```
+
+after the `# [Stage: prelim] Running srcchk for all sequences` line.
+These warnings do not indicate a showstopping problem and can be ignored. 
+
+ribodbmaker outputs information on each stage as it progresses. The
+first 5 lines are for the preliminary (`prelim`) stage prior to any of the test stages:
+```
+# [Stage: prelim] Validating input files                                            ... done. [    0.0 seconds]
+# [Stage: prelim] Copying input fasta file                                          ... done. [    0.0 seconds]
+# [Stage: prelim] Reformatting names of sequences                                   ... done. [    0.0 seconds]
+# [Stage: prelim] Determining target sequence lengths                               ... done. [    0.1 seconds]
+# [Stage: prelim] Running srcchk for all sequences                                  ... done. [   37.4 seconds]
+```
+
+After the preliminary stage, each filter stage is carried out and the number of 
+sequences that pass and fail each stage is output to the screen:
+
+```
+# [Stage: fambig] Filtering based on ambiguous nucleotides                          ... done. [    0.0 seconds,      9 pass;      1 fail;]
+# [Stage: ftaxid] Filtering for specified species                                   ... done. [    4.1 seconds,      5 pass;      5 fail;]
+# [Stage: fvecsc] Identifying vector sequences with VecScreen                       ... done. [    0.8 seconds,     10 pass;      0 fail;]
+# [Stage: fblast] Identifying repeats by BLASTing against self                      ... done. [    0.3 seconds,     10 pass;      0 fail;]
+# [Stage: fribo1] Running ribotyper                                                 ... done. [    5.4 seconds,      9 pass;      1 fail;]
+# [Stage: fribo2] Running riboaligner                                               ... done. [   38.7 seconds,      9 pass;      1 fail;]
+# [Stage: fribo2] Filtering out seqs riboaligner identified as too long             ... done. [    0.0 seconds,      9 pass;      0 fail;]
+# [Stage: fmspan] Filtering out seqs based on model span                            ... done. [    0.0 seconds,      5 pass;      4 fail;]
+# [***Checkpoint] Creating lists that survived all filter stages                    ... done. [    0.0 seconds,      1 pass;      9 fail; ONLY PASSES ADVANCE]
+```
+
+
+For each of these filter stages, each sequence is analyzed
+independently of all other sequences, and each sequence is analyzed at
+each stage (regardless of whether it passes or fails any previous
+stage) with the exception of the second part of the `fribo2` stage and
+the `fmspan` stage which require an alignment of the sequence being
+analyzed and so will only work on sequences that passed the riboaligner
+stage (first part of the `fribo2` stage).
+
+After the filter stages, any sequence that failed one or more filter
+stages is excluded from further analysis. The remaining analysis is based on 
+a multiple sequence alignment created by riboaligner and each sequence
+is no longer analyzed independently. In this 'ingroup analysis' (`Stage: ingrup`), 
+sequence pairwise percent identities are computed based on the alignment and used
+along with taxonomic information to detect sequences that may be misclassified
+taxonomically. Sequences detected as possibly anomalous in this way will fail.
+
+```
+# [Stage: ingrup] Determining percent identities in alignments                      ... done. [    0.0 seconds]
+# [Stage: ingrup] Performing ingroup analysis                                       ... done. [    0.8 seconds,      1 pass;      0 fail;]
+# [Stage: ingrup] Identifying phyla lost in ingroup analysis                        ... done. [    0.0 seconds, 0 phyla lost]
+# [Stage: ingrup] Identifying classes lost in ingroup analysis                      ... done. [    0.0 seconds, 0 classes lost]
+# [Stage: ingrup] Identifying orders lost in ingroup analysis                       ... done. [    0.0 seconds, 0 orders lost]
+# [***Checkpoint] Creating lists that survived ingroup analysis                     ... done. [    0.0 seconds,      1 pass;      0 fail; ONLY PASSES ADVANCE]
+```
+
+In this example, only 1 sequence survives to the ingroup analysis stage so 
+there are no other sequences to compare it with and so it cannot fail at this stage, but in a larger dataset, 
+it is possible that sequences will fail here.
+
+```
+# [***OutputFile] Generating model span survival tables for all seqs                ... done. [    1.9 seconds]
+# [***OutputFile] Generating model span survival tables for PASSing seqs            ... done. [    1.0 seconds]
+```
+
+Next, a model span surivival table is created. This file may be useful for 
+users that are attempting to determine what model span to use for filtering.
+The model span is the minimum required start and stop model positions
+that each aligned sequence must satisfy. By default, these are positions 
+60 and L-59 where L is the model length. They can be changed with the `--fmpos` or
+`--fmlpos` and `--fmrpos` [command-line options](#options).
+
+
+# [Stage: clustr] Clustering surviving sequences                                    ... done. [    0.0 seconds]
+# [***Checkpoint] Creating lists of seqs that survived clustering                   ... done. [    0.0 seconds,      1 pass;      0 fail;]
+#
+```
+
+
+Sequences that pass all stages are
+then further analyzed.
+
+| stage  | brief description | option to skip/include | 
+|--------|-------------------|------------------------|
+| fambig | sequences with too many ambiguous nucleotides fail | `--skipfambig` |
+| ftaxid | sequences without a specified species fail | `--skipfaxid` |
+| fvecsc | sequences with a non-weak VecScreen match fail |  `--skipfvecsc` |
+| fblast | sequences with a unexpected blastn hits against self fail |  `--skipfblast` |
 
 ribosensor outputs information on each step and how long it takes,
 followed by a list of output files.
