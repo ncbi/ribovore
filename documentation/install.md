@@ -79,9 +79,8 @@ install.sh>`)
 The final step is to update your environment variables.
 (See ribovore/README.txt for more information.)
 
-If you are using the bash or zsh shell (zsh is default in MacOS/X as
-of v10.15 (Catalina)), add the following lines to the end of your
-'.bashrc' or '.zshrc' file in your home directory:
+If you are using the bash or zsh shell add the following lines to
+the end of your '.bashrc' or '.zshrc' file in your home directory:
 
 export RIBOINSTALLDIR="<full path to directory in which you ran install.sh>"
 export RIBOSCRIPTSDIR="$RIBOINSTALLDIR/ribovore"
