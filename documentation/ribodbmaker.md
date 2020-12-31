@@ -1,10 +1,9 @@
-# <a name="top"></a> `ribodbmaker` example usage, command-line options and customizability
+# <a name="top"></a> `ribodbmaker` example usage and command-line options
 
 * [Limitations on Mac/OSX](#macosx)
 * [Example usage on Linux](#exampleusagelinux)
 * [Example usage on Mac/OSX](#exampleusagemacosx)
 * [List of all command-line options](#options)
-* [Parallelizing with the -p option](#parallelize)
 * [Special considerations for large input datasets](#large)
 
 ---
