@@ -3,7 +3,7 @@
 RETVAL=0;
 
 # If you want to test -p option for parallelization, add
-# do-install-tests-parallel.sh to the following for loop.
+# do-parallel-tests.sh to the following for loop.
 # Note: this test requires qsub is in your path and qsub options are
 # configured similarly to ncbi cluster, email eric.nawrocki@nih.gov
 # for information on how to configure for different clusters
