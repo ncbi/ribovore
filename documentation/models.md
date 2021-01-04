@@ -1,6 +1,15 @@
 # <a name="top"></a> Ribovore model information 
 
-### Sequence and structure-based ribosomal RNA alignments included with Ribovore 
+* [Sequence and structure-based ribosomal RNA alignments included with Ribovore](#alignments)
+* [Covariance model (CM) files that include a single CM and profile HMM](#table)
+* [`ribotyper` versus `riboaligner` models](#versus)
+* [`ribotyper.cm` a multi-model CM library file](#cmlibrary)
+* [Getting model statistics using Infernal's `cmstat` program](#cmstat)
+* [CRW database reference](#crwref)
+
+---
+
+## <a name="alignments"></a>Sequence and structure-based ribosomal RNA alignments included with Ribovore 
 
 Ribovore includes models built from 18 different alignments. Seven of
 these derive from Rfam, and 11 were created during the course of
@@ -25,7 +34,7 @@ using the Rfam model building pipeline (as of Rfam release 12.0), as follows:
 of much of the GenBank nucleotide database)
 * all resulting hits were filtered by removing highly similar sequences
 * the suriviving hits were aligned to the model from build strategy 1
-* the `cmbuild` program of Infernal was used with the `--refine` option to refine to get a final alignment and a new model was built from it
+* the `cmbuild` program of [Infernal](https://eddylab.org/infernal/) was used with the `--refine` option to refine to get a final alignment and a new model was built from it
 
 As you can see in the table below, the 7 Rfam alignments and 3 of the
 other alignments were created with build strategy 2. The other 7
@@ -37,7 +46,7 @@ generally less useful than the other models built from build strategy
 
 ---
 
-## Covariance model (CM) files that include a single CM and profile HMM<a name="table"></a>
+## <a name="table"></a>Covariance model (CM) files that include a single CM and profile HMM
 
 | alignment file name | alignment build strategy | model files built from alignment | \# seqs | model length | Rfam accession | Rfam DB release |
 |---------------------|--------------------------|----------------------------------|---------|--------------|----------------|-----------------|
@@ -64,7 +73,7 @@ All files listed in columns 1 and 3 can be found in the `ribovore/models` direct
 
 ---
 
-### `ribotyper` versus `riboaligner` models
+## <a name="versus"></a>`ribotyper` versus `riboaligner` models
 
 The model files that begin with `rt.` contain `ribotyper` models and
 those that begin with `ra.` contain `riboaligner` models.  These models
@@ -89,7 +98,7 @@ in our testing.
 
 ---
 
-###<a name="library"></a> `ribotyper.cm` a multi-model CM library file
+## <a name="cmlibrary"></a> `ribotyper.cm` a multi-model CM library file
 
 The `ribotyper.cm` file is a CM library of all models that begin with
 `rt` in the above [table](#table). This file is used in the first
@@ -97,7 +106,7 @@ stage of `ribotyper` to classify sequences.
 
 ---
 
-### Getting model statistics using Infernal's `cmstat` program
+## <a name="cmstat"></a> Getting model statistics using [Infernal](https://eddylab.org/infernal/)'s `cmstat` program
 
 The program `cmstat` that is installed as part of the Infernal package
 with Ribovore installation can be used to output information on the
@@ -135,11 +144,12 @@ model or models in CM file. For example, below is the output of
     18  SSU_rRNA_mitochondria_protist          -                 2      2.00   1677   2051   318    24     cm  0.732  0.582
 ```
 
-For more information on `cmstat` see the [Infernal](https://eddylab.infernal.org) user guide.
+For more information on `cmstat` see the [Infernal user's guide](https://eddylab.infernal.org/Userguide.pdf).
 
 ---
 
-### CRW Reference <a name="crwref"></a>
+## CRW database reference <a name="crwref"></a>
+
 Cannone J.J., Subramanian S., Schnare M.N., Collett J.R., D'Souza L.M., Du Y., Feng B., Lin N., Madabusi L.V., MÜller K.M., Pande N., Shang Z., Yu N., and Gutell R.R. (2002). The Comparative RNA Web (CRW) Site: An Online Database of Comparative Sequence and Structure Information for Ribosomal, Intron, and Other RNAs. BioMed Central Bioinformatics, 3:2. [Correction: BioMed Central Bioinformatics. 3:15.]
 
 ---
