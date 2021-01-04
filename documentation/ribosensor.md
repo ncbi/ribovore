@@ -9,7 +9,7 @@
 * [List of all command-line options](#options)
 ---
 
-`ribosensor` combines [`ribotyper`](#ribotyper.md) and another
+`ribosensor` combines [`ribotyper`](ribotyper.md) and another
 program, [`rRNA_sensor`](https://github.com/aaschaffer/rRNA_sensor),
 together to classify and validate ribosomal RNA (rRNA) sequences. It
 was designed for screening incoming rRNA sequence submissions to
@@ -32,7 +32,7 @@ the following command:
 > ribosensor $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
 ```
 
-Like other Ribovore scripts, `ribosensor` takes 2 required command
+Like other Ribovore scripts, `ribosensor` takes two required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -45,7 +45,7 @@ that you would like `ribosensor` to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
-option with riboaligner, in which case the directory will be
+option, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```
