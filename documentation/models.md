@@ -2,28 +2,30 @@
 
 ### Sequence and structure-based ribosomal RNA alignments included with Ribovore 
 
-Ribovore includes models built from 18 different alignments. 7 of
+Ribovore includes models built from 18 different alignments. Seven of
 these derive from Rfam, and 11 were created during the course of
 Ribovore development.
 
 These alignments were created using 1 of 2 strategies:
 
-'Build strategy 1': alignment and consensus secondary structure was
-determined using the CRW conversion strategy described in
-the [SSU-ALIGN 0.1](http://eddylab.org/software/ssu-align/) user's
-guide using tools/scripts available on
-[GitHub](https://github.com/nawrockie/crw-conversion-tools). Sequences
-in that alignment derive from the [CRW
+**Build strategy 1**: alignment and consensus secondary structure was
+determined using the *CRW conversion strategy* described in
+the [SSU-ALIGN 0.1 user's guide](http://eddylab.org/software/ssu-align/Userguide.pdf)
+(section 5) using tools/scripts available on
+[GitHub](https://github.com/nawrockie/crw-conversion-tools). Sequence and 
+structure information in these alignments derive from the [CRW
 website/database](http://www.rna.icmb.utexas.edu/) (reference [below](#crwref])).
 
-'Build strategy 2': initial version of the alignment and consensus
-secondary structure and model was determined using build strategy
-1, but that model was used to create a new alignment and model using
-the Rfam model building pipeline as of version 12.0, to search the
-Rfam database sequence database `Rfamseq` (a large database consisting
-of much of the GenBank nucleotide database) to find hits and removing
-highly similar sequences to get a more representative alignment than
-the initial alignment.
+**Build strategy 2**: initial version of the alignment and consensus
+secondary structure and model was determined using build strategy 1,
+but that model was used to create a new alignment and model 
+using the Rfam model building pipeline (as of Rfam release 12.0), as follows:
+
+* the model from build strategy 1 was used to search the Rfam database sequence database `Rfamseq` (a large database consisting
+of much of the GenBank nucleotide database)
+* all resulting hits were filtered by removing highly similar sequences
+* the suriviving hits were aligned to the model from build strategy 1
+* the `cmbuild` program of Infernal was used with the `--refine` option to refine to get a final alignment and a new model was built from it
 
 As you can see in the table below, the 7 Rfam alignments and 3 of the
 other alignments were created with build strategy 2. The other 7
