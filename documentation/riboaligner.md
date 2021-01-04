@@ -28,16 +28,16 @@ classes](#lengthclasses) are included below.
 
 Each of the CMs and profile HMMs used by Ribovore have a predefined
 set of reference positions, each of which corresponds to a position in
-the 'consensus' sequence for that model. When alignment of a sequence
+the *consensus* sequence for that model. When alignment of a sequence
 to a CM or profile HMM has a gap in a reference model position
 (reference model nucleotide aligned to a gap in the sequence being
-aligned), this is called a 'deletion'. When alignment of a sequence to
+aligned), this is called a *deletion*. When alignment of a sequence to
 a CM or profile HMM has an extra nucleotide relative to the reference
 model (gap in the reference model aligned to a nucleotide in the
-sequence being aligned), this is called an 'insertion'.  More
+sequence being aligned), this is called an *insertion*.  More
 discussion of reference positions and insertions and deletions in CMs
 can be found in the Background section of the [SSU-ALIGN user
-guide](http://eddylab.org/software/ssu-align/Userguide.pdf)
+guide](http://eddylab.org/software/ssu-align/Userguide.pdf).
 
 There are 11 possible length classes defined by `riboaligner` based on
 whether the alignment of each sequence extends to or past the first
@@ -47,44 +47,44 @@ positions.
 
 The 11 length classes are:
 
-* *partial*: does not extend to first model position or final model position
-* *full-exact*: spans full model with zero insertions 5' of
+* **partial**: does not extend to first model position or final model position
+* **full-exact**: spans full model with zero insertions 5' of
   first model position and zero insertions 3' of the final
   model position and no insertions or deletions in the first or final 10 model positions
-* *full-extra*: spans full model but has at least one insertion
+* **full-extra**: spans full model but has at least one insertion
   5' of the first model position and/or 3' of the final model position
-* *full-ambig-more*: spans full model and has zero insertions 5' of
+* **full-ambig-more**: spans full model and has zero insertions 5' of
   the first model position but has insertions and/or deletions in the
   first and/or final 10 model positions and the insertions outnumber
   the deletions within those 10 model positions at the 5' and 3' ends.
-* *full-ambig-less*: spans full model and zero insertions 5' of
+* **full-ambig-less**: spans full model and zero insertions 5' of
   the first model position but has insertions and/or deletions in the
-  first and/or final 10 model positions and the deletions outnumber
+  first and/or final 10 model positions and the deletions are equal to or outnumber
   the insertions at the 5' and 3' ends. 
-* *5flush-exact*: alignment extends to first but not final model
+* **5flush-exact**: alignment extends to first but not final model
   position, and has zero insertions 5' of first model position
-* *5flush-extra*: alignment extends to first but not final model
+* **5flush-extra**: alignment extends to first but not final model
   position and has at least one insertion 5' of the first model position
-* *5flush-ambig-more*: alignment extends to first but not final model
+* **5flush-ambig-more**: alignment extends to first but not final model
   position and has zero insertions 5' of the first model position but
   has insertions and/or deletions in the first 10 model positions and
   the insertions outnumber the deletions within those 10 model
   positions at the 5' end.
-* *5flush-ambig-less*: alignment extends to first but not final model
+* **5flush-ambig-less**: alignment extends to first but not final model
   position and has zero insertions 5' of the first model position but
   has insertions and/or deletions in the first 10 model positions and
   the deletions are equal to or outnumber the insertions within those 10 model
   positions at the 5' end.
-* *3flush-exact*: alignment extends to final but not first model
+* **3flush-exact**: alignment extends to final but not first model
   position, and has zero insertions 3' of final model position
-* *3flush-extra*: alignment extends to final but not first model
+* **3flush-extra**: alignment extends to final but not first model
   position and has at least one insertion 3' of the final model position
-* *3flush-ambig-more*: alignment extends to final but not first model
+* **3flush-ambig-more**: alignment extends to final but not first model
   position and has zero insertions 3' of the final model position but
   has insertions and/or deletions in the final 10 model positions and
   the insertions outnumber the deletions within those 10 model
   positions at the 3' end.
-* *3flush-ambig-less*: alignment extends to final but not first model
+* **3flush-ambig-less**: alignment extends to final but not first model
   position and has zero insertions 3' of the final model position but
   has insertions and/or deletions in the final 10 model positions and
   the deletions are equal to or outnumber the insertions within those 10 model
