@@ -20,7 +20,8 @@ from representative alignments of SSU and LSU rRNA sequences.  Each
 profile HMM is a statistical model of the family it models
 (e.g. bacterial SSU rRNA) built from a multiple alignment of 50-100
 representative sequences from the family. The source of several of the
-alignments, including the bacterial model, is the [Rfam](rfam.xfam.org) database
+alignments, including the bacterial SSU model, is the [Rfam](rfam.xfam.org) database.
+For more information on the models see [this page](#models.md).
 Each profile HMM has position specific scores at
 each position of the model, which means that positions of the family
 that are highly conserved have a higher impact on the final score than
@@ -28,8 +29,7 @@ do positions that are not as well conserved (unlike BLAST for which
 each position is treated identically). Each sequence is aligned to
 each profile and a score is computed based on how well the sequence
 matches the profile. Each sequence is classified by the model that
-gave it the highest score. See [models.md](models.md#top) for more
-information on the models `ribotyper` uses.
+gave it the highest score. 
 
 
 ## `ribotyper` example usage <a name="exampleusage"></a>
@@ -146,7 +146,7 @@ classified to each class (e.g. `SSU.Archaea`). After this comes the
 The two output files that end in `.out` include per-sequence tabular
 data, with one line per sequence with fields separated by whitespace
 (spaces, not tabs). These two files, along with all output files, will
-both be in the new directory 'test' that was created by the example
+both be in the new directory `test` that was created by the example
 run above.
 
 The two file types are a 'short' file of 6 columns, and a 'long' file
@@ -234,11 +234,11 @@ files. These unexpected features can cause a sequence to FAIL, as
 explained below.  
 
 There are 15 possible unexpected features that get reported, some of
-which are related to each other. 11 of the 15 can arise when
+which are related to each other. Eleven of the 15 can arise when
 `ribotyper` is used with default arguments, and therefore appear in
 the example above; the other four can arise only when specific
 additional non-default arguments are used, as explained
-below. Therefore, the list of 15 feaures below, with long
+below. Therefore, the list of 15 features below, with long
 descriptions, subsumes the list of 11 features given above with
 shorter descriptions.  Eight of the unexpected features will always
 cause a sequence to fail. The other seven unexpected features *can*
@@ -246,7 +246,7 @@ cause a sequence to fail, but only if specific command line options
 are used.
 
 You can tell which unexpected features cause sequences to FAIL for a
-particular `ribotyper` run by looking unexpected feature column (final
+particular `ribotyper` run by looking at the unexpected feature column (final
 column) of the short or long output files: those that cause failures
 will begin with the '*' character (e.g. `*NoHits`) and those that do
 not cause failures will not begin with a "*". You can control which
@@ -255,53 +255,59 @@ explained below in the descriptions of each unexpected feature.
 
 List of unexpected features:
 
-1. "NoHits": No hits to any models above the minimum score threshold
-were found. The minimum score threshold is 20 bits, which should find
-all legitimate SSU/LSU sequences, but this minimum score threshold is
-changeable to `<x>` with the `--minbit <x>`. ALWAYS CAUSES FAILURE.
+1. "NoHits": No hits to any models above the minimum primary score
+threshold were found. The minimum primary score threshold is 20 bits,
+which should find all legitimate SSU/LSU sequences, but this minimum
+primary score threshold is changeable to `<x>` with the `--minpsc
+<x>`. *Always causes failure*.
 
-2. "MultipleFamilies": hit to two or more 'families'
-(e.g. SSU or LSU) exists for the same sequence. This would happen, for
-example, if a single sequence had a fragment of an SSU sequence and a
-fragment of an LSU sequence on it. ALWAYS CAUSES FAILURE.
+2. "MultipleFamilies": hit to two or more 'families' (e.g. SSU or LSU)
+exists for the same sequence. This would happen, for example, if a
+single sequence had a fragment of an SSU sequence and a fragment of an
+LSU sequence on it. Only hits with scores at or above primary bit
+score threshold of 20 bits (changeable to `<x>` with `--minpsc <x>`)
+are considered. *Always causes failure*.
 
-3. "BothStrands": At least 1 hit above minimum score
-threshold to best model exists on both strands. ALWAYS CAUSES FAILURE.
+3. "BothStrands": At least 1 hit above minimum primary bit score
+threshold of 20 bits to the best model exists on both strands. *Always
+causes failure*.
 
 4. "DuplicateRegion": At least two hits overlap in model coordinates
 by `P` positions or more. The threshold `P` is 10 by default but can be
-changed to `<n>` with the `--maxoverlap <n>` option. ALWAYS CAUSES
-FAILURE.
+changed to `<n>` with the `--maxoverlap <n>` option. *Always causes 
+failure*.
 
 5. "InconsistentHits": The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
-and the model, possibly indicating a misassembly. ALWAYS CAUSES
-FAILURE.
+and the model, possibly indicating a misassembly. *Always causes
+failure*.
 
 6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 `--inaccept <s>` option. If `--inaccept` is not used, this unexpected
 feature will never be reported. An example of using `--inaccept` is
-given [below](#acceptable). ALWAYS CAUSES FAILURE.
+given [below](#acceptable). *Always causes failure*.
 
 7. "QuestionableModel": Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
 can specify certain top-scoring models are 'questionable' using the
 `--inaccept <s>` option. If `--inaccept` is not used, this unexpected
 feature will never be reported. An example of using `--inaccept` is
-given [below](#acceptable). ONLY CAUSES FAILURE IF THE `--questfail`
-OPTION IS ENABLED.
+given [below](#acceptable). *Only causes failure if the `--questfail`
+options is enabled*.
 
-8. "MinusStrand": The best hit is on the minus strand. ONLY CAUSES
-FAILURE IF THE `--minusfail` OPTION IS ENABLED.
+8. "MinusStrand": The best hit is on the minus strand. *Only causes
+failure if the `--minusfail` option is enabled*.
 
-9. "LowScore": the bits per nucleotide
-statistic (total bit score divided by length of total sequence (not
-just length of hit)) is below threshold. By default the threshold is
-0.5 bits per position, but this can be changed to `<x>` with the
-`--lowppossc <x>` option. ONLY CAUSES FAILURE IF THE `--scfail` OPTION
-IS ENABLED.
+9. "LowScore": the bits per nucleotide statistic (total bit score
+divided by length of total sequence (not just length of hit)) is below
+threshold. By default the threshold is 0.5 bits per position, but this
+can be changed to `<x>` with the `--lowppossc <x>` option. The total
+bit score is calculated as the sum of all hits with scores at or above
+the secondary bit score threshold, which is 10 bits by default but
+changeable to `<x>` with the `--minssc <x>` option. *Only causes
+failure if the `--scfail` option is enabled*.
 
 10. "LowCoverage": the total coverage of all hits to the best model
 (summed length of all hits divided by total sequence length) is below
@@ -311,8 +317,11 @@ Additionally, one can set a different coverage threshold for 'short'
 sequences using the `--tshortcov <x1>` option, which must be used in
 combination with the `--tshortlen <n>` option which specifies that
 sequences less than or equal to `<n>` nucleotides in length will be
-subject to the coverage threshold `<x1>` from `--tshortcov <x1>`. ONLY
-CAUSES FAILURE IF THE `--covfail` OPTION IS ENABLED.
+subject to the coverage threshold `<x1>` from `--tshortcov <x1>`.  The
+total length of all hits calculated as the sum of the length of all
+hits with scores at or above the secondary bit score threshold, which
+is 10 bits by default but changeable to `<x>` with the `--minssc <x>`
+option.  *Only causes failure if the `--covfail` option is enabled.
 
 11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
@@ -321,8 +330,8 @@ the 'low' threshold is 0.10 bits per position, but this is changeable
 to <x> bits per position with the `--lowpdiff` option. The difference
 can be changed from bits per position to total bits with the `--absdiff`
 option. If `--absdiff` is used, the threshold is 100 bits, but
-changeable to <x> with the `--lowadiff` <x> option. ONLY CAUSES FAILURE
-IF THE `--difffail` OPTION IS ENABLED.
+changeable to <x> with the `--lowadiff` <x> option. *Only causes failure
+if the `--difffail` option is enabled*.
 
 12. "VeryLowScoreDifference": the score
 difference between the top two domains is below the 'very low'
@@ -331,20 +340,23 @@ the 'very low' threshold is 0.04 bits per position, but this is
 changeable to `<x>` bits per position with the `--vlowpdiff` option. The
 difference can be changed from bits per position to total bits with
 the `--absdiff` option. If `--absdiff` is used, the threshold is 40 bits,
-but changeable to <x> with the `--vlowadiff <x>` option. ONLY CAUSES
-FAILURE IF THE `--difffail` OPTION IS ENABLED.
+but changeable to <x> with the `--vlowadiff <x>` option. *Only causes
+failure if the `--difffail` option is enabled*.
 
-13. "MultipleHits": there are more than one hits to the
-best scoring model. ONLY CAUSES FAILURE IF THE `--multfail` OPTION IS
-ENABLED.
+13. "MultipleHits": there are more than one hits with scores above the
+secondary bit score threshold of 10 bits (changeable to `<x>` bits
+with `--minssc <x>`) to the best matching model. *Only causes failure if the 
+`--multfail` option is enabled*.
 
-14. "TooShort": the sequence is too short, less than `<n1>` nucleotides
-in length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF
-THE `--shortfail <n1>` OPTION IS ENABLED.
+14. "TooShort": the sequence is too short, less than `<n1>`
+nucleotides in length, where `<n1>` is defined with the `--shortfail
+<n1>` option. *Always causes failure when reported but only reported if the 
+`--shortfail <n1>` option is enabled.
 
 15. "TooLong": the sequence is too long, more than `<n2>` nucleotides in
-length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE
-`--longfail <n2>` OPTION IS ENABLED.
+length, where `<n2>` is defined with the `longfail <n2>` option. *Always
+causes failure when reported but only reported if the `--longfail <n2>`
+option is enabled. 
 
 ### <a name="library"></a> The `ribotyper` default model library
 
