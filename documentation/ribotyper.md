@@ -259,46 +259,46 @@ List of unexpected features:
 threshold were found. The minimum primary score threshold is 20 bits,
 which should find all legitimate SSU/LSU sequences, but this minimum
 primary score threshold is changeable to `<x>` with the `--minpsc
-<x>`. *Always causes failure*.
+<x>`. **Always causes failure**.
 
 2. "MultipleFamilies": hit to two or more 'families' (e.g. SSU or LSU)
 exists for the same sequence. This would happen, for example, if a
 single sequence had a fragment of an SSU sequence and a fragment of an
 LSU sequence on it. Only hits with scores at or above primary bit
 score threshold of 20 bits (changeable to `<x>` with `--minpsc <x>`)
-are considered. *Always causes failure*.
+are considered. **Always causes failure**.
 
 3. "BothStrands": At least 1 hit above minimum primary bit score
-threshold of 20 bits to the best model exists on both strands. *Always
-causes failure*.
+threshold of 20 bits to the best model exists on both strands. **Always
+causes failure**.
 
 4. "DuplicateRegion": At least two hits overlap in model coordinates
 by `P` positions or more. The threshold `P` is 10 by default but can be
-changed to `<n>` with the `--maxoverlap <n>` option. *Always causes 
-failure*.
+changed to `<n>` with the `--maxoverlap <n>` option. **Always causes 
+failure**.
 
 5. "InconsistentHits": The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
-and the model, possibly indicating a misassembly. *Always causes
-failure*.
+and the model, possibly indicating a misassembly. **Always causes
+failure**.
 
 6. "UnacceptableModel": Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 `--inaccept <s>` option. If `--inaccept` is not used, this unexpected
 feature will never be reported. An example of using `--inaccept` is
-given [below](#acceptable). *Always causes failure*.
+given [below](#acceptable). **Always causes failure**.
 
 7. "QuestionableModel": Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
 can specify certain top-scoring models are 'questionable' using the
 `--inaccept <s>` option. If `--inaccept` is not used, this unexpected
 feature will never be reported. An example of using `--inaccept` is
-given [below](#acceptable). *Only causes failure if the `--questfail`
-options is enabled*.
+given [below](#acceptable). **Only causes failure if the `--questfail`
+options is enabled**.
 
-8. "MinusStrand": The best hit is on the minus strand. *Only causes
-failure if the `--minusfail` option is enabled*.
+8. "MinusStrand": The best hit is on the minus strand. **Only causes
+failure if the `--minusfail` option is enabled**.
 
 9. "LowScore": the bits per nucleotide statistic (total bit score
 divided by length of total sequence (not just length of hit)) is below
@@ -306,8 +306,8 @@ threshold. By default the threshold is 0.5 bits per position, but this
 can be changed to `<x>` with the `--lowppossc <x>` option. The total
 bit score is calculated as the sum of all hits with scores at or above
 the secondary bit score threshold, which is 10 bits by default but
-changeable to `<x>` with the `--minssc <x>` option. *Only causes
-failure if the `--scfail` option is enabled*.
+changeable to `<x>` with the `--minssc <x>` option. **Only causes
+failure if the `--scfail` option is enabled**.
 
 10. "LowCoverage": the total coverage of all hits to the best model
 (summed length of all hits divided by total sequence length) is below
@@ -321,7 +321,7 @@ subject to the coverage threshold `<x1>` from `--tshortcov <x1>`.  The
 total length of all hits calculated as the sum of the length of all
 hits with scores at or above the secondary bit score threshold, which
 is 10 bits by default but changeable to `<x>` with the `--minssc <x>`
-option.  *Only causes failure if the `--covfail` option is enabled.
+option.  **Only causes failure if the `--covfail` option is enabled**.
 
 11. "LowScoreDifference": the score
 difference between the top two domains is below the 'low'
@@ -330,8 +330,8 @@ the 'low' threshold is 0.10 bits per position, but this is changeable
 to <x> bits per position with the `--lowpdiff` option. The difference
 can be changed from bits per position to total bits with the `--absdiff`
 option. If `--absdiff` is used, the threshold is 100 bits, but
-changeable to <x> with the `--lowadiff` <x> option. *Only causes failure
-if the `--difffail` option is enabled*.
+changeable to <x> with the `--lowadiff` <x> option. **Only causes failure
+if the `--difffail` option is enabled**.
 
 12. "VeryLowScoreDifference": the score
 difference between the top two domains is below the 'very low'
@@ -340,23 +340,23 @@ the 'very low' threshold is 0.04 bits per position, but this is
 changeable to `<x>` bits per position with the `--vlowpdiff` option. The
 difference can be changed from bits per position to total bits with
 the `--absdiff` option. If `--absdiff` is used, the threshold is 40 bits,
-but changeable to <x> with the `--vlowadiff <x>` option. *Only causes
-failure if the `--difffail` option is enabled*.
+but changeable to <x> with the `--vlowadiff <x>` option. **Only causes
+failure if the `--difffail` option is enabled**.
 
 13. "MultipleHits": there are more than one hits with scores above the
 secondary bit score threshold of 10 bits (changeable to `<x>` bits
-with `--minssc <x>`) to the best matching model. *Only causes failure if the 
-`--multfail` option is enabled*.
+with `--minssc <x>`) to the best matching model. **Only causes failure if the 
+`--multfail` option is enabled**.
 
 14. "TooShort": the sequence is too short, less than `<n1>`
 nucleotides in length, where `<n1>` is defined with the `--shortfail
-<n1>` option. *Always causes failure when reported but only reported if the 
-`--shortfail <n1>` option is enabled.
+<n1>` option. **Always causes failure when reported but only reported if the 
+`--shortfail <n1>` option is enabled**.
 
 15. "TooLong": the sequence is too long, more than `<n2>` nucleotides in
-length, where `<n2>` is defined with the `longfail <n2>` option. *Always
+length, where `<n2>` is defined with the `longfail <n2>` option. **Always
 causes failure when reported but only reported if the `--longfail <n2>`
-option is enabled. 
+option is enabled**. 
 
 ### <a name="library"></a> The `ribotyper` default model library
 
