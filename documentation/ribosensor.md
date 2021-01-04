@@ -218,12 +218,11 @@ The `ribosensor` output also includes `Per-program error counts:`:
 
 The `CLEAN` row pertains to the RPSP sequences which had zero errors
 in both `ribotyper` and `rRNA_sensor`. The remaining rows are for
-`ribotyper` errors (those beginning with `R_`) or `rRNA_sensor` errors
-(those beginning with `S_`), and are explained in the sections below
-on [`ribotyper` errors](#ribotypererrors) and [`rRNA_sensor
-errors](#rrnasensorerrors).
+`rRNA_sensor` errors (those beginning with `S_`) and
+`ribotyper` errors (those beginning with `R_`), and are explained in the sections below
+on [`rRNA_sensor` errors](#rrnasensorerrors) and [`ribotyper` errors](#ribotypererrors).
 
-Finally, information on the number of GenBank errors is output
+Finally, information on the number of GenBank errors is output:
 ```
 # GENBANK error counts:
 #
@@ -293,20 +292,20 @@ if the sequence is 'RFSP' (fails `ribotyper` but passes rRNA\_sensor).
 A sequence fails `ribosensor` if it has one or more GenBank errors. Each GenBank error is
 triggered by one or more `rRNA_sensor` and/or `ribotyper` errors as shown in the table below:
 
-| GenBank error                   | fails to  |  triggering `rRNA_sensor`/`ribotyper` errors | 
-|---------------------------------|-----------|------------------------------------------|
-| SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits*, R_NoHits |
-| SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity*, S_LowSimilarity*, S_LowScore*, R_LowScore |
-| SEQ_HOM_SSUAndLSUrRNA           | submitter | R_MultipleFamilies |
-| SEQ_HOM_MisAsBothStrands        | submitter | S_BothStrands, R_BothStrands |
-| SEQ_HOM_MisAsHitOrder           | submitter | R_InconsistentHits |
-| SEQ_HOM_MisAsDupRegion          | submitter | R_DuplicateRegion |
-| SEQ_HOM_TaxNotExpectedSSUrRNA   | submitter | R_UnacceptableModel |
-| SEQ_HOM_TaxQuestionableSSUrRNA  | indexer   | R_QuestionableModel+ |
-| SEQ_HOM_LowCoverage             | indexer   | R_LowCoverage |
-| SEQ_HOM_MultipleHits            | indexer   | S_MultipleHits, R_MultipleHits+ |
+| GenBank error                   |  triggering `rRNA_sensor`/`ribotyper` errors | 
+|---------------------------------|------------------------------------------|
+| SEQ_HOM_NotSSUOrLSUrRNA         | S_NoHits*, R_NoHits |
+| SEQ_HOM_LowSimilarity           | S_NoSimilarity*, S_LowSimilarity*, S_LowScore*, R_LowScore |
+| SEQ_HOM_SSUAndLSUrRNA           | R_MultipleFamilies |
+| SEQ_HOM_MisAsBothStrands        | S_BothStrands, R_BothStrands |
+| SEQ_HOM_MisAsHitOrder           | R_InconsistentHits |
+| SEQ_HOM_MisAsDupRegion          | R_DuplicateRegion |
+| SEQ_HOM_TaxNotExpectedSSUrRNA   | R_UnacceptableModel |
+| SEQ_HOM_TaxQuestionableSSUrRNA  | R_QuestionableModel+ |
+| SEQ_HOM_LowCoverage             | R_LowCoverage |
+| SEQ_HOM_MultipleHits            | S_MultipleHits, R_MultipleHits+ |
 
-There are two classes of exceptions marked by two different
+There are two classes of exceptions in the above table marked by two different
 superscripts in the table: '*': these `rRNA_sensor` errors do not
 trigger a GenBank error if: (a) the sequence is 'RPSF' (passes
 `ribotyper` and fails `rRNA_sensor`) and the `-c` option is
