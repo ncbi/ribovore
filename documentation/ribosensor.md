@@ -167,14 +167,14 @@ Finally, the `ribotyper` and `rRNA_sensor` output is parsed to determine
 if each sequence passes or fails each program. Each sequence fails
 `ribotyper` if it receives one or more `ribotyper` errors (explained more
 [here](#ribotypererrors)) and otherwise passes `ribotyper`.  Each
-sequence fails `rRNA_sensor` if it receives one or more `rRNA_sensor
+sequence fails `rRNA_sensor` if it receives one or more `rRNA_sensor`
 errors (explained more [here](#rrnasensorerrors)) and otherwise passes
-`rRNA_sensor.
+`rRNA_sensor`.
 
 Based on whether it passes or fails each of the two programs, each sequence is assigned
 one of four possible 'outcomes':
 
-| outcome | `ribotyper` pass/fail | `rRNA_sensor` pass/fail |
+| outcome | `ribotyper` pass or fail? | `rRNA_sensor` pass or fail? |
 |---------|---------------------|-----------------------|
 | RPSP    | PASS                | PASS                  |
 | RPSF    | PASS                | FAIL                  |
@@ -217,7 +217,7 @@ The `ribosensor` output also includes `Per-program error counts:`:
 ```
 
 The `CLEAN` row pertains to the RPSP sequences which had zero errors
-in both `ribotyper` and `rRNA_sensor. The remaining rows are for
+in both `ribotyper` and `rRNA_sensor`. The remaining rows are for
 `ribotyper` errors (those beginning with `R_`) or `rRNA_sensor` errors
 (those beginning with `S_`), and are explained in the sections below
 on [`ribotyper` errors](#ribotypererrors) and [`rRNA_sensor
