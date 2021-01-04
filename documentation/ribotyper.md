@@ -2,20 +2,20 @@
 
 * [`ribotyper` example usage](#exampleusage)
 * [Unexpected features and reasons for a sequence to _FAIL_](#unexpectedfeatures)
-* [The ribotyper default model library](#library)
-* [ribotyper's two round search strategy](#strategy)
+* [The `ribotyper` default model library](#library)
+* [`ribotyper`'s two round search strategy](#strategy)
 * [Defining acceptable/questionable models](#acceptable)
 * [List of all command-line options](#options)
 
 ---
 
-ribotyper is a tool for classifying and validating SSU and/or LSU
+`ribotyper` is a tool for classifying and validating SSU and/or LSU
 rRNA sequences in an input. A central assumption of the script is that
  each input sequence is a SSU or LSU rRNA sequence (either full length
 or partial). Therefore, it is not well suited for identifying rRNAs in
 genome sequences or metagenomic datasets.
 
-ribotyper compares each sequence to a library of profile HMMs built
+`ribotyper` compares each sequence to a library of profile HMMs built
 from representative alignments of SSU and LSU rRNA sequences.  Each
 profile HMM is a statistical model of the family it models
 (e.g. bacterial SSU rRNA) built from a multiple alignment of 50-100
@@ -29,12 +29,12 @@ each position is treated identically). Each sequence is aligned to
 each profile and a score is computed based on how well the sequence
 matches the profile. Each sequence is classified by the model that
 gave it the highest score. See [models.md](models.md#top) for more
-information on the models ribotyper uses.
+information on the models `ribotyper` uses.
 
 
 ## `ribotyper` example usage <a name="exampleusage"></a>
 
-This example runs the script ribotyper on a sample file of 16
+This example runs the script `ribotyper` on a sample file of 16
 sequences.
 
 Move into a directory in which you have write permission and execute the following command:
@@ -43,7 +43,7 @@ Move into a directory in which you have write permission and execute the followi
 > ribotyper $RIBOSCRIPTSDIR/testfiles/example-16.fa test
 ```
 
-Like other Ribovore scripts, ribotyper takes 2 required command
+Like other Ribovore scripts, `ribotyper` takes 2 required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -52,11 +52,11 @@ The $RIBOSCRIPTSDIR environment variable should be defined in your
 documentation](install.md#environment).
 
 The second required argument is the name of the output subdirectory
-that you would like ribotyper to create. Output files will be placed
+that you would like `ribotyper` to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
-option with ribotyper, in which case the directory will be
+option with `ribotyper`, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```
@@ -137,7 +137,7 @@ You should see something like the following output:
 [ok]
 ```
 
-ribotyper outputs information on each step and how long it takes,
+`ribotyper` outputs information on each step and how long it takes,
 followed by `Summary statistics` that show how many sequences were
 classified to each class (e.g. `SSU.Archaea`). After this comes the
 `Unexpected feature statistics`, which are explained more below, and
@@ -224,7 +224,7 @@ possible values in the `unexpected_features` column. These are explained more [b
 
 ```
 The `test/test.ribotyper.long.out` file is not shown because its lines are so wide, but it
-also includes brief descriptions of each column. An example is in testfiles/test.ribotyper.long.out
+also includes brief descriptions of each column. An example is in `testfiles/test.ribotyper.long.out`
 
 ## <a name="unexpectedfeatures"></a> Unexpected features and reasons for a sequence to _FAIL_
 
@@ -235,7 +235,7 @@ explained below.
 
 There are 15 possible unexpected features that get reported, some of
 which are related to each other. 11 of the 15 can arise when
-ribotyper is used with default arguments, and therefore appear in
+`ribotyper` is used with default arguments, and therefore appear in
 the example above; the other four can arise only when specific
 additional non-default arguments are used, as explained
 below. Therefore, the list of 15 feaures below, with long
@@ -246,7 +246,7 @@ cause a sequence to fail, but only if specific command line options
 are used.
 
 You can tell which unexpected features cause sequences to FAIL for a
-particular ribotyper run by looking unexpected feature column (final
+particular `ribotyper` run by looking unexpected feature column (final
 column) of the short or long output files: those that cause failures
 will begin with the '*' character (e.g. `*NoHits`) and those that do
 not cause failures will not begin with a "*". You can control which
@@ -346,14 +346,14 @@ THE `--shortfail <n1>` OPTION IS ENABLED.
 length. ALWAYS CAUSES FAILURE WHEN REPORTED BUT ONLY REPORTED IF THE
 `--longfail <n2>` OPTION IS ENABLED.
 
-### <a name="library"></a> The ribotyper default model library
+### <a name="library"></a> The `ribotyper` default model library
 
-By default, ribotyper will use its default model library (installed in
+By default, `ribotyper` will use its default model library (installed in
 `$RIBOSCRIPTSDIR/models/ribotyper.cm`) which includes 15 SSU rRNA
 profiles and 3 LSU rRNA profiles. More information on the model library
 can be found [here](models.md#library).
 
-ribotyper requires a `modelinfo` file that includes information on the
+`ribotyper` requires a `modelinfo` file that includes information on the
 model library it uses. The `modelinfo` file that goes along with the
 default model library is `$RIBOSCRIPTSDIR/models/ribotyper.modelinfo`.
 
@@ -389,11 +389,11 @@ SSU_rRNA_mitochondria_protist     SSU Mito-Protist       rt.SSU_rRNA_mitochondri
 Using this file will classify sequences SSU and LSU sequences from any
 of the listed domains. 
 
-You can create your own `modelinfo` and CM files and use them with ribotyper, with the `-i` option.
+You can create your own `modelinfo` and CM files and use them with `ribotyper`, with the `-i` option.
 
-###<a name="strategy"></a> ribotyper's two round search strategy
+###<a name="strategy"></a> `ribotyper`'s two round search strategy
 
-ribotyper proceeds in two rounds. The first round is called the
+`ribotyper` proceeds in two rounds. The first round is called the
 classification stage. In this round, all models are compared against
 all sequences using a fast profile HMM algorithm that does not do a
 good job at defining boundaries of SSU/LSU sequences, but is good at
@@ -409,7 +409,7 @@ more powerful profile HMM algorithm is used that is better at defining
 sequence boundaries. This round takes about as much time as the first
 round even though the algorithm is slower because at most one model is
 compared against each sequence. The results of this comparison are
-reported to the short and long output files. Ribotyper also attempts
+reported to the short and long output files. `ribotyper` also attempts
 to detect certain 'unexpected features' for each sequence, as listed
 in the 'UNEXPECTED FEATURES AND REASONS FOR FAILURE' section. Some of
 these unexpected features, when they are detected for a sequence will
@@ -501,7 +501,7 @@ string `*UnacceptableModel` will be present in the
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribotyper by
+You can see all the available command line options to `ribotyper` by
 calling it at the command line with the -h option:
 
 ```
