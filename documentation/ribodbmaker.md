@@ -70,7 +70,7 @@ eukaryotic SSU rRNA sequences. Any sequences that do not match best to
 a model in the SSU family and eukaryotic domain will fail.  This
 classification is accomplished by the `ribotyper` program, and any
 pair of values from columns 3 and 4 of the
-[default model info file](ribotyper.md:#library) can be used with the `--model` option.
+[default model info file](ribotyper.md#library) can be used with the `--model` option.
 
 `ribodbmaker` will proceed over several steps as indicated in its output:
 
