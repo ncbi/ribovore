@@ -8,28 +8,28 @@
 
 ---
 
-ribodbmaker is designed to create high quality sequence datasets of
+`ribodbmaker` is designed to create high quality sequence datasets of
 rRNA sequences by performing a series of tests or checks and only
-sequences that survive all tests will pass ribodbmaker and be part of
+sequences that survive all tests will pass `ribodbmaker` and be part of
 the final dataset. The tests are customizable in that they can be skipped and
 in many cases the pass/fail criteria for each test can be modified via
 command-line options. The example usage section below demonstrates the
-default set of tests performed by ribodbmaker.
+default set of tests performed by `ribodbmaker`.
 
 ---
 
 ##  <a name="macosx"></a> Limitations on Mac/OSX
 
-One of the programs that ribodbmaker uses, vecscreen_plus_taxonomy, is
-not available for Mac/OSX. ribodbmaker still runs on Mac/OSX but in a
+One of the programs that `ribodbmaker` uses, vecscreen_plus_taxonomy, is
+not available for Mac/OSX. `ribodbmaker` still runs on Mac/OSX but in a
 limited capacity and specific command-line options are required. 
 See the [example Mac/OSX usage below](#exampleusagemacosx) for more information.
 
 ---
 
-## ribodbmaker example usage on Linux <a name="exampleusagelinux"></a>
+## `ribodbmaker` example usage on Linux <a name="exampleusagelinux"></a>
 
-This example runs ribodbmaker on a sample file of 10 fungal 18S SSU
+This example runs `ribodbmaker` on a sample file of 10 fungal 18S SSU
 rRNA sequences.
 
 This command will only work if you've installed Ribovore on Linux
@@ -44,7 +44,7 @@ the following command:
 > ribodbmaker --model SSU.Eukarya fungi-ssu.r10.fa db10
 ```
 
-Like other Ribovore scripts, ribosensor takes 2 required command
+Like other Ribovore scripts, `ribodbmaker` takes two required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -53,7 +53,7 @@ The $RIBOSCRIPTSDIR environment variable should be defined in your
 documentation](install.md#environment).
 
 The second required argument is the name of the output subdirectory
-that you would like ribosensor to create. Output files will be placed
+that you would like `ribodbmaker` to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
@@ -64,15 +64,15 @@ overwritten.  The command adding `-f` is:
 > ribodbmaker -f --model SSU.Eukarya fungi-ssu.r10.fa db10
 ```
 
-The `--model SSU.Eukarya` part of the command informs ribodbmaker that
+The `--model SSU.Eukarya` part of the command informs `ribodbmaker` that
 the goal of this run is to create a high quality dataset of eukaryotic
 SSU rRNA sequences. Any sequences that do not match best to a model in
 the SSU family and eukaryotic domain will fail.  This classification
-is accomplished by the ribotyper program, and any pair of values from
+is accomplished by the `ribotyper` program, and any pair of values from
 columns 3 and 4 of the [default model info
 file](#ribotyper.md:library) can be used with the `--model` option.
 
-ribodbmaker will proceed over several steps as indicated in its output:
+`ribodbmaker` will proceed over several steps as indicated in its output:
 
 ```
 # ribodbmaker :: create representative database of ribosomal RNA sequences
@@ -154,7 +154,7 @@ Warning: (1306.8) SAccGuide::AddRule: 25: ignoring refinement of E?? from gb_wgs
 after the `# [Stage: prelim] Running srcchk for all sequences` line.
 These warnings do not indicate a showstopping problem and can be ignored. 
 
-ribodbmaker outputs information on each stage as it progresses. The
+`ribodbmaker` outputs information on each stage as it progresses. The
 first 5 lines are for the preliminary (`prelim`) stage prior to any of the test stages:
 ```
 # [Stage: prelim] Validating input files                                            ... done. [    0.0 seconds]
@@ -185,12 +185,12 @@ independently of all other sequences, and each sequence is analyzed at
 each stage (regardless of whether it passes or fails any previous
 stage) with the exception of the second part of the `fribo2` stage and
 the `fmspan` stage which require an alignment of the sequence being
-analyzed and so will only work on sequences that passed the riboaligner
+analyzed and so will only work on sequences that passed the `riboaligner`
 stage (first part of the `fribo2` stage).
 
 After the filter stages, any sequence that failed one or more filter
 stages is excluded from further analysis. The remaining analysis is based on 
-a multiple sequence alignment created by riboaligner and each sequence
+a multiple sequence alignment created by `riboaligner` and each sequence
 is no longer analyzed independently. In this 'ingroup analysis' (`Stage: ingrup`), 
 sequence pairwise percent identities are computed based on the alignment and used
 along with taxonomic information to detect sequences that may be misclassified
@@ -288,7 +288,7 @@ To keep all intermediate files, many of which are normally deleted, use the `--k
 
 * <a name="exampleusagemacosx"></a> [Example usage on Mac/OSX](#exampleusagemacosx)
 
-As mentioned above, ribodbmaker can only be run using special
+As mentioned above, `ribodbmaker` can only be run using special
 command-line options on Mac/OSX because the vecscreen_plus_taxonomy
 program is not available for Mac/OSX. Specifically, the options
 `--skipftaxid`, `--skipfvecsc`, `--skipingrup` and `--skipfmstbl` must
@@ -309,7 +309,7 @@ example run](#exampleusagelinux) above for more details.
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribodbmaker by
+You can see all the available command line options to `ribodbmaker` by
 calling it at the command line with the -h option, as shown below.
 
 There are many options, and they are split by category. Categories include:
@@ -428,36 +428,36 @@ options for controlling the second stage that filters based on ribotyper/riboali
   --passlenclass <s> : PASS seqs in riboaligner length classes in comma separated string <s>
   --faillenclass <s> : FAIL seqs in riboaligner length classes in comma separated string <s>
 
-options for controlling the stage that filters based on model span of hits::
+options for controlling the stage that filters based on model span of hits:
   --fmpos <n>  : aligned sequences must span from <n> to L - <n> + 1 for model of length L [60]
   --fmlpos <n> : aligned sequences must begin at or 5' of position <n>
   --fmrpos <n> : aligned sequences must end at or 3' of position <n>
   --fmnogap    : require sequences do not have a gap at lpos and rpos
 
-options for controlling clustering stage::
+options for controlling clustering stage:
   --cfid <x>     : set esl-cluster fractional identity to cluster at to <x> [0.995]
   --cdthresh <x> : representative is longest seq within <x> distance of min distance seq [0.0025]
   --cmaxlen      : representative is longest seq within cluster
   --ccentroid    : representative is centroid (min distance seq)
 
-options that affect the alignment from which percent identities are calculated::
+options that affect the alignment from which percent identities are calculated:
   --fullaln     : do not trim alignment to minimum required span before pid calculations
   --noprob      : do not trim alignment based on post probs before pid calculations
   --pthresh <x> : posterior probability threshold for alnment trimming is <x> [0.95]
   --pfract <x>  : seq fraction threshold for post prob alnment trimming is <x> [0.95]
 
-options for reducing the number of passing sequences per taxid::
+options for reducing the number of passing sequences per taxid:
   --fione        : only allow 1 sequence per (species) taxid to survive ingroup filter
   --fimin <n>    : w/--fione, remove all sequences from species with < <n> sequences [1]
   --figroup      : w/--fione, keep winner (len/avg pid) in group (order,class,phyla), not in taxid
   --fithresh <x> : w/--fione, winning seq is longest seq within <x> percent id of max percent id [0.2]
 
-options for modifying the ingroup stage::
+options for modifying the ingroup stage:
   --indiffseqtax   : only consider sequences from different seq taxids when computing averages and maxes
   --inminavgid <x> : fail any sequence with average percent identity within species taxid below <x> [99.8]
   --innominavgid   : do not fail sequences with avg percent identity within species taxid below a minimum
 
-options for controlling model span survival table output file::
+options for controlling model span survival table output file:
   --msstep <n>     : for model span output table, set step size to <n> [10]
   --msminlen <n>   : for model span output table, set min length span to <n> [200]
   --msminstart <n> : for model span output table, set min start position to <n>
@@ -468,10 +468,10 @@ options for controlling model span survival table output file::
   --msclass        : w/--mslist, taxids in --mslist file are classes not orders
   --msphylum       : w/--mslist, taxids in --mslist file are phyla not orders
 
-options for changing sequence descriptions (deflines)::
+options for changing sequence descriptions (deflines):
   --def : standardize sequence descriptions/deflines
 
-options for controlling maximum number of sequences to calculate percent identities for::
+options for controlling maximum number of sequences to calculate percent identities for:
   --pidmax <n> : set maximum number of seqs to compute percent identities for to <n> [40000]
   --pidforce   : force calculation of percent identities for any number of sequences
 
@@ -483,7 +483,7 @@ options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign 
   --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [1440]
   --errcheck : consider any farm stderr output as indicating a job failure
 
-advanced options for debugging and testing::
+advanced options for debugging and testing:
   --prvcmd     : do not execute commands; use output from previous run
   --pcreclustr : w/--prvcmd, recluster seqs (--cfid) and/or rechoose representatives (--cdthresh or --cmaxlen)
 
@@ -492,11 +492,11 @@ advanced options for debugging and testing::
 ### <a name="large"></a>Special considerations for large datasets
 
 The running time of the ingroup and clustering stages scale with the
-square of the number of sequences, and as a result ribodbmaker may be
+square of the number of sequences, and as a result `ribodbmaker` may be
 very slow for datasets with more than 25,000 sequences. One way around
 this is to skip the ingroup and clustering stages with the
 `--skipingrup` and `--skipclustr` options. If you want to subsequently
-run the ingroup and clustering stages, you can then rerun ribodbmaker
+run the ingroup and clustering stages, you can then rerun `ribodbmaker`
 without these two `--skip` options on only the sequences that survive,
 which may be a significantly smaller number than in the initial set.
 
