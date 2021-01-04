@@ -1,20 +1,20 @@
 # <a name="top"></a> `ribosensor` example usage, command-line options and pass/fail criteria
 
 * [Example usage](#exampleusage)
-* [rRNA_sensor errors in ribosensor](#rrnasensorerrors)
-* [ribotyper errors in ribosensor](#ribotypererrors)
-* [GenBank errors in ribosensor](#genbankerrors)
-* [Using ribosensor for 18S eukaryotic SSU rRNA sequences](#18S)
-* [rRNA_sensor blastn databases](#blastdb)
+* [`rRNA_sensor` errors in `ribosensor`](#rrnasensorerrors)
+* [`ribotyper` errors in `ribosensor`](#ribotypererrors)
+* [GenBank errors in `ribosensor`](#genbankerrors)
+* [Using `ribosensor` for 18S eukaryotic SSU rRNA sequences](#18S)
+* [`rRNA_sensor` blastn databases](#blastdb)
 * [List of all command-line options](#options)
 ---
 
-ribosensor combines ribotyper and another program, rRNA_sensor,
+`ribosensor` combines `ribotyper` and another program, `rRNA_sensor,
 together to classify and validate ribosomal RNA (rRNA) sequences. It
 was designed for screening incoming rRNA sequence submissions to
-GenBank. ribotyper (documentation [here](ribotyper.md)) uses profile
+GenBank. `ribotyper` (documentation [here](ribotyper.md)) uses profile
 HMMs to analyze sequences and
-[rRNA_sensor](https://github.com/aaschaffer/rRNA_sensor) uses the
+[`rRNA_sensor](https://github.com/aaschaffer/rRNA_sensor) uses the
 single-sequence based blastn program to analyze sequences. The results
 of both programs are then combined to determine if a sequence *pass*es
 or *fail*s.
@@ -23,7 +23,7 @@ or *fail*s.
 
 ## `ribosensor` example usage <a name="exampleusage"></a>
 
-This example runs ribosensor on a sample file of 16 
+This example runs `ribosensor` on a sample file of 16 
 sequences.
 
 Move into a directory in which you have write permission and execute
@@ -33,7 +33,7 @@ the following command:
 > ribosensor $RIBOSCRIPTSDIR/testfiles/example-16.fa test-rs
 ```
 
-Like other Ribovore scripts, ribosensor takes 2 required command
+Like other Ribovore scripts, `ribosensor` takes 2 required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -42,7 +42,7 @@ The $RIBOSCRIPTSDIR environment variable should be defined in your
 documentation](install.md#environment).
 
 The second required argument is the name of the output subdirectory
-that you would like ribosensor to create. Output files will be placed
+that you would like `ribosensor` to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
@@ -143,39 +143,39 @@ You should see something like the following output:
 [ok]
 ```
 
-ribosensor outputs information on each step and how long it takes,
+`ribosensor` outputs information on each step and how long it takes,
 followed by a list of output files.
 
-ribosensor first runs ribotyper as reported in the output:
+`ribosensor` first runs `ribotyper` as reported in the output:
 ```
 # Running ribotyper on full sequence file                      ... done. [    3.6 seconds]
 ```
 
-Next, rRNA_sensor is executed, up to three times, once for sequences
+Next, `rRNA_sensor` is executed, up to three times, once for sequences
 350 nucleotides or shorter, once for sequences of length between 351
 and 600 nucleotides and once for sequences more than 600
-nucleotides. For each length range, different rRNA_sensor parameters
+nucleotides. For each length range, different `rRNA_sensor` parameters
 are used determined to work well for that length range. For this
 example, there are zero sequences less than 351 nucleotides so
-rRNA_sensor is run only twice, as reported in the output:
+`rRNA_sensor` is run only twice, as reported in the output:
 
 ```
 # Running rRNA_sensor on seqs of length 351..600               ... done. [    0.2 seconds]
 # Running rRNA_sensor on seqs of length 601..inf               ... done. [    1.7 seconds]
 ```
 
-Finally, the ribotyper and rRNA_sensor output is parsed to determine
+Finally, the `ribotyper` and `rRNA_sensor` output is parsed to determine
 if each sequence passes or fails each program. Each sequence fails
-ribotyper if it receives one or more ribotyper errors (explained more
-[here](#ribotypererrors)) and otherwise passes ribotyper.  Each
-sequence fails rRNA_sensor if it receives one or more rRNA_sensor
+`ribotyper` if it receives one or more `ribotyper` errors (explained more
+[here](#ribotypererrors)) and otherwise passes `ribotyper`.  Each
+sequence fails `rRNA_sensor` if it receives one or more `rRNA_sensor
 errors (explained more [here](#rrnasensorerrors)) and otherwise passes
-rRNA_sensor.
+`rRNA_sensor.
 
 Based on whether it passes or fails each of the two programs, each sequence is assigned
 one of four possible 'outcomes':
 
-| outcome | ribotyper pass/fail | rRNA_sensor pass/fail |
+| outcome | `ribotyper` pass/fail | `rRNA_sensor` pass/fail |
 |---------|---------------------|-----------------------|
 | RPSP    | PASS                | PASS                  |
 | RPSF    | PASS                | FAIL                  |
@@ -196,11 +196,11 @@ The counts of sequences for each outcome are output. For the above example the o
   *all*     16     9        0          7         0
 ```
 
-The 'pass' column indicates how many sequences in each outcome class 'pass' ribosensor.
-All RPSP sequences pass ribosensor. Some RPSF and RFSP sequences also pass ribosensor
-as explained more below. All RFSF sequences fail ribosensor.
+The 'pass' column indicates how many sequences in each outcome class 'pass' `ribosensor`.
+All RPSP sequences pass `ribosensor`. Some RPSF and RFSP sequences also pass `ribosensor`
+as explained more below. All RFSF sequences fail `ribosensor`.
 
-The ribosensor output also includes `Per-program error counts:`:
+The `ribosensor` output also includes `Per-program error counts:`:
 ```
 # Per-program error counts:
 #
@@ -218,10 +218,10 @@ The ribosensor output also includes `Per-program error counts:`:
 ```
 
 The `CLEAN` row pertains to the RPSP sequences which had zero errors
-in both ribotyper and rRNA_sensor. The remaining rows are for
-ribotyper errors (those beginning with `R_`) or rRNA_sensor errors
+in both `ribotyper` and `rRNA_sensor. The remaining rows are for
+`ribotyper` errors (those beginning with `R_`) or `rRNA_sensor` errors
 (those beginning with `S_`), and are explained in the sections below
-on [ribotyper errors](#ribotypererrors) and [rRNA_sensor
+on [`ribotyper` errors](#ribotypererrors) and [`rRNA_sensor
 errors](#rrnasensorerrors).
 
 Finally, information on the number of GenBank errors is output
@@ -239,15 +239,15 @@ Finally, information on the number of GenBank errors is output
   SEQ_HOM_LowCoverage                  1   0.06250
 ```
 
-GenBank errors are determined by combining the ribotyper and rRNA_sensor errors as explained [here](#genbankerrors).
+GenBank errors are determined by combining the `ribotyper` and `rRNA_sensor` errors as explained [here](#genbankerrors).
 
-## rRNA_sensor errors in ribosensor <a name="rrnasensorerrors"></a>
+## `rRNA_sensor` errors in `ribosensor` <a name="rrnasensorerrors"></a>
 
-Any sequence that receives one or more rRNA_sensor errors will be considered to have failed rRNA_sensor.
+Any sequence that receives one or more `rRNA_sensor` errors will be considered to have failed `rRNA_sensor`.
 
-The possible rRNA_sensor errors are listed in the table below, along with the [GenBank errors](#genbankerrors) they associate with.
+The possible `rRNA_sensor` errors are listed in the table below, along with the [GenBank errors](#genbankerrors) they associate with.
 
-| rRNA_sensor error    | associated GenBank error |  cause/explanation  |
+| `rRNA_sensor` error    | associated GenBank error |  cause/explanation  |
 |----------------------|--------------------------|---------------------|
 |S_NoHits*             | SEQ_HOM_NotSSUOrLSUrRNA  | no hits reported ('no' in column 2) | 
 |S_NoSimilarity*       | SEQ_HOM_LowSimilarity    | coverage (column 5) of best blast hit is < 10% |
@@ -256,23 +256,23 @@ The possible rRNA_sensor errors are listed in the table below, along with the [G
 |S_BothStrands         | SEQ_HOM_MisAsBothStrands | hits on both strands ('mixed' in column 2) |
 |S_MultipleHits        | SEQ_HOM_MultipleHits     | more than 1 hit reported (column 4 value > 1) |
 
-As an exception, the first four rRNA_sensor errors (labelled with '*') do not trigger a GenBank error
-and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor)
-if either (a) the sequence is 'RPSF' (passes ribotyper and fails rRNA_sensor) and
-the `-c` option is *not* used with ribosensor or (b)
-the sequence is 'RFSF' (fails both ribotyper and rRNA_sensor) and
-R_UnacceptableModel or R_QuestionableModel ribotyper errors are also reported.
+As an exception, the first four `rRNA_sensor` errors (labelled with '*') do not trigger a GenBank error
+and so are ignored by `ribosensor` (and so do not cause a sequence to fail `ribosensor`)
+if either (a) the sequence is 'RPSF' (passes `ribotyper` and fails `rRNA_sensor`) and
+the `-c` option is *not* used with `ribosensor` or (b)
+the sequence is 'RFSF' (fails both `ribotyper` and `rRNA_sensor`) and
+R_UnacceptableModel or R_QuestionableModel `ribotyper` errors are also reported.
 
-## ribotyper errors in ribosensor <a name="ribotypererrors"></a>
+## `ribotyper` errors in `ribosensor` <a name="ribotypererrors"></a>
 
-ribotyper detects and reports up to 15 different types (depending on
+`ribotyper` detects and reports up to 15 different types (depending on
 command-line arguments) of 'unexpected_features' for each sequence, as
 explained more [here](#ribotyper.md:unexpectedfeatures). In the
-context of ribosensor, 10 of these 15 types are detected by ribosensor
-and cause a sequence to fail ribotyper. They are listed below along
+context of `ribosensor`, 10 of these 15 types are detected by `ribosensor`
+and cause a sequence to fail `ribotyper`. They are listed below along
 with the [GenBank errors](#genbankerrors) they associate with.
 
-| ribotyper error          | associated GenBank error         | cause/explanation | 
+| `ribotyper` error          | associated GenBank error         | cause/explanation | 
 |--------------------------|----------------------------------|-------------------|
 | R_NoHits                 | SEQ_HOM_NotSSUOrLSUrRNA          | no hits reported |
 | R_MultipleFamilies       | SEQ_HOM_SSUAndLSUrRNA            | SSU and LSU hits |
@@ -286,15 +286,15 @@ with the [GenBank errors](#genbankerrors) they associate with.
 | R_MultipleHits+         | SEQ_HOM_MultipleHits             | more than 1 hit reported | 
 
 As an exception, the final two errors (labelled with '+') do not trigger a GenBank error
-and so are ignored by ribosensor (and so do not cause a sequence to fail ribosensor) 
-if the sequence is 'RFSP' (fails ribotyper but passes rRNA\_sensor).
+and so are ignored by `ribosensor` (and so do not cause a sequence to fail `ribosensor`) 
+if the sequence is 'RFSP' (fails `ribotyper` but passes rRNA\_sensor).
 
-## GenBank errors in ribosensor <a name="genbankerrors"></a>
+## GenBank errors in `ribosensor` <a name="genbankerrors"></a>
 
-A sequence fails ribosensor if it has one or more GenBank errors. Each GenBank error is
-triggered by one or more rRNA_sensor and/or ribotyper errors as shown in the table below:
+A sequence fails `ribosensor` if it has one or more GenBank errors. Each GenBank error is
+triggered by one or more `rRNA_sensor` and/or `ribotyper` errors as shown in the table below:
 
-| GenBank error                   | fails to  |  triggering rRNA_sensor/ribotyper errors | 
+| GenBank error                   | fails to  |  triggering `rRNA_sensor`/`ribotyper` errors | 
 |---------------------------------|-----------|------------------------------------------|
 | SEQ_HOM_NotSSUOrLSUrRNA         | submitter | S_NoHits*, R_NoHits |
 | SEQ_HOM_LowSimilarity           | submitter | S_NoSimilarity*, S_LowSimilarity*, S_LowScore*, R_LowScore |
@@ -308,24 +308,24 @@ triggered by one or more rRNA_sensor and/or ribotyper errors as shown in the tab
 | SEQ_HOM_MultipleHits            | indexer   | S_MultipleHits, R_MultipleHits+ |
 
 There are two classes of exceptions marked by two different
-superscripts in the table: '*': these rRNA_sensor errors do not
+superscripts in the table: '*': these `rRNA_sensor` errors do not
 trigger a GenBank error if: (a) the sequence is 'RPSF' (passes
-ribotyper and fails rRNA_sensor) and the `-c` option is
-*not* used with ribosensor or (b) the sequence is 'RFSF'
-(fails both ribotyper and rRNA_sensor) and R_UnacceptableModel or
-R_QuestionableModel are also reported. '+': these ribotyper errors do
-not trigger a GenBank error if sequence is 'RFSP' (fails ribotyper and
-passes rRNA_sensor);
+`ribotyper` and fails `rRNA_sensor`) and the `-c` option is
+*not* used with `ribosensor` or (b) the sequence is 'RFSF'
+(fails both `ribotyper` and `rRNA_sensor`) and R_UnacceptableModel or
+R_QuestionableModel are also reported. '+': these `ribotyper` errors do
+not trigger a GenBank error if sequence is 'RFSP' (fails `ribotyper` and
+passes `rRNA_sensor`);
 
 ---
 
-### <a name="options"></a>Using ribosensor for 18S eukaryotic SSU rRNA sequences
+### <a name="options"></a>Using `ribosensor` for 18S eukaryotic SSU rRNA sequences
 
-The above example run on the `example-16.fa` file runs ribosensor in
+The above example run on the `example-16.fa` file runs `ribosensor` in
 its default *mode* for validation of 16S SSU rRNA sequences from
-bacteria or archaea. Alterntatively, ribosensor can be run in 18S mode
+bacteria or archaea. Alterntatively, `ribosensor` can be run in 18S mode
 to validate 18S SSU rRNA eukaryotic sequences using the command line
-option `-m 18S`. For example, we can run ribosensor on the same input file
+option `-m 18S`. For example, we can run `ribosensor` on the same input file
 in 18S mode with the following command:
 
 ```
@@ -355,9 +355,9 @@ add additional modes in the future.
 
 ---
 
-### <a name="options"></a>rRNA_sensor blastn databases
+### <a name="blastdb"></a>`rRNA_sensor` blastn databases
 
-rRNA_sensor includes two blastn databases: one with 1267 sequences for
+`rRNA_sensor` includes two blastn databases: one with 1267 sequences for
 16S SSU rRNA (archaeal and bacterial) and one with 1091 sequences for
 eukaryotic 18S SSU rRNA. These were created by clustering larger
 datasets and only keeping one sequence from each cluster as described
@@ -373,7 +373,7 @@ $RIBOINSTALLDIR/rRNA_sensor/18S_centroids.1091.fa
 
 ### <a name="options"></a>List of all command-line options
 
-You can see all the available command line options to ribosensor by
+You can see all the available command line options to `ribosensor` by
 calling it at the command line with the -h option:
 
 ```
