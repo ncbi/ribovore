@@ -13,5 +13,3 @@
 # Any model not listed here will have the 'unacceptable_model'
 # unusual feature reported for it.
 SSU_rRNA_eukarya acceptable
-
-

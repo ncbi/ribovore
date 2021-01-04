@@ -451,7 +451,7 @@ considered questionable.*
 
 An example input file that specifies that only the SSU_rRNA_bacteria
 and SSU_rRNA_cyanobacteria as 'acceptable' from model file 1 is:
-`$RIBOSCRIPTSDIR/models/ribotyper.ssu-arc-bac.accept`:
+`$RIBOSCRIPTSDIR/models/ribosensor.ssu-arc-bac.accept`:
 
 ```
 > cat $RIBOSCRIPTSDIR/models/ribosensor.ssu-arc-bac.accept
