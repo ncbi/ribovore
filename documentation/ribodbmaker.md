@@ -57,7 +57,7 @@ that you would like ribosensor to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
-option with riboaligner, in which case the directory will be
+option, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```

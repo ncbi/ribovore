@@ -43,7 +43,7 @@ Move into a directory in which you have write permission and execute the followi
 > ribotyper $RIBOSCRIPTSDIR/testfiles/example-16.fa test
 ```
 
-Like other Ribovore scripts, `ribotyper` takes 2 required command
+Like other Ribovore scripts, `ribotyper` takes two required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -56,7 +56,7 @@ that you would like `ribotyper` to create. Output files will be placed
 in this output directory. If this directory already exists, the
 program will exit with an error message indicating that you need to
 either (a) remove the directory before rerunning, or (b) use the -f
-option with `ribotyper`, in which case the directory will be
+option, in which case the directory will be
 overwritten.  The command adding `-f` is:
 
 ```

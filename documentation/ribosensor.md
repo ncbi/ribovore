@@ -285,7 +285,7 @@ with the [GenBank errors](#genbankerrors) they associate with.
 
 As an exception, the final two errors (labelled with '+') do not trigger a GenBank error
 and so are ignored by `ribosensor` (and so do not cause a sequence to fail `ribosensor`) 
-if the sequence is 'RFSP' (fails `ribotyper` but passes rRNA\_sensor).
+if the sequence is 'RFSP' (fails `ribotyper` but passes `rRNA_sensor`).
 
 ## GenBank errors in `ribosensor` <a name="genbankerrors"></a>
 
@@ -312,8 +312,8 @@ trigger a GenBank error if: (a) the sequence is 'RPSF' (passes
 *not* used with `ribosensor` or (b) the sequence is 'RFSF'
 (fails both `ribotyper` and `rRNA_sensor`) and R_UnacceptableModel or
 R_QuestionableModel are also reported. '+': these `ribotyper` errors do
-not trigger a GenBank error if sequence is 'RFSP' (fails `ribotyper` and
-passes `rRNA_sensor`);
+not trigger a GenBank error if sequence is 'RFSP' (fails `ribotyper` but
+passes `rRNA_sensor`).
 
 ---
 
@@ -347,9 +347,8 @@ file which are eukaryotic SSU sequences:
 ```
 
 Currently, 16S (default) and 18S are the only two available modes, but we hope to
-add additional modes in the future.
-
----
+add additional modes in the future. Contact me at eric.nawrocki@nih.gov if there's a
+specific mode you'd like to request.
 
 ---
 
@@ -414,6 +413,7 @@ options for parallelizing cmsearch on a compute farm:
   --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
   --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
   --errcheck : consider any farm stderr output as indicating a job failure
+```
 
 ---
 
