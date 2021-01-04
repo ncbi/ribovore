@@ -493,13 +493,15 @@ advanced options for debugging and testing:
 ### <a name="large"></a>Special considerations for large datasets
 
 The running time of the ingroup and clustering stages scale with the
-square of the number of sequences, and as a result `ribodbmaker` may be
+square of the number of input sequences, and as a result `ribodbmaker` may be
 very slow for datasets with more than 25,000 sequences. One way around
 this is to skip the ingroup and clustering stages with the
-`--skipingrup` and `--skipclustr` options. If you want to subsequently
-run the ingroup and clustering stages, you can then rerun `ribodbmaker`
-without these two `--skip` options on only the sequences that survive,
-which may be a significantly smaller number than in the initial set.
+`--skipingrup` and `--skipclustr` options. You can then (if you want) subsequently
+run the ingroup and clustering stages by rerunning `ribodbmaker`
+without these two `--skip` options on only the sequences that survive the first
+run with the `--skipingrup` and `--skipclustr` options. If only a small fraction of the sequences 
+survive the first run, then the ingroup and clustering stages will proceed more quickly
+in the second run than they would have originally.
 
 ---
 
