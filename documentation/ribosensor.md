@@ -9,10 +9,10 @@
 * [List of all command-line options](#options)
 ---
 
-`ribosensor` combines `ribotyper` and another program, `rRNA_sensor,
+`ribosensor` combines `ribotyper` and another program, `rRNA_sensor`,
 together to classify and validate ribosomal RNA (rRNA) sequences. It
 was designed for screening incoming rRNA sequence submissions to
-GenBank. `ribotyper` (documentation [here](ribotyper.md)) uses profile
+GenBank. `ribotyper` (documentation [here](#ribotyper.md)) uses profile
 HMMs to analyze sequences and
 [`rRNA_sensor](https://github.com/aaschaffer/rRNA_sensor) uses the
 single-sequence based blastn program to analyze sequences. The results
