@@ -174,12 +174,12 @@ errors (explained more [here](#rrnasensorerrors)) and otherwise passes
 Based on whether it passes or fails each of the two programs, each sequence is assigned
 one of four possible 'outcomes':
 
-| outcome | `ribotyper` pass or fail? | `rRNA_sensor` pass or fail? |
-|---------|---------------------|-----------------------|
-| RPSP    | PASS                | PASS                  |
-| RPSF    | PASS                | FAIL                  |
-| RFSP    | FAIL                | PASS                  |
-| RFSF    | FAIL                | FAIL                  |
+| `ribotyper` pass or fail? | `rRNA_sensor` pass or fail? | outcome | 
+|---------------------------|-----------------------------|---------|
+| PASS                      | PASS                        | RPSP    |
+| PASS                      | FAIL                        | RPSF    |
+| FAIL                      | PASS                        | RFSP    |
+| FAIL                      | FAIL                        | RFSF    |
 
 The counts of sequences for each outcome are output. For the above example the outcome counts are:
 ```
