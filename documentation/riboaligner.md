@@ -8,14 +8,16 @@
 
 ---
 
-`riboaligner` extends `ribotyper`. It was designed to help GenBank
+`riboaligner` extends [`ribotyper`](ribotyper.md#top). It was designed to help GenBank
 indexers evaluate whether rRNA sequences are partial, full length, or
 extend past the rRNA gene boundaries. `riboaligner` runs `ribotyper` and
 then aligns all the sequences that `ribotyper` has determined as
 belonging to certain groups (by default SSU.archaea and SSU.bacteria)
 and then determines the `length class` of each of those
-sequences. (The default set of groupss can be changed using the `-i`
-option.) `riboaligner` also creates multiple alignments of the input
+sequences. Each 'group' is defined as the combination of a `family` and `domain` from the
+[default `ribotyper` modelinfo file](ribotyper.md#library).
+The default set of groups can be changed using the `-i`
+option. `riboaligner` also creates multiple alignments of the input
 sequences; one alignment per length class. [Example usage](#usage),
 [command-line options](#options) and a [description of length
 classes](#lengthclasses) are included below.
