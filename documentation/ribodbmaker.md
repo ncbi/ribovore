@@ -286,7 +286,7 @@ To keep all intermediate files, many of which are normally deleted, use the `--k
 
 ---
 
-## <a name="exampleusagemacosx"></a> [Example usage on Mac/OSX](#exampleusagemacosx)
+## <a name="exampleusagemacosx"></a> Example usage on Mac/OSX
 
 As mentioned above, `ribodbmaker` can only be run using special
 command-line options on Mac/OSX because the `vecscreen_plus_taxonomy`
@@ -301,7 +301,7 @@ Execute the following command to perform an example run on Mac/OSX that uses the
 > ribodbmaker -f --model SSU.Eukarya --skipftaxid --skipfvecsc --skipingrup --skipmstbl $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r10.fa db10novec 
 ```
 
-The output is similar to that above for the Linux example run.  but
+The output is similar to that above for the Linux example run but
 with the taxid, vecscreen and ingroup stages skipped. See the [Linux
 example run](#exampleusagelinux) above for more details.
 
@@ -486,6 +486,7 @@ options for parallelizing ribotyper/riboaligner's calls to cmsearch and cmalign 
 advanced options for debugging and testing:
   --prvcmd     : do not execute commands; use output from previous run
   --pcreclustr : w/--prvcmd, recluster seqs (--cfid) and/or rechoose representatives (--cdthresh or --cmaxlen)
+```
 
 ---
 
@@ -499,5 +500,7 @@ this is to skip the ingroup and clustering stages with the
 run the ingroup and clustering stages, you can then rerun `ribodbmaker`
 without these two `--skip` options on only the sequences that survive,
 which may be a significantly smaller number than in the initial set.
+
+---
 
 #### Questions, comments or feature requests? Send a mail to eric.nawrocki@nih.gov.
