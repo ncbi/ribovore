@@ -34,7 +34,7 @@ using the Rfam model building pipeline (as of Rfam release 12.0), as follows:
 of much of the GenBank nucleotide database)
 * all resulting hits were filtered by removing highly similar sequences
 * the suriviving hits were aligned to the model from build strategy 1
-* the `cmbuild` program of [Infernal](https://eddylab.org/infernal/) was used with the `--refine` option to refine to get a final alignment and a new model was built from it
+* the `cmbuild` program of [Infernal](http://eddylab.org/infernal/) was used with the `--refine` option to refine to get a final alignment and a new model was built from it
 
 As you can see in the table below, the 7 Rfam alignments and 3 of the
 other alignments were created with build strategy 2. The other 7
@@ -78,11 +78,11 @@ All files listed in columns 1 and 3 can be found in the `ribovore/models` direct
 The model files that begin with `rt.` contain `ribotyper` models and
 those that begin with `ra.` contain `riboaligner` models.  These models
 were built differently. All `ribotyper` models were built using the
-`cmbuild` program from [Infernal](https://eddylab.org/infernal/)
+`cmbuild` program from [Infernal](http://eddylab.org/infernal/)
 version 1.1.3 with command line options `--p7ml --enone` using the
 alignment files listed in the [table](#table) above. All `riboaligner`
 models were built using the `cmbuild` program from
-[Infernal](https://eddylab.org/infernal/) version 1.1.2 with default
+[Infernal](http://eddylab.org/infernal/) version 1.1.2 with default
 parameters (no command line options) using the aligment files listed
 in the [table](#table) above. The `riboaligner` models were built with
 `cmbuild`'s entropy weighting feature that controls the average
@@ -106,7 +106,7 @@ stage of `ribotyper` to classify sequences.
 
 ---
 
-## <a name="cmstat"></a> Getting model statistics using [Infernal](https://eddylab.org/infernal/)'s `cmstat` program
+## <a name="cmstat"></a> Getting model statistics using [Infernal](http://eddylab.org/infernal/)'s `cmstat` program
 
 The program `cmstat` that is installed as part of the Infernal package
 with Ribovore installation can be used to output information on the
@@ -144,7 +144,7 @@ model or models in CM file. For example, below is the output of
     18  SSU_rRNA_mitochondria_protist          -                 2      2.00   1677   2051   318    24     cm  0.732  0.582
 ```
 
-For more information on `cmstat` see the [Infernal user's guide](https://eddylab.infernal.org/Userguide.pdf).
+For more information on `cmstat` see the [Infernal user's guide](http://eddylab.org/infernal/Userguide.pdf)
 
 ---
 
