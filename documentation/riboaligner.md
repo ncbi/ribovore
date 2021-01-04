@@ -8,18 +8,20 @@
 
 ---
 
-`riboaligner` extends [`ribotyper`](ribotyper.md#top). It was designed to help GenBank
-indexers evaluate whether rRNA sequences are partial, full length, or
-extend past the rRNA gene boundaries. `riboaligner` runs `ribotyper` and
-then aligns all the sequences that `ribotyper` has determined as
-belonging to certain groups (by default SSU.archaea and SSU.bacteria)
-and then determines the `length class` of each of those
-sequences. Each 'group' is defined as the combination of a `family` and `domain` from the
-[default `ribotyper` modelinfo file](ribotyper.md#library).
-The default set of groups can be changed using the `-i`
-option. `riboaligner` also creates multiple alignments of the input
-sequences; one alignment per length class. [Example usage](#usage),
-[command-line options](#options) and a [description of length
+`riboaligner` extends [`ribotyper`](ribotyper.md#top). It was designed
+to help GenBank indexers evaluate whether rRNA sequences are partial,
+full length, or extend past the rRNA gene boundaries. `riboaligner`
+runs `ribotyper` and then aligns all the sequences that `ribotyper`
+has determined as belonging to certain groups (by default SSU.archaea
+and SSU.bacteria) and then determines the `length class` of each of
+those sequences. Each 'group' is defined as the combination of a
+`family` and `domain` from the [default `ribotyper` modelinfo
+file](ribotyper.md#library).  The default set of family/domain pairs
+can be changed using the `-i` option to specify an alternative
+modelinfo file as demonstrated [below](#modelinfo). `riboaligner` also
+creates multiple alignments of the input sequences; one alignment per
+length class. [Example usage](#usage), [command-line
+options](#options) and a [description of length
 classes](#lengthclasses) are included below.
 
 ---
@@ -104,7 +106,7 @@ the following command:
 > riboaligner $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra
 ```
 
-Like other Ribovore scripts, `riboaligner` takes 2 required command
+Like other Ribovore scripts, `riboaligner` takes two required command
 line arguments. Optional arguments are explained [below](#options).
 
 The first required argument is the sequence file you want to annotate.
@@ -232,9 +234,46 @@ guide](http://eddylab.org/infernal/Userguide.pdf).
 
 ---
 
-###<a name="modelinfo"></a> `riboaligner` modelinfo files
+## <a name="modelinfo"></a> `riboaligner` modelinfo files
 
-The default `riboaligner` modelinfo file is in `$RIBOSCRIPTSDIR/models/riboaligner.modelinfo`:
+The default `riboaligner` modelinfo file is in `$RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo`:
+
+```
+> cat $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo 
+# each line has information on 1 family and has 4 or more tokens:
+# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
+# token 2: CM file name for this family
+# token 3: integer, consensus length for the CM for this family
+# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
+#                corresponding model in the ribotyper modelinfo file to be used
+#
+SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
+```
+
+The comment (`#`-prefixed) lines at the top of the file explain the
+format.  The first token corresponds to a concatenation of columns 2
+and 3 (`family` and `domain`) in the `ribotyper` modelinfo file, which
+is the family and domain of each model. Sequences with output in the
+`classification` column of `ribotyper` [output files with the suffix
+`.short.out`](#ribotyper.md#short) that match the value in this first
+token will be aligned to the CM in the file listed as the second token
+of this `riboaligner` modelinfo file.
+
+Any sequences in the `riboaligner` input sequence file that are
+classified to any family/domain in `ribotyper` that is not listed in the
+modelinfo file will not be aligned. The default `riboaligner` modelinfo
+file includes only SSU.Bacteria and SSU.archaea, so, for example eukaryotic
+SSU sequences in the input sequence file will *not* be aligned.
+
+Ribovore also includes `riboaligner.modelinfo`, a riboaligner
+modelinfo file with all 15 family/domain pairs from the default
+`ribotyper` modelinfo file. all models from the default `ribotyper`
+modelinfo file. You can also make your own `riboaligner` modelinfo files
+with fewer or different family/domains and models than those listed in
+the these two modelinfo files.
+
+The file `$RIBOSCRIPTSDIR/models/riboaligner.modelinfo` file is shown below:
 
 ```
 > cat $RIBOSCRIPTSDIR/models/riboaligner.modelinfo 
@@ -263,52 +302,14 @@ SSU.Mito-Plant        ra.SSU_rRNA_mitochondria_plant.edf.cm         1951 SSU_rRN
 SSU.Mito-Protist      ra.SSU_rRNA_mitochondria_protist.edf.cm       1669 SSU_rRNA_mitochondria_protist
 ```
 
-The comment (`#`-prefixed) lines at the top of the file explain the
-format.  The first token corresponds to a concatenation of columns 2
-and 3 (`family` and `domain`) in the `ribotyper` modelinfo file, which
-is the family and domain of each model. Sequences with output in the
-`classification` column of `ribotyper` [output files with the suffix
-`.short.out`](#ribotyper.md#short) that match the value in this first
-token will be aligned to the CM in the file listed as the second token
-of this `riboaligner` modelinfo file.
-
-Any sequences in the `riboaligner` input sequence file that are
-classified to any family/domain in `ribotyper` that is not listed in the
-modelinfo file will not be aligned. The default `riboaligner` modelinfo
-file includes all models from the `ribotyper` modelinfo file. You can
-make your own `riboaligner` modelinfo files with fewer or different
-family/domains and models than those listed in the default file.
-
-For example, the file `$RIBOSCRIPTSDIR/models/`riboaligner`.ssu-arc-bac.modelinfo` only
-includes information for SSU rRNA for bacteria and archaea:
-
-```
-> cat $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo 
-# each line has information on 1 family and has 4 or more tokens:
-# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
-# token 2: CM file name for this family
-# token 3: integer, consensus length for the CM for this family
-# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
-#                corresponding model in the ribotyper modelinfo file to be used
-#
-SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
-SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
-```
-
 You can use this file with `riboaligner` with the `-i` option like this:
 ```
-riboaligner -i $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo -f $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra2
+riboaligner -i $RIBOSCRIPTSDIR/models/riboaligner.modelinfo -f $RIBOSCRIPTSDIR/testfiles/example-ra-11.fa test-ra2
 ```
-
-
-
-
-
-
 
 ---
 
-### <a name="options"></a>List of all command-line options
+## <a name="options"></a>List of all command-line options
 
 You can see all the available command line options to ribotyper by
 calling it at the command line with the -h option:
@@ -342,6 +343,7 @@ options for parallelizing cmsearch and cmalign on a compute farm:
   --nkb <n>  : number of KB of sequence for each farm job is <n> [100]
   --wait <n> : allow <n> wall-clock minutes for jobs on farm to finish, including queueing time [500]
   --errcheck : consider any farm stderr output as indicating a job failure
+```
 
 ---
 

@@ -358,7 +358,7 @@ length, where `<n2>` is defined with the `longfail <n2>` option. **Always
 causes failure when reported but only reported if the `--longfail <n2>`
 option is enabled**. 
 
-### <a name="library"></a> The `ribotyper` default model library
+## <a name="library"></a> The `ribotyper` default model library
 
 By default, `ribotyper` will use its default model library (installed in
 `$RIBOSCRIPTSDIR/models/ribotyper.cm`) which includes 15 SSU rRNA
@@ -430,7 +430,7 @@ unexpected features, or only unexpected features that do not cause a
 FAIL, it will be designated as a PASS (see the UNEXPECTED FEATURES AND
 REASONS FOR FAILURE section for details).
 
-### <a name="acceptable"></a> Defining acceptable/questionable models
+## <a name="acceptable"></a> Defining acceptable/questionable models
 
 The user can provide an additional input file that specifies which
 models are 'acceptable' or 'questionable'. For GenBank, this usage can
@@ -511,7 +511,7 @@ string `*UnacceptableModel` will be present in the
 #
 ```
 
-### <a name="options"></a>List of all command-line options
+## <a name="options"></a>List of all command-line options
 
 You can see all the available command line options to `ribotyper` by
 calling it at the command line with the -h option:

@@ -317,7 +317,7 @@ passes `rRNA_sensor`).
 
 ---
 
-### <a name="options"></a>Using `ribosensor` for 18S eukaryotic SSU rRNA sequences
+## <a name="options"></a>Using `ribosensor` for 18S eukaryotic SSU rRNA sequences
 
 The above example run on the `example-16.fa` file runs `ribosensor` in
 its default *mode* for validation of 16S SSU rRNA sequences from
@@ -352,7 +352,7 @@ specific mode you'd like to request.
 
 ---
 
-### <a name="blastdb"></a>`rRNA_sensor` blastn databases
+## <a name="blastdb"></a>`rRNA_sensor` blastn databases
 
 `rRNA_sensor` includes two blastn databases: one with 1267 sequences for
 16S SSU rRNA (archaeal and bacterial) and one with 1091 sequences for
@@ -368,7 +368,7 @@ $RIBOINSTALLDIR/rRNA_sensor/18S_centroids.1091.fa
 
 ---
 
-### <a name="options"></a>List of all command-line options
+## <a name="options"></a>List of all command-line options
 
 You can see all the available command line options to `ribosensor` by
 calling it at the command line with the -h option:
