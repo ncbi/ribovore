@@ -20,7 +20,7 @@ default set of tests performed by `ribodbmaker`.
 
 ##  <a name="macosx"></a> Limitations on Mac/OSX
 
-One of the programs that `ribodbmaker` uses, vecscreen_plus_taxonomy, is
+One of the programs that `ribodbmaker` uses, `vecscreen_plus_taxonomy`, is
 not available for Mac/OSX. `ribodbmaker` still runs on Mac/OSX but in a
 limited capacity and specific command-line options are required. 
 See the [example Mac/OSX usage below](#exampleusagemacosx) for more information.
@@ -33,7 +33,7 @@ This example runs `ribodbmaker` on a sample file of 10 fungal 18S SSU
 rRNA sequences.
 
 This command will only work if you've installed Ribovore on Linux
-because the vecscreen_plus_taxonomy program is only installed for
+because the `vecscreen_plus_taxonomy` program is only installed for
 Linux as it is not available for Mac/OSX. For example usage on Mac/OSX
 see [below](#exampleusagemacosx)
 
@@ -69,7 +69,7 @@ that the goal of this run is to create a high quality dataset of
 eukaryotic SSU rRNA sequences. Any sequences that do not match best to
 a model in the SSU family and eukaryotic domain will fail.  This
 classification is accomplished by the `ribotyper` program, and any
-pair of values from columns 3 and 4 of the
+pair of values from columns 2 and 3 of the
 [default model info file](ribotyper.md#library) can be used with the `--model` option.
 
 `ribodbmaker` will proceed over several steps as indicated in its output:
@@ -185,13 +185,13 @@ independently of all other sequences, and each sequence is analyzed at
 each stage (regardless of whether it passes or fails any previous
 stage) with the exception of the second part of the `fribo2` stage and
 the `fmspan` stage which require an alignment of the sequence being
-analyzed and so will only work on sequences that passed the `riboaligner`
-stage (first part of the `fribo2` stage).
+analyzed and so are only carried out on sequences that passed the
+`riboaligner` stage (first part of the `fribo2` stage).
 
 After the filter stages, any sequence that failed one or more filter
 stages is excluded from further analysis. The remaining analysis is based on 
 a multiple sequence alignment created by `riboaligner` and each sequence
-is no longer analyzed independently. In this 'ingroup analysis' (`Stage: ingrup`), 
+is no longer analyzed independently. In this *ingroup analysis* (`Stage: ingrup`), 
 sequence pairwise percent identities are computed based on the alignment and used
 along with taxonomic information to detect sequences that may be misclassified
 taxonomically. Sequences detected as possibly anomalous in this way will fail.
@@ -214,7 +214,7 @@ it is possible that sequences will fail here.
 # [***OutputFile] Generating model span survival tables for PASSing seqs            ... done. [    1.0 seconds]
 ```
 
-Next, a model span surivival table is created. This file may be useful
+Next, a model span survival table is created. This file may be useful
 for users that are attempting to determine what model span to use for
 filtering.  It includes comment (`#`-prefixed) lines explaining the
 file format at the top of the page.  The model span is the minimum
@@ -286,14 +286,14 @@ To keep all intermediate files, many of which are normally deleted, use the `--k
 
 ---
 
-* <a name="exampleusagemacosx"></a> [Example usage on Mac/OSX](#exampleusagemacosx)
+## <a name="exampleusagemacosx"></a> [Example usage on Mac/OSX](#exampleusagemacosx)
 
 As mentioned above, `ribodbmaker` can only be run using special
-command-line options on Mac/OSX because the vecscreen_plus_taxonomy
+command-line options on Mac/OSX because the `vecscreen_plus_taxonomy`
 program is not available for Mac/OSX. Specifically, the options
 `--skipftaxid`, `--skipfvecsc`, `--skipingrup` and `--skipfmstbl` must
 be used to skip the taxid, vecscreen, and ingroup stages, all of which
-require executables from the vecscreen_plus_taxonomy package.
+require executables from the `vecscreen_plus_taxonomy` package.
 
 Execute the following command to perform an example run on Mac/OSX that uses these options:
 
@@ -307,7 +307,7 @@ example run](#exampleusagelinux) above for more details.
 
 ---
 
-### <a name="options"></a>List of all command-line options
+## <a name="options"></a>List of all command-line options
 
 You can see all the available command line options to `ribodbmaker` by
 calling it at the command line with the -h option, as shown below.
