@@ -503,7 +503,7 @@ dataset to only those sequences from `S` that survived the first run, call this 
 For this second run, do not use the
 `--skipingrup` and `--skipclustr` options. If `S'` has significantly fewer sequences than `S`
 then this two-step approach may be significantly faster, and will result in the same
-final dataset of surviving sequences from the second run that you would obtain from just a
+final dataset of surviving sequences from the second run that you would have obtained from just a
 single run using all stages (no command-line `--skip` options) on `S`.
 
 ---
