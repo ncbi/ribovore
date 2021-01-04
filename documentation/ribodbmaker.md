@@ -64,13 +64,13 @@ overwritten.  The command adding `-f` is:
 > ribodbmaker -f --model SSU.Eukarya fungi-ssu.r10.fa db10
 ```
 
-The `--model SSU.Eukarya` part of the command informs `ribodbmaker` that
-the goal of this run is to create a high quality dataset of eukaryotic
-SSU rRNA sequences. Any sequences that do not match best to a model in
-the SSU family and eukaryotic domain will fail.  This classification
-is accomplished by the `ribotyper` program, and any pair of values from
-columns 3 and 4 of the [default model info
-file](#ribotyper.md:library) can be used with the `--model` option.
+The `--model SSU.Eukarya` part of the command informs `ribodbmaker`
+that the goal of this run is to create a high quality dataset of
+eukaryotic SSU rRNA sequences. Any sequences that do not match best to
+a model in the SSU family and eukaryotic domain will fail.  This
+classification is accomplished by the `ribotyper` program, and any
+pair of values from columns 3 and 4 of the
+[default model info file](#ribotyper.md:library) can be used with the `--model` option.
 
 `ribodbmaker` will proceed over several steps as indicated in its output:
 
