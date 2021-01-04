@@ -64,26 +64,26 @@ All files listed in columns 1 and 3 can be found in the `ribovore/models` direct
 
 ---
 
-### ribotyper versus riboaligner models
+### `ribotyper` versus `riboaligner` models
 
-The model files that begin with `rt.` contain ribotyper models and
-those that begin with `ra.` contain riboaligner models.  These models
-were built differently. All ribotyper models were built using the
+The model files that begin with `rt.` contain `ribotyper` models and
+those that begin with `ra.` contain `riboaligner` models.  These models
+were built differently. All `ribotyper` models were built using the
 `cmbuild` program from [Infernal](https://eddylab.org/infernal/)
 version 1.1.3 with command line options `--p7ml --enone` using the
-alignment files listed in the [table](#table) above. All riboaligner
+alignment files listed in the [table](#table) above. All `riboaligner`
 models were built using the `cmbuild` program from
 [Infernal](https://eddylab.org/infernal/) version 1.1.2 with default
 parameters (no command line options) using the aligment files listed
-in the [table](#table) above. The riboaligner models were built with
+in the [table](#table) above. The `riboaligner` models were built with
 `cmbuild`'s entropy weighting feature that controls the average
 entropy per model position~\cite{Karplus98,Nawrocki09b}, and the
-ribotyper models were built with this feature turned off. Additionally
-the ribotyper models were built such that the profile HMM used for
+`ribotyper` models were built with this feature turned off. Additionally
+the `ribotyper` models were built such that the profile HMM used for
 filtering was built to be maximally similar to the CM (the `--p7ml`
 option). These options were selected because they increased
-classification accuracy on our internal testing for ribotyper. Default
-`cmbuild` built models are provided for riboaligner because those
+classification accuracy on our internal testing for `ribotyper`. Default
+`cmbuild` built models are provided for `riboaligner` because those
 models were more accurate on prediction alignment endpoints correctly
 in our testing.
 
@@ -93,7 +93,7 @@ in our testing.
 
 The `ribotyper.cm` file is a CM library of all models that begin with
 `rt` in the above [table](#table). This file is used in the first
-stage of ribotyper to classify sequences.
+stage of `ribotyper` to classify sequences.
 
 ---
 
