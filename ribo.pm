@@ -278,10 +278,11 @@ sub ribo_ParseRAModelinfoFile {
 
   open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
 
+  my %family_exists_H = ();
   while(my $line = <IN>) { 
     ## each line has information on 1 family and at least 4 tokens: 
-    ## token 1: Name for output files for this family
-    ## token 2: CM file name for this familyn
+    ## token 1: family.domain name in ribotyper output files, referred to as the 'family' below (e.g. SSU.Bacteria)
+    ## token 2: CM file name for this family
     ## token 3: integer, consensus length for the CM for this family
     ## token 4 to N: names of ribotyper models (e.g. SSU_rRNA_archaea) for which we'll use this model to align
     #SSU.Archaea RF01959.cm SSU_rRNA_archaea
@@ -304,10 +305,14 @@ sub ribo_ParseRAModelinfoFile {
         }
         push(@rtname_A, $el_A[$i]);
       }
+      if(defined $family_exists_H{$family}) {
+        ofile_FAIL("ERROR in $sub_name, family $family (first token) exists in more than one line in $modelinfo_file", 1, $FH_HR);  
+      }
       push(@{$family_order_AR}, $family);
       $family_modelfile_HR->{$family}  = $env_ribo_dir . "/" . $modelfile;
       $family_modellen_HR->{$family}   = $modellen;
       @{$family_rtname_HAR->{$family}} = (@rtname_A);
+      $family_exists_H{$family} = 1;
     }
   }
   close(IN);
