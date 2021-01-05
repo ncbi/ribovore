@@ -241,11 +241,14 @@ The default `riboaligner` modelinfo file is in `$RIBOSCRIPTSDIR/models/riboalign
 ```
 > cat $RIBOSCRIPTSDIR/models/riboaligner.ssu-arc-bac.modelinfo 
 # each line has information on 1 family and has 4 or more tokens:
-# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
+# token 1: Name of ribotyper classification <f>.<d> for family <f> (e.g. 'SSU') and domain <d> (e.g. Bacteria) in
+#          ribotyper output short file for passing sequences that should be aligned with this model 
 # token 2: CM file name for this family
 # token 3: integer, consensus length for the CM for this family
-# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
-#                corresponding model in the ribotyper modelinfo file to be used
+# tokens 4 to N: model name(s) from the ribotyper modelinfo file (column 1 in that file)
+#                corresponding to this ribotyper classification, these models should
+#                be all (or a subset) of the models from the ribotyper modelinfo file
+#                that have <f>.<d> (from token 1) for family and domain
 #
 SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
 SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
@@ -278,11 +281,14 @@ The file `$RIBOSCRIPTSDIR/models/riboaligner.modelinfo` file is shown below:
 ```
 > cat $RIBOSCRIPTSDIR/models/riboaligner.modelinfo 
 # each line has information on 1 family and has 4 or more tokens:
-# token 1: Name of ribotyper classifications in short file for passing sequences that should be aligned with this model 
+# token 1: Name of ribotyper classification <f>.<d> for family <f> (e.g. 'SSU') and domain <d> (e.g. Bacteria) in
+#          ribotyper output short file for passing sequences that should be aligned with this model 
 # token 2: CM file name for this family
 # token 3: integer, consensus length for the CM for this family
-# tokens 4 to N: model name(s) in the CM file, must also match 'model' name for
-#                corresponding model in the ribotyper modelinfo file to be used
+o# tokens 4 to N: model name(s) from the ribotyper modelinfo file (column 1 in that file)
+#                corresponding to this ribotyper classification, these models should
+#                be all (or a subset) of the models from the ribotyper modelinfo file
+#                that have <f>.<d> (from token 1) for family and domain
 #
 SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
 SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
