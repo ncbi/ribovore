@@ -4,7 +4,7 @@
 
 Ribovore is a suite of tools for detecting, classifying and analyzing
 small subunit ribosomal RNA (SSU rRNA) and large subunit (LSU) rRNA
-sequences. It is used by GenBank to validate incoming 16S SSU srRNA
+sequences. It is used by GenBank to validate incoming 16S SSU rRNA
 sequences and to generate high quality datasets of SSU and LSU rRNA
 sequences for RefSeq and for use as blastn databases. Ribovore is
 written in Perl.
@@ -14,15 +14,15 @@ quickly validate and classify rRNA sequences using profile models of
 SSU and LSU rRNA genes from different taxonomic groups.
 
 The [`ribosensor`](documentation/ribosensor.md#top) script also
-validates and classifies rRNA sequences, but uses both profiles and
-blastn to do single-sequence comparisons.
+validates and classifies rRNA sequences, but uses blastn to do
+single-sequence comparisons in addition to using profiles.
 
 The [`riboaligner`](documentation/riboaligner.md#top) script is used
 to check if rRNA sequences are full length and do not extend past the
 gene boundary.
 
 The [`ribodbmaker`](documentation/ribodbmaker.md#top) script performs
-a series of tests on input sequences to create a high quality dataset
+a series of tests on input rRNA sequences to create a high quality dataset
 of sequences that pass all tests.
 
 ## <a name="documentation"></a> Ribovore documentation 

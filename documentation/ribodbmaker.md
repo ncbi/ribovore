@@ -497,11 +497,11 @@ advanced options for debugging and testing:
 
 `ribodbmaker` has been used by NCBI to create datasets of candidate
 fungal SSU and LSU rRNA sequences. Because studies that target fungal
-SSU rRNA frequently attempt obtain sequences spanning most of the V4
+SSU rRNA frequently attempt to obtain sequences spanning most of the V4
 and part of the V5 variable regions, and sometimes only these regions,
 `ribodbmaker` is used with the `--fmlpos 604 --fmrpos 1070` options
-because eukaryotic SSU (Rfam RF01960) model positions 604 to 1070 span
-this region. Similarly, for fungal LSU the D1 and D2 variable regions
+because the eukaryotic SSU (Rfam RF01960) model positions 604 to 1070 span
+those regions. Similarly, for fungal LSU the D1 and D2 variable regions
 are frequently targetted and so `--fmlpos 124 --fmrpos 627` are used.
 
 The full commands used for fungal SSU and LSU rRNA candidate RefSeq dataset creation are:
