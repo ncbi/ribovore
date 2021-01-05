@@ -5,11 +5,9 @@
 # 
 # Each non-# prefixed line has 4 tokens, separated by a space.
 # First token is a shorthand name for a mode, these are acceptable
-#   arguments to the ribosensor.pl -m option.
+#   arguments to the ribosensor -m option.
 # Second token is the rRNA_sensor BLAST DB name for that mode.
-# Third token is the ribotyper.pl modelinfo file name for that mode.
-# Fourth token is the ribotyper.pl accept file name for that mode.
+# Third token is the ribotyper modelinfo file name for that mode.
+# Fourth token is the ribotyper accept file name for that mode.
 16S 16S_centroids      ribotyper.modelinfo ribosensor.ssu-arc-bac.accept
 18S 18S_centroids.1091 ribotyper.modelinfo ribosensor.ssu-euk.accept
-
-
