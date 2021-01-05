@@ -365,6 +365,54 @@ FASTA files for these databases will be available here:
 $RIBOINSTALLDIR/rRNA_sensor/16S_centroids.fa
 $RIBOINSTALLDIR/rRNA_sensor/18S_centroids.1091.fa 
 ```
+---
+
+## <a name="modelinfo"></a> `ribosensor` modelinfo files
+
+The default `ribosensor` modelinfo file is in `$RIBOSCRIPTSDIR/models/ribosensor.modelinfo`:
+
+```
+> cat $RIBOSCRIPTSDIR/models/ribosensor.modelinfo
+# Model info file for ribosensor.
+# Contains information on name of modelinfo file and accept
+# file to use with ribotyper and BLAST database to use 
+# with rRNA_sensor.
+# 
+# Each non-# prefixed line has 4 tokens, separated by a space.
+# First token is a shorthand name for a mode, these are acceptable
+#   arguments to the ribosensor -m option.
+# Second token is the rRNA_sensor BLAST DB name for that mode.
+# Third token is the ribotyper modelinfo file name for that mode.
+# Fourth token is the ribotyper accept file name for that mode.
+16S 16S_centroids      ribotyper.modelinfo ribosensor.ssu-arc-bac.accept
+18S 18S_centroids.1091 ribotyper.modelinfo ribosensor.ssu-euk.accept
+```
+
+If the `-i` option is ***not*** used, then the `ribotyper` modelinfo
+file and `ribotyper` *accept* file must exist in the default model
+directory (`$RIBOSCRIPTSDIR/models/`). If `-i <s>` is used then
+`ribosensor` will first look for the `ribotyper` modelinfo and accept
+models in the default model directory, if it finds files with the
+names specified in the `ribosensor` modelinfo file then it will use
+those, if not it will then look for the `ribotyper` modelinfo and
+accept models in the same directory as the file supplied with the `-i`
+option. If the files are still not found, `ribosensor` will exit
+in error.
+
+Currently, the only two blast databases included with `rRNA_sensor`
+are `16S_centroids` and `18S_centroids.1091`, so these are the only
+two blast databases `ribosensor` can be used with. We hope to add more
+in the future. You can construct your own. Email eric.nawrocki@nih.gov
+to request a specific gene/tax group for a future release or for help
+creating your own.
+
+The `ribosensor.modelinfo` file is the only `ribosensor` modelinfo
+file provided with Ribovore, but you can create additional files by
+copying it and modifying it as necessary.
+
+For more information on `ribotyper` modelinfo files, see
+[here](ribotyper.md#library).  For more information on `ribotyper`
+accept files, see [here](ribotyper.md#acceptable).
 
 ---
 
