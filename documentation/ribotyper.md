@@ -32,7 +32,7 @@ matches the profile. Each sequence is classified by the model that
 gave it the highest score. 
 
 
-## `ribotyper` example usage <a name="exampleusage"></a>
+## <a name="exampleusage"></a>`ribotyper` example usage
 
 This example runs the script `ribotyper` on a sample file of 16
 sequences.
@@ -403,10 +403,10 @@ of the listed domains.
 
 You can create your own `modelinfo` and CM files and use them with `ribotyper`, with the `-i` option.
 
-###<a name="strategy"></a> `ribotyper`'s two round search strategy
+## <a name="strategy"></a>`ribotyper`'s two round search strategy
 
 `ribotyper` proceeds in two rounds. The first round is called the
-classification stage. In this round, all models are compared against
+*classification* stage. In this round, all models are compared against
 all sequences using a fast profile HMM algorithm that does not do a
 good job at defining boundaries of SSU/LSU sequences, but is good at
 determining if a sequence is a SSU/LSU sequence or not. For each
@@ -414,21 +414,12 @@ comparison, a bit score is reported. For each sequence, the model that
 gives that sequence the highest bit score is defined as the
 'best-matching' model for that sequence.
  
-In the second round, each model that is the best-matching model to at
-least one sequence is searched again against only the set of sequences
-that have it as their best-matching model. This time, a slower but
+In the second round, each model is used to search again against the set of
+sequences for which it is the best-matching model. This time, a slower but
 more powerful profile HMM algorithm is used that is better at defining
 sequence boundaries. This round takes about as much time as the first
 round even though the algorithm is slower because at most one model is
-compared against each sequence. The results of this comparison are
-reported to the short and long output files. `ribotyper` also attempts
-to detect certain 'unexpected features' for each sequence, as listed
-in the 'UNEXPECTED FEATURES AND REASONS FOR FAILURE' section. Some of
-these unexpected features, when they are detected for a sequence will
-cause that sequence to be designated as a FAIL. If a sequence has 0
-unexpected features, or only unexpected features that do not cause a
-FAIL, it will be designated as a PASS (see the UNEXPECTED FEATURES AND
-REASONS FOR FAILURE section for details).
+compared against each sequence. 
 
 ## <a name="acceptable"></a> Defining acceptable/questionable models
 
