@@ -4,6 +4,7 @@
 * [Example usage on Linux](#exampleusagelinux)
 * [Example usage on Mac/OSX](#exampleusagemacosx)
 * [List of all command-line options](#options)
+* [Fungal SSU/LSU rRNA model boundaries for candidate RefSeq dataset creation](#spans)
 * [Special considerations for large input datasets](#large)
 
 ---
@@ -79,12 +80,12 @@ pair of values from columns 2 and 3 of the
 # Ribovore 1.0 (Jan 2020)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Tue Dec 29 17:15:11 2020
-# $RIBOBLASTDIR:    /home/nawrocke/tmp/ribovore-install/ncbi-blast/bin
-# $RIBOEASELDIR:    /home/nawrocke/tmp/ribovore-install/infernal/binaries
-# $RIBOSCRIPTSDIR:  /home/nawrocke/tmp/ribovore-install/ribovore
-# $VECPLUSDIR:      /home/nawrocke/tmp/ribovore-install/vecscreen_plus_taxonomy
+# $RIBOBLASTDIR:    /usr/local/src/ribovore-install/ncbi-blast/bin
+# $RIBOEASELDIR:    /usr/local/src/ribovore-install/infernal/binaries
+# $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
+# $VECPLUSDIR:      /usr/local/src/ribovore-install/vecscreen_plus_taxonomy
 #
-# input sequence file:    /home/nawrocke/tmp/ribovore-install/ribovore/testfiles/fungi-ssu.r10.fa
+# input sequence file:    /usr/local/src/ribovore-install/ribovore/testfiles/fungi-ssu.r10.fa
 # output directory name:  db10
 # model to use is <s>:    SSU.Eukarya [--model]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -221,9 +222,11 @@ file format at the top of the page.  The model span is the minimum
 required start and stop model positions that each aligned sequence
 must satisfy. By default, these are positions 60 and L-59 where L is
 the model length. They can be changed with the `--fmpos` or `--fmlpos`
-and `--fmrpos` [command-line options](#options). If you are not
-concerned about setting the model span parameters, then you can ignore
-the model span survival table.
+and `--fmrpos` [command-line options](#options). For an example, see
+the section below on [model-specific boundaries used for fungal rRNA
+RefSeq creation](#spans). If you are not concerned about setting the
+model span parameters, then you can ignore the model span survival
+table.
 
 Finally, the surviving sequences are clustered based on sequence identity given the alignment.
 Again, with only 1 sequence this stage is irrelevant for this example but with larger 
@@ -490,7 +493,32 @@ advanced options for debugging and testing:
 
 ---
 
-### <a name="large"></a>Special considerations for large datasets
+## <a name="spans"></a>Fungal SSU/LSU rRNA model boundaries for candidate RefSeq dataset creation
+
+`ribodbmaker` has been used by NCBI to create datasets of candidate
+fungal SSU and LSU rRNA sequences. Because studies that target fungal
+SSU rRNA frequently attempt obtain sequences spanning most of the V4
+and part of the V5 variable regions, and sometimes only these regions,
+`ribodbmaker` is used with the `--fmlpos 604 --fmrpos 1070` options
+because eukaryotic SSU (Rfam RF01960) model positions 604 to 1070 span
+this region. Similarly, for fungal LSU the D1 and D2 variable regions
+are frequently targetted and so `--fmlpos 124 --fmrpos 627` are used.
+
+The full commands used for fungal SSU and LSU rRNA candidate RefSeq dataset creation are:
+
+SSU:
+```
+ribodbmaker --fione --fmnogap --fmlpos 604 --fmrpos 1070 -f --model SSU.Eukarya --skipclustr <fasta> <outdir>
+```
+
+LSU:
+```
+ribodbmaker --fione --fmnogap --fmlpos 124 --fmrpos 627 -f --model LSU.Eukarya --skipclustr <fasta> <outdir>
+```
+
+---
+
+## <a name="large"></a>Special considerations for large datasets
 
 The running time of the ingroup and clustering stages scale with the
 square of the number of input sequences, and as a result `ribodbmaker` may be
