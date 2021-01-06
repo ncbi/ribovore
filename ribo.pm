@@ -36,7 +36,7 @@ require "sqp_utils.pm";
 #
 # Infernal and rRNA_sensor related functions
 # ribo_RunCmsearchOrCmalignOrRRnaSensor
-# ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+# ribo_RunCmsearchOrCmalignOrRRnaSensorValidation
 # ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper
 # ribo_MergeAlignmentsAndReorder
 # ribo_WaitForFarmJobsToFinish
@@ -692,7 +692,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   }
 
   if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-    # run command on cluster
+    # write a script to execute on the cluster and execute it
 
     # replace ![jobname]! with $jobname
     my $jobname = "j" . ofile_RemoveDirPath($seq_file);
@@ -706,6 +706,22 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   else {
     # run command locally and wait for it to complete
     utl_RunCommand($cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
+    # Exit if an expected file does not exists or is empty, it should always exist and be non-empty.
+    # We had to add this shortly before the 1.0 release because if a cmsearch cmd fails, the 'time'
+    # command will not return a non-0 exit status so the program will not exit. By enforcing this
+    # file exists and is non-empty we catch this situation because cmsearch tblout will be empty.
+    my $expected_out_file = undef;
+    if(($executable =~ /cmsearch$/) || ($executable =~ /cmalign$/)) {
+      if($executable =~ /cmsearch$/) { 
+        $expected_out_file = $info_HR->{"OUT-NAME:tblout"};
+      }
+      elsif($executable =~ /cmalign$/) {
+        $expected_out_file = $info_HR->{"OUT-NAME:stk"};
+      }
+      # we don't check for output file for rRNA_sensor because it may exist even if command failed
+      # we'll catch if it failed later when we try to parse the output (program should exit)
+      utl_FileValidateExistsAndNonEmpty($expected_out_file, "expected output file from command $cmd", $sub_name, 1, $FH_HR);
+    }
   }
   # else create the qsub cmd script file (the file with the actual cmsearch/cmalign/rRNA_sensor command)
   # we will submit a job to the farm that will execute this qsub cmd script file (previously we just put the
@@ -718,12 +734,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 # Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
 # Incept:      EPN, Thu Oct 18 12:32:18 2018
 #
-# Purpose:     Run one or more cmsearch, cmalign or rRNA_sensor jobs 
-#              on the farm or locally, after possibly splitting up the input
-#              sequence file. 
-#              The following must all be valid options in opt_HHR:
-#              -p, --nkb, -s, --wait, --errcheck, --keep, -v
-#              See ribotyper.pl for examples of these options.
+# Purpose:     Validate that we can run cmsearch, cmalign or rRNA_sensor
+#              by checking that %{$info_HR} is valid.
 #
 #              %{$info_HR} uses some key name conventions to include
 #              extra information that pertains to parallel mode only
