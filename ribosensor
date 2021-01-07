@@ -18,7 +18,6 @@ my $env_rrnasensor_dir   = utl_DirEnvVarValid("RRNASENSORDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
-my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
 my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -28,9 +27,15 @@ $execs_H{"esl-seqstat"}        = $env_riboeasel_dir . "/esl-seqstat";
 $execs_H{"esl-sfetch"}         = $env_riboeasel_dir . "/esl-sfetch";
 $execs_H{"blastn"}             = $env_riboblast_dir . "/blastn";
 $execs_H{"blastdbcmd"}         = $env_riboblast_dir . "/blastdbcmd";
-$execs_H{"time"}               = $env_ribotime_dir  . "/time";
-utl_ExecHValidate(\%execs_H, undef);
 
+# deal with 'time' differently because we can deal if it doesn't exist and
+# we only use it if it does exist and -p is used
+my $env_ribotime_dir = ribo_CheckForTimeExecutable(); # this will return undef if time doesn't exist or is undef
+if(defined $env_ribotime_dir) {
+  $execs_H{"time"} = $env_ribotime_dir . "/time";
+}
+
+utl_ExecHValidate(\%execs_H, undef);
 
 #########################################################
 # Command line and option processing using sqp_opts.pm
@@ -204,6 +209,10 @@ if(! -d $dir_out) {
   utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef);
 }
 
+# if -p used and "time" exists (we checked above), then leave execs_H{"time"} alone, else undefine it so we won't use it
+my $use_time_program = ((opt_Get("-p", \%opt_HH)) && (defined $execs_H{"time"})) ? 1 : 0;
+if(! $use_time_program) { $execs_H{"time"} = undef; }
+
 my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
 my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".ribosensor";
@@ -227,7 +236,9 @@ $extra_H{"\$RRNASENSORDIR"}   = $env_rrnasensor_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
 $extra_H{"\$RIBOBLASTDIR"}    = $env_riboblast_dir;
-$extra_H{"\$RIBOTIMEDIR"}     = $env_ribotime_dir;
+if($use_time_program) { 
+  $extra_H{"\$RIBOTIMEDIR"}    = $env_ribotime_dir;
+}
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -434,8 +445,8 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $ribo_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "ribostdout",  $ribo_stdoutfile, 0, 1, "ribotyper stdout output");
 }  
-# if -p used, overwrite ribo_secs with summed seconds
-if(opt_Get("-p", \%opt_HH)) { 
+# if 'time' is being used (only true if -p and 'time' exists): parse the ribotyper log file to get CPU+wait time for parallel
+if($use_time_program) { 
   $ribo_p_secs = ribo_ParseLogFileForParallelTime($ribo_logfile, $ofile_info_HH{"FH"});
 }
 
@@ -484,8 +495,10 @@ for($i = 0; $i < $nseq_parts; $i++) {
       $info_H{"OUT-NAME:qcmd"}     = $sensor_stdoutfile_A[$i] . ".qcmd";
       ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "rRNA_sensor_script", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, 
                                                    $out_root, $subseq_nseq_A[$i], $subseq_nnt_A[$i], "", \%info_H, \%opt_HH, \%ofile_info_HH);
-      $sensor_p_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
-
+      if($use_time_program) { 
+        $sensor_p_secs += ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
+      }
+      
       $sensor_secs += ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sensorstdout" . $i,  $sensor_stdoutfile_A[$i], 0, 1, "rRNA_sensor stdout output for length class" . ($i+1));
       if(! opt_IsUsed("--keep", \%opt_HH)) { # remove the fasta files that rRNA_sensor created
@@ -678,8 +691,15 @@ output_error_counts(*STDOUT, "GENBANK error counts:", $tot_nseq, \%{$gerror_ct_H
 output_error_counts($log_FH, "GENBANK error counts:", $tot_nseq, \%{$gerror_ct_HH{"*all*"}}, \@gerror_A, $ofile_info_HH{"FH"});
 
 $total_seconds += ofile_SecondsSinceEpoch();
-output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
-output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+if((! opt_Get("-p", \%opt_HH)) || ($use_time_program)) { 
+  output_timing_statistics(*STDOUT, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+  output_timing_statistics($log_FH, $tot_nseq, $tot_nnt, $ncpu, $ribo_secs, $ribo_p_secs, $sensor_secs, $sensor_p_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+}
+else { # -p used and $RIBOTIMEDIR/time did not exist
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Timing stats not computed because -p used and \$RIBOTIMEDIR/time executable did not exist or was not executable.\n"));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
 
 printf("#\n# Human readable error-based output saved to file $combined_out_file\n");
 printf("# GENBANK error-based output saved to file $combined_genbank_file\n");

@@ -576,6 +576,13 @@ if(opt_IsUsed("--mslist", \%opt_HH)) {
   $execs_H{"mdlspan-survtbl-sort.pl"} = $env_riboscripts_dir . "/miniscripts/mdlspan-survtbl-sort.pl";
 }
 
+# deal with 'time' differently because we can deal if it doesn't exist and
+# we only use it if it does exist and -p is used
+my $env_ribotime_dir = ribo_CheckForTimeExecutable(); # this will return undef if time doesn't exist or is undef
+if(defined $env_ribotime_dir) {
+  $execs_H{"time"} = $env_ribotime_dir . "/time";
+}
+
 utl_ExecHValidate(\%execs_H, undef);
 
 #############################
@@ -617,6 +624,10 @@ my $dir_tail = $dir;
 $dir_tail =~ s/^.+\///; # remove all but last dir
 my $out_root = $dir . "/" . $dir_tail . ".ribodbmaker";
 
+# if -p used and "time" exists (we checked above), then leave execs_H{"time"} alone, else undefine it so we won't use it
+my $use_time_program = ((opt_Get("-p", \%opt_HH)) && (defined $execs_H{"time"})) ? 1 : 0;
+if(! $use_time_program) { $execs_H{"time"} = undef; }
+
 # checkpoint related variables:
 # 'filters' (filters) checkpoint, after fribo2 stage
 my $npass_filters = 0; # number of seqs that pass all filter stages
@@ -642,6 +653,8 @@ $extra_H{"\$RIBOSCRIPTSDIR"} = $env_riboscripts_dir;
 $extra_H{"\$RIBOEASELDIR"}   = $env_riboeasel_dir;
 if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
 if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
+if($use_time_program)           { $extra_H{"\$RIBOTIMEDIR"}   = $env_ribotime_dir; }
+
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -1026,8 +1039,8 @@ if($do_fribo1) {
     if(! $do_prvcmd) { utl_RunCommand($ribotyper_command, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "rtout", "$ribotyper_outfile", 0, 1, "output of ribotyper");
     
-    # if -p: parse the ribotyper log file to get CPU+wait time for parallel
-    if(opt_Get("-p", \%opt_HH)) { 
+    # if 'time' is being used (only true if -p and 'time' exists): parse the ribotyper log file to get CPU+wait time for parallel
+    if($use_time_program) { 
       $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $ofile_info_HH{"FH"});
     }
   } # end of if entered if option --ribodir1 is NOT used
@@ -1105,8 +1118,8 @@ if($do_fribo2) {
     if(! $do_prvcmd) { utl_RunCommand($ra_command, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"}); }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "raout", "$ra_out_file", 0, 1, "output of riboaligner");
     
-    # if -p: parse the ribotyper log file to get CPU+wait time for parallel
-    if(opt_Get("-p", \%opt_HH)) { 
+    # if 'time' is being used (only true if -p and 'time' exists): parse the ribotyper log file to get CPU+wait time for parallel
+    if($use_time_program) { 
       $ra_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ra_log_file, $ofile_info_HH{"FH"});
     }
   } # end of if entered if option --ribodir2 is NOT used
@@ -1146,7 +1159,7 @@ if($do_fribo2) {
   if((! $do_prvcmd) && (opt_IsUsed("--ribodir2", \%opt_HH))) { # -p is irrelevant here if --ribodir2 used
     $extra_desc = sprintf("%6d pass; %6d fail; (files copied from dir %s)", $rt2_npass, $nseq-$rt2_npass, opt_Get("--ribodir2", \%opt_HH));
   }
-  elsif((opt_Get("-p", \%opt_HH)) && ($ra_opt_p_sum_cpu_secs > 0.)) { 
+  elsif($use_time_program && ($ra_opt_p_sum_cpu_secs > 0.)) { 
     $extra_desc = sprintf("%6d pass; %6d fail; (%.1f summed elapsed seconds for all jobs)", $rt2_npass, $nseq-$rt2_npass, $ra_opt_p_sum_cpu_secs);
   }
   else { 
@@ -1714,7 +1727,7 @@ foreach $level (@level_A) {
 }
 $total_seconds += ofile_SecondsSinceEpoch();
 
-if(opt_Get("-p", \%opt_HH)) { 
+if($use_time_program) { 
   ofile_OutputString($log_FH, 1, "#\n");
   ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($rt_opt_p_sum_cpu_secs + $ra_opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");

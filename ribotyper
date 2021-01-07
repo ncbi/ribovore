@@ -17,7 +17,6 @@ require "sqp_utils.pm";
 my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
-my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
 my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -25,10 +24,16 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
-$execs_H{"time"}        = $env_ribotime_dir     . "/time";
+
+# deal with 'time' differently because we can deal if it doesn't exist and
+# we only use it if it does exist and -p is used
+my $env_ribotime_dir = ribo_CheckForTimeExecutable(); # this will return undef if time doesn't exist or is undef
+if(defined $env_ribotime_dir) {
+  $execs_H{"time"} = $env_ribotime_dir . "/time";
+}
+
 utl_ExecHValidate(\%execs_H, undef);
 
- 
 #########################################################
 # Command line and option processing using sqp_opts.pm
 #
@@ -349,6 +354,9 @@ else {  # --skipsearch not used, normal case
     utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
   }
 }
+# if -p used and "time" exists (we checked above), then leave execs_H{"time"} alone, else undefine it so we won't use it
+my $use_time_program = ((opt_Get("-p", \%opt_HH)) && (defined $execs_H{"time"})) ? 1 : 0;
+if(! $use_time_program) { $execs_H{"time"} = undef; }
 
 my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
@@ -371,6 +379,9 @@ my %extra_H    = ();
 $extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
+if($use_time_program) { 
+  $extra_H{"\$RIBOTIMEDIR"}    = $env_ribotime_dir;
+}
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -650,7 +661,9 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
   $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
   ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-  $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
+  if($use_time_program) { 
+    $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
+  }
 }
 else { 
   $start_secs = ofile_OutputProgressPrior("Skipping sequence classification (using results from previous run)", $progress_w, $log_FH, *STDOUT);
@@ -832,7 +845,9 @@ if(defined $alg2) {
         $info_H{"OUT-NAME:stderr"}  = $r2_tblout_file_A[$midx] . ".err";
         $info_H{"OUT-NAME:qcmd"}    = $r2_tblout_file_A[$midx] . ".qcmd";
         ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-        $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
+        if($use_time_program) { 
+          $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
+        }
       }
       elsif(! -s $r2_tblout_file_A[$midx]) { 
         ofile_FAIL("ERROR with --skipsearch, tblout file " . $r2_tblout_file_A[$midx] . " should exist and be non-empty but it's not", 1, $ofile_info_HH{"FH"});
@@ -1087,10 +1102,17 @@ output_ufeature_statistics($log_FH, \%ufeature_ct_H, \@ufeature_A, $class_stats_
 
 $total_seconds += ofile_SecondsSinceEpoch();
 
-output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
-output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+if((! opt_Get("-p", \%opt_HH)) || ($use_time_program)) { 
+  output_timing_statistics(*STDOUT, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+  output_timing_statistics($log_FH, \%class_stats_HH, $ncpu, $r1_secs, $r1_opt_p_sum_cpu_secs, $r2_secs, $r2_opt_p_sum_cpu_secs, $total_seconds, \%opt_HH, $ofile_info_HH{"FH"});
+}
+else { # -p used and $RIBOTIMEDIR/time did not exist
+  ofile_OutputString($log_FH, 1, "#\n");
+  ofile_OutputString($log_FH, 1, sprintf("# Timing stats not computed because -p used and \$RIBOTIMEDIR/time executable did not exist or was not executable.\n"));
+  ofile_OutputString($log_FH, 1, "#\n");
+}
 
-if(opt_Get("-p", \%opt_HH)) { 
+if($use_time_program) { 
   ofile_OutputString($log_FH, 1, "#\n");
   ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($r1_opt_p_sum_cpu_secs + $r2_opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
@@ -3326,7 +3348,6 @@ sub output_timing_statistics {
     $r2_secs2print = $r2_secs;
   }
 
-  
   printf $out_FH ("#\n");
   printf $out_FH ("# Timing statistics:\n");
   printf $out_FH ("#\n");
@@ -3379,13 +3400,12 @@ sub output_timing_statistics {
                   $width_H{"total"},    ofile_FormatTimeString($tot_secs));
                   
   printf $out_FH ("#\n");
-  if(opt_Get("-p", $opt_HHR)) { 
+  if(opt_Get("-p", $opt_HHR)) {
     printf $out_FH ("# 'classification' and 'search' timing statistics are summed elapsed time of multiple jobs [-p]\n");
     printf $out_FH ("# and do not include time elapsed time spent waiting for those jobs by this process, totalling %s,\n", ofile_FormatTimeString($r1_secs + $r2_secs));
     printf $out_FH ("# but that wait time by this process is included in the 'total' timing statistics.\n");
     printf $out_FH ("#\n");
   }
-  
   return;
 
 }

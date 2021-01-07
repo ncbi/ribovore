@@ -13,7 +13,6 @@ require "sqp_utils.pm";
 my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
-my $env_ribotime_dir     = utl_DirEnvVarValid("RIBOTIMEDIR");
 my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -23,7 +22,14 @@ $execs_H{"esl-alimanip"} = $env_riboeasel_dir    . "/esl-alimanip";
 $execs_H{"esl-alimerge"} = $env_riboeasel_dir    . "/esl-alimerge";
 $execs_H{"esl-reformat"} = $env_riboeasel_dir    . "/esl-reformat";
 $execs_H{"ribotyper"}    = $env_riboscripts_dir  . "/ribotyper";
-$execs_H{"time"}         = $env_ribotime_dir  . "/time";
+
+# deal with 'time' differently because we can deal if it doesn't exist and
+# we only use it if it does exist and -p is used
+my $env_ribotime_dir = ribo_CheckForTimeExecutable(); # this will return undef if time doesn't exist or is undef
+if(defined $env_ribotime_dir) {
+  $execs_H{"time"} = $env_ribotime_dir . "/time";
+}
+
 utl_ExecHValidate(\%execs_H, undef);
 
 #########################################################
@@ -159,10 +165,13 @@ if(! -d $dir_out) {
   $cmd = "mkdir $dir_out";
   utl_RunCommand($cmd, opt_Get("-v", \%opt_HH), 0, undef); push(@early_cmd_A, $cmd); 
 }
+# if -p used and "time" exists (we checked above), then leave execs_H{"time"} alone, else undefine it so we won't use it
+my $use_time_program = ((opt_Get("-p", \%opt_HH)) && (defined $execs_H{"time"})) ? 1 : 0;
+if(! $use_time_program) { $execs_H{"time"} = undef; }
+
 my $dir_out_tail = $dir_out;
 $dir_out_tail    =~ s/^.+\///; # remove all but last dir
 my $out_root     = $dir_out .   "/" . $dir_out_tail   . ".riboaligner";
-
 
 #############################################
 # output program banner and open output files
@@ -181,6 +190,9 @@ my %extra_H    = ();
 $extra_H{"\$RIBOSCRIPTSDIR"}  = $env_riboscripts_dir;
 $extra_H{"\$RIBOINFERNALDIR"} = $env_riboinfernal_dir;
 $extra_H{"\$RIBOEASELDIR"}    = $env_riboeasel_dir;
+if($use_time_program) { 
+  $extra_H{"\$RIBOTIMEDIR"}    = $env_ribotime_dir;
+}
 ofile_OutputBanner(*STDOUT, $package_name, $version, $releasedate, $synopsis, $date, \%extra_H);
 opt_OutputPreamble(*STDOUT, \@arg_desc_A, \@arg_A, \%opt_HH, \@opt_order_A);
 
@@ -367,9 +379,9 @@ if(opt_IsUsed("--wait",        \%opt_HH)) { $ribotyper_options .= " --wait " . o
 if(opt_IsUsed("--errcheck",    \%opt_HH)) { $ribotyper_options .= " --errcheck"; }
 $ribotyper_options .= " " . $extra_ribotyper_options . " ";
 utl_RunCommand($execs_H{"ribotyper"} . " " . $ribotyper_options . " $seq_file $ribotyper_outdir > $ribotyper_outfile", opt_Get("-v", \%opt_HH), 0, $FH_HR);
-# if -p: parse the ribotyper log file to get CPU+wait time for parallel
+# if 'time' is being used (only true if -p and 'time' exists): parse the ribotyper log file to get CPU+wait time for parallel
 $rt_opt_p_sum_cpu_secs = 0;
-if(opt_Get("-p", \%opt_HH)) { 
+if($use_time_program) { 
   $rt_opt_p_sum_cpu_secs = ribo_ParseLogFileForParallelTime($ribotyper_log_file, $FH_HR);
 }
 $extra_desc = ((opt_Get("-p", \%opt_HH)) && ($rt_opt_p_sum_cpu_secs > 0.)) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $rt_opt_p_sum_cpu_secs) : undef;
@@ -464,8 +476,10 @@ foreach $family (@family_order_A) {
     $info_H{"OUT-NAME:stderr"}    = $out_root . "." . $family . ".cmalign.out.err";
     $info_H{"OUT-NAME:qcmd"}      = $out_root . "." . $family . ".cmalign.qcmd";
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-    $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
-
+    if($use_time_program) { 
+      $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
+    }
+    
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, 1, "insert file for $family");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, 1, "EL file for $family");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, 1, "stockholm alignment file for $family");
@@ -576,7 +590,7 @@ ofile_OutputString($log_FH, 1, "#\n# Tabular output saved to file $output_file\n
 
 $total_seconds += ofile_SecondsSinceEpoch();
 
-if(opt_Get("-p", \%opt_HH)) { 
+if($use_time_program) { 
   ofile_OutputString($log_FH, 1, "#\n");
   ofile_OutputString($log_FH, 1, sprintf("# Elapsed time below does not include summed elapsed time of multiple jobs [-p], totalling %s (does not include waiting time)\n", ofile_FormatTimeString($opt_p_sum_cpu_secs)));
   ofile_OutputString($log_FH, 1, "#\n");
