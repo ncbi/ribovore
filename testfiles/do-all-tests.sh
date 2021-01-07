@@ -21,9 +21,9 @@ for t in \
 done
 
 if [ $RETVAL -eq 0 ]; then
-   echo "Success: all tests passed [do-ribotyper-tests.sh]"
+   echo "Success: all tests passed [do-all-tests.sh]"
    exit 0
 else 
-   echo "FAIL: at least one test failed [do-ribotyper-tests.sh]"
+   echo "FAIL: at least one test failed [do-all-tests.sh]"
    exit 1
 fi
