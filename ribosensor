@@ -2550,7 +2550,7 @@ sub parse_modelinfo_file {
   # either be in this directory or in $ribo_model_dir
   my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
   if($opt_i_used) { 
-    $non_df_modelinfo_dir = ofile_GetDirPath($modelinfo_file);
+    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
   }
 
   # actually parse modelinfo file: 
