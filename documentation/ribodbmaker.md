@@ -12,7 +12,9 @@
 `ribodbmaker` is designed to create high quality sequence datasets of
 rRNA sequences by performing a series of tests or checks and only
 sequences that survive all tests will pass `ribodbmaker` and be part of
-the final dataset. The tests are customizable in that they can be skipped and
+the final dataset. These tests include runs of both [`ribotyper`](ribotyper.md#top) and 
+[`riboaligner`][(riboaligner.md#top)
+The tests are customizable in that they can be skipped and
 in many cases the pass/fail criteria for each test can be modified via
 command-line options. The example usage section below demonstrates the
 default set of tests performed by `ribodbmaker`.
@@ -533,6 +535,16 @@ For this second run, do not use the
 then this two-step approach may be significantly faster, and will result in the same
 final dataset of surviving sequences from the second run that you would have obtained from just a
 single run using all stages (no command-line `--skip` options) on `S`.
+
+Further, if there are multiple CPUS available, then you can speed-up
+the suggested first run can by splitting the input FASTA file into
+multiple disjoint files, and running `ribodbmaker` on each subfile
+separately and in parallel. Then, you can concatenate all the passing
+sequences from the separate runs into one input file for the second
+run. This parallel approach is valid because if the options
+`-–skipingrup` and `-–skipcluster` are used, the outcome of whether a
+sequence passes or fails depends only on that sequence and not on any
+other sequences in the input sequence file.
 
 ---
 
