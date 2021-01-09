@@ -13,7 +13,7 @@
 rRNA sequences by performing a series of tests or checks and only
 sequences that survive all tests will pass `ribodbmaker` and be part of
 the final dataset. These tests include runs of both [`ribotyper`](ribotyper.md#top) and 
-[`riboaligner`][(riboaligner.md#top)
+[`riboaligner`](riboaligner.md#top)
 The tests are customizable in that they can be skipped and
 in many cases the pass/fail criteria for each test can be modified via
 command-line options. The example usage section below demonstrates the
