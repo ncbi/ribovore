@@ -917,7 +917,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
-  my $out_dir = ofile_GetDirPath($out_root);
+  my $out_dir = ribo_GetDirPath($out_root);
   my $executable = undef; # path to the cmsearch or cmalign executable
   my $info_key   = undef; # a single info_HH 1D key
   my $wait_str   = undef; # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
@@ -969,7 +969,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           }
           elsif($info_key =~ m/^OUT-DIR/) { 
             # need to put the .$f at end of dir path
-            my $tmpdir  = ofile_GetDirPath($info_HR->{$info_key});
+            my $tmpdir  = ribo_GetDirPath($info_HR->{$info_key});
             $tmpdir =~ s/\/$//;
             my $tmpfile = ofile_RemoveDirPath($info_HR->{$info_key});
             $wkr_info_H{$info_key} = $tmpdir . "." . $f . "/" . $tmpfile;
@@ -1015,6 +1015,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
       }
       elsif(($outfiles_key =~ m/^OUT/) && 
             ($outfiles_key ne "OUT-NAME:outdir") && 
+            (($outfiles_key ne "OUT-NAME:time") || (defined $time_path)) && 
             ($info_HR->{$outfiles_key} ne "/dev/null")) { 
         # this function will remove files after concatenating them, unless --keep enabled
         utl_ConcatenateListOfFiles($wkr_outfiles_HA{$outfiles_key}, $info_HR->{$outfiles_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
@@ -1581,6 +1582,33 @@ sub ribo_CheckForTimeExecutable {
 #  else                 { printf("in $sub_name, returning undef\n"); }
 
   return $ret_val;
+}
+
+#################################################################
+# Subroutine : ribo_GetDirPath()
+# Incept:      EPN, Thu May  4 09:39:06 2017
+#              EPN, Mon Mar 15 10:17:11 2010 [ssu.pm:ReturnDirPath()]
+#
+# Purpose:     Given a file name return the directory path, with the final '/'
+#              For example: "foodir/foodir2/foo.stk" becomes "foodir/foodir2/".
+#
+# Arguments: 
+#   $orig_file: name of original file
+# 
+# Returns:     The string $orig_file with actual file name removed 
+#              or "./" if $orig_file is "".
+#
+################################################################# 
+sub ribo_GetDirPath {
+  my $narg_expected = 1;
+  my $sub_name = "ribo_GetDirPath()";
+  if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+  my $orig_file = $_[0];
+  
+  $orig_file =~ s/[^\/]+$//; # remove final string of non '/' characters
+  
+  if($orig_file eq "") { return "./";       }
+  else                 { return $orig_file; }
 }
 
 ###########################################################################
