@@ -133,8 +133,8 @@ opt_Add("--mgap",       "integer", 10,                       10,    undef, undef
 opt_Add("--sgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"11"} = "options for creating additional output files";
-opt_Add("--outseqs",      "boolean", 0,                      11,  undef,   undef,               "save per-model pass/fail sequences to files",       "save per-model pass/fail sequences to files", \%opt_HH, \@opt_order_A);
-opt_Add("--outhits",      "boolean", 0,                      11,  undef,   undef,               "save per-model pass/fail best hits to files",       "save per-model pass/fail sequences to files", \%opt_HH, \@opt_order_A);
+opt_Add("--outseqs",      "boolean", 0,                      11,  undef,   undef,               "save per-model PASS/FAIL sequences to files",       "save per-model PASS/FAIL sequences to files", \%opt_HH, \@opt_order_A);
+opt_Add("--outhits",      "boolean", 0,                      11,  undef,   undef,               "save per-model PASS/FAIL best hits to files",       "save per-model PASS/FAIL sequences to files", \%opt_HH, \@opt_order_A);
 opt_Add("--outgaps",      "boolean", 0,                      11,  undef,   undef,               "save gap sequences between hits to a file",         "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
 opt_Add("--outxgaps",     "integer", 20,                     11,  undef,   undef,               "save gap sequence file with <n> added nts",         "save gap sequence file with <n> added nts", \%opt_HH, \@opt_order_A);
 opt_Add("--keep",         "boolean", 0,                      11,  undef,   undef,               "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
@@ -166,7 +166,7 @@ my $options_okay =
 # options controlling minimum bit score cutoff 
                 'minpsc=s'    => \$GetOptions_H{"--minpsc"},
                 'minssc=s'    => \$GetOptions_H{"--minssc"},
-# options controlling which sequences pass/fail
+# options controlling which sequences PASS/FAIL
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
                 'scfail'       => \$GetOptions_H{"--scfail"},
                 'difffail'     => \$GetOptions_H{"--difffail"},
@@ -1032,12 +1032,12 @@ if($do_outseq || $do_outhit || $do_gapseq || $do_xgapseq) {
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
   if($do_outseq) { 
-    $start_secs = ofile_OutputProgressPrior("Fetching seqs to per-model pass/fail files", $progress_w, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("Fetching seqs to per-model PASS/FAIL files", $progress_w, $log_FH, *STDOUT);
     fetch_pass_fail_per_model_seqs(\%outseq_HHA, \%execs_H, $out_root, "seqs", \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
   }
   if($do_outhit) { 
-    $start_secs = ofile_OutputProgressPrior("Fetching hits to per-model pass/fail files", $progress_w, $log_FH, *STDOUT);
+    $start_secs = ofile_OutputProgressPrior("Fetching hits to per-model PASS/FAIL files", $progress_w, $log_FH, *STDOUT);
     fetch_pass_fail_per_model_seqs(\%outhit_HHA, \%execs_H, $out_root, "hits", \%opt_HH, \%ofile_info_HH);
     ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
