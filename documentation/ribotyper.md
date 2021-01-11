@@ -38,7 +38,7 @@ others *fail*. The set of possible unexpected features is described
 more [below](#unexpectedfeatures) and includes matching best to an
 unexpected model (UnacceptableModel) and having a low score
 (LowScore). Information about defining the set of acceptable models
-can also be found [below](#acceptable).
+can also be found [below](#acceptable). 
 
 ## <a name="exampleusage"></a>`ribotyper` example usage
 
@@ -149,7 +149,9 @@ You should see something like the following output:
 followed by `Summary statistics` that show how many sequences were
 classified to each class (e.g. `SSU.Archaea`). After this comes the
 `Unexpected feature statistics`, which are explained more below, and
-`Timing statistics`, and a list of important output files.
+`Timing statistics`, and a list of important output files.  In the
+output of the program PASS/FAIL and CLEAN are in all caps only for
+emphasis.
 
 The two output files that end in `.out` include per-sequence tabular
 data, with one line per sequence with fields separated by whitespace
