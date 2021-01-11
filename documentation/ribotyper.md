@@ -34,11 +34,11 @@ gave it the highest score.
 Each sequence is determined to either *pass* or *fail* the program
 based on if any of a set of *unexpected features* are detected for
 it. Sequences with zero fatal *unexpected features* *pass* and all
-others *fail*. Possible unexpected features include matching best to
-an unexpected model (UnacceptableModel) and having low scores
-(LowScore) and are described more [below](#unexpectedfeatures).
-Information about defining the set of acceptable models can also be
-found [below](#acceptable).
+others *fail*. The set of possible unexpected features is described
+more [below](#unexpectedfeatures) and includes matching best to an
+unexpected model (UnacceptableModel) and having a low score
+(LowScore). Information about defining the set of acceptable models
+can also be found [below](#acceptable).
 
 ## <a name="exampleusage"></a>`ribotyper` example usage
 
