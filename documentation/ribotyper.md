@@ -29,8 +29,16 @@ do positions that are not as well conserved (unlike BLAST for which
 each position is treated identically). Each sequence is aligned to
 each profile and a score is computed based on how well the sequence
 matches the profile. Each sequence is classified by the model that
-gave it the highest score. 
+gave it the highest score.
 
+Each sequence is determined to either *pass* or *fail* the program
+based on if any of a set of *unexpected features* are detected for
+it. Sequences with zero fatal *unexpected features* *pass* and all
+others *fail*. Possible unexpected features include matching best to
+an unexpected model (UnacceptableModel) and having low scores
+(LowScore) and are described more [below](#unexpectedfeatures).
+Information about defining the set of acceptable models can also be
+found [below](#acceptable).
 
 ## <a name="exampleusage"></a>`ribotyper` example usage
 
@@ -228,7 +236,7 @@ also includes brief descriptions of each column. An example is in `testfiles/tes
 
 ## <a name="unexpectedfeatures"></a> Unexpected features and reasons for a sequence to _FAIL_
 
-There are several 'unexpected features' of sequences that are detected
+There are several *unexpected features* of sequences that are detected
 and reported in the rightmost column of both the short and long output
 files. These unexpected features can cause a sequence to FAIL, as
 explained below.  
