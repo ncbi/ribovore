@@ -192,7 +192,7 @@ mv vecscreen_plus_taxonomy-$RVERSION vecscreen_plus_taxonomy
 rm vecscreen_plus_taxonomy-$RVERSION.zip
 (cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
 else 
-echo "Not installing vecscreen_plus_taxonomy (only avaiable for Linux)"
+echo "Not installing vecscreen_plus_taxonomy (only available for Linux)"
 fi
 echo "------------------------------------------------"
 
@@ -251,6 +251,7 @@ echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "setenv VECPLUSDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 else
 echo "setenv BLASTDB \"\$RRNASENSORDIR\":\"\$BLASTDB\""
 fi

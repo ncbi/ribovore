@@ -6,6 +6,7 @@
 * [List of all command-line options](#options)
 * [Fungal SSU/LSU rRNA model boundaries for candidate RefSeq dataset creation](#spans)
 * [Special considerations for large input datasets](#large)
+* [Creating an updated NCBI taxonomy tree file for `ribodbmaker`](#updatedtaxonomy)
 
 ---
 
@@ -545,6 +546,83 @@ run. This parallel approach is valid because if the options
 `-–skipingrup` and `-–skipcluster` are used, the outcome of whether a
 sequence passes or fails depends only on that sequence and not on any
 other sequences in the input sequence file.
+
+---
+
+## <a name="updatetaxonomy"></a>Creating an updated NCBI taxonomy tree file for `ribodbmaker`
+
+Ribovore includes a special formatted version of the NCBI taxonomy tree in the file:
+
+```
+ribovore/taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt
+```
+
+This tree was created using the procedure described below on December 18, 2020.
+
+You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
+download `vecscreen_plus_taxonomy` with the following commands:
+```
+curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.zip; 
+unzip vecscreen_plus_taxonomy-ribovore-1.0.zip; 
+mv vecscreen_plus_taxonomy-ribovore-1.0 vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-ribovore-1.0.zip
+(cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
+```
+
+And then modify the `$VECPLUSDIR` and `$PERL5LIB` environment variables in your `.bashrc` file as follows:
+```
+export VECPLUSDIR="/path/to/vec_screen_plus_taxonomy"
+export PERL5LIB="$VECPLUSDIR":"$PERL5LIB"
+```
+or in your `.cshrc` file:
+```
+osetenv VECPLUSDIR "/path/to/vec_screen_plus_taxonomy"
+setenv PERL5LIB "$VECPLUSDIR":"$PERL5LIB"
+```
+
+***If you are on Linux, `vecscreen_plus_taxonomy` will have already been
+installed with Ribovore but you will still need to modify your `$PERL5LIB`
+environment variable using the second `export` or `setenv` line in
+your `.bashrc` or `.cshrc` files.***
+
+---
+
+Steps to create an updated NCBI taxonmy tree file:
+
+1. Move into a newly created directory - these steps will generate about a dozen files in that new directory.
+
+2. Download `new_taxdump.tar.gz` from [https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/](https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/)
+
+3. Execute the following commands:
+
+```
+tar xfz new_taxdump.tar.gz
+cut -f1,3,5 nodes.dmp > taxonomy_tree.txt
+cut -f31 nodes.dmp > specified_column.txt
+```
+
+4. Run the `assign_levels_to_taxonomy.pl` script from
+`vecscreen_plus_taxonomy`. If you have installed Ribovore on Linux, do
+this by executing the following command:
+
+```
+$VECPLUSDIR/scripts/assign_levels_to_taxonomy.pl --input_taxa taxonomy_tree.txt --outfile taxonomy_tree_wlevels.txt
+```
+
+If you've installed Ribovore on Mac/OSX and have created the `assign_levels_to_taxonomy.pl` script as explained above, the
+command will be:
+
+```
+perl assign_levels_to_taxonomy.pl --input_taxa taxonomy_tree.txt --outfile taxonomy_tree_wlevels.txt
+```
+
+5. Create the final file with the command:
+
+```
+paste taxonomy_tree_wlevels.txt specified_column.txt > updated-ncbi-taxonomy-tree.ribodbmaker.txt
+```
+
+6. Use the new taxonomy tree file you created with `ribodbmaker` using the `--taxin /path/to/updated-ncbi-taxonomy-tree.ribodbmaker.txt`.
 
 ---
 

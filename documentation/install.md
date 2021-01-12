@@ -23,7 +23,7 @@ to install Ribovore. A good name for that directory is
 `ribovore-install`. Then move into that directory and run one of the
 following two commands depending on whether you are installing on a
 Linux or Mac/OSX system. *Note that you if you are installing on Mac/OSX the
-ribodbmaker script will have limited functionality because vecscreen_plus_taxonomy
+ribodbmaker script will have limited functionality because `vecscreen_plus_taxonomy`
 can only be installed and run on linux systems.*
 
 ```
