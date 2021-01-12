@@ -6,7 +6,7 @@
 * [List of all command-line options](#options)
 * [Fungal SSU/LSU rRNA model boundaries for candidate RefSeq dataset creation](#spans)
 * [Special considerations for large input datasets](#large)
-* [Creating an updated NCBI taxonomy tree file for `ribodbmaker`](#updatedtaxonomy)
+* [Creating an updated NCBI taxonomy tree file for `ribodbmaker`](#updatetaxonomy)
 
 ---
 
@@ -581,7 +581,7 @@ setenv PERL5LIB "$VECPLUSDIR":"$PERL5LIB"
 
 ***If you are on Linux, `vecscreen_plus_taxonomy` will have already been
 installed with Ribovore but you will still need to modify your `$PERL5LIB`
-environment variable using the second `export` or `setenv` line in
+environment variable using the second `export` or `setenv` line above in
 your `.bashrc` or `.cshrc` files.***
 
 Then you'll need to source your `.bashrc` or `.cshrc` files with the command:
@@ -598,7 +598,7 @@ source ~/.cshrc
 
 ---
 
-Steps to create an updated NCBI taxonmy tree file:
+Steps to create an updated NCBI taxonomy tree file:
 
 1. Move into a newly created directory - these steps will generate about a dozen files in that new directory.
 
