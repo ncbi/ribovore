@@ -566,17 +566,16 @@ curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.zip https://github.com/aascha
 unzip vecscreen_plus_taxonomy-ribovore-1.0.zip; 
 mv vecscreen_plus_taxonomy-ribovore-1.0 vecscreen_plus_taxonomy
 rm vecscreen_plus_taxonomy-ribovore-1.0.zip
-(cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
 ```
 
 And then modify the `$VECPLUSDIR` and `$PERL5LIB` environment variables in your `.bashrc` file as follows:
 ```
-export VECPLUSDIR="/path/to/vec_screen_plus_taxonomy"
+export VECPLUSDIR="/path/to/vecscreen_plus_taxonomy"
 export PERL5LIB="$VECPLUSDIR":"$PERL5LIB"
 ```
 or in your `.cshrc` file:
 ```
-osetenv VECPLUSDIR "/path/to/vec_screen_plus_taxonomy"
+setenv VECPLUSDIR "/path/to/vecscreen_plus_taxonomy"
 setenv PERL5LIB "$VECPLUSDIR":"$PERL5LIB"
 ```
 
@@ -584,6 +583,18 @@ setenv PERL5LIB "$VECPLUSDIR":"$PERL5LIB"
 installed with Ribovore but you will still need to modify your `$PERL5LIB`
 environment variable using the second `export` or `setenv` line in
 your `.bashrc` or `.cshrc` files.***
+
+Then you'll need to source your `.bashrc` or `.cshrc` files with the command:
+
+```
+source ~/.bashrc
+```
+
+or
+
+```
+source ~/.cshrc
+```
 
 ---
 
@@ -607,13 +618,6 @@ this by executing the following command:
 
 ```
 $VECPLUSDIR/scripts/assign_levels_to_taxonomy.pl --input_taxa taxonomy_tree.txt --outfile taxonomy_tree_wlevels.txt
-```
-
-If you've installed Ribovore on Mac/OSX and have created the `assign_levels_to_taxonomy.pl` script as explained above, the
-command will be:
-
-```
-perl assign_levels_to_taxonomy.pl --input_taxa taxonomy_tree.txt --outfile taxonomy_tree_wlevels.txt
 ```
 
 5. Create the final file with the command:
