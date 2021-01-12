@@ -13,11 +13,21 @@
 use strict;
 use warnings;
 
-require "sqp_opts.pm";
-require "sqp_ofile.pm";
-require "sqp_seq.pm";
-require "sqp_seqfile.pm";
-require "sqp_utils.pm";
+my $ribo_sequip_dir = $ENV{"RIBOSEQUIPDIR"};
+if(! defined $ribo_sequip_dir) { 
+  die "ERROR, the environment variable \$RIBOSEQUIPDIR is not set, see ribovore/documentation/install.md";
+}
+if(! -d $ribo_sequip_dir) { 
+  die "ERROR, the directory specified by the environment variable \$RIBOSEQUIPTDIR does not exist, see ribovore/documentation/install.md";
+}
+
+# require the specific sequip modules in RIBOSEQUIPDIR in case user has another 
+# package installed that uses a (potentially different version) of sequip (e.g. VADR)
+require $ribo_sequip_dir . "/sqp_opts.pm";
+require $ribo_sequip_dir . "/sqp_ofile.pm";
+require $ribo_sequip_dir . "/sqp_seq.pm";
+require $ribo_sequip_dir . "/sqp_seqfile.pm";
+require $ribo_sequip_dir . "/sqp_utils.pm";
 
 #
 # List of subroutines:
