@@ -123,7 +123,7 @@
 59    MF318998.1    1104    40426   139380   155619     5204  FAIL      -        -  mdlspan[52-1171];;
 60    DQ519026.1    1697    54100     4892     4891     4890  FAIL      -        -  mdlspan[76-1816];;
 61    FJ554162.1    1107   316342    34395   147545     4890  FAIL      -        -  not-specified-species;;ribotyper2[*LowScore:(0.36<0.50);*LowCoverage:(0.332<0.990);*MultipleHits:(2:SI[M:-7(1680..1686),S:211(195..405)]);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:20.3/267-1107:+);];;
-62    AY251104.2    1743   237192   134362   147541     4890  PASS      R        -  -
+62    AY251104.2    1743   237192  2726947   147541     4890  PASS      R        -  -
 63    FJ763542.1    1653   637492     4892     4891     4890  FAIL      -        -  not-specified-species;;
 64    HM486991.1    1344   175245        1        1        1  FAIL      -        -  not-specified-species;;mdlspan[322-1726];;
 65    KP322969.1    2758    88839    62914   452283     5204  FAIL      -        -  ribotyper2[*LowCoverage:(0.628<0.990);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:496.3/1387-2758:+);];;
