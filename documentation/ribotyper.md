@@ -409,7 +409,7 @@ secondary bit score threshold of 10 bits (changeable to `<x>` bits
 with `--minssc <x>`) to the best matching model. ***Only causes failure if the 
 `--multfail` option is enabled***.
 
-    For the MultipleHits unexpected feature, the output includes information on the gap between every pair of adjacent hits including a classification of each gap into one of three classes based on the size of the gap in both model coordinates and sequence coordinates as described below. These classifications depend on two thresholds: the maximum size of a 'small' gap in model coordinates, set as `10` by default, but settable to `<n>` with the `--mgap <n>` option, and the maximum size of a 'small' gap in sequence coordinates, set as `10` by default, but settable to `<n>` with the `--sgap <n>` option.
+    For the MultipleHits unexpected feature, the output includes information on the gap between every pair of adjacent hits including a classification of each gap into one of three classes based on the size of the gap in both model coordinates and sequence coordinates as described below. These classifications depend on two thresholds: the maximum size of a *small* gap in model coordinates (referred to below as *small model gap*), set as `10` by default, but settable to `<n>` with the `--mgap <n>` option, and the maximum size of a *small* gap in sequence coordinates (referred to below as *small sequence gap*), set as `10` by default, but settable to `<n>` with the `--sgap <n>` option.
 
     Three classes of gaps in MultipleHits output strings:
     - 'sequence insertion': the model gap length is less than or equal to the maximum size of a small model gap, regardless of size of gap in sequence coordinates; abbreviated as `SI` in the output, see below for an example
