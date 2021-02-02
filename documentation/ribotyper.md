@@ -422,7 +422,7 @@ causes failure when reported but only reported if the `--longfail <n2>`
 option is enabled***. 
 
     Example message in `.out` output files:           
-    `TooShort:(4217>3000)`; indicating sequence length is `4217` which is greater than the maximum length of `3000` nt set by the `--longfail 3000` option
+    `TooLong:(4217>3000)`; indicating sequence length is `4217` which is greater than the maximum length of `3000` nt set by the `--longfail 3000` option
 
 ## <a name="library"></a> The `ribotyper` default model library
 
