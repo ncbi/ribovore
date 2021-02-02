@@ -412,9 +412,9 @@ with `--minssc <x>`) to the best matching model. ***Only causes failure if the
     For the MultipleHits unexpected feature, the output includes information on the gap between every pair of adjacent hits including a classification of each gap into one of three classes based on the size of the gap in both model coordinates and sequence coordinates as described below. These classifications depend on two thresholds: the maximum size of a *small* gap in model coordinates (referred to below as *small model gap*), set as `10` by default, but settable to `<n>` with the `--mgap <n>` option, and the maximum size of a *small* gap in sequence coordinates (referred to below as *small sequence gap*), set as `10` by default, but settable to `<n>` with the `--sgap <n>` option.
 
     Three classes of gaps in MultipleHits output strings:
-    - 'sequence insertion': the model gap length is less than or equal to the maximum size of a small model gap, regardless of size of gap in sequence coordinates; abbreviated as `SI` in the output, see below for an example
-    - 'model deletion':     the model gap length is more than the maximum size of a small model gap and the sequence gap length is less than or equal to the maximum size of a small sequence gap; abbreviated as `MD` in the output, see below for an example
-    - 'nonhomologous region': if the model gap length is more than the maximum size of a small model gap and the sequence gap length is more than the maximum size of a small sequence gap; abbreviated as `NH` in the output, see below for an example
+    - *sequence insertion*: the model gap length is less than or equal to the maximum size of a small model gap, regardless of size of gap in sequence coordinates; abbreviated as `SI` in the output, see below for an example
+    - *model deletion*:     the model gap length is more than the maximum size of a small model gap and the sequence gap length is less than or equal to the maximum size of a small sequence gap; abbreviated as `MD` in the output, see below for an example
+    - *nonhomologous region*: if the model gap length is more than the maximum size of a small model gap and the sequence gap length is more than the maximum size of a small sequence gap; abbreviated as `NH` in the output, see below for an example
 
     Example messages in `.out` output files:
 
