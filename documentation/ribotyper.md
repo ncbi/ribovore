@@ -271,33 +271,33 @@ which should find all legitimate SSU/LSU sequences, but this minimum
 primary score threshold is changeable to `<x>` with the `--minpsc
 <x>`. ***Always causes failure***.
 
-2. ***MultipleFamilies***: hit to two or more 'families' (e.g. SSU or LSU)
+2. ***UnacceptableModel***: Best hit is to a model that is
+'unacceptable'. By default, all models are acceptable, but the user
+can specify only certain top-scoring models are 'acceptable' using the
+`--inaccept <s>` option. If `--inaccept` is not used, this unexpected
+feature will never be reported. An example of using `--inaccept` is
+given [below](#acceptable). ***Always causes failure***.
+
+3. ***MultipleFamilies***: hit to two or more 'families' (e.g. SSU or LSU)
 exists for the same sequence. This would happen, for example, if a
 single sequence had a fragment of an SSU sequence and a fragment of an
 LSU sequence on it. Only hits with scores at or above primary bit
 score threshold of 20 bits (changeable to `<x>` with `--minpsc <x>`)
 are considered. ***Always causes failure***.
 
-3. ***BothStrands***: At least 1 hit above minimum primary bit score
+4. ***BothStrands***: At least 1 hit above minimum primary bit score
 threshold of 20 bits to the best model exists on both strands. ***Always
 causes failure***.
 
-4. ***DuplicateRegion***: At least two hits overlap in model coordinates
+5. ***DuplicateRegion***: At least two hits overlap in model coordinates
 by `P` positions or more. The threshold `P` is 10 by default but can be
 changed to `<n>` with the `--maxoverlap <n>` option. ***Always causes 
 failure***.
 
-5. ***InconsistentHits***: The hits to the best model are
+6. ***InconsistentHits***: The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
 and the model, possibly indicating a misassembly. ***Always causes
 failure***.
-
-6. ***UnacceptableModel***: Best hit is to a model that is
-'unacceptable'. By default, all models are acceptable, but the user
-can specify only certain top-scoring models are 'acceptable' using the
-`--inaccept <s>` option. If `--inaccept` is not used, this unexpected
-feature will never be reported. An example of using `--inaccept` is
-given [below](#acceptable). ***Always causes failure***.
 
 7. ***QuestionableModel***: Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
@@ -333,6 +333,9 @@ hits with scores at or above the secondary bit score threshold, which
 is 10 bits by default but changeable to `<x>` with the `--minssc <x>`
 option.  ***Only causes failure if the `--covfail` option is enabled***.
 
+Example message in `ribotyper` output:
+`LowCoverage(0.835<0.860)`: total coverage is 0.835, below threshold of 0.86
+
 11. ***LowScoreDifference***: the score
 difference between the top two domains is below the 'low'
 threshold. By default this is the score per position difference, and
@@ -358,15 +361,36 @@ secondary bit score threshold of 10 bits (changeable to `<x>` bits
 with `--minssc <x>`) to the best matching model. ***Only causes failure if the 
 `--multfail` option is enabled***.
 
-14. ***TooShort***: the sequence is too short, less than `<n1>`
+14. ***EvalueScoreDiscrepancy***: hits were sorted by E-value due to the `--evalues`
+option and the second best hit had higher bit score than the best hit and the bit
+score difference between those two hits exceeded threshold. By default, that threshold
+is 0.001 bits but this is changeable to <x> bits with the `--esdmaxsc <x>` option.
+***Only reported if the `--evalues` option is enabled. Only causes failure if the 
+`--esdfail` option is enabled***.
+
+15. ***TooShort***: the sequence is too short, less than `<n1>`
 nucleotides in length, where `<n1>` is defined with the `--shortfail
 <n1>` option. ***Always causes failure when reported but only reported if the 
 `--shortfail <n1>` option is enabled***.
 
-15. ***TooLong***: the sequence is too long, more than `<n2>` nucleotides in
+16. ***TooLong***: the sequence is too long, more than `<n2>` nucleotides in
 length, where `<n2>` is defined with the `longfail <n2>` option. ***Always
 causes failure when reported but only reported if the `--longfail <n2>`
 option is enabled***. 
+
+### <a name="messages"></a> Explanation of detailed messages reported with unexpected features
+| .......unexpected feature example error message....... | explanation |
+| LowCoverage(0.835<0.860)                               | top hit is on minus strand | 
+| MinusStrand                                            | top hit is on minus strand | 
+| UnacceptableModel(SSU
+|--------|-------------| 
+| `--nomisc`        | in feature table, never change feature to `misc_feature` | 
+| `--notrim`        | <a name="options-alert-ambg"></a> in feature table, do not trim coordinate start and stops due to Ns at beginning or end of features for all feature types | 
+| `--noftrtrim <s>` | in feature table, do not trim coordinate start and stops due to Ns at beginning or end of features for feature types listed in the comma-delimited string `<s>` (no spaces) | 
+| `--noprotid`      | in feature table, don't add protein_id for CDS and mat_peptide features |
+| `--forceprotid`   | in feature table, force protein_id value to be sequence name, then idx |
+
+
 
 ## <a name="library"></a> The `ribotyper` default model library
 
