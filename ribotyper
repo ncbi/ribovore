@@ -2414,7 +2414,7 @@ sub output_one_target {
       $pass_fail = "FAIL";
       $unusual_features .= "*";
     }
-    $unusual_features .= sprintf("EvalueScoreDiscrepancyAboveThreshold:(second_hit_by_evalue_bit_score_exceeds_top_hit_by_evalue_bit_score_by_%.3f>%.3_bits", (-1 * $score_total_diff), opt_Get("--esdmaxsc", $opt_HHR));
+    $unusual_features .= sprintf("EvalueScoreDiscrepancy:(second_hit_by_evalue_bit_score_exceeds_top_hit_by_evalue_bit_score_by_%.3f>%.3_bits", (-1 * $score_total_diff), opt_Get("--esdmaxsc", $opt_HHR));
   }
   # optional unusual features (if any)
   if((opt_IsUsed("--shortfail", $opt_HHR)) && ($seqlen < opt_Get("--shortfail", $opt_HHR))) { 
@@ -3042,7 +3042,7 @@ sub determine_unexpected_feature_explanation {
   elsif($ufeature =~ m/MultipleHits/) { 
     push(@{$exp_AR}, "There is more than one hit to the best scoring model on the same strand.");
   }
-  elsif($ufeature =~ m/EvalueScoreDiscrepancyAboveThreshold/) { 
+  elsif($ufeature =~ m/EvalueScoreDiscrepancy/) { 
     push(@{$exp_AR}, "Hits were sorted by E-values (--evalues), and the second best hit by E-value");
     push(@{$exp_AR}, sprintf("had a bit score more than %.3f bits greater than the bit score of", opt_Get("--esdmaxsc", $opt_HHR)));
     push(@{$exp_AR}, "the best hit by E-value");
@@ -4179,7 +4179,7 @@ sub initialize_ufeature_stats {
   if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*LowScoreDifference"); }
   if(opt_Get("--difffail",  $opt_HHR)) { push(@{$ufeature_AR}, "*VeryLowScoreDifference"); }
   if(opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "*MultipleHits"); }
-  if(opt_Get("--esdfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*EvalueScoreDiscrepancyAboveThreshold"); }
+  if(opt_Get("--esdfail",   $opt_HHR)) { push(@{$ufeature_AR}, "*EvalueScoreDiscrepancy"); }
 
   # those that are only reported if a specific option is enabled
   if(opt_IsUsed("--shortfail", $opt_HHR)) { push(@{$ufeature_AR}, "*TooShort"); }
@@ -4195,8 +4195,8 @@ sub initialize_ufeature_stats {
   if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "MultipleHits"); }
 
   # those that can only be reported if special other options are enabled
-  if(opt_Get("--evalues", $opt_HHR)) { 
-    if(! opt_Get("--esdfail",  $opt_HHR)) { push(@{$ufeature_AR}, "EvalueScoreDiscrepancyAboveThreshold"); }
+  if(opt_Get("--evalues", $opt_HHR) || ) { 
+    if(! opt_Get("--esdfail",  $opt_HHR)) { push(@{$ufeature_AR}, "EvalueScoreDiscrepancy"); }
   }
 
   foreach my $ufeature (@{$ufeature_AR}) { 
