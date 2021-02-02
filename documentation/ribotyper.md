@@ -424,20 +424,6 @@ option is enabled***.
     Example message in `.out` output files:           
     `TooShort:(4217>3000)`; indicating sequence length is `4217` which is greater than the maximum length of `3000` nt set by the `--longfail 3000` option
 
-### <a name="messages"></a> Explanation of detailed messages reported with unexpected features
-| .......unexpected feature example error message....... | explanation |
-| LowCoverage(0.835<0.860)                               | top hit is on minus strand | 
-| MinusStrand                                            | top hit is on minus strand | 
-| UnacceptableModel(SSU
-|--------|-------------| 
-| `--nomisc`        | in feature table, never change feature to `misc_feature` | 
-| `--notrim`        | <a name="options-alert-ambg"></a> in feature table, do not trim coordinate start and stops due to Ns at beginning or end of features for all feature types | 
-| `--noftrtrim <s>` | in feature table, do not trim coordinate start and stops due to Ns at beginning or end of features for feature types listed in the comma-delimited string `<s>` (no spaces) | 
-| `--noprotid`      | in feature table, don't add protein_id for CDS and mat_peptide features |
-| `--forceprotid`   | in feature table, force protein_id value to be sequence name, then idx |
-
-
-
 ## <a name="library"></a> The `ribotyper` default model library
 
 By default, `ribotyper` will use its default model library (installed in
