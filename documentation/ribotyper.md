@@ -413,7 +413,7 @@ with `--minssc <x>`) to the best matching model. ***Only causes failure if the
 
     Three classes of gaps in MultipleHits output strings:
     - 'sequence insertion': the model gap length is less than or equal to the maximum size of a small model gap, regardless of size of gap in sequence coordinates; abbreviated as `SI` in the output, see below for an example
-    - 'model deletion':     the model gap length is more than the maximum size of a small model gap and the sequence gap length is less than the maximum size of a small sequence gap; abbreviated as `MD` in the output, see below for an example
+    - 'model deletion':     the model gap length is more than the maximum size of a small model gap and the sequence gap length is less than or equal to the maximum size of a small sequence gap; abbreviated as `MD` in the output, see below for an example
     - 'nonhomologous region': if the model gap length is more than the maximum size of a small model gap and the sequence gap length is more than the maximum size of a small sequence gap; abbreviated as `NH` in the output, see below for an example
 
     Example messages in `.out` output files:
