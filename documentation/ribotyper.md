@@ -333,8 +333,8 @@ hits with scores at or above the secondary bit score threshold, which
 is 10 bits by default but changeable to `<x>` with the `--minssc <x>`
 option.  ***Only causes failure if the `--covfail` option is enabled***.
 
-Example message in `ribotyper` output:
-`LowCoverage(0.835<0.860)`: total coverage is 0.835, below threshold of 0.86
+    Example message in `ribotyper` output:
+    `LowCoverage(0.835<0.860)`: total coverage is 0.835, below threshold of 0.86
 
 11. ***LowScoreDifference***: the score
 difference between the top two domains is below the 'low'
