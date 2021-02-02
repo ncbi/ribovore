@@ -271,12 +271,19 @@ which should find all legitimate SSU/LSU sequences, but this minimum
 primary score threshold is changeable to `<x>` with the `--minpsc
 <x>`. ***Always causes failure***.
 
+    Example message in `.out` output files:
+    `NoHits`; indicating no hits were found
+
 2. ***UnacceptableModel***: Best hit is to a model that is
 'unacceptable'. By default, all models are acceptable, but the user
 can specify only certain top-scoring models are 'acceptable' using the
 `--inaccept <s>` option. If `--inaccept` is not used, this unexpected
 feature will never be reported. An example of using `--inaccept` is
 given [below](#acceptable). ***Always causes failure***.
+
+    Example message in `.out` output files:
+    `UnacceptableModel:(SSU_rRNA_eukarya)`; indicating top hit is to the `SSU_rRNA_eukarya` model which was not listed as `acceptable` or `questionable` in file `<f>` from command-line option `--inaccept <f>` (see example [below](#acceptable))
+
 
 3. ***MultipleFamilies***: hit to two or more 'families' (e.g. SSU or LSU)
 exists for the same sequence. This would happen, for example, if a
@@ -285,19 +292,34 @@ LSU sequence on it. Only hits with scores at or above primary bit
 score threshold of 20 bits (changeable to `<x>` with `--minpsc <x>`)
 are considered. ***Always causes failure***.
 
+    Example message in `.out` output files:
+    `MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:55.7/1443-2303:+)`; indicating that hits to models in families `SSU` and `LSU` (see `family` column in `modelinfo` [file](#library) exist for this sequence and *lower-scoring* hit is to family `LSU` with model `LSU_rRNA_eukarya` with a score of `55.7` bits from positions `1443-2303` on the `+` strand
+
 4. ***BothStrands***: At least 1 hit above minimum primary bit score
 threshold of 20 bits to the best model exists on both strands. ***Always
 causes failure***.
+
+    Example messages in `.out` output files:
+
+    `BothStrands:(+:1_hit(s)[3359_nt],-:1_hit(s)[33_nt])`; indicating that `1` hit exists on the `+` strand with total length of `3359` nucleotides and `1` hit exists on the `-` strand with total length of `33` nucleotides
+
+    `BothStrands:(+:3_hit(s),-:2_hit(s))`; indicating that `3` hits exists on the `+` strand of indeterminate length and `2` hits exists on the `-` strand of indeterminate length
 
 5. ***DuplicateRegion***: At least two hits overlap in model coordinates
 by `P` positions or more. The threshold `P` is 10 by default but can be
 changed to `<n>` with the `--maxoverlap <n>` option. ***Always causes 
 failure***.
 
+    Example messages in `.out` output files:
+    `DuplicateRegion:(220-253)_hits_2_and_3(M:220.909,11.253,S:259.970,3.207)`; indicating that hits `2` and `3` to the best model overlap in model coordinates `220` to `253` and that model coordinates of hit `2` are `220` to `909`, and model coordinates of hit `3` are `11` to `253` and that sequence coordinates of hit `2` are `259` to `970`, and sequence coordinates of hit `3` are `3` to `207`
+
 6. ***InconsistentHits***: The hits to the best model are
 inconsistent in that they are not in the same order in the sequence
 and the model, possibly indicating a misassembly. ***Always causes
 failure***.
+
+    Example messages in `.out` output files:
+    `InconsistentHits:seq_order(1,2[56.1322,1385.1407]),mdl_order(2,1[103.1356,7.29])`; indicating that hit `1` comes before hit `2` in the sequence (hit `1` sequence positions are `56` to `1322` and hit `2` sequence positinos are `1385` to `1407`) but hit `1` comes after hit `2` in the model (hit `1` model positions are `103` to `1356` and hit `2` model positions are `7` to `29`)
 
 7. ***QuestionableModel***: Best hit is to a model that is
 'questionable'. By default, no models are questionable, but the user
@@ -307,8 +329,14 @@ feature will never be reported. An example of using `--inaccept` is
 given [below](#acceptable). ***Only causes failure if the `--questfail`
 options is enabled***.
 
+    Example message in `.out` output files:
+    `QuestionableModel:(SSU_rRNA_chloroplast)`; indicating top hit is to the `SSU_rRNA_chloroplast` model which was listed as `questionable` in file `<f>` from command-line option `--inaccept <f>` (see example [below](#acceptable))
+
 8. ***MinusStrand***: The best hit is on the minus strand. ***Only causes
 failure if the `--minusfail` option is enabled***.
+
+    Example message in `.out` output files:
+    `MinusStrand`
 
 9. ***LowScore***: the bits per nucleotide statistic (total bit score
 divided by length of total sequence (not just length of hit)) is below
@@ -318,6 +346,9 @@ bit score is calculated as the sum of all hits with scores at or above
 the secondary bit score threshold, which is 10 bits by default but
 changeable to `<x>` with the `--minssc <x>` option. ***Only causes
 failure if the `--scfail` option is enabled***.
+
+    Example message in `.out` output files:
+    `LowScore:(0.43<0.50)`; indicating bits per nucleotide is 0.43, below threshold of 0.50
 
 10. ***LowCoverage***: the total coverage of all hits to the best model
 (summed length of all hits divided by total sequence length) is below
@@ -333,8 +364,8 @@ hits with scores at or above the secondary bit score threshold, which
 is 10 bits by default but changeable to `<x>` with the `--minssc <x>`
 option.  ***Only causes failure if the `--covfail` option is enabled***.
 
-    Example message in `ribotyper` output:
-    `LowCoverage(0.835<0.860)`: total coverage is 0.835, below threshold of 0.86
+    Example message in `.out` output files:
+    `LowCoverage(0.835<0.860)`; indicating total coverage is 0.835, below threshold of 0.86
 
 11. ***LowScoreDifference***: the score
 difference between the top two domains is below the 'low'
@@ -346,6 +377,9 @@ option. If `--absdiff` is used, the threshold is 100 bits, but
 changeable to <x> with the `--lowadiff` <x> option. ***Only causes failure
 if the `--difffail` option is enabled***.
 
+    Example message in `.out` output files:
+    `LowScoreDifference:(0.052<0.10_bits_per_posn)`; indicating that the score per position difference between the top two models is `0.052`, below the threshold of `0.10`.
+
 12. ***VeryLowScoreDifference***: the score
 difference between the top two domains is below the 'very low'
 threshold. By default this is the score per position difference, and
@@ -355,6 +389,9 @@ difference can be changed from bits per position to total bits with
 the `--absdiff` option. If `--absdiff` is used, the threshold is 40 bits,
 but changeable to <x> with the `--vlowadiff <x>` option. ***Only causes
 failure if the `--difffail` option is enabled***.
+
+    Example message in `.out` output files:
+    `VeryLowScoreDifference:(0.009<0.040_bits_per_posn)`; indicating that the score per position difference between the top two models is `0.009`, below the threshold of `0.040`.
 
 13. ***MultipleHits***: there are more than one hits with scores above the
 secondary bit score threshold of 10 bits (changeable to `<x>` bits
@@ -368,15 +405,24 @@ is 0.001 bits but this is changeable to <x> bits with the `--esdmaxsc <x>` optio
 ***Only reported if the `--evalues` option is enabled. Only causes failure if the 
 `--esdfail` option is enabled***.
 
+    Example message in `.out` output files:           
+    `EvalueScoreDiscrepancy:(second_hit_by_evalue_bit_score_exceeds_top_hit_by_evalue_bit_score_by_4.457>0.001_bits`; indicating that the second best hit by E-value has a higher bit score (`4.457` bits higher) than the best hit by E-value
+    
 15. ***TooShort***: the sequence is too short, less than `<n1>`
 nucleotides in length, where `<n1>` is defined with the `--shortfail
 <n1>` option. ***Always causes failure when reported but only reported if the 
 `--shortfail <n1>` option is enabled***.
 
+    Example message in `.out` output files:           
+    `TooShort:(127<200)`; indicating sequence length is `127` which is less than the minimum length of `200` nt set by the `--shortfail 200` option
+    
 16. ***TooLong***: the sequence is too long, more than `<n2>` nucleotides in
 length, where `<n2>` is defined with the `longfail <n2>` option. ***Always
 causes failure when reported but only reported if the `--longfail <n2>`
 option is enabled***. 
+
+    Example message in `.out` output files:           
+    `TooShort:(4217>3000)`; indicating sequence length is `4217` which is greater than the maximum length of `3000` nt set by the `--longfail 3000` option
 
 ### <a name="messages"></a> Explanation of detailed messages reported with unexpected features
 | .......unexpected feature example error message....... | explanation |
