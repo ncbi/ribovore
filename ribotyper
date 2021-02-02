@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+,#!/usr/bin/env perl
 #
 use strict;
 use warnings;
@@ -4787,9 +4787,9 @@ sub decompose_region_str {
 #  $FH_HR:         ref to hash of file handles, needed in case we call ofile_FAIL
 #
 # Returns:  String describing the gap:
-#           "Insert[<s>]              if $mdl_gap_len <= $mdl_gap_max
-#           "ModelDeletion[<s>]       if $mdl_gap_len <= $mdl_gap_max && $seq_gap_len <= $seq_gap_max
-#           "NonHomologousRegion[<s>] if $mdl_gap_len <= $mdl_gap_max && $seq_gap_len >  $seq_gap_max
+#           "SI[<s>] if $mdl_gap_len <= $mdl_gap_max (Sequence Insert)
+#           "MD[<s>] if $mdl_gap_len  > $mdl_gap_max && $seq_gap_len <= $seq_gap_max (Model Deletion)
+#           "NH[<s>] if $mdl_gap_len  > $mdl_gap_max && $seq_gap_len >  $seq_gap_max (NonHomologous region)
 #
 #           where:
 #           $mdl_gap_len = $mdl_gap_stop - $mdl_gap_start + 1;
