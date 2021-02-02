@@ -6,8 +6,8 @@
 # Eric Nawrocki
 # EPN, Fri May 12 09:48:21 2017
 # 
-# Perl module used by riboaligner.pl, ribodbmaker.pl, ribosensor.pl,
-# ribotest.pl and ribotyper.pl, which contains subroutines called by
+# Perl module used by riboaligner, ribodbmaker, ribosensor,
+# ribotest and ribotyper, which contains subroutines called by
 # those scripts.
 
 use strict;
