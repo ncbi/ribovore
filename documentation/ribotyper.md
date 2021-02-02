@@ -409,6 +409,21 @@ secondary bit score threshold of 10 bits (changeable to `<x>` bits
 with `--minssc <x>`) to the best matching model. ***Only causes failure if the 
 `--multfail` option is enabled***.
 
+    For the MultipleHits unexpected feature, the output includes information on the gap between every pair of adjacent hits including a classification of each gap into one of three classes based on the size of the gap in both model coordinates and sequence coordinates as described below. These classifications depend on two thresholds: the maximum size of a 'small' gap in model coordinates, set as `10` by default, but settable to `<n>` with the `--mgap <n>` option, and the maximum size of a 'small' gap in sequence coordinates, set as `10` by default, but settable to `<n>` with the `--sgap <n>` option.
+
+    Three classes of gaps in MultipleHits output strings:
+    - 'sequence insertion': the model gap length is less than or equal to the maximum size of a small model gap, regardless of size of gap in sequence coordinates; abbreviated as `SI` in the output, see below for an example
+    - 'model deletion':     the model gap length is more than the maximum size of a small model gap and the sequence gap length is less than the maximum size of a small sequence gap; abbreviated as `MD` in the output, see below for an example
+    - 'nonhomologous region': if the model gap length is more than the maximum size of a small model gap and the sequence gap length is more than the maximum size of a small sequence gap; abbreviated as `NH` in the output, see below for an example
+
+    Example messages in `.out` output files:
+
+    `MultipleHits:(2:SI[M:10(1161..1170),S:10(1121..1130)])`; indicating that there are `2` hits and the gap between hits `1` and `2` has been classified as a *sequence insertion* (`SI`); the gap between hit 1 and 2 is `10` positions in the model (`M`) from model positions `1161` to `1170`, and `10` positions in the sequence (`S`) from sequence positions `1121` to `1130`. 
+
+    `MultipleHits:(2:MD[M:33(1133..1165),S:0(1061..1062)])`; indicating that there are `2` hits and the gap between hits `1` and `2` has been classified as a *model deletion* (`MD`); the gap between hit 1 and 2 is `33` positions in the model (`M`) from model positions `1133` to `1165`, and `0` positions in the sequence (`S`) and occurs between sequence positions `1061` and `1062`. 
+
+    `MultipleHits:(2:NH[M:24(1152..1175),S:24(1112..1135)])`; indicating that there are `2` hits and the gap between hits `1` and `2` has been classified as a *nonhomologous region* (`NH`); the gap between hit 1 and 2 is `24` positions in the model (`M`) from model positions `1152` to `1175`, and `24` positions in the sequence (`S`) from sequence positions `1112` and `1135`. 
+
 14. ***EvalueScoreDiscrepancy***: hits were sorted by E-value due to the `--evalues`
 option and the second best hit had higher bit score than the best hit and the bit
 score difference between those two hits exceeded threshold. By default, that threshold
