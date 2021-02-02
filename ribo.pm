@@ -263,7 +263,7 @@ sub ribo_ParseSeqstatCompTblFile {
 # Subroutine : ribo_ParseRAModelinfoFile()
 # Incept:      EPN, Fri Oct 20 14:17:53 2017
 #
-# Purpose:     Parse a riboaligner.pl modelinfo file, and 
+# Purpose:     Parse a riboaligner modelinfo file, and 
 #              fill information in @{$family_order_AR}, %{$family_modelname_HR}.
 # 
 #              
@@ -889,7 +889,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 #              sequence file. 
 #              The following must all be valid options in opt_HHR:
 #              -p, --nkb, -s, --wait, --errcheck, --keep, -v
-#              See ribotyper.pl for examples of these options.
+#              See ribotyper for examples of these options.
 #
 # Arguments: 
 #  $execs_HR:        ref to hash with paths to executables
@@ -1331,7 +1331,7 @@ sub ribo_SumSeqlenGivenArray {
     if(! exists $seqlen_HR->{$seqname}) { 
       ofile_FAIL("ERROR in $sub_name, $seqname does not exist in the seqlen_H hash", 1, $FH_HR);
     }
-    $tot_seqlen += abs($seqlen_HR->{$seqname}); # ribotyper.pl multiplies lengths by -1 after round 1
+    $tot_seqlen += abs($seqlen_HR->{$seqname}); # ribotyper multiplies lengths by -1 after round 1
   }
 
   return $tot_seqlen;
