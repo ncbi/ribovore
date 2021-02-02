@@ -313,7 +313,7 @@ by `P` positions or more. The threshold `P` is 10 by default but can be
 changed to `<n>` with the `--maxoverlap <n>` option. ***Always causes 
 failure***.
 
-    Example messages in `.out` output files:
+    Example message in `.out` output files:
 
     `DuplicateRegion:(220-253)_hits_2_and_3(M:220.909,11.253,S:259.970,3.207)`; indicating that hits `2` and `3` to the best model overlap in model coordinates `220` to `253` and that model coordinates of hit `2` are `220` to `909`, and model coordinates of hit `3` are `11` to `253` and that sequence coordinates of hit `2` are `259` to `970`, and sequence coordinates of hit `3` are `3` to `207`
 
@@ -322,7 +322,7 @@ inconsistent in that they are not in the same order in the sequence
 and the model, possibly indicating a misassembly. ***Always causes
 failure***.
 
-    Example messages in `.out` output files:
+    Example message in `.out` output files:
 
     `InconsistentHits:seq_order(1,2[56.1322,1385.1407]),mdl_order(2,1[103.1356,7.29])`; indicating that hit `1` comes before hit `2` in the sequence (hit `1` sequence positions are `56` to `1322` and hit `2` sequence positinos are `1385` to `1407`) but hit `1` comes after hit `2` in the model (hit `1` model positions are `103` to `1356` and hit `2` model positions are `7` to `29`)
 
