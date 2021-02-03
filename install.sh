@@ -92,15 +92,14 @@ curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_senso
 
 # sequip
 echo "Downloading sequip ... "
-#curl -k -L -o sequip-$RVERSION.zip https://github.com/nawrockie/sequip/archive/$RVERSION.zip; unzip sequip-$RVERSION.zip; mv sequip-$RVERSION sequip; rm sequip-$RVERSION.zip
+curl -k -L -o sequip-$RVERSION.zip https://github.com/nawrockie/sequip/archive/$RVERSION.zip; unzip sequip-$RVERSION.zip; mv sequip-$RVERSION sequip; rm sequip-$RVERSION.zip
 # to checkout a specific branch, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-git clone https://github.com/nawrockie/sequip.git sequip
-cd sequip
+#git clone https://github.com/nawrockie/sequip.git sequip
+#cd sequip
 #git checkout develop
-git checkout release-0.08
-rm -rf .git
-cd ..
+#rm -rf .git
+#cd ..
 # ----------------------------------------------------------------------------
 
 # download two infernal binary distributions
