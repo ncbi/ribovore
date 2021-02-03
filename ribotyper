@@ -4195,7 +4195,7 @@ sub initialize_ufeature_stats {
   if(! opt_Get("--multfail",  $opt_HHR)) { push(@{$ufeature_AR}, "MultipleHits"); }
 
   # those that can only be reported if special other options are enabled
-  if(opt_Get("--evalues", $opt_HHR) || ) { 
+  if(opt_Get("--evalues", $opt_HHR)) { 
     if(! opt_Get("--esdfail",  $opt_HHR)) { push(@{$ufeature_AR}, "EvalueScoreDiscrepancy"); }
   }
 
