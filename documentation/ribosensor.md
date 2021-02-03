@@ -55,7 +55,7 @@ overwritten.  The command adding `-f` is:
 You should see something like the following output:
 ```
 # ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Tue Dec 29 17:00:04 2020
 # $RIBOBLASTDIR:     /usr/local/src/ribovore-install/ncbi-blast/bin
@@ -424,7 +424,7 @@ calling it at the command line with the -h option:
 ```
 > ribosensor -h
 # ribosensor :: analyze ribosomal RNA sequences with profile HMMs and BLASTN
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Tue Dec 29 14:56:08 2020
 #

@@ -190,7 +190,7 @@ Below is an example of the expected output for
 
 ```
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (Jan 2021)
+# ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Wed Dec 30 16:58:49 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -225,7 +225,7 @@ Below is an example of the expected output for
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (Jan 2021)
+# ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:42:15 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -266,7 +266,7 @@ Success: all tests passed
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (Jan 2021)
+# ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:43:48 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -301,7 +301,7 @@ Success: all tests passed
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (Jan 2021)
+# ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:44:40 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
@@ -331,7 +331,7 @@ Success: all tests passed
 [ok]
 Success: all tests passed
 # ribotest :: test ribovore scripts [TEST SCRIPT]
-# ribovore 1.0 (Jan 2021)
+# ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:             Thu Dec 17 16:46:46 2020
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore

@@ -361,7 +361,7 @@ There are many options, and they are split by category. Categories include:
 ```
 > ribodbmaker -h
 # ribodbmaker :: create representative database of ribosomal RNA sequences
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Wed Dec 30 10:52:23 2020
 #

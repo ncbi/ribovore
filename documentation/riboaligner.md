@@ -129,7 +129,7 @@ overwritten.  The command adding `-f` is:
 You should see something like the following output:
 ```
 # riboaligner :: classify lengths of ribosomal RNA sequences
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Wed Dec 23 10:30:05 2020
 # $RIBOEASELDIR:     /usr/local/src/ribovore-install/infernal/binaries
@@ -323,7 +323,7 @@ calling it at the command line with the -h option:
 ```
 > riboaligner -h
 # riboaligner :: classify lengths of ribosomal RNA sequences
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Wed Dec 23 13:30:57 2020
 #

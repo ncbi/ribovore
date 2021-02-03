@@ -74,7 +74,7 @@ overwritten.  The command adding `-f` is:
 You should see something like the following output:
 ```
 # ribotyper :: detect and classify ribosomal RNA sequences
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:              Tue Dec 22 16:04:25 2020
 # $RIBOEASELDIR:     /usr/local/src/ribovore-install/infernal/binaries
@@ -605,7 +605,7 @@ calling it at the command line with the -h option:
 ```
 > ribotyper -h
 # ribotyper :: detect and classify ribosomal RNA sequences
-# Ribovore 1.0 (Jan 2021)
+# Ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # date:    Tue Dec 22 16:56:29 2020
 #
