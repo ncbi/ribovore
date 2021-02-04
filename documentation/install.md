@@ -192,7 +192,7 @@ Below is an example of the expected output for
 # ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:             Wed Dec 30 16:58:49 2020
+# date:             Wed Feb  3 18:02:23 2021
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
 # test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribotyper.testin
@@ -200,11 +200,11 @@ Below is an example of the expected output for
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [      ribotyper-1-16]          ... done. [    6.3 seconds]
+# Running command  1 [      ribotyper-1-16]          ... done. [    8.2 seconds]
 #	checking test-16/test-16.ribotyper.short.out                 ... pass
 #	checking test-16/test-16.ribotyper.long.out                  ... pass
 #	removing directory test-16                                   ... done
-# Running command  2 [     ribotyper-2-100]          ... done. [   21.2 seconds]
+# Running command  2 [     ribotyper-2-100]          ... done. [   22.6 seconds]
 #	checking r100/r100.ribotyper.short.out                       ... pass
 #	checking r100/r100.ribotyper.long.out                        ... pass
 #	removing directory r100                                      ... done
@@ -219,15 +219,15 @@ Below is an example of the expected output for
 #
 # All output files created in directory ./rt-test/
 #
-# Elapsed time:  00:00:27.67
+# Elapsed time:  00:00:30.99
 #                hh:mm:ss
 # 
 [ok]
-Success: all tests passed
+Success: all tests passed [do-ribotyper-tests.sh]
 # ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:             Thu Dec 17 16:42:15 2020
+# date:             Wed Feb  3 18:02:54 2021
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
 # test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/riboaligner.testin
@@ -235,14 +235,14 @@ Success: all tests passed
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [    riboaligner-1-16]          ... done. [   11.0 seconds]
+# Running command  1 [    riboaligner-1-16]          ... done. [   13.9 seconds]
 #	checking test-16-2/test-16-2.riboaligner.tbl                 ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.stk ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.list ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.ifile ... pass
 #	checking test-16-2/test-16-2.riboaligner.SSU.Bacteria.partial.elfile ... pass
 #	removing directory test-16-2                                 ... done
-# Running command  2 [   riboaligner-2-100]          ... done. [   81.3 seconds]
+# Running command  2 [   riboaligner-2-100]          ... done. [   85.7 seconds]
 #	checking r100-2/r100-2.riboaligner.tbl                       ... pass
 #	checking r100-2/r100-2.riboaligner.SSU.Eukarya.partial.list  ... pass
 #	checking r100-2/r100-2.riboaligner.SSU.Eukarya.partial.ifile ... pass
@@ -260,15 +260,15 @@ Success: all tests passed
 #
 # All output files created in directory ./ra-test/
 #
-# Elapsed time:  00:01:32.71
+# Elapsed time:  00:01:40.43
 #                hh:mm:ss
 # 
 [ok]
-Success: all tests passed
+Success: all tests passed [do-riboaligner-tests.sh]
 # ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:             Thu Dec 17 16:43:48 2020
+# date:             Wed Feb  3 18:04:36 2021
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
 # test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribosensor.testin
@@ -276,13 +276,13 @@ Success: all tests passed
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [     ribosensor-1-16]          ... done. [    9.9 seconds]
+# Running command  1 [     ribosensor-1-16]          ... done. [   14.5 seconds]
 #	checking test-rs-16/test-rs-16.ribosensor.out                ... pass
-#	checking test-rs-16/test-rs-16.ribosensor.gpipe              ... pass
+#	checking test-rs-16/test-rs-16.ribosensor.gbank              ... pass
 #	removing directory test-rs-16                                ... done
-# Running command  2 [    ribosensor-2-100]          ... done. [   40.9 seconds]
+# Running command  2 [    ribosensor-2-100]          ... done. [   42.5 seconds]
 #	checking rs-r100/rs-r100.ribosensor.out                      ... pass
-#	checking rs-r100/rs-r100.ribosensor.gpipe                    ... pass
+#	checking rs-r100/rs-r100.ribosensor.gbank                    ... pass
 #	removing directory rs-r100                                   ... done
 #
 #
@@ -295,15 +295,15 @@ Success: all tests passed
 #
 # All output files created in directory ./rs-test/
 #
-# Elapsed time:  00:00:50.95
+# Elapsed time:  00:00:57.31
 #                hh:mm:ss
 # 
 [ok]
-Success: all tests passed
+Success: all tests passed [do-ribosensor-tests.sh]
 # ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:             Thu Dec 17 16:44:40 2020
+# date:             Wed Feb  3 18:05:34 2021
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
 # test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/ribodbmaker-vec.testin
@@ -311,7 +311,7 @@ Success: all tests passed
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [ribodbmaker-vec-1-100]         ... done. [  125.9 seconds]
+# Running command  1 [ribodbmaker-vec-1-100]         ... done. [  145.4 seconds]
 #	checking db100vec/db100vec.ribodbmaker.rdb.tbl               ... pass
 #	removing directory db100vec                                  ... done
 #
@@ -325,15 +325,15 @@ Success: all tests passed
 #
 # All output files created in directory ./rdb-test/
 #
-# Elapsed time:  00:02:05.99
+# Elapsed time:  00:02:25.70
 #                hh:mm:ss
 # 
 [ok]
-Success: all tests passed
+Success: all tests passed [do-ribodbmaker-tests.sh]
 # ribotest :: test ribovore scripts [TEST SCRIPT]
 # ribovore 1.0 (Feb 2021)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:             Thu Dec 17 16:46:46 2020
+# date:             Wed Feb  3 18:08:00 2021
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 #
 # test file:                                                         /usr/local/src/ribovore-install/ribovore/testfiles/github-issues/iss1/iss1.testin
@@ -341,7 +341,7 @@ Success: all tests passed
 # forcing directory overwrite:                                       yes [-f]
 # if output files listed in testin file already exist, remove them:  yes [--rmout]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Running command  1 [         iss1-ribodb]          ... done. [    6.7 seconds]
+# Running command  1 [         iss1-ribodb]          ... done. [   11.9 seconds]
 #	checking db1/db1.ribodbmaker.rdb.tbl                         ... pass
 #	removing directory db1                                       ... done
 #
@@ -355,11 +355,13 @@ Success: all tests passed
 #
 # All output files created in directory ./iss1-out/
 #
-# Elapsed time:  00:00:06.74
+# Elapsed time:  00:00:12.03
 #                hh:mm:ss
 # 
 [ok]
-Success: all tests passed
+Success: all tests passed [do-iss1-tests.sh]
+Success: all tests passed [do-all-issue-tests.sh]
+Success: all tests passed [do-all-tests.sh]
 ```
 The most important line is the final line:
 
