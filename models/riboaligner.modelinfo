@@ -1,0 +1,26 @@
+# each line has information on 1 family and has 4 or more tokens:
+# token 1: Name of ribotyper classification <f>.<d> for family <f> (e.g. 'SSU') and domain <d> (e.g. Bacteria) in
+#          ribotyper output short file for passing sequences that should be aligned with this model 
+# token 2: CM file name for this family
+# token 3: integer, consensus length for the CM for this family
+o# tokens 4 to N: model name(s) from the ribotyper modelinfo file (column 1 in that file)
+#                corresponding to this ribotyper classification, these models should
+#                be all (or a subset) of the models from the ribotyper modelinfo file
+#                that have <f>.<d> (from token 1) for family and domain
+#
+SSU.Bacteria          ra.SSU_rRNA_bacteria.edf.cm                   1533 SSU_rRNA_bacteria SSU_rRNA_cyanobacteria
+SSU.Archaea           ra.SSU_rRNA_archaea.edf.cm                    1477 SSU_rRNA_archaea
+SSU.Eukarya           ra.SSU_rRNA_eukarya.edf.cm                    1851 SSU_rRNA_eukarya
+LSU.Archaea           ra.LSU_rRNA_archaea.edf.cm                    2990 LSU_rRNA_archaea
+LSU.Bacteria          ra.LSU_rRNA_bacteria.edf.cm                   2925 LSU_rRNA_bacteria
+SSU.Euk-Microsporidia ra.SSU_rRNA_microsporidia.edf.cm              1312 SSU_rRNA_microsporidia
+LSU.Eukarya           ra.LSU_rRNA_eukarya.edf.cm                    3401 LSU_rRNA_eukarya 
+SSU.Chloroplast       ra.SSU_rRNA_chloroplast.edf.cm                1488 SSU_rRNA_chloroplast SSU_rRNA_chloroplast_pilostyles
+SSU.Mito-Metazoa      ra.SSU_rRNA_mitochondria_metazoa.edf.cm        955 SSU_rRNA_mitochondria_metazoa
+SSU.Euk-Apicoplast    ra.SSU_rRNA_apicoplast.edf.cm                 1463 SSU_rRNA_apicoplast
+SSU.Mito-Amoeba       ra.SSU_rRNA_mitochondria_amoeba.edf.cm        1956 SSU_rRNA_mitochondria_amoeba
+SSU.Mito-Chlorophyta  ra.SSU_rRNA_mitochondria_chlorophyta.edf.cm   1376 SSU_rRNA_mitochondria_chlorophyta
+SSU.Mito-Fungi        ra.SSU_rRNA_mitochondria_fungi.edf.cm         1589 SSU_rRNA_mitochondria_fungi
+SSU.Mito-Kinetoplast  ra.SSU_rRNA_mitochondria_kinetoplast.edf.cm    624 SSU_rRNA_mitochondria_kinetoplast
+SSU.Mito-Plant        ra.SSU_rRNA_mitochondria_plant.edf.cm         1951 SSU_rRNA_mitochondria_plant
+SSU.Mito-Protist      ra.SSU_rRNA_mitochondria_protist.edf.cm       1669 SSU_rRNA_mitochondria_protist

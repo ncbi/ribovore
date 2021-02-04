@@ -64,7 +64,7 @@ my $i;
 # get full lengths of all sequences (actually only used if --after)
 my $seqstat_file = $aln_file . ".a.seqstat.0";
 my @full_len_A = ();
-runCommand(sprintf($eslseqstat_cmd . " -a --informat stockholm $alphabet_option $aln_file | grep ^\= > $seqstat_file", $pos-1), 0);
+runCommand(sprintf($eslseqstat_cmd . " -a --informat stockholm $alphabet_option $aln_file | grep ^\= > $seqstat_file"), 0);
 parse_seqstat_a_file($seqstat_file, \@seq_A, \@full_len_A);
 unlink $seqstat_file;
 
@@ -76,7 +76,7 @@ if($pos == 1) { # special case
 }
 else { 
   $seqstat_file = $aln_file . ".a.seqstat.1";
-  runCommand(sprintf($eslalimask_cmd . " -t $rf_option $alphabet_option $aln_file 1..%d | grep -v ^#\=GC | " . $eslseqstat_cmd . " -a --informat stockholm $alphabet_option - | grep ^\= > $seqstat_file", $pos-1), 0);
+  runCommand(sprintf($eslalimask_cmd . " -t $rf_option $alphabet_option $aln_file 1.." . ($pos-1) . " | grep -v ^#\=GC | " . $eslseqstat_cmd . " -a --informat stockholm $alphabet_option - | grep ^\= > $seqstat_file"), 0);
   parse_seqstat_a_file($seqstat_file, \@seq_A, \@len_A);
   unlink $seqstat_file;
 }
@@ -89,7 +89,7 @@ parse_seqstat_a_file($seqstat_file, \@seq_A, \@nongap_A);
 unlink $seqstat_file;
 
 # output 
-printf("# Explanation of columns [RIBO v0.40]:\n");
+printf("# Explanation of columns [Ribovore v1.0]:\n");
 printf("# seqname: name of sequence\n");
 printf("# uapos:   unaligned sequence position that aligns at alignment %s %d\n", ($do_notrf ? "position" : "RF position"), $pos);
 printf("#          if 'gap?' column is 'gap' then alignment is a gap for this sequence at position $pos\n");
