@@ -41,7 +41,7 @@ of sequences that pass all tests.
   Alejandro A. Schaffer, Richard McVeigh, Barbara Robbertse,
   Conrad L. Schoch, Anjanette Johnston, Beverly Underwood, Ilene Karsch-Mizrachi, Eric P.
   Nawrocki; *Ribovore: ribosomal RNA sequence analysis for GenBank submissions and database curation*;
-  in preparation.
+  in preparation (to be uploaded to bioRxiv in Feb 2021);
 
 ---
 
