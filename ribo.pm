@@ -6,18 +6,28 @@
 # Eric Nawrocki
 # EPN, Fri May 12 09:48:21 2017
 # 
-# Perl module used by riboaligner.pl, ribodbmaker.pl, ribosensor.pl,
-# ribotest.pl and ribotyper.pl, which contains subroutines called by
+# Perl module used by riboaligner, ribodbmaker, ribosensor,
+# ribotest and ribotyper, which contains subroutines called by
 # those scripts.
 
 use strict;
 use warnings;
 
-require "sqp_opts.pm";
-require "sqp_ofile.pm";
-require "sqp_seq.pm";
-require "sqp_seqfile.pm";
-require "sqp_utils.pm";
+my $ribo_sequip_dir = $ENV{"RIBOSEQUIPDIR"};
+if(! defined $ribo_sequip_dir) { 
+  die "ERROR, the environment variable \$RIBOSEQUIPDIR is not set, see ribovore/documentation/install.md";
+}
+if(! -d $ribo_sequip_dir) { 
+  die "ERROR, the directory specified by the environment variable \$RIBOSEQUIPDIR does not exist, see ribovore/documentation/install.md";
+}
+
+# require the specific sequip modules in RIBOSEQUIPDIR in case user has another 
+# package installed that uses a (potentially different version) of sequip (e.g. VADR)
+require $ribo_sequip_dir . "/sqp_opts.pm";
+require $ribo_sequip_dir . "/sqp_ofile.pm";
+require $ribo_sequip_dir . "/sqp_seq.pm";
+require $ribo_sequip_dir . "/sqp_seqfile.pm";
+require $ribo_sequip_dir . "/sqp_utils.pm";
 
 #
 # List of subroutines:
@@ -36,7 +46,7 @@ require "sqp_utils.pm";
 #
 # Infernal and rRNA_sensor related functions
 # ribo_RunCmsearchOrCmalignOrRRnaSensor
-# ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+# ribo_RunCmsearchOrCmalignOrRRnaSensorValidation
 # ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper
 # ribo_MergeAlignmentsAndReorder
 # ribo_WaitForFarmJobsToFinish
@@ -50,6 +60,7 @@ require "sqp_utils.pm";
 # ribo_WriteCommandScript
 # ribo_RemoveListOfDirsWithRmrf
 # ribo_WriteAcceptFile
+# ribo_CheckForTimeExecutable
 #
 #################################################################
 # Subroutine : ribo_CountAmbiguousNucleotidesInSequenceFile()
@@ -252,7 +263,7 @@ sub ribo_ParseSeqstatCompTblFile {
 # Subroutine : ribo_ParseRAModelinfoFile()
 # Incept:      EPN, Fri Oct 20 14:17:53 2017
 #
-# Purpose:     Parse a riboaligner.pl modelinfo file, and 
+# Purpose:     Parse a riboaligner modelinfo file, and 
 #              fill information in @{$family_order_AR}, %{$family_modelname_HR}.
 # 
 #              
@@ -278,10 +289,11 @@ sub ribo_ParseRAModelinfoFile {
 
   open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
 
+  my %family_exists_H = ();
   while(my $line = <IN>) { 
     ## each line has information on 1 family and at least 4 tokens: 
-    ## token 1: Name for output files for this family
-    ## token 2: CM file name for this familyn
+    ## token 1: family.domain name in ribotyper output files, referred to as the 'family' below (e.g. SSU.Bacteria)
+    ## token 2: CM file name for this family
     ## token 3: integer, consensus length for the CM for this family
     ## token 4 to N: names of ribotyper models (e.g. SSU_rRNA_archaea) for which we'll use this model to align
     #SSU.Archaea RF01959.cm SSU_rRNA_archaea
@@ -304,10 +316,14 @@ sub ribo_ParseRAModelinfoFile {
         }
         push(@rtname_A, $el_A[$i]);
       }
+      if(defined $family_exists_H{$family}) {
+        ofile_FAIL("ERROR in $sub_name, family $family (first token) exists in more than one line in $modelinfo_file", 1, $FH_HR);  
+      }
       push(@{$family_order_AR}, $family);
       $family_modelfile_HR->{$family}  = $env_ribo_dir . "/" . $modelfile;
       $family_modellen_HR->{$family}   = $modellen;
       @{$family_rtname_HAR->{$family}} = (@rtname_A);
+      $family_exists_H{$family} = 1;
     }
   }
   close(IN);
@@ -660,7 +676,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
     #$cmd = "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file";
-    $cmd = "$time_path -p $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
+    if(defined $time_path) { 
+      $cmd = "$time_path -p $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
+    }
+    else {
+      $cmd = "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file"
+    }
   }
   elsif($executable =~ /cmalign$/) { 
     my $model_file    = $info_HR->{"IN:modelfile"};
@@ -669,7 +690,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $stk_file      = $info_HR->{"OUT-NAME:stk"};
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
     #$cmd = "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
-    $cmd = "$time_path -p $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
+    if(defined $time_path) { 
+      $cmd = "$time_path -p $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
+    }
+    else {
+      $cmd = "$executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+    }
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
     my $minlen     = $info_HR->{"minlen"};
@@ -683,11 +709,16 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
     my $blastdb    = $info_HR->{"blastdb"};
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
     #$cmd = "$time_path -p -o $time_file $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file";
-    $cmd = "$time_path -p $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
+    if(defined $time_path) { 
+      $cmd = "$time_path -p $executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
+    }
+    else {
+      $cmd = "$executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file"
+    }
   }
 
   if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
-    # run command on cluster
+    # write a script to execute on the cluster and execute it
 
     # replace ![jobname]! with $jobname
     my $jobname = "j" . ofile_RemoveDirPath($seq_file);
@@ -701,6 +732,22 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   else {
     # run command locally and wait for it to complete
     utl_RunCommand($cmd, opt_Get("-v", $opt_HHR), 0, $FH_HR);
+    # Exit if an expected file does not exists or is empty, it should always exist and be non-empty.
+    # We had to add this shortly before the 1.0 release because if a cmsearch cmd fails, the 'time'
+    # command will not return a non-0 exit status so the program will not exit. By enforcing this
+    # file exists and is non-empty we catch this situation because cmsearch tblout will be empty.
+    my $expected_out_file = undef;
+    if(($executable =~ /cmsearch$/) || ($executable =~ /cmalign$/)) {
+      if($executable =~ /cmsearch$/) { 
+        $expected_out_file = $info_HR->{"OUT-NAME:tblout"};
+      }
+      elsif($executable =~ /cmalign$/) {
+        $expected_out_file = $info_HR->{"OUT-NAME:stk"};
+      }
+      # we don't check for output file for rRNA_sensor because it may exist even if command failed
+      # we'll catch if it failed later when we try to parse the output (program should exit)
+      utl_FileValidateExistsAndNonEmpty($expected_out_file, "expected output file from command $cmd", $sub_name, 1, $FH_HR);
+    }
   }
   # else create the qsub cmd script file (the file with the actual cmsearch/cmalign/rRNA_sensor command)
   # we will submit a job to the farm that will execute this qsub cmd script file (previously we just put the
@@ -713,12 +760,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 # Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
 # Incept:      EPN, Thu Oct 18 12:32:18 2018
 #
-# Purpose:     Run one or more cmsearch, cmalign or rRNA_sensor jobs 
-#              on the farm or locally, after possibly splitting up the input
-#              sequence file. 
-#              The following must all be valid options in opt_HHR:
-#              -p, --nkb, -s, --wait, --errcheck, --keep, -v
-#              See ribotyper.pl for examples of these options.
+# Purpose:     Validate that we can run cmsearch, cmalign or rRNA_sensor
+#              by checking that %{$info_HR} is valid.
 #
 #              %{$info_HR} uses some key name conventions to include
 #              extra information that pertains to parallel mode only
@@ -846,7 +889,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 #              sequence file. 
 #              The following must all be valid options in opt_HHR:
 #              -p, --nkb, -s, --wait, --errcheck, --keep, -v
-#              See ribotyper.pl for examples of these options.
+#              See ribotyper for examples of these options.
 #
 # Arguments: 
 #  $execs_HR:        ref to hash with paths to executables
@@ -884,7 +927,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
 
   my $FH_HR  = $ofile_info_HHR->{"FH"}; # for convenience
   my $log_FH = $ofile_info_HHR->{"FH"}{"log"}; # for convenience
-  my $out_dir = ofile_GetDirPath($out_root);
+  my $out_dir = ribo_GetDirPath($out_root);
   my $executable = undef; # path to the cmsearch or cmalign executable
   my $info_key   = undef; # a single info_HH 1D key
   my $wait_str   = undef; # string in output file that ribo_WaitForFarmJobsToFinish will check for to see if jobs are done
@@ -892,18 +935,18 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
   my $sum_cpu_plus_wait_secs = 0; # will be returned as '0' unless -p used
   my $njobs_finished = 0; 
 
-  if(! defined $execs_HR->{"time"}) { 
-    ofile_FAIL("ERROR in $sub_name execs_HR->{time} not set", 1, $ofile_info_HHR->{"FH"});
+  my $time_path = undef;
+  if(defined $execs_HR->{"time"}) {
+    $time_path = $execs_HR->{"time"};
   }
-  my $timepath = $execs_HR->{"time"};
-
+  
   # validate %{$info_HR}
   ($wait_key, $wait_str) = ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
   $executable = $execs_HR->{$program_choice};
 
   if(! opt_Get("-p", $opt_HHR)) { 
     # run job locally
-    ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $timepath, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+    ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $time_path, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
   }
   else { 
     my %wkr_outfiles_HA = (); # hash of arrays of output file names for all jobs, 
@@ -936,7 +979,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           }
           elsif($info_key =~ m/^OUT-DIR/) { 
             # need to put the .$f at end of dir path
-            my $tmpdir  = ofile_GetDirPath($info_HR->{$info_key});
+            my $tmpdir  = ribo_GetDirPath($info_HR->{$info_key});
             $tmpdir =~ s/\/$//;
             my $tmpfile = ofile_RemoveDirPath($info_HR->{$info_key});
             $wkr_info_H{$info_key} = $tmpdir . "." . $f . "/" . $tmpfile;
@@ -951,7 +994,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           $wkr_info_H{$info_key} = $info_HR->{$info_key};
         }
       }
-      ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $timepath, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
+      ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $time_path, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
     }
     
     # wait for the jobs to finish
@@ -982,6 +1025,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
       }
       elsif(($outfiles_key =~ m/^OUT/) && 
             ($outfiles_key ne "OUT-NAME:outdir") && 
+            (($outfiles_key ne "OUT-NAME:time") || (defined $time_path)) && 
             ($info_HR->{$outfiles_key} ne "/dev/null")) { 
         # this function will remove files after concatenating them, unless --keep enabled
         utl_ConcatenateListOfFiles($wkr_outfiles_HA{$outfiles_key}, $info_HR->{$outfiles_key}, $sub_name, $opt_HHR, $ofile_info_HHR->{"FH"});
@@ -1287,7 +1331,7 @@ sub ribo_SumSeqlenGivenArray {
     if(! exists $seqlen_HR->{$seqname}) { 
       ofile_FAIL("ERROR in $sub_name, $seqname does not exist in the seqlen_H hash", 1, $FH_HR);
     }
-    $tot_seqlen += abs($seqlen_HR->{$seqname}); # ribotyper.pl multiplies lengths by -1 after round 1
+    $tot_seqlen += abs($seqlen_HR->{$seqname}); # ribotyper multiplies lengths by -1 after round 1
   }
 
   return $tot_seqlen;
@@ -1509,6 +1553,72 @@ sub ribo_WriteAcceptFile {
   utl_AToFile(\@accept_A, $file, 1, $FH_HR); # this will die if @accept_A is empty or we can't write to $file
   
   return;
+}
+
+#################################################################
+# Subroutine: ribo_CheckForTimeExecutable
+# Incept:     EPN, Wed Jan  6 08:33:11 2021
+#
+# Purpose:    Check if $RIBOTIMEDIR/time exists and is executable.
+#             If so, return $RIBOTIMEDIR, else return undef.
+#              
+# Arguments: 
+#   NONE
+#
+# Returns:  $RIBOTIMEDIR environment variable if $RIBOTIMEDIR/time
+#           exists and is executable, else undef.
+# 
+# Dies:     Never.
+#
+################################################################# 
+sub ribo_CheckForTimeExecutable {
+  my $sub_name = "ribo_CheckForTimeExecutable()";
+  my $nargs_expected = 0;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my $ret_val = undef;
+  if(defined $ENV{"RIBOTIMEDIR"}) {
+    my $env_ribotime_dir = $ENV{"RIBOTIMEDIR"};
+    if(-d $env_ribotime_dir) {
+      my $time_exec = $env_ribotime_dir . "/time";
+      if((-e $time_exec) || (-x $time_exec)) { 
+        $ret_val = $env_ribotime_dir;
+      }
+      # else $ret_val stays undef
+    }
+  }
+
+#  if(defined $ret_val) { printf("in $sub_name, returning $ret_val\n"); }
+#  else                 { printf("in $sub_name, returning undef\n"); }
+
+  return $ret_val;
+}
+
+#################################################################
+# Subroutine : ribo_GetDirPath()
+# Incept:      EPN, Thu May  4 09:39:06 2017
+#              EPN, Mon Mar 15 10:17:11 2010 [ssu.pm:ReturnDirPath()]
+#
+# Purpose:     Given a file name return the directory path, with the final '/'
+#              For example: "foodir/foodir2/foo.stk" becomes "foodir/foodir2/".
+#
+# Arguments: 
+#   $orig_file: name of original file
+# 
+# Returns:     The string $orig_file with actual file name removed 
+#              or "./" if $orig_file is "".
+#
+################################################################# 
+sub ribo_GetDirPath {
+  my $narg_expected = 1;
+  my $sub_name = "ribo_GetDirPath()";
+  if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+  my $orig_file = $_[0];
+  
+  $orig_file =~ s/[^\/]+$//; # remove final string of non '/' characters
+  
+  if($orig_file eq "") { return "./";       }
+  else                 { return $orig_file; }
 }
 
 ###########################################################################

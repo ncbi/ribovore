@@ -15,8 +15,7 @@ set -e
 RIBOINSTALLDIR=$PWD
 
 # versions
-#VERSION="1.0"
-VERSION="0.40"
+VERSION="1.0"
 # blast+
 BVERSION="2.11.0"
 # infernal
@@ -24,7 +23,6 @@ IVERSION="1.1.4"
 IESLCLUSTERVERSION="1.1.2"
 # dependency git tag
 RVERSION="ribovore-$VERSION"
-TMPRVERSION="ribovore-0.40"
 
 # set defaults
 INPUTSYSTEM="?"
@@ -70,38 +68,38 @@ echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 # ribovore
 echo "Downloading ribovore ... "
-#curl -k -L -o $RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv $RVERSION ribovore; rm $RVERSION.zip
+curl -k -L -o $RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv $RVERSION ribovore; rm $RVERSION.zip
 # for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-git clone https://github.com/nawrockie/ribovore.git ribovore
-cd ribovore
+#git clone https://github.com/nawrockie/ribovore.git ribovore
+#cd ribovore
 #git checkout release-$VERSION
-git checkout sequipize
-rm -rf .git
-cd ..
+#rm -rf .git
+#cd ..
 # ----------------------------------------------------------------------------
 
 # rRNA_sensor
 echo "Downloading rRNA_sensor ... "
-#curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
+curl -k -L -o rRNA_sensor-$RVERSION.zip https://github.com/aaschaffer/rRNA_sensor/archive/$RVERSION.zip; unzip rRNA_sensor-$RVERSION.zip; mv rRNA_sensor-$RVERSION rRNA_sensor; rm rRNA_sensor-$RVERSION.zip
+# to checkout a specific branch, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-git clone https://github.com/aaschaffer/rRNA_sensor.git rRNA_sensor
-cd rRNA_sensor
-git checkout ribovore-1.0-release
-rm -rf .git
-cd ..
+#git clone https://github.com/aaschaffer/rRNA_sensor.git rRNA_sensor
+#cd rRNA_sensor
+#git checkout release-0.14
+#rm -rf .git
+#cd ..
 # ----------------------------------------------------------------------------
 
 # sequip
 echo "Downloading sequip ... "
-#curl -k -L -o sequip-$RVERSION.zip https://github.com/nawrockie/sequip/archive/$RVERSION.zip; unzip sequip-$RVERSION.zip; mv sequip-$RVERSION sequip; rm sequip-$RVERSION.zip
+curl -k -L -o sequip-$RVERSION.zip https://github.com/nawrockie/sequip/archive/$RVERSION.zip; unzip sequip-$RVERSION.zip; mv sequip-$RVERSION sequip; rm sequip-$RVERSION.zip
 # to checkout a specific branch, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-git clone https://github.com/nawrockie/sequip.git sequip
-cd sequip
-git checkout develop
-rm -rf .git
-cd ..
+#git clone https://github.com/nawrockie/sequip.git sequip
+#cd sequip
+#git checkout develop
+#rm -rf .git
+#cd ..
 # ----------------------------------------------------------------------------
 
 # download two infernal binary distributions
@@ -187,39 +185,26 @@ echo "------------------------------------------------"
 
 # if linux, download vecscreen_plus_taxonomy
 if [ "$INPUTSYSTEM" = "linux" ]; then
-curl -k -L -o vecscreen_plus_taxonomy-$TMPRVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$TMPRVERSION.zip; 
-unzip vecscreen_plus_taxonomy-$TMPRVERSION.zip; 
-mv vecscreen_plus_taxonomy-$TMPRVERSION vecscreen_plus_taxonomy
-rm vecscreen_plus_taxonomy-$TMPRVERSION.zip
+curl -k -L -o vecscreen_plus_taxonomy-$RVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$RVERSION.zip; 
+unzip vecscreen_plus_taxonomy-$RVERSION.zip; 
+mv vecscreen_plus_taxonomy-$RVERSION vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-$RVERSION.zip
 (cd vecscreen_plus_taxonomy/scripts; gunzip srcchk.gz; gunzip vecscreen.gz;)
 else 
-echo "Not installing vecscreen_plus_taxonomy (only avaiable for Linux)"
+echo "Not installing vecscreen_plus_taxonomy (only available for Linux)"
 fi
 echo "------------------------------------------------"
 
 ###############################################
 # Message about setting environment variables
 ###############################################
-echo ""
-echo ""
-echo "If you want to use the ribodbmaker.pl script you will need to"
-echo "have vecscreen_plus_taxonomy installed. See below for instructions."
-echo ""
-echo "To install vecscreen_plus_taxonomy, run the script"
-echo " 'install-optional-vecscreen_plus_taxonomy-linux.sh' and follow"
-echo "the instructions output from that command to change the RIBOBLASTDIR"
-echo "environment variable. Note that vecscreen_plus_taxonomy can"
-echo "only be installed on Linux systems, which means that ribodbmaker.pl"
-echo "cannot currently be run on non-Linux systems (including Mac OS/X)."
-echo ""
 echo "********************************************************"
 echo ""
 echo "The final step is to update your environment variables."
 echo "(See ribovore/README.txt for more information.)"
 echo ""
-echo "If you are using the bash or zsh shell (zsh is default in MacOS/X as"
-echo "of v10.15 (Catalina)), add the following lines to the end of your"
-echo "'.bashrc' or '.zshrc' file in your home directory:"
+echo "If you are using the bash or zsh shell add the following lines to"
+echo "the end of your '.bashrc' or '.zshrc' file in your home directory:"
 echo ""
 echo "export RIBOINSTALLDIR=\"$RIBOINSTALLDIR\""
 echo "export RIBOSCRIPTSDIR=\"\$RIBOINSTALLDIR/ribovore\""
@@ -230,7 +215,7 @@ echo "export RIBOBLASTDIR=\"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 echo "export RIBOTIMEDIR=/usr/bin"
 echo "export RRNASENSORDIR=\"\$RIBOINSTALLDIR/rRNA_sensor\""
 echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
-echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "export VECPLUSDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo "export BLASTDB=\"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
@@ -259,12 +244,13 @@ echo "setenv RIBOEASELDIR \"\$RIBOINSTALLDIR/bin\""
 echo "setenv RIBOSEQUIPDIR \"\$RIBOINSTALLDIR/sequip\""
 echo "setenv RIBOBLASTDIR \"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 echo "setenv RIBOTIMEDIR /usr/bin"
-echo "setenv RRNASENSORDIR \"$RIBOINSTALLDIR/rRNA_sensor\""
+echo "setenv RRNASENSORDIR \"\$RIBOINSTALLDIR/rRNA_sensor\""
 echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
-echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "setenv VECPLUSDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 else
 echo "setenv BLASTDB \"\$RRNASENSORDIR\":\"\$BLASTDB\""
 fi

@@ -1,7 +1,7 @@
 # format of this file:
 # '#' prefixed files are comments, and are not parsed.
 # 'command:' prefix indicates remainder of line is a command to run
-# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'desc:' prefix indicates description of test for ribotest output        
 # 'out:' prefix indicates output file to check against an expected file
 # 'exp:' prefix indicates expected file to check against an output file
 # 'rmdir:' prefix indicates name of output directory to remove after 
@@ -12,7 +12,7 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/riboaligner.pl -p -f example-16.fa test-16-2-p > /dev/null; rm example-16.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/riboaligner -p -f example-16.fa test-16-2-p > /dev/null; rm example-16.fa*
 desc: riboaligner-1-p-16
 out: test-16-2-p/test-16-2-p.riboaligner.tbl
 out: test-16-2-p/test-16-2-p.riboaligner.SSU.Bacteria.partial.stk
@@ -25,7 +25,7 @@ exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteri
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.ifile
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16-2.riboaligner.SSU.Bacteria.partial.elfile
 rmdir: test-16-2-p
-command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/riboaligner.pl -p -i $RIBOSCRIPTSDIR/models/riboaligner.0p15.ssu.euk.modelinfo -f fungi-ssu.r100.fa r100-2-p > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/riboaligner -p -i $RIBOSCRIPTSDIR/models/riboaligner.ssu-euk.modelinfo -f fungi-ssu.r100.fa r100-2-p > /dev/null; rm fungi-ssu.r100.fa*
 desc: riboaligner-2-p-100
 out: r100-2-p/r100-2-p.riboaligner.tbl
 out: r100-2-p/r100-2-p.riboaligner.SSU.Eukarya.partial.list

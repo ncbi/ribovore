@@ -1,7 +1,7 @@
 # format of this file:
 # '#' prefixed files are comments, and are not parsed.
 # 'command:' prefix indicates remainder of line is a command to run
-# 'desc:' prefix indicates description of test for dnaorg_test.pl output        
+# 'desc:' prefix indicates description of test for ribotest output        
 # 'out:' prefix indicates output file to check against an expected file
 # 'exp:' prefix indicates expected file to check against an output file
 # 'rmdir:' prefix indicates name of output directory to remove after 
@@ -12,14 +12,14 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribotyper.pl -p -f example-16.fa test-16-p > /dev/null; rm example-16.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -p -f example-16.fa test-16-p > /dev/null; rm example-16.fa*
 desc: ribotyper-1-p-16
 out: test-16-p/test-16-p.ribotyper.short.out
 out: test-16-p/test-16-p.ribotyper.long.out
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.short.out
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.long.out
 rmdir: test-16-p
-command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribotyper.pl -p -f fungi-ssu.r100.fa r100-p > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -p -f fungi-ssu.r100.fa r100-p > /dev/null; rm fungi-ssu.r100.fa*
 desc: ribotyper-2-p-100
 out: r100-p/r100-p.ribotyper.short.out
 out: r100-p/r100-p.ribotyper.long.out
