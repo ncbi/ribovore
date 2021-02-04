@@ -18,7 +18,7 @@ if(! defined $ribo_sequip_dir) {
   die "ERROR, the environment variable \$RIBOSEQUIPDIR is not set, see ribovore/documentation/install.md";
 }
 if(! -d $ribo_sequip_dir) { 
-  die "ERROR, the directory specified by the environment variable \$RIBOSEQUIPTDIR does not exist, see ribovore/documentation/install.md";
+  die "ERROR, the directory specified by the environment variable \$RIBOSEQUIPDIR does not exist, see ribovore/documentation/install.md";
 }
 
 # require the specific sequip modules in RIBOSEQUIPDIR in case user has another 
