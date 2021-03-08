@@ -1,5 +1,5 @@
 # Ribovore <a name="top"></a>
-#### Version 1.0; February 2021
+#### Version 1.0.1; March 2021
 #### https://github.com/ncbi/ribovore.git
 
 Ribovore is a suite of tools for detecting, classifying and analyzing

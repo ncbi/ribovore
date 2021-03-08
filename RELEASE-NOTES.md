@@ -1,5 +1,8 @@
 # Ribovore release notes 
 
+### Ribovore 1.0.1 release (March 2021): Bug fix release
+  * Fixes install.sh to properly name ribovore zip file after downloading.
+
 ### Ribovore 1.0 release (Feb 2021): First major release
   * The version used in the Ribovore manuscript: *Ribovore: ribosomal
     RNA sequence analysis for GenBank submissions and database curation*;
