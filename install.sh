@@ -15,7 +15,7 @@ set -e
 RIBOINSTALLDIR=$PWD
 
 # versions
-VERSION="1.0"
+VERSION="1.0.2"
 # blast+
 BVERSION="2.11.0"
 # infernal
