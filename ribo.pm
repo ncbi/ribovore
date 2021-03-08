@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# version: 1.0
+# version: 1.0.1
 #
 # ribo.pm
 # Eric Nawrocki
