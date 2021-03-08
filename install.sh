@@ -68,7 +68,7 @@ echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 # ribovore
 echo "Downloading ribovore ... "
-curl -k -L -o $RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv $RVERSION ribovore; rm $RVERSION.zip
+curl -k -L -o $RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
 # for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
 #git clone https://github.com/nawrockie/ribovore.git ribovore
