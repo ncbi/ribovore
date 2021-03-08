@@ -1,5 +1,11 @@
 # Ribovore release notes 
 
+### Ribovore 1.0.2 release (March 2021): Bug fix release
+  * Fixes install.sh again to download correct version tarballs
+  * Adds public domain notice as LICENSE
+  * No code changes between 1.0, 1.0.1, and 1.0.2 only changes
+    are to install script and addition of LICENSE in 1.0.2
+
 ### Ribovore 1.0.1 release (March 2021): Bug fix release
   * Fixes install.sh to properly name ribovore zip file after downloading.
 
