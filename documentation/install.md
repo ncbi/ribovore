@@ -111,8 +111,8 @@ directory:
 
 setenv RIBOINSTALLDIR "<full path to directory in which you ran install.sh>"
 setenv RIBOSCRIPTSDIR "$RIBOINSTALLDIR/ribovore"
-setenv RIBOINFERNALDIR "$RIBOINSTALLDIR/bin"
-setenv RIBOEASELDIR "$RIBOINSTALLDIR/bin"
+setenv RIBOINFERNALDIR "$RIBOINSTALLDIR/infernal/binaries"
+setenv RIBOEASELDIR "$RIBOINSTALLDIR/infernal/binaries"
 setenv RIBOSEQUIPDIR "$RIBOINSTALLDIR/sequip"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
 setenv RIBOTIMEDIR /usr/bin
