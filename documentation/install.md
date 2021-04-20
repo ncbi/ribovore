@@ -141,14 +141,14 @@ If you use bash or zsh, change the PERL5LIB line in your `~/.bashrc` or
 `~/.zshrc` file to:
 
 ```
-export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR"
+export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR"
 ````
 
 or if you use C shell, change the PERL5LIB line in your `~/.cshrc`
 file to:
 
 ```
-setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR"
+setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR"
 ```
 
 And then execute `source ~/.bashrc`, `source ~/.zshrc`, or `source ~/.cshrc` again.
