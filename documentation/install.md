@@ -90,10 +90,10 @@ export RIBOSEQUIPDIR="$RIBOINSTALLDIR/sequip"
 export RIBOBLASTDIR="$RIBOINSTALLDIR/ncbi-blast/bin"
 export RIBOTIMEDIR=/usr/bin
 export RRNASENSORDIR="$RIBOINSTALLDIR/rRNA_sensor"
-export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
-export PATH="$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 export VECPLUSDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
+export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
+export PATH="$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 
 After adding the export lines to your .bashrc or .zshrc file, source that file
 to update your current environment with the command:
@@ -117,10 +117,10 @@ setenv RIBOSEQUIPDIR "$RIBOINSTALLDIR/sequip"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
 setenv RIBOTIMEDIR /usr/bin
 setenv RRNASENSORDIR "$RIBOSCRIPTSDIR/rRNA_sensor"
-setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
-setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 setenv VECPLUSDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
+setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
+setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 After adding the setenv lines to your .cshrc file, source that file
 to update your current environment with the command:
 
@@ -129,8 +129,9 @@ source ~/.cshrc
 (To determine which shell you use, type: 'echo $SHELL')
 ```
 
-For Mac/OSX installations, the `VECPLUSDIR` line will be omitted, and
-the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`
+For Mac/OSX installations, the `VECPLUSDIR` line will be omitted, 
+the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`, 
+and the `PERL5LIB` line will not include `$VECPLUSDIR`.
 
 ---
 
