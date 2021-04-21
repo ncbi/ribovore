@@ -135,20 +135,23 @@ and the `PERL5LIB` line will not include `$VECPLUSDIR`.
 
 ---
 
-### If you get an error about `PERL5LIB` being undefined...
+### If you get an error about `PERL5LIB` and/or `BLASTDB` being undefined...
 
-If you use bash or zsh, change the PERL5LIB line in your `~/.bashrc` or
+If you use bash or zsh, change the PERL5LIB and/or `BLASTDB` line in your `~/.bashrc` or
 `~/.zshrc` file to:
 
 ```
 export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR"
+export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR"
 ````
+
 
 or if you use C shell, change the PERL5LIB line in your `~/.cshrc`
 file to:
 
 ```
 setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR"
+setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR"
 ```
 
 And then execute `source ~/.bashrc`, `source ~/.zshrc`, or `source ~/.cshrc` again.
