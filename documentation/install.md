@@ -11,12 +11,12 @@ The file `install.sh` is an executable file for installing Ribovore
 and its dependencies. That file is located online at github.
 To install the latest version of Ribovore download this file:
 
-https://raw.githubusercontent.com/nawrockie/ribovore/master/install.sh
+https://raw.githubusercontent.com/ncbi/ribovore/master/install.sh
 
 To download any specific release/version, for example version 1.0 download
 the corresponding `install.sh` file for that release/version.
 
-https://raw.githubusercontent.com/nawrockie/ribovore/1.0/vadr-install.sh
+https://raw.githubusercontent.com/ncbi/ribovore/1.0/install.sh
 
 Copy the `install.sh` file into the directory in which you want
 to install Ribovore. A good name for that directory is
@@ -90,10 +90,10 @@ export RIBOSEQUIPDIR="$RIBOINSTALLDIR/sequip"
 export RIBOBLASTDIR="$RIBOINSTALLDIR/ncbi-blast/bin"
 export RIBOTIMEDIR=/usr/bin
 export RRNASENSORDIR="$RIBOINSTALLDIR/rRNA_sensor"
-export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
-export PATH="$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 export VECPLUSDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
+export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
+export PATH="$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 
 After adding the export lines to your .bashrc or .zshrc file, source that file
 to update your current environment with the command:
@@ -111,16 +111,16 @@ directory:
 
 setenv RIBOINSTALLDIR "<full path to directory in which you ran install.sh>"
 setenv RIBOSCRIPTSDIR "$RIBOINSTALLDIR/ribovore"
-setenv RIBOINFERNALDIR "$RIBOINSTALLDIR/bin"
-setenv RIBOEASELDIR "$RIBOINSTALLDIR/bin"
+setenv RIBOINFERNALDIR "$RIBOINSTALLDIR/infernal/binaries"
+setenv RIBOEASELDIR "$RIBOINSTALLDIR/infernal/binaries"
 setenv RIBOSEQUIPDIR "$RIBOINSTALLDIR/sequip"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
 setenv RIBOTIMEDIR /usr/bin
 setenv RRNASENSORDIR "$RIBOSCRIPTSDIR/rRNA_sensor"
-setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$PERL5LIB"
-setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 setenv VECPLUSDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
+setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
+setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
 After adding the setenv lines to your .cshrc file, source that file
 to update your current environment with the command:
 
@@ -129,25 +129,29 @@ source ~/.cshrc
 (To determine which shell you use, type: 'echo $SHELL')
 ```
 
-For Mac/OSX installations, the `VECPLUSDIR` line will be omitted, and
-the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`
+For Mac/OSX installations, the `VECPLUSDIR` line will be omitted, 
+the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`, 
+and the `PERL5LIB` line will not include `$VECPLUSDIR`.
 
 ---
 
-### If you get an error about `PERL5LIB` being undefined...
+### If you get an error about `PERL5LIB` and/or `BLASTDB` being undefined...
 
-If you use bash or zsh, change the PERL5LIB line in your `~/.bashrc` or
+If you use bash or zsh, change the PERL5LIB and/or `BLASTDB` line in your `~/.bashrc` or
 `~/.zshrc` file to:
 
 ```
-export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR"
+export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR"
+export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR"
 ````
+
 
 or if you use C shell, change the PERL5LIB line in your `~/.cshrc`
 file to:
 
 ```
-setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR"
+setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR"
+setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR"
 ```
 
 And then execute `source ~/.bashrc`, `source ~/.zshrc`, or `source ~/.cshrc` again.

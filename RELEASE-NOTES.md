@@ -1,5 +1,11 @@
 # Ribovore release notes 
 
+### Ribovore 1.0.3 release (Feb 2023): Bug/documenation fix release
+  * Fixes several typos and makes several clarifications related to
+    environment variables in install script (install.sh)
+  * Fixes bug in ribosensor script that required esl-sfetch to be in
+    user's path
+
 ### Ribovore 1.0.2 release (March 2021): Bug fix release
   * Fixes install.sh again to download correct version tarballs
   * Adds public domain notice as LICENSE

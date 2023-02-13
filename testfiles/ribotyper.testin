@@ -12,14 +12,14 @@
 # 'out:' file is compared against the first 'exp:' file, the second 
 # 'out:' file is compared against the second 'exp:' file, the second 'out:'
 # file, etc.
-command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -f example-16.fa test-16 > /dev/null; rm example-16.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -f example-16.fa test-16 > /dev/null;
 desc: ribotyper-1-16
 out: test-16/test-16.ribotyper.short.out
 out: test-16/test-16.ribotyper.long.out
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.short.out
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.long.out
 rmdir: test-16
-command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -f fungi-ssu.r100.fa r100 > /dev/null; rm fungi-ssu.r100.fa*
+command: cp $RIBOSCRIPTSDIR/testfiles/fungi-ssu.r100.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -f fungi-ssu.r100.fa r100 > /dev/null;
 desc: ribotyper-2-100
 out: r100/r100.ribotyper.short.out
 out: r100/r100.ribotyper.long.out

@@ -15,7 +15,7 @@ set -e
 RIBOINSTALLDIR=$PWD
 
 # versions
-VERSION="1.0.2"
+VERSION="1.0.3"
 # blast+
 BVERSION="2.11.0"
 # infernal
@@ -68,10 +68,10 @@ echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 # ribovore
 echo "Downloading ribovore ... "
-curl -k -L -o $RVERSION.zip https://github.com/nawrockie/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
+curl -k -L -o $RVERSION.zip https://github.com/ncbi/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
 # for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-#git clone https://github.com/nawrockie/ribovore.git ribovore
+#git clone https://github.com/ncbi/ribovore.git ribovore
 #cd ribovore
 #git checkout release-$VERSION
 #rm -rf .git
@@ -214,14 +214,15 @@ echo "export RIBOSEQUIPDIR=\"\$RIBOINSTALLDIR/sequip\""
 echo "export RIBOBLASTDIR=\"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 echo "export RIBOTIMEDIR=/usr/bin"
 echo "export RRNASENSORDIR=\"\$RIBOINSTALLDIR/rRNA_sensor\""
-echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
-echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "export VECPLUSDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo "export BLASTDB=\"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$VECPLUSDIR\":\"\$PERL5LIB\""
 else
 echo "export BLASTDB=\"\$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 fi
+echo "export PATH=\"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 echo ""
 echo "After adding the export lines to your .bashrc or .zshrc file, source that file"
 echo "to update your current environment with the command:"
@@ -239,21 +240,22 @@ echo "directory:"
 echo ""
 echo "setenv RIBOINSTALLDIR \"$RIBOINSTALLDIR\""
 echo "setenv RIBOSCRIPTSDIR \"\$RIBOINSTALLDIR/ribovore\""
-echo "setenv RIBOINFERNALDIR \"\$RIBOINSTALLDIR/bin\""
-echo "setenv RIBOEASELDIR \"\$RIBOINSTALLDIR/bin\""
+echo "setenv RIBOINFERNALDIR \"\$RIBOINSTALLDIR/infernal/binaries\""
+echo "setenv RIBOEASELDIR \"\$RIBOINSTALLDIR/infernal/binaries\""
 echo "setenv RIBOSEQUIPDIR \"\$RIBOINSTALLDIR/sequip\""
 echo "setenv RIBOBLASTDIR \"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 echo "setenv RIBOTIMEDIR /usr/bin"
 echo "setenv RRNASENSORDIR \"\$RIBOINSTALLDIR/rRNA_sensor\""
-echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
-echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
 if [ "$INPUTSYSTEM" = "linux" ]; then
 echo "setenv VECPLUSDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
 echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
-echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
+echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$VECPLUSDIR\":\"\$PERL5LIB\""
 else
 echo "setenv BLASTDB \"\$RRNASENSORDIR\":\"\$BLASTDB\""
+echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$PERL5LIB\""
 fi
+echo "setenv PATH \"\$RIBOSCRIPTSDIR\":\"\$RIBOBLASTDIR\":\"\$RRNASENSORDIR\":\"\$PATH\""
+echo ""
 echo "After adding the setenv lines to your .cshrc file, source that file"
 echo "to update your current environment with the command:"
 echo ""

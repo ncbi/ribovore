@@ -130,8 +130,8 @@ my $options_okay =
 my $total_seconds          = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "1.0.2";
-my $releasedate       = "March 2021";
+my $version           = "1.0.3";
+my $releasedate       = "Feb 2023";
 my $package_name      = "Ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -378,7 +378,7 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   # check for SSI index file for the sequence file,
   # if it doesn't exist, create it
   if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
-    utl_RunCommand("esl-sfetch --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+    utl_RunCommand($execs_H{"esl-sfetch"} . " --index $seq_file > /dev/null", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
     if(utl_FileValidateExistsAndNonEmpty($ssi_file, undef, undef, 0, $ofile_info_HH{"FH"}) != 1) { 
       ofile_FAIL("ERROR, tried to create $ssi_file, but failed", 1, $ofile_info_HH{"FH"}); 
     }
@@ -402,7 +402,7 @@ my $do_fetch = (opt_Get("--skipsearch", \%opt_HH)) ? 0 : 1; # do not fetch the s
 for($i = 0; $i < $nseq_parts; $i++) { 
   $subseq_sfetch_A[$i] = $out_root . "." . ($i+1) . ".sfetch";
   $subseq_file_A[$i]   = $out_root . "." . ($i+1) . ".fa";
-  ($subseq_nseq_A[$i], $subseq_nnt_A[$i]) = fetch_seqs_in_length_range("esl-sfetch", $seq_file, $do_fetch, $spart_minlen_A[$i], $spart_maxlen_A[$i], \%seqlen_H, $subseq_sfetch_A[$i], $subseq_file_A[$i], \%opt_HH, $ofile_info_HH{"FH"});
+  ($subseq_nseq_A[$i], $subseq_nnt_A[$i]) = fetch_seqs_in_length_range($execs_H{"esl-sfetch"}, $seq_file, $do_fetch, $spart_minlen_A[$i], $spart_maxlen_A[$i], \%seqlen_H, $subseq_sfetch_A[$i], $subseq_file_A[$i], \%opt_HH, $ofile_info_HH{"FH"});
 
   # files are marked for removal at this step, but not actually 
   # removed until the rRNA_sensor analysis has been completed
@@ -675,7 +675,7 @@ foreach my $file (@to_remove_A) {
 my $nseq_passed    = 0; # number of sequences 
 my $nseq_revcomped = 0; # number of sequences reverse complemented
 if(opt_Get("--psave", \%opt_HH)) { 
-  ($nseq_passed, $nseq_revcomped) = fetch_seqs_given_genbank_file("esl-sfetch", $seq_file, $combined_out_file, "pass", 6, 1, $passes_sfetch_file, $passes_seq_file, \%seqlen_H, \%opt_HH, $ofile_info_HH{"FH"});
+  ($nseq_passed, $nseq_revcomped) = fetch_seqs_given_genbank_file($execs_H{"esl-sfetch"}, $seq_file, $combined_out_file, "pass", 6, 1, $passes_sfetch_file, $passes_seq_file, \%seqlen_H, \%opt_HH, $ofile_info_HH{"FH"});
 }
 
 output_outcome_counts(*STDOUT, \%outcome_ct_HH, $ofile_info_HH{"FH"});
