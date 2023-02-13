@@ -1,6 +1,12 @@
 # Ribovore release notes 
 
-### Ribovore 1.0.3 release (Feb 2023): Bug/documenation fix release
+### Ribovore 1.0.4 release (Feb 2023): Documentation fix release
+  * Updates version and date in README.md which were incorrect
+    in v1.0.3 (unchanged from v1.0.2).
+
+### Ribovore 1.0.3 release (Feb 2023): Bug/documentation fix release
+  * Updates NCBI taxonomy tree
+    (taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt) 
   * Fixes several typos and makes several clarifications related to
     environment variables in install script (install.sh)
   * Fixes bug in ribosensor script that required esl-sfetch to be in
