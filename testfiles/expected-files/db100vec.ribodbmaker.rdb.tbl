@@ -115,7 +115,7 @@
 51    KC672190.1    1787   175245        1        1        1  FAIL      -        -  not-specified-species;;ribotyper2[*LowCoverage:(0.973<0.990);];;
 52    AB797249.1    1027   690888    92860   147541     4890  FAIL      -        -  mdlspan[68-1115];;
 53    AM494997.1    1683  1301327   107465   147547     4890  FAIL      -        -  ribotyper2[*LowCoverage:(0.945<0.990);*MultipleHits:(2:SI[M:-1(1512..1512),S:68(1359..1426)]);];;
-54    EF550439.1    1670   461316     4892     4891     4890  FAIL      -        -  not-specified-species;;mdlspan[72-1791];;
+54    EF550439.1    1670  2508582     4892     4891     4890  FAIL      -        -  not-specified-species;;mdlspan[72-1791];;
 55    HG796132.1    1031   175245        1        1        1  FAIL      -        -  not-specified-species;;mdlspan[579-1657];;
 56    AB013514.1    1748    78172     4892     4891     4890  PASS      R        -  -
 57    KT356200.1    1671  1768186     5125   147550     4890  FAIL      -        -  not-specified-species;;mdlspan[49-1774];;
@@ -134,7 +134,7 @@
 70    AB746210.1    1677     5580     5014   147541     4890  FAIL      -        -  mdlspan[66-1794];;
 71    AM268196.1    1766   453567  1133283   214506  1913637  FAIL      -        -  ambig[185>5];;ribotyper2[*LowCoverage:(0.896<0.990);*MultipleHits:(2:NH[M:182(838..1019),S:183(809..991)]);];;
 72    AB011052.1    1271    73167     5258   162484     5204  FAIL      -        -  ribotyper2[*MultipleHits:(2:NH[M:157(684..840),S:12(643..654)]);];;
-73    AY489697.1    1040   169388     5125   147550     4890  FAIL      -        -  mdlspan[30-1092];;
+73    AY489697.1    1040  2747957     5125   147550     4890  FAIL      -        -  mdlspan[30-1092];;
 74    KJ137258.1    2037   171509     5338   155619     5204  FAIL      -        -  ribotyper2[*LowCoverage:(0.789<0.990);*MultipleHits:(2:SI[M:0(1188..1189),S:425(1160..1584)]);];;
 75    KT921996.1    1071  1816478     4827  2212703  1913637  FAIL      -        -  ribotyper2[*LowCoverage:(0.988<0.990);];;
 76    KC680652.1    1107    40302        1        1     6029  FAIL      -        -  ribotyper2[*UnacceptableModel:(SSU_rRNA_microsporidia);];;
