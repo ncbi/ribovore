@@ -557,15 +557,15 @@ Ribovore includes a special formatted version of the NCBI taxonomy tree in the f
 ribovore/taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt
 ```
 
-This tree was created using the procedure described below on December 18, 2020.
+This tree was created using the procedure described below on February 10, 2023.
 
 You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
 download `vecscreen_plus_taxonomy` with the following commands:
 ```
-curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.zip; 
-unzip vecscreen_plus_taxonomy-ribovore-1.0.zip; 
-mv vecscreen_plus_taxonomy-ribovore-1.0 vecscreen_plus_taxonomy
-rm vecscreen_plus_taxonomy-ribovore-1.0.zip
+curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.3.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.3.zip; 
+unzip vecscreen_plus_taxonomy-ribovore-1.0.3.zip; 
+mv vecscreen_plus_taxonomy-ribovore-1.0.3 vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-ribovore-1.0.3.zip
 ```
 
 And then modify the `$VECPLUSDIR` and `$PERL5LIB` environment variables in your `.bashrc` file as follows:
