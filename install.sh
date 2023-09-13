@@ -27,28 +27,33 @@ RVERSION="ribovore-$VERSION"
 # set defaults
 INPUTSYSTEM="?"
 RIBOTYPERONLY="?"
+DOKEEP="no"
 
 ########################
 # Validate correct usage
 ########################
 # make sure correct number of cmdline arguments were used, exit if not
 if [ "$#" -ne 1 ]; then
-   echo "Usage:   $0 <os>"
-   echo ""
-   echo "valid options for <os> are:"
-   echo "  \"linux\":             full install for linux"
-   echo "  \"macosx-intel\":      full install for macosx-intel"
-   echo "  \"macosx-silicon\":    full install for macosx-silicon"
-   echo "  \"rt-linux\":          ribotyper only for linux"
-   echo "  \"rt-macosx-intel\":   ribotyper only for macosx-intel"
-   echo "  \"rt-macosx-silicon\": ribotyper only for macosx-silicon"
-   echo ""
-   echo "Example: $0 linux"
-   echo ""
-   exit 1
+    if [ "$#" -ne 2 ]; then
+        echo "Usage:   $0 <os>"
+        echo " or "
+        echo "Usage:   $0 <os> keep"
+        echo ""
+        echo "valid options for <os> are:"
+        echo "  \"linux\":             full install for linux"
+        echo "  \"macosx-intel\":      full install for macosx-intel"
+        echo "  \"macosx-silicon\":    full install for macosx-silicon"
+        echo "  \"rt-linux\":          ribotyper only for linux"
+        echo "  \"rt-macosx-intel\":   ribotyper only for macosx-intel"
+        echo "  \"rt-macosx-silicon\": ribotyper only for macosx-silicon"
+        echo ""
+        echo "use \"keep\" as 2nd argument to keep nonessential files"
+        echo "which are normally removed"
+        exit 1
+    fi
 fi
 
-# make sure 1st argument is either "linux" or "macosx"
+# make sure 1st argument is valid
 if [ "$1" = "linux" ]; then
     INPUTSYSTEM="linux";
     RIBOTYPERONLY="no"
@@ -74,20 +79,48 @@ if [ "$1" = "rt-macosx-silicon" ]; then
     RIBOTYPERONLY="yes"
 fi
 if [ "$INPUTSYSTEM" = "?" ]; then 
-   echo "Usage:   $0 <os>"
-   echo ""
-   echo "valid options for <os> are:"
-   echo "  \"linux\":             full install for linux"
-   echo "  \"macosx-intel\":      full install for macosx-intel"
-   echo "  \"macosx-silicon\":    full install for macosx-silicon"
-   echo "  \"rt-linux\":          ribotyper only for linux"
-   echo "  \"rt-macosx-intel\":   ribotyper only for macosx-intel"
-   echo "  \"rt-macosx-silicon\": ribotyper only for macosx-silicon"
-   echo ""
-   echo "Example: $0 linux"
-   echo ""
-   exit 1
+    echo "Usage:   $0 <os>"
+    echo " or "
+    echo "Usage:   $0 <os> keep"
+    echo ""
+    echo "valid options for <os> are:"
+    echo "  \"linux\":             full install for linux"
+    echo "  \"macosx-intel\":      full install for macosx-intel"
+    echo "  \"macosx-silicon\":    full install for macosx-silicon"
+    echo "  \"rt-linux\":          ribotyper only for linux"
+    echo "  \"rt-macosx-intel\":   ribotyper only for macosx-intel"
+    echo "  \"rt-macosx-silicon\": ribotyper only for macosx-silicon"
+    echo ""
+    echo "use \"keep\" as 2nd argument to keep src and other nonessential"
+    echo "files which are normally removed"
+    exit 1
 fi
+
+# make sure 2nd argument (if we have one) is "keep"
+if [ "$#" -eq 2 ]; then
+    if [ "$2" = "keep" ]; then
+        DOKEEP="yes";
+    fi
+    if [ "$DOKEEP" = "no" ]; then 
+        echo "Usage:   $0 <os>"
+        echo " or "
+        echo "Usage:   $0 <os> keep"
+        echo ""
+        echo "valid options for <os> are:"
+        echo "  \"linux\":             full install for linux"
+        echo "  \"macosx-intel\":      full install for macosx-intel"
+        echo "  \"macosx-silicon\":    full install for macosx-silicon"
+        echo "  \"rt-linux\":          ribotyper only for linux"
+        echo "  \"rt-macosx-intel\":   ribotyper only for macosx-intel"
+        echo "  \"rt-macosx-silicon\": ribotyper only for macosx-silicon"
+        echo ""
+        echo "use \"keep\" as 2nd argument to keep src and other nonessential"
+        echo "files which are normally removed"
+        exit 1
+    fi
+fi
+
+
 ########################################################
 echo "------------------------------------------------"
 echo "DOWNLOADING AND BUILDING RIBOVORE $VERSION"
@@ -247,6 +280,30 @@ if [ "$RIBOTYPERONLY" != "yes" ]; then
     fi
     echo "------------------------------------------------"
 fi
+
+########################################################
+# remove nonessential files, unless 'keep' used
+if [ "$DOKEEP" = "no" ]; then 
+    echo "------------------------------------------------"
+    echo "Removing nonessential files"
+    # infernal, we only need binaries subdir
+    mv infernal/binaries ./binaries
+    rm -rf infernal
+    mkdir infernal
+    mv binaries infernal
+    # ncbi-blast, we only need makeblastdb and blastn
+    if [ "$RIBOTYPERONLY" != "yes" ]; then
+        mv ncbi-blast/bin/makeblastdb ./
+        mv ncbi-blast/bin/blastn ./
+        rm -rf ncbi-blast
+        mkdir ncbi-blast
+        mkdir ncbi-blast/bin
+        mv makeblastdb ncbi-blast/bin
+        mv blastn ncbi-blast/bin
+    fi
+    echo "------------------------------------------------"
+fi
+########################################################
 
 ###############################################
 # Message about setting environment variables
