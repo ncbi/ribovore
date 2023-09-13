@@ -19,7 +19,7 @@ VERSION="1.0.4"
 # blast+
 BVERSION="2.11.0"
 # infernal
-IVERSION="1.1.4"
+IVERSION="1.1.5"
 IESLCLUSTERVERSION="1.1.2"
 # dependency git tag
 RVERSION="ribovore-$VERSION"

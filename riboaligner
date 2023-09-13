@@ -72,38 +72,51 @@ opt_Add("--riboopts",   "string",  undef,                    2,    undef, undef,
 opt_Add("--noscfail",   "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low scores",   "do not fail sequences in ribotyper with low scores", \%opt_HH, \@opt_order_A);
 opt_Add("--nocovfail",  "boolean", 0,                        2,    undef, undef,      "do not fail sequences in ribotyper with low coverage", "do not fail sequences in ribotyper with low coverage", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options for parallelizing cmsearch and cmalign on a compute farm";
+$opt_group_desc_H{"3"} = "options for modifying cmalign behavior";
+#     option              type       default group requires incompat     preamble-output                                            help-output    
+opt_Add("--glocal",       "boolean", 0,      3,    undef,   undef,       "use -g with cmalign for glocal alignment mode",           "use -g with cmalign for glocal alignment mode", \%opt_HH, \@opt_order_A);
+opt_Add("--noflank",      "boolean", 0,      3,    undef,   undef,       "do not use --flank* options to improve alns at ends",     "do not use --flank* options to improve alns at ends", \%opt_HH, \@opt_order_A);
+opt_Add("--flanktoins",   "real",    0.1,    3,    undef,   "--noflank", "set transition probs to ROOT_IL/IR for cmalign to <x>",   "set transition probs to ROOT_IL/IR for cmalign to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--flankselfins", "real",    0.8,    3,    undef,   "--noflank", "set self-transit probs in ROOT_IL/IR for cmalign to <x>", "set self-transit probs in ROOT_IL/IR for cmalign to <x>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{"4"} = "options for parallelizing cmsearch and cmalign on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("-p",           "boolean", 0,                         3,    undef, undef,      "parallelize ribotyper and cmalign on a compute farm",   "parallelize ribotyper and cmalign on a compute farm",    \%opt_HH, \@opt_order_A);
-opt_Add("-q",           "string",  undef,                     3,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-s",           "integer", 181,                       3,     "-p", undef,      "seed for random number generator is <n>",               "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 100,                       3,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
-opt_Add("--wait",       "integer", 500,                       3,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
-opt_Add("--errcheck",   "boolean", 0,                         3,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
+opt_Add("-p",           "boolean", 0,                         4,    undef, undef,      "parallelize ribotyper and cmalign on a compute farm",   "parallelize ribotyper and cmalign on a compute farm",    \%opt_HH, \@opt_order_A);
+opt_Add("-q",           "string",  undef,                     4,     "-p", undef,      "use qsub info file <s> instead of default",             "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                       4,     "-p", undef,      "seed for random number generator is <n>",               "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                       4,     "-p", undef,      "number of KB of seq for each farm job is <n>",          "number of KB of sequence for each farm job is <n>",  \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                       4,     "-p", undef,      "allow <n> minutes for jobs on farm",                    "allow <n> wall-clock minutes for jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--errcheck",   "boolean", 0,                         4,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
 # This section needs to be kept in sync (manually) with the opt_Add() section above
 my %GetOptions_H = ();
 my $usage    = "Usage: riboaligner [-options] <fasta file to annotate> <output file name root>\n";
 my $synopsis = "riboaligner :: classify lengths of ribosomal RNA sequences";
 my $options_okay = 
-    &GetOptions('h'            => \$GetOptions_H{"-h"}, 
-                'f'            => \$GetOptions_H{"-f"}, 
-                'b=s'          => \$GetOptions_H{"-b"},
-                'n=s'          => \$GetOptions_H{"-n"},
-                'v'            => \$GetOptions_H{"-v"},
-                'i=s'          => \$GetOptions_H{"-i"},
-                'keep'         => \$GetOptions_H{"--keep"},
-                'riboopts=s'   => \$GetOptions_H{"--riboopts"},
-                'noscfail'     => \$GetOptions_H{"--noscfail"},
-                'nocovfail'    => \$GetOptions_H{"--nocovfail"}, 
+    &GetOptions('h'              => \$GetOptions_H{"-h"}, 
+                'f'              => \$GetOptions_H{"-f"}, 
+                'b=s'            => \$GetOptions_H{"-b"},
+                'n=s'            => \$GetOptions_H{"-n"},
+                'v'              => \$GetOptions_H{"-v"},
+                'i=s'            => \$GetOptions_H{"-i"},
+                'keep'           => \$GetOptions_H{"--keep"},
+                # options related to the ribotyper call
+                'riboopts=s'     => \$GetOptions_H{"--riboopts"},
+                'noscfail'       => \$GetOptions_H{"--noscfail"},
+                'nocovfail'      => \$GetOptions_H{"--nocovfail"}, 
+                # options for modifying cmalign behavior
+                'glocal'         => \$GetOptions_H{"--glocal"}, 
+                'noflank'        => \$GetOptions_H{"--noflank"}, 
+                'flanktoins=s'   => \$GetOptions_H{"--flanktoins"}, 
+                'flankselfins=s' => \$GetOptions_H{"--flankselfins"}, 
                 # options for parallelization
-                'p'            => \$GetOptions_H{"-p"},
-                'q=s'          => \$GetOptions_H{"-q"},
-                's=s'          => \$GetOptions_H{"-s"},
-                'nkb=s'        => \$GetOptions_H{"--nkb"},
-                'maxnjobs=s'   => \$GetOptions_H{"--maxnjobs"},
-                'wait=s'       => \$GetOptions_H{"--wait"},
-                'errcheck'     => \$GetOptions_H{"--errcheck"});
+                'p'              => \$GetOptions_H{"-p"},
+                'q=s'            => \$GetOptions_H{"-q"},
+                's=s'            => \$GetOptions_H{"-s"},
+                'nkb=s'          => \$GetOptions_H{"--nkb"},
+                'maxnjobs=s'     => \$GetOptions_H{"--maxnjobs"},
+                'wait=s'         => \$GetOptions_H{"--wait"},
+                'errcheck'       => \$GetOptions_H{"--errcheck"});
 
 my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
@@ -452,6 +465,12 @@ my %family_length_class_HHA;  # key 1D is family, key 2D is length class (e.g. '
 my %out_tbl_HH = ();          # hash of hashes with information for output file
                               # key 1 is sequence name, key 2 is a column name, e.g. pred_cmfrom
 my $cmalign_opts = " --mxsize 4096. --outformat pfam --cpu $ncpu "; # cmalign options that are consistently used in all cmalign calls
+if(! opt_IsUsed("--noflank", \%opt_HH)) { 
+  $cmalign_opts .= "--flanktoins " . opt_Get("--flanktoins", \%opt_HH) . " --flankselfins " . opt_Get("--flankselfins", \%opt_HH) . " ";
+}
+if(opt_IsUsed("--glocal", \%opt_HH)) { 
+  $cmalign_opts .= "-g ";
+}
 my $opt_p_sum_cpu_secs = 0; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
 
 foreach $family (@family_order_A) { 
@@ -465,20 +484,24 @@ foreach $family (@family_order_A) {
     $info_H{"IN:seqfile"}         = $family_seqfile_H{$family};
     $info_H{"IN:modelfile"}       = $family_modelfile_H{$family}; 
     $info_H{"OUT-NAME:ifile"}     = $out_root . "." . $family . ".cmalign.ifile";
-    $info_H{"OUT-NAME:elfile"}    = $out_root . "." . $family . ".cmalign.elfile";
     $info_H{"OUT-NAME:stk"}       = $out_root . "." . $family . ".cmalign.stk";
     $info_H{"IN:seqlist"}         = $family_sfetch_filename_H{$family};
     $info_H{"OUT-NAME:stdout"}    = $out_root . "." . $family . ".cmalign.out";
     $info_H{"OUT-NAME:time"}      = $out_root . "." . $family . ".cmalign.time";
     $info_H{"OUT-NAME:stderr"}    = $out_root . "." . $family . ".cmalign.out.err";
     $info_H{"OUT-NAME:qcmd"}      = $out_root . "." . $family . ".cmalign.qcmd";
+    if(! opt_IsUsed("--glocal", \%opt_HH)) { 
+      $info_H{"OUT-NAME:elfile"}    = $out_root . "." . $family . ".cmalign.elfile";
+    }
     ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     if($use_time_program) { 
       $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
     }
     
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " insert file",  $info_H{"OUT-NAME:ifile"},   1, 1, "insert file for $family");
-    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, 1, "EL file for $family");
+    if(! opt_IsUsed("--glocal", \%opt_HH)) { 
+      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " EL file",      $info_H{"OUT-NAME:elfile"},  1, 1, "EL file for $family");
+    }
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " stk file",     $info_H{"OUT-NAME:stk"},     1, 1, "stockholm alignment file for $family");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . " cmalign file", $info_H{"OUT-NAME:stdout"},  1, 1, "cmalign output file for $family");
 
@@ -509,16 +532,16 @@ my $length_class_list_file = undef; # file name for list file for this length cl
 foreach $family (@family_order_A) { 
   my $family_cmalign_stk_file    = $out_root . "." . $family . ".cmalign.stk";
   my $family_cmalign_insert_file = $out_root . "." . $family . ".cmalign.ifile";
-  my $family_cmalign_el_file     = $out_root . "." . $family . ".cmalign.elfile";
   my $family_cmalign_out_file    = $out_root . "." . $family . ".cmalign.out";
+  my $family_cmalign_el_file     = (opt_Get("--glocal", \%opt_HH)) ? undef : $out_root . "." . $family . ".cmalign.elfile";
 
   foreach my $length_class (sort keys %{$family_length_class_HHA{$family}}) { 
     if(scalar(@{$family_length_class_HHA{$family}{$length_class}}) > 0) { 
       $length_class_list_file = $out_root . "." . $family . "." . $length_class . ".list";
       $cmalign_stk_file       = $out_root . "." . $family . "." . $length_class . ".stk";
       $cmalign_insert_file    = $out_root . "." . $family . "." . $length_class . ".ifile";
-      $cmalign_el_file        = $out_root . "." . $family . "." . $length_class . ".elfile";
       $cmalign_out_file       = $out_root . "." . $family . "." . $length_class . ".cmalign";
+      $cmalign_el_file        = (opt_Get("--glocal", \%opt_HH)) ? undef : $out_root . "." . $family . "." . $length_class . ".elfile";
 
       open(OUT, ">", $length_class_list_file) || ofile_FileOpenFailure($length_class_list_file,  "riboaligner::Main", $!, "writing", $FH_HR);
       foreach my $seqname (@{$family_length_class_HHA{$family}{$length_class}}) { 
@@ -529,7 +552,9 @@ foreach $family (@family_order_A) {
 
       # extract relevant lines from insert file and EL file:
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_insert_file, $cmalign_insert_file, $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
-      subset_from_insert_or_el_or_cmalign_file($family_cmalign_el_file,     $cmalign_el_file,     $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
+      if(! opt_Get("--glocal", \%opt_HH)) { 
+        subset_from_insert_or_el_or_cmalign_file($family_cmalign_el_file,     $cmalign_el_file,     $family_length_class_HHA{$family}{$length_class}, 0, $FH_HR);
+      }
       subset_from_insert_or_el_or_cmalign_file($family_cmalign_out_file,    $cmalign_out_file,    $family_length_class_HHA{$family}{$length_class}, 1, $FH_HR);
 
       # extract subset from the alignment
@@ -537,7 +562,9 @@ foreach $family (@family_order_A) {
 
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "stkfile", $cmalign_stk_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Alignment",      scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "ifile",   $cmalign_insert_file, 1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "Insert file",    scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
-      ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "EL",      $cmalign_el_file,     1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      if(! opt_Get("--glocal", \%opt_HH)) { 
+        ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "EL",      $cmalign_el_file,     1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "EL file",        scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
+      }
       ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, $family . "." . $length_class . "cmalign", $cmalign_out_file,    1, 1, sprintf("%-18s for %6d %-12s %10s sequences", "cmalign output", scalar(@{$family_length_class_HHA{$family}{$length_class}}), $family, $length_class));
     }
   }
