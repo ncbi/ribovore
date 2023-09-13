@@ -4,7 +4,7 @@
 # A shell script for downloading and installing Ribovore and its dependencies.
 # 
 # usage: 
-# install.sh <"linux" or "macosx">
+# install.sh <"linux" or "macosx-intel" or "macosx-silicon">
 #
 # for example:
 # install.sh linux
@@ -17,7 +17,7 @@ RIBOINSTALLDIR=$PWD
 # versions
 VERSION="1.0.4"
 # blast+
-BVERSION="2.11.0"
+BVERSION="2.14.1"
 # infernal
 IVERSION="1.1.5"
 IESLCLUSTERVERSION="1.1.2"
@@ -32,7 +32,7 @@ INPUTSYSTEM="?"
 ########################
 # make sure correct number of cmdline arguments were used, exit if not
 if [ "$#" -ne 1 ]; then
-   echo "Usage: $0 <\"linux\" or \"macosx\">"
+   echo "Usage: $0 <\"linux\" or \"macosx-intel\" or \"macosx-silicon\">"
    exit 1
 fi
 
@@ -40,11 +40,14 @@ fi
 if [ "$1" = "linux" ]; then
     INPUTSYSTEM="linux";
 fi
-if [ "$1" = "macosx" ]; then
-    INPUTSYSTEM="macosx";
+if [ "$1" = "macosx-intel" ]; then
+    INPUTSYSTEM="macosx-intel";
+fi
+if [ "$1" = "macosx-silicon" ]; then
+    INPUTSYSTEM="macosx-silicon";
 fi
 if [ "$INPUTSYSTEM" = "?" ]; then 
-   echo "Usage: $0 <\"linux\" or \"macosx\">"
+   echo "Usage: $0 <\"linux\" or \"macosx-intel\" or \"macosx-silicon\">"
    exit 1
 fi
 ########################################################
@@ -113,26 +116,36 @@ curl -k -L -o sequip-$RVERSION.zip https://github.com/nawrockie/sequip/archive/$
 if [ "$INPUTSYSTEM" = "linux" ]; then
     echo "Downloading Infernal version $IVERSION for Linux"
     curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-linux-intel-gcc.tar.gz
+    tar xfz infernal.tar.gz
+    rm infernal.tar.gz
     echo "Downloading Infernal version $IESLCLUSTERVERSION for Linux"
     curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION-linux-intel-gcc.tar.gz
-else
-    echo "Downloading Infernal version $IVERSION for Mac/OSX"
+    tar xfz infernal2.tar.gz
+    rm infernal2.tar.gz
+elif [ "$INPUTSYSTEM" = "macosx-intel" ]; then       
+    echo "Downloading Infernal version $IVERSION for Mac/OSX-intel"
     curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-macosx-intel.tar.gz
-    echo "Downloading Infernal version $IESLCLUSTERVERSION for Mac/OSX"
+    tar xfz infernal.tar.gz
+    rm infernal.tar.gz
+    echo "Downloading Infernal version $IESLCLUSTERVERSION for Mac/OSX-intel"
     curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION-macosx-intel.tar.gz
+    tar xfz infernal2.tar.gz
+    rm infernal2.tar.gz
+else
+    echo "Downloading Infernal version $IVERSION for Mac/OSX-silicon"
+    curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-macosx-intel.tar.gz
+    # esl-cluster doesn't exist in an infernal release that builds on silicon
 fi
-tar xfz infernal.tar.gz
-tar xfz infernal2.tar.gz
-rm infernal.tar.gz
-rm infernal2.tar.gz
 if [ "$INPUTSYSTEM" = "linux" ]; then
     mv infernal-$IVERSION-linux-intel-gcc infernal
     mv infernal-$IESLCLUSTERVERSION-linux-intel-gcc/binaries/esl-cluster infernal/binaries/
     rm -rf infernal-$IESLCLUSTERVERSION-linux-intel-gcc
-else
+elif [ "$INPUTSYSTEM" = "macosx-intel" ]; then       
     mv infernal-$IVERSION-macosx-intel infernal
     mv infernal-$IESLCLUSTERVERSION-macosx-intel/binaries/esl-cluster infernal/binaries/
     rm -rf infernal-$IESLCLUSTERVERSION-macosx-intel
+else
+    mv infernal-$IVERSION-macosx-silicon infernal
 fi
 # ----- infernal block 1 end -----
 
