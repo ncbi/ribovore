@@ -434,7 +434,7 @@ if(opt_IsUsed("-p", \%opt_HH)) {
   else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
   if(! opt_IsUsed("-q", \%opt_HH)) {
-    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+#    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
   }
   else { # -q used on the command line
     utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
