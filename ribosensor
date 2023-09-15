@@ -269,17 +269,11 @@ foreach $cmd (@early_cmd_A) {
   print $cmd_FH $cmd . "\n";
 }
 
-# make sure the sequence, modelinfo, and qsubinfo (if -q) files exist
+# make sure the sequence, modelinfo, and qsubinfo (if -p) files exist
 my $df_modelinfo_file = $df_model_dir . "ribosensor.modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
-
-my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
-my $qsubinfo_file = undef;
-# if -p, check for existence of qsub info file
-if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
-else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
 utl_FileValidateExistsAndNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
@@ -288,12 +282,22 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { # -i used on the command line
   utl_FileValidateExistsAndNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
-if(! opt_IsUsed("-q", \%opt_HH)) {
-  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+
+my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
+my $qsubinfo_file = undef;
+# if -p, check for existence of qsub info file
+if(opt_IsUsed("-p", \%opt_HH)) { 
+  if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
+  else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
+  
+  if(! opt_IsUsed("-q", \%opt_HH)) {
+    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+  }
+  else { # -q used on the command line
+    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+  }
 }
-else { # -q used on the command line
-  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
-}
+
 # we check for the existence of model file after we parse the model info file
 
 ##############################
