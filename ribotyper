@@ -429,7 +429,8 @@ else { # -i used on the command line
 # if -p, check for existence of qsub info file
 my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
 my $qsubinfo_file = undef;
-if(opt_Get("-p", \%opt_HH)) { 
+
+if(opt_IsUsed("-p", \%opt_HH)) { 
   if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
   else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
@@ -549,7 +550,7 @@ if(opt_Get("--onlyval", \%opt_HH)) {
 }
 
 # parse qsub file
-if(opt_Get("-p", \%opt_HH)) { 
+if(opt_IsUsed("-p", \%opt_HH)) { 
   ($qsub_prefix, $qsub_suffix) = ribo_ParseQsubFile($qsubinfo_file, $ofile_info_HH{"FH"});
 }
 
