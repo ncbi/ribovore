@@ -562,10 +562,10 @@ This tree was created using the procedure described below on February 10, 2023.
 You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
 download `vecscreen_plus_taxonomy` with the following commands:
 ```
-curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.4.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.4.zip; 
-unzip vecscreen_plus_taxonomy-ribovore-1.0.4.zip; 
-mv vecscreen_plus_taxonomy-ribovore-1.0.4 vecscreen_plus_taxonomy
-rm vecscreen_plus_taxonomy-ribovore-1.0.4.zip
+curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.5.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.5.zip; 
+unzip vecscreen_plus_taxonomy-ribovore-1.0.5.zip; 
+mv vecscreen_plus_taxonomy-ribovore-1.0.5 vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-ribovore-1.0.5.zip
 ```
 
 And then modify the `$VECPLUSDIR` and `$PERL5LIB` environment variables in your `.bashrc` file as follows:
@@ -603,6 +603,10 @@ Steps to create an updated NCBI taxonomy tree file:
 1. Move into a newly created directory - these steps will generate about a dozen files in that new directory.
 
 2. Download `new_taxdump.tar.gz` from [https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/](https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/)
+
+```
+curl -k -L -o new_taxdump.tar.gz  https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz
+```
 
 3. Execute the following commands:
 
