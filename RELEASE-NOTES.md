@@ -1,5 +1,19 @@
 # Ribovore release notes 
 
+### Ribovore 1.0.5 release (Sep 2023): Minor update
+  * riboaligner now does a better job of aligning
+    sequences that have extra sequence at the 5' and 3' 
+    ends
+  * Updates version of infernal to v1.1.5, so 
+    ribovore should build on MacOS/X silicon machines
+  * Updates version of blast to 2.14.1+
+  * Updates NCBI taxonomy tree
+    (taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt) 
+  * install.sh now allows minimal installation if only 
+    ribotyper is needed
+  * install.sh now removes unnecessary files in dependencies 
+    to minimize disk space (keep all files with 'keep' option
+
 ### Ribovore 1.0.4 release (Feb 2023): Documentation fix release
   * Updates version and date in README.md which were incorrect
     in v1.0.3 (unchanged from v1.0.2).
