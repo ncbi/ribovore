@@ -147,8 +147,7 @@ echo "Downloading ribovore ... "
 # ----------------------------------------------------------------------------
 git clone https://github.com/ncbi/ribovore.git ribovore
 cd ribovore
-#git checkout release-$VERSION
-git checkout install-r2dt
+git checkout release-$VERSION
 rm -rf .git
 cd ..
 # ----------------------------------------------------------------------------
@@ -307,7 +306,7 @@ if [ "$DOKEEP" = "no" ]; then
         rm -rf ncbi-blast
         mkdir ncbi-blast
         mkdir ncbi-blast/bin
-        mv makeblastdb ncbi-blast/bin
+        mv blastdbcmd ncbi-blast/bin
         mv blastn ncbi-blast/bin
     fi
     echo "------------------------------------------------"
