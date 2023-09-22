@@ -299,9 +299,9 @@ if [ "$DOKEEP" = "no" ]; then
     rm -rf infernal
     mkdir infernal
     mv binaries infernal
-    # ncbi-blast, we only need makeblastdb and blastn
+    # ncbi-blast, we only need blastdbcmd and blastn
     if [ "$RIBOTYPERONLY" != "yes" ]; then
-        mv ncbi-blast/bin/makeblastdb ./
+        mv ncbi-blast/bin/blastdbcmd ./
         mv ncbi-blast/bin/blastn ./
         rm -rf ncbi-blast
         mkdir ncbi-blast
