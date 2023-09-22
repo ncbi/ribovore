@@ -60,7 +60,7 @@ installed. `vecscreen_plus_taxonomy` will be installed only for
 be able to use all features of `ribodbmaker`. Mac/OSX installations
 will be able to run `ribodbmaker` but only with specific flags that
 cause steps that require executable programs that get installed with
-`vecscreen_plus_taxonomy` to be skipped.
+`vecscreen_plus_taxonomy` to be skipped, as explained more [here](ribodbmaker.md#macosx)
 
 The `install.sh` command will create several directories in the
 current directory.  It will download and install Ribovore and the
