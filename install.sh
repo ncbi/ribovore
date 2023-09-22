@@ -220,10 +220,10 @@ elif [ "$INPUTSYSTEM" = "macosx-intel" ]; then
 else
     echo "Downloading Infernal version $IVERSION for Mac/OSX-silicon"
     curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-macosx-silicon.tar.gz
-    # esl-cluster doesn't exist in an infernal release that builds on silicon
+    # esl-cluster doesn't exist in an infernal release that builds on silicon, but the intel version runs on silicon
     tar xfz infernal.tar.gz
     rm infernal.tar.gz
-    mv infernal-$IVERSION-macosx-intel infernal
+    mv infernal-$IVERSION-macosx-silicon infernal
     if [ "$RIBOTYPERONLY" != "yes" ]; then
         echo "Downloading Infernal version $IESLCLUSTERVERSION for Mac/OSX"
         curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION-macosx-intel.tar.gz
