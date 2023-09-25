@@ -12,7 +12,7 @@
   * install.sh now allows minimal installation if only 
     ribotyper is needed
   * install.sh now removes unnecessary files in dependencies 
-    to minimize disk space (keep all files with 'keep' option
+    to minimize disk space (keep all files with 'keep' option)
 
 ### Ribovore 1.0.4 release (Feb 2023): Documentation fix release
   * Updates version and date in README.md which were incorrect
