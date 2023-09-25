@@ -1,66 +1,43 @@
 # STOCKHOLM 1.0
-#=GF AU Infernal 1.1.4
+#=GF AU Infernal 1.1.5
+
+00072::Chlamydia_trachomatis.::AE001345         ----------------------------------------------------------------------------------------------------------------------------------CUUAACUUGGGAAUAACGGUUGGAAACGGCCGCUAAUACCGAAUGUGGCGAUAUUUGGGCAUCCGAGUAA
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ..................................................................................................................................**************************************************99997888999988879999
+#=GC SS_cons                                    ::::::::<<<<<_______>>>>>,{{{{-{{{{{{,{{{{{{{{{----{{{-{{{,,<<<--<<<<<-<<<<<<<____>>>>>>>->>->>>>>>,,,,,,[[[,,,,,,((((((((--((---(((((((,<<<<----<<<<<<<____>>>>>>>----->>>>,,,,,<<<<<<<.<<<____>>>.>>>>
+#=GC RF                                         uuuauggAGaGuuUGAUCcUggCuCAGggcGaaCGCuGGCGGcgcGcuUaAcaCAuGCAAGuCGagccccacggggccuuaaggccccgagggggcGgCGaAcGGGuGAGUAAcgCGcgggcAAccUacCcccgggugcgGgAUAccccccgGAAAcggggggUAAUACcgcAUaaugccccgg.cccguauggg.ccgg
+
+00072::Chlamydia_trachomatis.::AE001345         CGUUAAAGAAGGGGAUCUUAGGACCUUUCGGUUAAGGGAGAGUCUAUGUGAUAUCAGCUAGUUGGUGGGGUAAAGGCCUACCAAGGCUAUGACGUCUAGGCGGAUUGAGAGAUUGGCCGCCAACACUGGGACUGAGACACUGCCCAGACUCCUACGGGAGGCUGCAGUCGAGAAUCUUUCGCAAUGGACGGAAGUCUGAC
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ***************99877655555******************************************************************************************************************************************************************************
+#=GC SS_cons                                    >>>,,,,<<<..........._____>>>,)))))))--))))))))))<<<--<-<<<--<<<<<<<<_______>>>>>>>>>>>----->>>>,,<<<<<<<<____>>>>--->>>>]]],<<<<<<__________>>>>>>,<<<<____>>>>,,,}}}}}}-},,,,,<-<<<---<<<<<____>>>>>->
+#=GC RF                                         ggcuAAAGgc...........auuuagcCGcccgggGAugggcccgCGccccAUcAGcuAGuuGGuggGGUAAuGGCccaCCaaggCgAuGAggggUAGccGgccuGAGAgggcGauCggCCaCAcuGGgaCUGAGAcACGgcCCagACuCCUACGGGaGGCAGCaGugggGAAUauUgcgCAAugGgcGaAAgcCugAc
+
+00072::Chlamydia_trachomatis.::AE001345         GAAGCGACGCCGCGUGUGUGAUGAAGGCUCUAGGGUUGUAAAGCACUUUCGCUUGGGAAUAAGAGAAGACGGUUAAUACC----C-GCUGGAUUUGAGCGUACCAGGUAAAGAAGCACCGGCUAACUCCGUGCCAGCAGCUGCGGUAAUACGGAGGGUGCUAGCGUUAAUCGGAUUUAUUGGGCGUAAAGGGCGUGUAGG
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP *************************************************************9988655555555553332....2.233322259*********************************************************************************************************
+#=GC SS_cons                                    >>>,}}-}}}}}},,<<<<------<<<<____>>>>----->>>>,,,<<<<<<<---<-----<<<___.........______~>>>-..---->---->>>>>>--->,,<<<<<------<<<<<-----<<____>>------->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{{-----{,[[[[-[-[[
+#=GC RF                                         gcaGCgAcgCCGCGUGgggGAuGAAggccUUcGggccGUAAAcccCUuUcccggGgGAagAaaaaccgaua.........uuuuau~cggu..uuGAcggUAcCccgggAagAAGcccCGGCUAAcuccGUGCCAGCAGCCGCGGUAAuACggagGgggCaaGCGuugccCGGAaUuAuUGGGcGUAAAGgGcgcGcAgG
+
+00072::Chlamydia_trachomatis.::AE001345         CGGAAAGGUAAGUUAGUUGUCAAAGAUCGGGGCUCAACCCCGAGUCGGCAUCUAAUACUAUUUUUCUAGAGGAUAGAUGGAGAAAAGGGAAUUUCACGUGUAGCGGUGAAAUGCGUAGAUAUGUGGAAGAACACCAGUGGCGAAGGCGCUUUUCUAAUUUAUACCUGACGCUAAGGCGCGAAAGCAAGGGGAGCAAACAG
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ********************************************************************************************************************************************************************************************************
+#=GC SS_cons                                    [,<<<<<<<-<<<<<<<<<<<----<<<<<<<_____>>>>>>>-->>>>>>>>>-->>>>>>>>>,,,(((((((((--(((((((<<--<<<<<<<<---<<<______>>>------>>>>>>>>-->>,,,,<--<<____>>>)))))))-))))))-))),,,]]]]--]]]],,,,<<<<<<---<<---<<<
+#=GC RF                                         cGGcccggcAaGucgggcgcgAAAucccgcgGCUcAACcgcgggaucgcgcccgaaACugccgggCUuGaGuccggccGAgGggggcggAAcucccgguGUAGcgGUGAAAugCGUAGAuaucgggagGAacACCacugGCGAAGGCggccccCuGggccgguaCuGACgCugAggcgCGAAAGCguGGGgAgCaAAcgG
+
+00072::Chlamydia_trachomatis.::AE001345         GAUUAGAUACCCUGGUAGUCCUUGCCGUAAACGAUGCAUACUUGAUGUGGAUGGUCUCAACCCCAUCCGUGUCGGAGCUAACGCGUUAAGUAUGCCGCCUGAGGAGUACACUCGCAAGGGUGAAACUCAAAAGAAUUGACGGGGGCCCGCACAAGCAGUGGAGCAUGUGGUUUAAUUCGAUGCAACGCGAAGGACCUUAC
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP *******************************************************999998*******************************************************************************************************************************************
+#=GC SS_cons                                    <_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<<<<<<<<<_____.>>>>>>>>>>>>,,,<<____>>,,,,,))))))}}}},<<<------<<<<____>>>>---->>>,,,,,,,,{{{{{-{{{{{{{-{{,,{{{{{{{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{
+#=GC RF                                         GAUUAGAUACCCcgGUAGuCCacGCcgUAAACGAUGggcgCUAGgcgccggggggauuaa.ccccccggcgcCgaAGcuAAcgCauUAAGcgccCCgCCUGgGGAgUACggcCGCAAGgcugAAACuCAAAGGAAUuGaCgGgGgCCCGCaCAAGCGguGgagcauGuGGuUUAAuuCGAuGcaAcgCGaaGAACCUUAC
+
+00072::Chlamydia_trachomatis.::AE001345         CUGGGUUUGACAUGUAUAUGAC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP **************87777666..................................................................................................................................................................................
+#=GC SS_cons                                    {{{{{{,,,,,((((((((,,<<<<<<<____>>>>>>>,<<<<____>>>>)))))-))),[[-[[[[--[[[[[[[[[,,,((((((<<<____>>>,,<<<<______>>>>,,)))))),,,,,((((,<<<<<<<---<<--<<<______>>>>>---->>>>>>>,,<<<<<<<<_____>>>>>>>>,,,,,
+#=GC RF                                         CcgggcUUGAcgugccgggaaccccccgGAaAcgggggguccccuuaaggggcccggacacAGGUGcugCAuGgcuGuCGUCAGCuCGuguCGUGAGauGUcgGGUUAAGUCCcgcAaCGaGCGCAACCCccgccccuagUUgCcAucgguuuauuccggGcACUcuaggggGACcgCCggcGauAAgccGGagGAAGGu
 
 00072::Chlamydia_trachomatis.::AE001345         --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #=GR 00072::Chlamydia_trachomatis.::AE001345 PP ........................................................................................................................................................................................................
-00224::Rickettsia_prowazekii.::AJ235272         --------AUGACU------GUUGUACGUGAUCUGUAGAUGAUAUAGCUAGCUAGCUAGCUAGGGCGCGAUUCGAGAGUCGGGCGAUAUUAAGCUAGUACGAUGAAUCAAACUUGAGAGUUUGAUCCUGGCUCAGAACGAACGCUAUCGGUAUGCUUAACACAUGCAAGUCGAACGG-AUUAACUAGAGCUCGCUUUAGU
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP ........444343......4568899*****************************************************************************************************66799******************************************95.4334888888899998888887
-#=GC SS_cons                                    ::::::::<<<<<_______~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>>>,{{{{-{{{{{{,{{{{{{{{{----{{{-{{{,,<<<--<<<.<<-..<<<<<<<____>>>>>>>
-#=GC RF                                         uuuauggAGaGuuUGAUCcU~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ggCuCAGggcGaaCGCuGGCGGcgcGcuUaAcaCAuGCAAGuCGagcc.cca..cggggccuuaaggccccg
+#=GC SS_cons                                    )))),,,,]]]]-]]]---]]]]]]]],,,,}}}}}}},,,}}-}}}}}}}}}},,,<<<<<<<-----<<<--<<---<<<____>>>--->>---->>>----->>>>>>>,,,,,,<---<<<<<<<<________>>>>>>>>--->,,,,,}}}}},,,,,<<<<<<<<_______>>>>>>>>,,,,,,}}---
+#=GC RF                                         ggGGAuGACGuCAaguCauCauggCCCUUAugcccgGGGCuaCACaCgugcuaCAAUGgccggcACAaaggGuaGCaAagccGcGAggcggAGCuAAUCccauAAAgccggcCucAGUUCGGAcuGgaGgCUGcAAcUCGcCucCagGAAGuuGGAauCGCUAGUAaucGcggcUCAGcAugccgCgguGAAUACGuUCc
 
-00072::Chlamydia_trachomatis.::AE001345         ------------------------------------------CUUAACUUGGGAAUAACGGUUGGAAACGGCCGCUAAUACCGAAUGUGGCGAUAUUUGGGCAUCCGAGUAACGUUAAAGAAGGGGAUCUUAGGACCUUUCGGUUAAGGGAGAGUCUAUGUGAUAUCAGCUAGUUGGUGGGGUAAAGGCCUACCAAGGCU
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ..........................................**************************************************99997888999988879999***************99877655555**************************************************************
-00224::Rickettsia_prowazekii.::AJ235272         UAAUUAGUGGCAGACGGGUGAGUAACACGUGGGA-AUCUACCCAUCAGUACGGAAUAACUUUUAGAAAUAAAAGCUAAUACCGUAUAUU--------CUCUACGGAG--------GAAAGA-------------UUUA-UCGCUGAUGGAUGGGCCCGCGUCAGAUUAGGUAGUUGGUGAGGUAAUGGCUCACCAAGCCG
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP 34556****************************9.9*****************************************************........9999999999........******.............6666.*************************************************************
-#=GC SS_cons                                    .->>->>>>>>,,,,,,[[[,,,,,,((((((((--((---(((((((,<<<<----<<<<<<<____>>>>>>>----->>>>,,,,,<<<<<<<.<<<____>>>.>>>>>>>,,,,<<<..........._____>>>,)))))))--))))))))))<<<--<-<<<--<<<<<<<<_______>>>>>>>>>>>-
-#=GC RF                                         .agggggcGgCGaAcGGGuGAGUAAcgCGcgggcAAccUacCcccgggugcgGgAUAccccccgGAAAcggggggUAAUACcgcAUaaugccccgg.cccguauggg.ccggggcuAAAGgc...........auuuagcCGcccgggGAugggcccgCGccccAUcAGcuAGuuGGuggGGUAAuGGCccaCCaaggCg
-
-00072::Chlamydia_trachomatis.::AE001345         AUGACGUCUAGGCGGAUUGAGAGAUUGGCCGCCAACACUGGGACUGAGACACUGCCCAGACUCCUACGGGAGGCUGCAGUCGAGAAUCUUUCGCAAUGGACGGAAGUCUGACGAAGCGACGCCGCGUGUGUGAUGAAGGCUCUAGGGUUGUAAAGCACUUUCGCUUGGGAAUAAGAGAAGACGGUUAAUACC----C-GC
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP *****************************************************************************************************************************************************************************9988655555555553332....2.23
-00224::Rickettsia_prowazekii.::AJ235272         ACGAUCUGUAGCUGGUCUGAGAGGAUGAUCAGCCACACUGGGACUGAGACACGGCCCAGACUCCUACGGGAGGCAGCAGUGGGGAAUAUUGGACAAUGGGCGAAAGCCUGAUCCAGCAAUACCGAGUGAGUGAUGAAGGCCUUAGGGUUGUAAAGCUCUUUUAGCAAGGAAGAUA-A-----------------------
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP ****************************************************************************************************************************************************************************988.5.......................
-#=GC SS_cons                                    ---->>>>,,<<<<<<<<____>>>>--->>>>]]],<<<<<<__________>>>>>>,<<<<____>>>>,,,}}}}}}-},,,,,<-<<<---<<<<<____>>>>>->>>>,}}-}}}}}},,<<<<------<<<<____>>>>----->>>>,,,<<<<<<<---<-----<<<___.........______~>
-#=GC RF                                         AuGAggggUAGccGgccuGAGAgggcGauCggCCaCAcuGGgaCUGAGAcACGgcCCagACuCCUACGGGaGGCAGCaGugggGAAUauUgcgCAAugGgcGaAAgcCugAcgcaGCgAcgCCGCGUGgggGAuGAAggccUUcGggccGUAAAcccCUuUcccggGgGAagAaaaaccgaua.........uuuuau~c
-
-00072::Chlamydia_trachomatis.::AE001345         UGGAUUUGAGCGUACCAGGUAAAGAAGCACCGGCUAACUCCGUGCCAGCAGCUGCGGUAAUACGGAGGGUGCUAGCGUUAAUCGGAUUUAUUGGGCGUAAAGGGCGUGUAGGCGGAAAGGUAAGUUAGUUGUCAAAGAUCGGGGCUCAACCCCGAGUCGGCAUCUAAUACUAUUUUUCUAGAGGAUAGAUGGAGAAAAGG
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP 3322259*************************************************************************************************************************************************************************************************
-00224::Rickettsia_prowazekii.::AJ235272         ------UGACGUUACUUGCAGAAAAAGCCCCGGCUAACUCCGUGCCAGCAGCCGCGGUAAGACGGAGGGGGCUAGCGUUGUUCGGAAUUACUGGGCGUAAAGAGUGCGUAGGCGGUUUAGUAAGUUGGAAGUGAAAGCCCGGGGCUUAACCUCGGAAUUGCUUUCAAAACUACUAAUCUAGAGUGUAGUAGGGGAUGAUG
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP ......79************************************************************************************************************************************************************************************************
-#=GC SS_cons                                    >>-..---->---->>>>>>--->,,<<<<<------<<<<<-----<<____>>------->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{{-----{,[[[[-[-[[[,<<<<<<<-<<<<<<<<<<<----<<<<<<<_____>>>>>>>-->>>>>>>>>-->>>>>>>>>,,,(((((((((--(((((((<
-#=GC RF                                         ggu..uuGAcggUAcCccgggAagAAGcccCGGCUAAcuccGUGCCAGCAGCCGCGGUAAuACggagGgggCaaGCGuugccCGGAaUuAuUGGGcGUAAAGgGcgcGcAgGcGGcccggcAaGucgggcgcgAAAucccgcgGCUcAACcgcgggaucgcgcccgaaACugccgggCUuGaGuccggccGAgGggggcg
-
-00072::Chlamydia_trachomatis.::AE001345         GAAUUUCACGUGUAGCGGUGAAAUGCGUAGAUAUGUGGAAGAACACCAGUGGCGAAGGCGCUUUUCUAAUUUAUACCUGACGCUAAGGCGCGAAAGCAAGGGGAGCAAACAGGAUUAGAUACCCUGGUAGUCCUUGCCGUAAACGAUGCAUACUUGAUGUGGAUGGUCUCAACCCCAUCCGUGUCGGAGCUAACGCGUUA
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ***********************************************************************************************************************************************************************999998***************************
-00224::Rickettsia_prowazekii.::AJ235272         GAAUUCCUAGUGUAGAGGUGAAAUUCUUAGAUAUUAGGAGGAACACCGGUGGCGAAGGCGGUCAUCUGGGCUACAACUGACGCUGAUGCACGAAAGCGUGGGGAGCAAACAGGAUUAGAUACCCUGGUAGUCCACGCCGUAAACGAUGAGUGCUAGAUAUCGGAGGAU--UC-UCUUUCGGUUUCGCAGCUAACGCAUUA
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP **********************************************************************************************************************************************************************94..45.9**************************
-#=GC SS_cons                                    <--<<<<<<<<---<<<______>>>------>>>>>>>>-->>,,,,<--<<____>>>)))))))-))))))-))),,,]]]]--]]]],,,,<<<<<<---<<---<<<<_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<<<<<<<<<_____.>>>>>>>>>>>>,,,<<____>>,,,,
-#=GC RF                                         gAAcucccgguGUAGcgGUGAAAugCGUAGAuaucgggagGAacACCacugGCGAAGGCggccccCuGggccgguaCuGACgCugAggcgCGAAAGCguGGGgAgCaAAcgGGAUUAGAUACCCcgGUAGuCCacGCcgUAAACGAUGggcgCUAGgcgccggggggauuaa.ccccccggcgcCgaAGcuAAcgCauUA
-
-00072::Chlamydia_trachomatis.::AE001345         AGUAUGCCGCCUGAGGAGUACACUCGCAAGGGUGAAACUCAAAAGAAUUGACGGGGGCCCGCACAAGCAGUGGAGCAUGUGGUUUAAUUCGAUGCAACGCGAAGGACCUUACCUGGGUUUGACAUGUAUAU--GAC----------------------------------------------------------------
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ******************************************************************************************************************************87777..666................................................................
-00224::Rickettsia_prowazekii.::AJ235272         AGCACUCCGCCUGGGGAGUACGGUCGCAAGAUUAAAACUCAAAGGAAUUGACGGGGGCUCGCACAAGCGGUGGAGCAUGCGGUUUAAUUCGAUGUUACGCGAAAAACCUUACCAACCCUUGACAUGGUGGUUACGGAUUGCAGAGAUGCUUUCCUUCAGUUCGGCUGGGCCACACACAGGUGUUGCAUGGCUGUCGUCAG
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP ***********************************************************************************************************************************94445557999****99975554499999988899**********************************
-#=GC SS_cons                                    ,))))))}}}},<<<------<<<<____>>>>---->>>,,,,,,,,{{{{{-{{{{{{{-{{,,{{{{{{{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{{{{,,,,,((((((((..,,<<<<<<<____>>>>>>>,.<<<<__.__>>>>)))))-))),[[-[[[[--[[[[[[[[[,,,(
-#=GC RF                                         AGcgccCCgCCUGgGGAgUACggcCGCAAGgcugAAACuCAAAGGAAUuGaCgGgGgCCCGCaCAAGCGguGgagcauGuGGuUUAAuuCGAuGcaAcgCGaaGAACCUUACCcgggcUUGAcgugccggg..aaccccccgGAaAcggggggu.ccccuu.aaggggcccggacacAGGUGcugCAuGgcuGuCGUCAG
-
-00072::Chlamydia_trachomatis.::AE001345         --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ........................................................................................................................................................................................................
-00224::Rickettsia_prowazekii.::AJ235272         CUCGUGUCGUGAGAUGUUGGGUUAAGUCCCGCAACGAGCGCAACCCUUAUUCUUAUUUGCCAGUGGGUAAUGCCGGGAACUAUAAGAAAACUGCCGGUGAUAAGCCGGAGGAAGGUGGGGACGACGUCAAGUCAUCAUGGCCCUUACGGGUUGGGCUACACGCGUGCUACAAUGGUGUUUACAGAGGGAAGCAAUACGGU
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP ********************************************************************************************************************************************************************************************************
-#=GC SS_cons                                    (((((<<<____>>>,,<<<<______>>>>,,)))))),,,,,((((,<<<<<<<---<<--<<<______>>>>>---->>>>>>>,,<<<<<<<<_____>>>>>>>>,,,,,)))),,,,]]]]-]]]---]]]]]]]],,,,}}}}}}},,,}}-}}}}}}}}}},,,<<<<<<<-----<<<--<<---<<<__
-#=GC RF                                         CuCGuguCGUGAGauGUcgGGUUAAGUCCcgcAaCGaGCGCAACCCccgccccuagUUgCcAucgguuuauuccggGcACUcuaggggGACcgCCggcGauAAgccGGagGAAGGuggGGAuGACGuCAaguCauCauggCCCUUAugcccgGGGCuaCACaCgugcuaCAAUGgccggcACAaaggGuaGCaAagccGc
-
-00072::Chlamydia_trachomatis.::AE001345         --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ........................................................................................................................................................................................................
-00224::Rickettsia_prowazekii.::AJ235272         GACGUGGAGCAAAUCCCU-AAAAGACAUCUCAGUUCGGAUUGUUCUCUGCAACUCGAGAGCAUGAAGUUGGAAUCGCUAGUAAUCGCGGAUCAGCAUGCCGCGGUGAAUACGUUCUCGGGCCUUGUACACACUGCCCGUCACGCCAUGGGAGUUGGUUUUACCUGAAGGUGGUGAGCUAACG-CAA-GAGGCAGCCAACC
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP *****************9.9999*************************************************************************************************************************************************************84.555.89***********
-#=GC SS_cons                                    __>>>--->>---->>>----->>>>>>>,,,,,,<---<<<<<<<<________>>>>>>>>--->,,,,,}}}}},,,,,<<<<<<<<_______>>>>>>>>,,,,,,}}---}}}}}}}}}}-}},,<-<<-<<---<<<<<<<<--<<<<<<<<<<<<----<<<<<<-<<<<--<<____>>->>>>>>>>>>-
-#=GC RF                                         GAggcggAGCuAAUCccauAAAgccggcCucAGUUCGGAcuGgaGgCUGcAAcUCGcCucCagGAAGuuGGAauCGCUAGUAaucGcggcUCAGcAugccgCgguGAAUACGuUCcCGGGcCuuGuACaCACCGcCCGUCAcgcCacggaAgccggccccgcCcGAAGccgccgcgccAAccuuaaggaggcgggcggCu
-
-00072::Chlamydia_trachomatis.::AE001345         -----------------------------------------------------------------------------------------------------------------------------
-#=GR 00072::Chlamydia_trachomatis.::AE001345 PP .............................................................................................................................
-00224::Rickettsia_prowazekii.::AJ235272         ACGGUAAAAUUAGCGACUGGGGUGAAGUCGUAACAAGGUAGCCGUAGGGGA-ACUGCGGCUGGAUUACCUCCUUAAUGAGUGAUGCUUAUAUAGCGAUGAUGC----------------------
-#=GR 00224::Rickettsia_prowazekii.::AJ235272 PP *******************************************88875664.999999999999999999999999999999999999999999999988765......................
-#=GC SS_cons                                    -->>>>>>>>>>>>-->>>>>>>>---->>-->>-->,<<<<<<<<<<____~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>>>>>>>>:::::::::::::
-#=GC RF                                         AaGgcggggccggcgAccggGgcgAAGUCGUAaCAAGGuagCcguaccGGAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ggugcgGcugGAUcAccUcCUUu
+00072::Chlamydia_trachomatis.::AE001345         ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+#=GR 00072::Chlamydia_trachomatis.::AE001345 PP ...............................................................................................................................................................
+#=GC SS_cons                                    }}}}}}}}}}-}},,<-<<-<<---<<<<<<<<--<<<<<<<<<<<<----<<<<<<-<<<<--<<____>>->>>>>>>>>>--->>>>>>>>>>>>-->>>>>>>>---->>-->>-->,<<<<<<<<<<____>>>>>>>>>>:::::::::::::
+#=GC RF                                         CGGGcCuuGuACaCACCGcCCGUCAcgcCacggaAgccggccccgcCcGAAGccgccgcgccAAccuuaaggaggcgggcggCuAaGgcggggccggcgAccggGgcgAAGUCGUAaCAAGGuagCcguaccGGAAggugcgGcugGAUcAccUcCUUu
 //

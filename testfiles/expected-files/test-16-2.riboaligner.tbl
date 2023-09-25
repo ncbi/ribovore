@@ -10,7 +10,7 @@
 8     01106::Bacillus_subtilis::K00637               SSU.Bacteria           plus   PASS       1    1533       1       2         full-extra  -
 9     00072::Chlamydia_trachomatis.::AE001345        SSU.Bacteria           plus   PASS     131     996       -       -            partial  -
 10    01351::Mycoplasma_gallisepticum::M22441        SSU.Bacteria           minus  FAIL       -       -       -       -                  -  *MinusStrand;
-11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS       9    1511       -       -            partial  -
+11    00224::Rickettsia_prowazekii.::AJ235272        SSU.Bacteria           plus   PASS       1    1533      94      28         full-extra  -
 12    01223::Audouinella_hermannii.::AF026040        SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
 13    01240::Batrachospermum_gelatinosum.::AF026045  SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
 14    00220::Euplotes_aediculatus.::M14590           SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *UnacceptableModel:(SSU_rRNA_eukarya);
