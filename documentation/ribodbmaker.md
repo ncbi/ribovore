@@ -39,7 +39,7 @@ rRNA sequences.
 This command will only work if you've installed Ribovore on Linux
 because the `vecscreen_plus_taxonomy` program is only installed for
 Linux as it is not available for Mac/OSX. For example usage on Mac/OSX
-see [below](#exampleusagemacosx)
+see [below.](#exampleusagemacosx)
 
 Move into a directory in which you have write permission and execute
 the following command:
@@ -537,13 +537,13 @@ then this two-step approach may be significantly faster, and will result in the 
 final dataset of surviving sequences from the second run that you would have obtained from just a
 single run using all stages (no command-line `--skip` options) on `S`.
 
-Further, if there are multiple CPUS available, then you can speed-up
+Further, if there are multiple CPUs available, then you can speed-up
 the suggested first run can by splitting the input FASTA file into
 multiple disjoint files, and running `ribodbmaker` on each subfile
 separately and in parallel. Then, you can concatenate all the passing
 sequences from the separate runs into one input file for the second
 run. This parallel approach is valid because if the options
-`-–skipingrup` and `-–skipcluster` are used, the outcome of whether a
+`--skipingrup` and `--skipcluster` are used, the outcome of whether a
 sequence passes or fails depends only on that sequence and not on any
 other sequences in the input sequence file.
 
@@ -562,10 +562,10 @@ This tree was created using the procedure described below on February 10, 2023.
 You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
 download `vecscreen_plus_taxonomy` with the following commands:
 ```
-curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.4.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.4.zip; 
-unzip vecscreen_plus_taxonomy-ribovore-1.0.4.zip; 
-mv vecscreen_plus_taxonomy-ribovore-1.0.4 vecscreen_plus_taxonomy
-rm vecscreen_plus_taxonomy-ribovore-1.0.4.zip
+curl -k -L -o vecscreen_plus_taxonomy-ribovore-1.0.5.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/ribovore-1.0.5.zip; 
+unzip vecscreen_plus_taxonomy-ribovore-1.0.5.zip; 
+mv vecscreen_plus_taxonomy-ribovore-1.0.5 vecscreen_plus_taxonomy
+rm vecscreen_plus_taxonomy-ribovore-1.0.5.zip
 ```
 
 And then modify the `$VECPLUSDIR` and `$PERL5LIB` environment variables in your `.bashrc` file as follows:
@@ -603,6 +603,10 @@ Steps to create an updated NCBI taxonomy tree file:
 1. Move into a newly created directory - these steps will generate about a dozen files in that new directory.
 
 2. Download `new_taxdump.tar.gz` from [https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/](https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/)
+
+```
+curl -k -L -o new_taxdump.tar.gz  https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz
+```
 
 3. Execute the following commands:
 

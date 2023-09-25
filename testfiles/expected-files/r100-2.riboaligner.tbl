@@ -17,7 +17,7 @@
 15    gi|1127929924|gb|KX092113.1|  SSU.Eukarya            plus   PASS     347    1821       -       -            partial  -
 16    gi|149786652|gb|EF638553.1|   SSU.Eukarya            plus   PASS     322    1729       -       -            partial  -
 17    gi|301178232|gb|HM799815.1|   SSU.Eukarya            plus   PASS      30    1822       -       -            partial  MultipleHits:(2:NH[M:86(883..968),S:99(824..922)]);
-18    gi|507140499|gb|KC672092.1|   SSU.Eukarya            plus   PASS       1    1848       -       -       5flush-exact  -
+18    gi|507140499|gb|KC672092.1|   SSU.Eukarya            plus   PASS       1    1851       -      12         full-extra  -
 19    gi|109639323|gb|DQ646548.1|   SSU.Eukarya            plus   PASS      19    1842       -       -            partial  -
 20    gi|54306487|gb|AY640212.1|    SSU.Eukarya            plus   PASS      39    1827       -       -            partial  -
 21    gi|158937723|gb|EU107180.1|   SSU.Eukarya            plus   PASS      22    1841       -       -            partial  -
@@ -30,12 +30,12 @@
 28    gi|15592876|gb|AF242261.1|    SSU.Eukarya            plus   PASS      51    1820       -       -            partial  MultipleHits:(2:NH[M:123(445..567),S:166(444..609)]);
 29    gi|51038289|gb|AY657012.1|    SSU.Eukarya            plus   PASS       9    1832       -       -            partial  -
 30    gi|92090868|gb|DQ457647.1|    SSU.Eukarya            plus   PASS      10    1842       -       -            partial  -
-31    gi|300394446|gb|GU187642.1|   SSU.Eukarya            plus   PASS      60    1832       -       -            partial  -
+31    gi|300394446|gb|GU187642.1|   SSU.Eukarya            plus   PASS      60    1851       -      51       3flush-extra  -
 32    gi|507138348|gb|KC669941.1|   SSU.Eukarya            plus   PASS       1    1816       -       -       5flush-exact  -
 33    gi|30519711|emb|AJ560302.1|   SSU.Eukarya            plus   PASS      22    1752       -       -            partial  -
 34    gi|12862440|dbj|AB002062.1|   SSU.Eukarya            plus   PASS      20    1842       -       -            partial  -
 35    gi|927272540|gb|KT259197.1|   SSU.Eukarya            plus   PASS      21    1115       -       -            partial  -
-36    gi|507138630|gb|KC670223.1|   SSU.Eukarya            plus   PASS       1    1819       -       -       5flush-exact  -
+36    gi|507138630|gb|KC670223.1|   SSU.Eukarya            plus   PASS       1    1851       -       8         full-extra  -
 37    gi|307556847|gb|GU004234.1|   SSU.Eukarya            plus   PASS     216    1779       -       -            partial  -
 38    gi|1139492822|gb|KX822287.1|  SSU.Eukarya            plus   PASS     146    1794       -       -            partial  -
 39    gi|694198308|gb|KM067414.1|   SSU.Eukarya            plus   PASS     196    1800       -       -            partial  -
@@ -50,7 +50,7 @@
 48    gi|10442595|gb|AF277017.1|    SSU.Eukarya            plus   PASS      38    1817       -       -            partial  -
 49    gi|158819385|gb|EU011680.1|   SSU.Eukarya            plus   PASS      57    1835       -       -            partial  -
 50    gi|732564156|gb|KP125031.1|   SSU.Eukarya            plus   PASS      75    1115       -       -            partial  -
-51    gi|507140597|gb|KC672190.1|   SSU.Eukarya            plus   PASS       1    1845       -       -       5flush-exact  -
+51    gi|507140597|gb|KC672190.1|   SSU.Eukarya            plus   PASS       1    1819       -       -       5flush-exact  -
 52    gi|957540434|dbj|AB797249.1|  SSU.Eukarya            plus   PASS      68    1115       -       -            partial  -
 53    gi|222352663|emb|AM494997.1|  SSU.Eukarya            plus   PASS     104    1767       -       -            partial  MultipleHits:(2:SI[M:-1(1512..1512),S:68(1359..1426)]);
 54    gi|156099914|gb|EF550439.1|   SSU.Eukarya            plus   PASS      72    1791       -       -            partial  -
@@ -65,7 +65,7 @@
 63    gi|226534219|gb|FJ763542.1|   SSU.Eukarya            plus   PASS      22    1824       -       -            partial  -
 64    gi|301153788|gb|HM486991.1|   SSU.Eukarya            plus   PASS     322    1726       -       -            partial  -
 65    gi|979839298|gb|KP322969.1|   SSU.Eukarya            plus   FAIL       -       -       -       -                  -  *LowCoverage:(0.628<0.860);*MultipleFamilies:(SSU+LSU,LSU:LSU_rRNA_eukarya:496.3/1387-2758:+);
-66    gi|507142378|gb|KC673971.1|   SSU.Eukarya            plus   PASS       1    1850       -       -       5flush-exact  -
+66    gi|507142378|gb|KC673971.1|   SSU.Eukarya            plus   PASS       1    1851       -      13         full-extra  -
 67    gi|57864442|dbj|AB053234.2|   SSU.Eukarya            plus   PASS      22    1840       -       -            partial  -
 68    gi|324497190|gb|HQ263224.1|   SSU.Eukarya            plus   PASS      20    1800       -       -            partial  -
 69    gi|397529699|gb|JQ302884.1|   SSU.Eukarya            plus   PASS      66    1779       -       -            partial  -
@@ -83,7 +83,7 @@
 81    gi|83272161|gb|DQ248951.1|    SSU.Eukarya            plus   PASS      53    1819       -       -            partial  -
 82    gi|18181906|dbj|AB069703.1|   SSU.Eukarya            plus   PASS     102    1813       -       -            partial  -
 83    gi|42541807|gb|AY497756.1|    SSU.Eukarya            plus   PASS     160    1275       -       -            partial  -
-84    gi|507142572|gb|KC674165.1|   SSU.Eukarya            plus   PASS       1    1819       -       -       5flush-exact  -
+84    gi|507142572|gb|KC674165.1|   SSU.Eukarya            plus   PASS       1    1851       -      10         full-extra  -
 85    gi|208879599|gb|EU754054.1|   SSU.Eukarya            plus   PASS      75    1116       -       -            partial  -
 86    gi|507140677|gb|KC672270.1|   SSU.Eukarya            plus   PASS       1    1816       -       -       5flush-exact  -
 87    gi|507140525|gb|KC672118.1|   SSU.Eukarya            plus   PASS       1    1846       -       -       5flush-exact  -
@@ -92,7 +92,7 @@
 90    gi|267850668|gb|GU126739.1|   SSU.Eukarya            plus   PASS      64    1172       -       -            partial  -
 91    gi|23395288|gb|AF542179.1|    SSU.Eukarya            plus   PASS      94    1774       -       -            partial  -
 92    gi|1273271400|gb|MF410242.1|  SSU.Eukarya            plus   PASS      64    1126       -       -            partial  -
-93    gi|507141111|gb|KC672704.1|   SSU.Eukarya            plus   PASS       1    1819       -       -       5flush-exact  -
+93    gi|507141111|gb|KC672704.1|   SSU.Eukarya            plus   PASS       1    1851       -      11         full-extra  -
 94    gi|507139274|gb|KC670867.1|   SSU.Eukarya            plus   PASS       1    1816       -       -       5flush-exact  -
 95    gi|57864407|dbj|AB018129.2|   SSU.Eukarya            plus   PASS      22    1840       -       -            partial  -
 96    gi|1370741070|gb|MG829134.1|  SSU.Eukarya            plus   PASS      46    1123       -       -            partial  -

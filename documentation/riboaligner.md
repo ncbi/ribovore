@@ -323,9 +323,9 @@ calling it at the command line with the -h option:
 ```
 > riboaligner -h
 # riboaligner :: classify lengths of ribosomal RNA sequences
-# Ribovore 1.0 (Feb 2021)
+# Ribovore 1.0.5 (Sep 2023)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# date:    Wed Dec 23 13:30:57 2020
+# date:    Thu Sep 21 16:39:35 2023
 #
 Usage: riboaligner [-options] <fasta file to annotate> <output file name root>
 
@@ -341,6 +341,12 @@ options related to the internal call to ribotyper:
   --riboopts <s> : read command line options to supply to ribotyper from file <s>
   --noscfail     : do not fail sequences in ribotyper with low scores
   --nocovfail    : do not fail sequences in ribotyper with low coverage
+
+options for modifying cmalign behavior:
+  --glocal           : use -g with cmalign for glocal alignment mode
+  --noflank          : do not use --flank* options to improve alns at ends
+  --flanktoins <x>   : set transition probs to ROOT_IL/IR for cmalign to <x> [0.1]
+  --flankselfins <x> : set self-transit probs in ROOT_IL/IR for cmalign to <x> [0.8]
 
 options for parallelizing cmsearch and cmalign on a compute farm:
   -p         : parallelize ribotyper and cmalign on a compute farm

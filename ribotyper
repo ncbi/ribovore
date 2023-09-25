@@ -217,8 +217,8 @@ my $options_okay =
 my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "1.0.4";
-my $releasedate       = "Feb 2023";
+my $version           = "1.0.5";
+my $releasedate       = "Sep 2023";
 my $package_name      = "Ribovore";
 
 # make *STDOUT file handle 'hot' so it automatically flushes whenever we print to it
@@ -418,12 +418,6 @@ my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
 
-my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
-my $qsubinfo_file = undef;
-# if -p, check for existence of qsub info file
-if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
-else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
-
 utl_FileValidateExistsAndNonEmpty($seq_file, "sequence file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 if(! opt_IsUsed("-i", \%opt_HH)) {
   utl_FileValidateExistsAndNonEmpty($modelinfo_file, "default model info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
@@ -431,11 +425,21 @@ if(! opt_IsUsed("-i", \%opt_HH)) {
 else { # -i used on the command line
   utl_FileValidateExistsAndNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
-if(! opt_IsUsed("-q", \%opt_HH)) {
-  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
-}
-else { # -q used on the command line
-  utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+
+# if -p, check for existence of qsub info file
+my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
+my $qsubinfo_file = undef;
+
+if(opt_IsUsed("-p", \%opt_HH)) { 
+  if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
+  else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
+
+  if(! opt_IsUsed("-q", \%opt_HH)) {
+    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+  }
+  else { # -q used on the command line
+    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
+  }
 }
 # we check for the existence of model file after we parse the model info file
 

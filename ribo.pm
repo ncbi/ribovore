@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# version: 1.0.4
+# version: 1.0.5
 #
 # ribo.pm
 # Eric Nawrocki
@@ -686,15 +686,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
   elsif($executable =~ /cmalign$/) { 
     my $model_file    = $info_HR->{"IN:modelfile"};
     my $i_file        = $info_HR->{"OUT-NAME:ifile"};
-    my $el_file       = $info_HR->{"OUT-NAME:elfile"};
     my $stk_file      = $info_HR->{"OUT-NAME:stk"};
+    my $el_file       = (opt_IsUsed("--glocal", $opt_HHR)) ? undef : $info_HR->{"OUT-NAME:elfile"};
+    my $el_opt        = (opt_IsUsed("--glocal", $opt_HHR)) ? ""    : "--elfile $el_file ";
+
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
-    #$cmd = "$time_path -p -o $time_file $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+    #$cmd = "$time_path -p -o $time_file $executable $opts --ifile $i_file $el_opt -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
     if(defined $time_path) { 
-      $cmd = "$time_path -p $executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
+      $cmd = "$time_path -p $executable $opts --ifile $i_file $el_opt -o $stk_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
     }
     else {
-      $cmd = "$executable $opts --ifile $i_file --elfile $el_file -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
+      $cmd = "$executable $opts --ifile $i_file $el_opt -o $stk_file $model_file $seq_file > $stdout_file 2> $stderr_file";
     }
   }
   elsif($executable =~ /rRNA_sensor_script$/) { 
@@ -855,7 +857,10 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
   elsif($program_choice eq "cmalign") { 
     $wait_key = "OUT-NAME:stdout";
     $wait_str = "# CPU time:";
-    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "OUT-NAME:elfile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
+    @reqd_keys_A = ("IN:seqfile", "IN:modelfile", "OUT-NAME:stk", "OUT-NAME:ifile", "IN:seqlist", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
+    if(! opt_Get("--glocal", $opt_HHR)) { 
+      push(@reqd_keys_A, "OUT-NAME:elfile");
+    }
   }
   elsif($program_choice eq "rRNA_sensor_script") { 
     $wait_key = "OUT-NAME:stdout";
