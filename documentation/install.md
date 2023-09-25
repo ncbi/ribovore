@@ -20,31 +20,47 @@ https://raw.githubusercontent.com/ncbi/ribovore/1.0/install.sh
 
 Copy the `install.sh` file into the directory in which you want
 to install Ribovore. A good name for that directory is
-`ribovore-install`. Then move into that directory and run one of the
-following two commands depending on whether you are installing on a
-Linux or Mac/OSX system. *Note that you if you are installing on Mac/OSX the
-ribodbmaker script will have limited functionality because `vecscreen_plus_taxonomy`
-can only be installed and run on linux systems.*
+`ribovore-install`. Then move into that directory and run the install
+script. There are six possible ways to run `install.sh` and its usage can be
+viewed by executing the script without any arguments:
+
+```
+>sh ./install.sh
+Usage:   ./install.sh <os>
+ or 
+Usage:   ./install.sh <os> keep
+
+valid options for <os> are:
+  "linux":             full install for linux
+  "macosx-intel":      full install for macosx-intel
+  "macosx-silicon":    full install for macosx-silicon
+  "rt-linux":          ribotyper only for linux
+  "rt-macosx-intel":   ribotyper only for macosx-intel
+  "rt-macosx-silicon": ribotyper only for macosx-silicon
+
+use "keep" as 2nd argument to keep nonessential files
+which are normally removed
+```
+
+The command you should use for installation depends on your
+operating system and whether or not you want to install the full
+Ribovore package or just want to use the `ribotyper` script.
+
+For example, to install on a linux machine, execute:
 
 ```
 sh ./install.sh linux
 ```
 
-OR
-
-```
-sh ./install.sh macosx
-```
-
-The `linux` or `macosx` argument controls the type of infernal and
-blast executable files that will be installed and also dictates
-whether the `vecscreen_plus_taxonomy` package will be
+The `linux`, `macosx-intel`, or `macosx-silicon` argument controls the
+type of infernal and blast executable files that will be installed and
+also dictates whether the `vecscreen_plus_taxonomy` package will be
 installed. `vecscreen_plus_taxonomy` will be installed only for
 `linux` installations and consequently only `linux` installations will
 be able to use all features of `ribodbmaker`. Mac/OSX installations
 will be able to run `ribodbmaker` but only with specific flags that
 cause steps that require executable programs that get installed with
-`vecscreen_plus_taxonomy` to be skipped.
+`vecscreen_plus_taxonomy` to be skipped, as explained more [here.](ribodbmaker.md#macosx)
 
 The `install.sh` command will create several directories in the
 current directory.  It will download and install Ribovore and the
@@ -54,6 +70,15 @@ executables of [Infernal](http://eddylab.org/infernal/), the NCBI
 BLAST package (for either Linux or Mac/OSX), and (if Linux) the
 [vecscreen_plus_taxonomy](https://github.com/aaschaffer/vecscreen_plus_taxonomy)
 package.
+
+The installation procedure will remove some unnecessary files from the
+dependencies it installs (infernal and blast) by default, but these
+files can be kept if you additionally add `keep` as an additional
+argument, for example:
+
+```
+sh ./install.sh linux keep
+```
 
 When `install.sh` is finished running it will print important
 instructions to the screen that explain how to modify your environment
@@ -87,8 +112,8 @@ export RIBOSCRIPTSDIR="$RIBOINSTALLDIR/ribovore"
 export RIBOINFERNALDIR="$RIBOINSTALLDIR/infernal/binaries"
 export RIBOEASELDIR="$RIBOINSTALLDIR/infernal/binaries"
 export RIBOSEQUIPDIR="$RIBOINSTALLDIR/sequip"
+export RIBOTIMEDIR="/usr/bin"
 export RIBOBLASTDIR="$RIBOINSTALLDIR/ncbi-blast/bin"
-export RIBOTIMEDIR=/usr/bin
 export RRNASENSORDIR="$RIBOINSTALLDIR/rRNA_sensor"
 export VECPLUSDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
@@ -114,13 +139,14 @@ setenv RIBOSCRIPTSDIR "$RIBOINSTALLDIR/ribovore"
 setenv RIBOINFERNALDIR "$RIBOINSTALLDIR/infernal/binaries"
 setenv RIBOEASELDIR "$RIBOINSTALLDIR/infernal/binaries"
 setenv RIBOSEQUIPDIR "$RIBOINSTALLDIR/sequip"
+setenv RIBOTIMEDIR "/usr/bin"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
-setenv RIBOTIMEDIR /usr/bin
-setenv RRNASENSORDIR "$RIBOSCRIPTSDIR/rRNA_sensor"
+setenv RRNASENSORDIR "$RIBOINSTALLDIR/rRNA_sensor"
 setenv VECPLUSDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
 setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
 setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
 setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
+
 After adding the setenv lines to your .cshrc file, source that file
 to update your current environment with the command:
 

@@ -15,7 +15,7 @@ set -e
 RIBOINSTALLDIR=$PWD
 
 # versions
-VERSION="1.0.4"
+VERSION="1.0.5"
 # blast+
 BVERSION="2.14.1"
 # infernal
@@ -142,15 +142,14 @@ echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 # ribovore
 echo "Downloading ribovore ... "
-#curl -k -L -o $RVERSION.zip https://github.com/ncbi/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
+curl -k -L -o $RVERSION.zip https://github.com/ncbi/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
 # for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-git clone https://github.com/ncbi/ribovore.git ribovore
-cd ribovore
+#git clone https://github.com/ncbi/ribovore.git ribovore
+#cd ribovore
 #git checkout release-$VERSION
-git checkout install-r2dt
-rm -rf .git
-cd ..
+#rm -rf .git
+#cd ..
 # ----------------------------------------------------------------------------
 if [ "$RIBOTYPERONLY" = "yes" ]; then
     rm -rf ribovore/taxonomy
@@ -221,10 +220,10 @@ elif [ "$INPUTSYSTEM" = "macosx-intel" ]; then
 else
     echo "Downloading Infernal version $IVERSION for Mac/OSX-silicon"
     curl -k -L -o infernal.tar.gz http://eddylab.org/infernal/infernal-$IVERSION-macosx-silicon.tar.gz
-    # esl-cluster doesn't exist in an infernal release that builds on silicon
+    # esl-cluster doesn't exist in an infernal release that builds on silicon, but the intel version runs on silicon
     tar xfz infernal.tar.gz
     rm infernal.tar.gz
-    mv infernal-$IVERSION-macosx-intel infernal
+    mv infernal-$IVERSION-macosx-silicon infernal
     if [ "$RIBOTYPERONLY" != "yes" ]; then
         echo "Downloading Infernal version $IESLCLUSTERVERSION for Mac/OSX"
         curl -k -L -o infernal2.tar.gz http://eddylab.org/infernal/infernal-$IESLCLUSTERVERSION-macosx-intel.tar.gz
@@ -300,14 +299,14 @@ if [ "$DOKEEP" = "no" ]; then
     rm -rf infernal
     mkdir infernal
     mv binaries infernal
-    # ncbi-blast, we only need makeblastdb and blastn
+    # ncbi-blast, we only need blastdbcmd and blastn
     if [ "$RIBOTYPERONLY" != "yes" ]; then
-        mv ncbi-blast/bin/makeblastdb ./
+        mv ncbi-blast/bin/blastdbcmd ./
         mv ncbi-blast/bin/blastn ./
         rm -rf ncbi-blast
         mkdir ncbi-blast
         mkdir ncbi-blast/bin
-        mv makeblastdb ncbi-blast/bin
+        mv blastdbcmd ncbi-blast/bin
         mv blastn ncbi-blast/bin
     fi
     echo "------------------------------------------------"
