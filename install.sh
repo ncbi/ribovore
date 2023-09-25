@@ -143,7 +143,7 @@ echo "------------------------------------------------"
 # ribovore
 echo "Downloading ribovore ... "
 curl -k -L -o $RVERSION.zip https://github.com/ncbi/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
- for a test build of a release, comment out above curl and uncomment block below
+# for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
 #git clone https://github.com/ncbi/ribovore.git ribovore
 #cd ribovore
