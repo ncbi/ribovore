@@ -22,7 +22,7 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
-$execs_H{"blastn"}      = $env_riboblast_dir    . "/blastn";
+# we'll check for blastn below after we find out if we need it (if --1blast)
 
 # deal with 'time' differently because we can deal if it doesn't exist and
 # we only use it if it does exist and -p is used
@@ -30,8 +30,6 @@ my $env_ribotime_dir = ribo_CheckForTimeExecutable(); # this will return undef i
 if(defined $env_ribotime_dir) {
   $execs_H{"time"} = $env_ribotime_dir . "/time";
 }
-
-utl_ExecHValidate(\%execs_H, undef);
 
 #########################################################
 # Command line and option processing using sqp_opts.pm
@@ -316,6 +314,12 @@ if($min_secondary_sc > $min_primary_sc) {
   }
 }
 
+# now that we know if we need blastn, check for all required executables
+if(opt_Get("--1blast", \%opt_HH)) { 
+  $execs_H{"blastn"} = $env_riboblast_dir . "/blastn";
+}
+utl_ExecHValidate(\%execs_H, undef);
+
 my $cmd         = undef; # a command to be run by utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
 my @to_remove_A = ();    # array of files to remove at end
@@ -430,11 +434,6 @@ else { # -i used on the command line
   utl_FileValidateExistsAndNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
 
-# make sure the blastdb directory exists if --1blast
-my $df_blastdb_file = $df_model_dir . "ribotyper.modelinfo";
-my $blastdb_file = undef;
-
-
 # if -p, check for existence of qsub info file
 my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
 my $qsubinfo_file = undef;
@@ -459,7 +458,7 @@ if(opt_IsUsed("-p", \%opt_HH)) {
 my $alg1 = undef; # can be any of "fast", "hmmonly", or "slow"
 if   (opt_Get("--1hmm",   \%opt_HH))   { $alg1 = "hmmonly"; }
 elsif(opt_Get("--1slow",  \%opt_HH))   { $alg1 = "slow"; }
-elsif(opt_Get("--1blast", \%opt_HH))   { $alg1 = "blast"; }
+elsif(opt_Get("--1blast", \%opt_HH))   { $alg1 = "blastn"; }
 else                                   { $alg1 = "fast"; }
 
 my $alg2 = undef; # can be "hmmonly" or "slow"
@@ -553,9 +552,12 @@ my $master_blastdb_file = undef; # path to master blastn file
 # models in the models file and models listed in the model info file
 if(! opt_Get("--skipval", \%opt_HH)) { 
   utl_FileValidateExistsAndNonEmpty($master_model_file,   undef, undef, 0, $ofile_info_HH{"FH"});
-  utl_FileValidateExistsAndNonEmpty($master_blastdb_file, undef, undef, 0, $ofile_info_HH{"FH"});
-  foreach my $sfx ("ndb", "nhr", "nin", "njs", "not", "nsq", "ntf", "nto") { 
-    utl_FileValidateExistsAndNonEmpty($master_blastdb_file . "." . $sfx, undef, undef, 0, $ofile_info_HH{"FH"});
+  # only check for blast db if we need it
+  if(opt_Get("--1blast", \%opt_HH)) { 
+    utl_FileValidateExistsAndNonEmpty($master_blastdb_file, undef, undef, 0, $ofile_info_HH{"FH"});
+    foreach my $sfx ("ndb", "nhr", "nin", "njs", "not", "nsq", "ntf", "nto") { 
+      utl_FileValidateExistsAndNonEmpty($master_blastdb_file . "." . $sfx, undef, undef, 0, $ofile_info_HH{"FH"});
+    }
   }
   parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
 }
@@ -664,15 +666,15 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # set up defaults
 my $r1_searchout_file = undef;
 my $r1_tblout_file    = undef;
-if($alg1 ne "blast") { 
+if($alg1 ne "blastn") { 
   $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
   $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
 }
 else { 
-  $r1_searchout_file = $out_root . ".r1.blastn.out";
+  $r1_tblout_file = $out_root . ".r1.blastn.tbl";
 }
 my $alg1_opts = undef;
-if($alg1 ne "blast") { 
+if($alg1 ne "blastn") { 
   $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
 }
 else { # blast
@@ -685,27 +687,22 @@ my $r1_opt_p_sum_cpu_secs = 0.;
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   my %info_H = (); 
-  if($alg1 ne "blast") { 
-    $info_H{"IN:seqfile"}       = $seq_file;
-    $info_H{"IN:modelfile"}     = $master_model_file;
-    $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
-    $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
-    $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
-    $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
-    $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
+  $info_H{"IN:seqfile"}       = $seq_file;
+  $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
+  $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
+  $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
+  $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
+  if($alg1 ne "blastn") { 
+    $info_H{"IN:modelfile"}    = $master_model_file;
+    $info_H{"OUT-NAME:stdout"} = $r1_searchout_file;
     ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   }
   else { # blastn
-    $info_H{"IN:seqfile"}       = $seq_file;
-    $info_H{"blastdb"}          = $master_blastdb_file;
-    $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
-    $info_H{"OUT-NAME:time"}    = $r1_searchout_file . ".time";
-    $info_H{"OUT-NAME:stderr"}  = $r1_searchout_file . ".err";
-    $info_H{"OUT-NAME:qcmd"}    = $r1_searchout_file . ".qcmd";
+    $info_H{"blastdb"} = $master_blastdb_file;
     ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "blastn", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
   }
-    if($use_time_program) { 
-    $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_searchout_file . ".time", $ofile_info_HH{"FH"});
+  if($use_time_program) { 
+    $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
   }
 }
 else { 
@@ -714,16 +711,17 @@ else {
     ofile_FAIL("ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not", 1, $ofile_info_HH{"FH"});
   }
 }
-printf("HEYA\n");
-exit 0;
 
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
   push(@to_remove_A, $r1_tblout_file . ".time");
 }
 else { 
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1tblout",    $r1_tblout_file,    0, 1, ".tblout file for round 1");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1searchout", $r1_searchout_file, 0, 1, "cmsearch output file for round 1");
+  
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1tblout",    $r1_tblout_file,    0, 1, "tabular output file for round 1");
+  if($alg1 ne "blastn") { 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1searchout", $r1_searchout_file, 0, 1, "cmsearch output file for round 1");
+  }
 }
 my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r1_opt_p_sum_cpu_secs) : undef;
 $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
@@ -1592,7 +1590,7 @@ sub parse_sorted_tbl_file {
   my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $seqgap_HHAR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
 
   # validate search method (sanity check) 
-  if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
+  if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow") && ($alg ne "blastn")) { 
     ofile_FAIL("ERROR in $sub_name, invalid search method $alg", 1, $FH_HR);
   }
 
@@ -1685,13 +1683,26 @@ sub parse_sorted_tbl_file {
       $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
       $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
     }
-    else { # "hmmonly" or "slow"
+    elsif(($alg eq "hmmonly") || ($alg eq "slow")) { # "hmmonly" or "slow"
       ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
       ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
       #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
       if(scalar(@el_A) < 18) { ofile_FAIL("ERROR found less than 18 columns in cmsearch tabular output at line: $line", 1, $FH_HR); }
       ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
           ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
+    }
+    elsif($alg eq "blastn") { 
+      ## BLASTN 2.14.1+
+      ## Query: 00052::Halobacterium_sp.::AE005128
+      ## Database: /net/intdev/oblast01/infernal/git/nawrockie/ribovore/models/ribotyper.fa
+      ## Fields: query acc.ver, subject acc.ver, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
+      ## 2 hits found
+      #00052::Halobacterium_sp.::AE005128	SSU_rRNA_archaea	82.884	1484	236	15	1	1473	1	1477	0.0	1317
+      #00052::Halobacterium_sp.::AE005128	SSU_rRNA_mitochondria_plant	91.667	48	3	1	1418	1465	1898	1944	7.26e-13	65.8
+      if(scalar(@el_A) < 12) { ofile_FAIL("ERROR found less than 12 columns in blastn tabular output at line: $line", 1, $FH_HR); }
+      ($target, $model, $seqfrom, $seqto, $mdlfrom, $mdlto, $evalue, $score) = 
+          ($el_A[0], $el_A[1], $el_A[6], $el_A[7], $el_A[8], $el_A[9], $el_A[10],  $el_A[11]);
+      $strand = ($seqfrom <= $seqto) ? "+" : "-";
     }
 
     $family = $family_HR->{$model};
@@ -4109,6 +4120,9 @@ sub determine_sort_cmd {
     else { 
       $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 15,15rn -k 16,16g > $out_file";
     }
+  }
+  elsif($alg eq "blastn") { 
+    $sort_cmd = "cat $in_file > $out_file";
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", 1, $FH_HR);

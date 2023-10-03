@@ -657,7 +657,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn {
 
   # IN:seqfile, OUT-NAME:stdout, OUT-NAME:time and OUT-NAME:stderr are required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
   my $seq_file        = $info_HR->{"IN:seqfile"};
-  my $stdout_file     = $info_HR->{"OUT-NAME:stdout"};
+  my $stdout_file     = $info_HR->{"OUT-NAME:stdout"}; # may be undef
   my $time_file       = $info_HR->{"OUT-NAME:time"};
   my $stderr_file     = $info_HR->{"OUT-NAME:stderr"};
   my $qcmdscript_file = $info_HR->{"OUT-NAME:qcmd"};
@@ -720,13 +720,14 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn {
     }
   }
   elsif($executable =~ /blastn$/) { 
-    my $blastdb = $info_HR->{"blastdb"};
+    my $blastdb     = $info_HR->{"blastdb"};
+    my $tblout_file = $info_HR->{"OUT-NAME:tblout"};
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
     if(defined $time_path) { 
-      $cmd = "$time_path -p $executable -num_threads 1 -query $seq_file -db $blastdb -outfmt 7 -out $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
+      $cmd = "$time_path -p $executable -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
     }
     else {
-      $cmd = "$executable -num_threads 1 -query $seq_file -db $blastdb -outfmt 7 -out $stdout_file 2> $stderr_file";
+      $cmd = "$executable -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $stderr_file";
     }
   }
 
@@ -840,7 +841,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn {
 #                    if "blastn", keys must be:
 #                       "IN:seqfile":        name of master sequence file
 #                       "blastdb":           name of blast db                    (cmdline arg 9)
-#                       "OUT-NAME:stdout":   name of stdout output file
+#                       "OUT-NAME:tblout":   name of tabular output file
 #                       "OUT-NAME:time":     path to time output file
 #                       "OUT-NAME:stderr":   path to stderr output file
 #                       "OUT-NAME:qcmd":     path to cmd script file for the qsub cmd
@@ -890,9 +891,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation {
     @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
   elsif($program_choice eq "blastn") { 
-    $wait_key = "OUT-NAME:stdout";
+    $wait_key = "OUT-NAME:tblout";
     $wait_str = "Final output saved as";
-    @reqd_keys_A = ("IN:seqfile", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
+    @reqd_keys_A = ("IN:seqfile", "blastdb", "OUT-NAME:tblout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", 1, $FH_HR);
