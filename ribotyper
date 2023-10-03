@@ -14,6 +14,7 @@ require "ribo.pm";
 my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
+my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
 my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -21,6 +22,7 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+$execs_H{"blastn"}      = $env_riboblast_dir    . "/blastn";
 
 # deal with 'time' differently because we can deal if it doesn't exist and
 # we only use it if it does exist and -p is used
@@ -67,9 +69,10 @@ opt_Add("-n",           "integer", 0,                        1,    undef, "-p", 
 opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
-#       option               type   default                group  requires incompat    preamble-output                            help-output    
-opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   undef,     "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
-opt_Add("--1slow",         "boolean", 0,                       2,  undef,   undef,     "run first round in slow CM mode",        "run first round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
+#       option               type   default                group  requires incompat          preamble-output                            help-output    
+opt_Add("--1hmm",          "boolean", 0,                       2,  undef,"--1slow,--1blast", "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                       2,  undef,"--1hmm,--1blast",  "run first round in slow CM mode",        "run first round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
+opt_Add("--1blast",        "boolean", 0,                       2,  undef,"--1slow,--1hmm",   "run first round in fastest BLAST mode",  "run first round in fastest BLAST mode",    \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                        help-output    
@@ -158,6 +161,7 @@ my $options_okay =
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
+                '1blast'        => \$GetOptions_H{"--1blast"},
 # first round algorithm options
                 '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
@@ -217,7 +221,7 @@ my $options_okay =
 my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "1.0.5";
+my $version           = "1.0.5dev";
 my $releasedate       = "Sep 2023";
 my $package_name      = "Ribovore";
 
@@ -426,6 +430,11 @@ else { # -i used on the command line
   utl_FileValidateExistsAndNonEmpty($modelinfo_file, "model info file specified with -i", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
 }
 
+# make sure the blastdb directory exists if --1blast
+my $df_blastdb_file = $df_model_dir . "ribotyper.modelinfo";
+my $blastdb_file = undef;
+
+
 # if -p, check for existence of qsub info file
 my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
 my $qsubinfo_file = undef;
@@ -448,9 +457,10 @@ if(opt_IsUsed("-p", \%opt_HH)) {
 # determine search methods for rounds 1 and 2
 ##############################################
 my $alg1 = undef; # can be any of "fast", "hmmonly", or "slow"
-if   (opt_Get("--1hmm",  \%opt_HH))   { $alg1 = "hmmonly"; }
-elsif(opt_Get("--1slow", \%opt_HH))   { $alg1 = "slow"; }
-else                                  { $alg1 = "fast"; }
+if   (opt_Get("--1hmm",   \%opt_HH))   { $alg1 = "hmmonly"; }
+elsif(opt_Get("--1slow",  \%opt_HH))   { $alg1 = "slow"; }
+elsif(opt_Get("--1blast", \%opt_HH))   { $alg1 = "blast"; }
+else                                   { $alg1 = "fast"; }
 
 my $alg2 = undef; # can be "hmmonly" or "slow"
 if(! opt_Get("--1slow", \%opt_HH)) { 
@@ -535,11 +545,18 @@ my %nseq_H        = (); # key is model, value is total number of sequences in $s
 my %totseqlen_H   = (); # key is model, value is total number of nucleotides in all sequences in $seqfile_H{$model}
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
-my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
+my $master_model_file   = undef; # path to master CM file
+my $master_blastdb_file = undef; # path to master blastn file
+($master_model_file, $master_blastdb_file) = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
 if(! opt_Get("--skipval", \%opt_HH)) { 
+  utl_FileValidateExistsAndNonEmpty($master_model_file,   undef, undef, 0, $ofile_info_HH{"FH"});
+  utl_FileValidateExistsAndNonEmpty($master_blastdb_file, undef, undef, 0, $ofile_info_HH{"FH"});
+  foreach my $sfx ("ndb", "nhr", "nin", "njs", "not", "nsq", "ntf", "nto") { 
+    utl_FileValidateExistsAndNonEmpty($master_blastdb_file . "." . $sfx, undef, undef, 0, $ofile_info_HH{"FH"});
+  }
   parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
 }
 if(opt_Get("--onlyval", \%opt_HH)) { 
@@ -645,25 +662,50 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # as the command for sorting the output and parsing the output
 ###########################################################################
 # set up defaults
-my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
-my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
-my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
+my $r1_searchout_file = undef;
+my $r1_tblout_file    = undef;
+if($alg1 ne "blast") { 
+  $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
+  $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
+}
+else { 
+  $r1_searchout_file = $out_root . ".r1.blastn.out";
+}
+my $alg1_opts = undef;
+if($alg1 ne "blast") { 
+  $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
+}
+else { # blast
+  $alg1_opts = "";
+  #$alg1_opts = determine_blastn_opts(\%opt_HH, $ofile_info_HH{"FH"});
+}
 my $sum_cpu_secs = undef; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
 my $r1_opt_p_sum_cpu_secs = 0.;
 
 if(! opt_Get("--skipsearch", \%opt_HH)) { 
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   my %info_H = (); 
-  $info_H{"IN:seqfile"}       = $seq_file;
-  $info_H{"IN:modelfile"}     = $master_model_file;
-  $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
-  $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
-  $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
-  $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
-  $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
-  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
-  if($use_time_program) { 
-    $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
+  if($alg1 ne "blast") { 
+    $info_H{"IN:seqfile"}       = $seq_file;
+    $info_H{"IN:modelfile"}     = $master_model_file;
+    $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
+    $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
+    $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
+    $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
+    $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+  }
+  else { # blastn
+    $info_H{"IN:seqfile"}       = $seq_file;
+    $info_H{"blastdb"}          = $master_blastdb_file;
+    $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
+    $info_H{"OUT-NAME:time"}    = $r1_searchout_file . ".time";
+    $info_H{"OUT-NAME:stderr"}  = $r1_searchout_file . ".err";
+    $info_H{"OUT-NAME:qcmd"}    = $r1_searchout_file . ".qcmd";
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "blastn", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+  }
+    if($use_time_program) { 
+    $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_searchout_file . ".time", $ofile_info_HH{"FH"});
   }
 }
 else { 
@@ -672,6 +714,9 @@ else {
     ofile_FAIL("ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not", 1, $ofile_info_HH{"FH"});
   }
 }
+printf("HEYA\n");
+exit 0;
+
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
   push(@to_remove_A, $r1_tblout_file . ".time");
@@ -845,7 +890,7 @@ if(defined $alg2) {
         $info_H{"OUT-NAME:time"}    = $r2_tblout_file_A[$midx] . ".time";
         $info_H{"OUT-NAME:stderr"}  = $r2_tblout_file_A[$midx] . ".err";
         $info_H{"OUT-NAME:qcmd"}    = $r2_tblout_file_A[$midx] . ".qcmd";
-        ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+        ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
         if($use_time_program) { 
           $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
         }
@@ -1197,7 +1242,10 @@ exit(0);
 #   $opt_HHR:         ref to 2D hash of cmdline options (needed to determine if -i was used)
 #   $FH_HR:           ref to hash of file handles, including "cmd"
 #
-# Returns:     Path to master CM file. Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
+# Returns:     Two values:
+#              1. Path to master CM file (e.g. ribotyper.cm)
+#              2. Path to master blastn db file (e.g. ribotyper.fa)
+#              Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
 # 
 # Dies:        - If $modelinfo_file cannot be opened.
 #              - If $modelinfo_file is not in the correct format.
@@ -1216,13 +1264,14 @@ sub parse_modelinfo_file {
 
   my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
 
-  my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
-  my $found_master      = 0;     # set to '1' when we find master file line
-  my $master_cmfile     = undef; # name of 'master' CM file with all CMs
-  my $non_df_model_file = undef; # non-default model file
-  my $df_model_file     = undef; # default model file
-  my $in_df;                     # flag for whether we found model file in default dir or not
-  my $in_nondf;                  # flag for whether we found model file in non-default dir or not
+  my $opt_i_used          = opt_IsUsed("-i", $opt_HHR);
+  my $found_master        = 0;     # set to '1' when we find master file line
+  my $master_cmfile       = undef; # name of 'master' CM file with all CMs
+  my $master_blastdb_file = undef; # name of 'master' blastn db file
+  my $non_df_model_file   = undef; # non-default model file
+  my $df_model_file       = undef; # default model file
+  my $in_df;                       # flag for whether we found model file in default dir or not
+  my $in_nondf;                    # flag for whether we found model file in non-default dir or not
 
   # determine directory that $modelinfo_file exists in if -i used, all models must 
   # either be in this directory or in $df_model_dir
@@ -1286,7 +1335,14 @@ sub parse_modelinfo_file {
           ofile_FAIL("ERROR read model $model twice in $modelinfo_file", 1, $ofile_info_HH{"FH"});
         }
         $found_master = 1;
-        $master_cmfile = $cmfile;
+        $master_cmfile       = $cmfile;
+        if($master_cmfile =~ m/\.cm$/) { 
+          $master_blastdb_file = $cmfile;
+          $master_blastdb_file =~ s/\.cm$/.fa/;
+        }          
+        else { 
+          ofile_FAIL("ERROR in $sub_name, master CM file name read on *all* line: $master_cmfile has to end in .cm,  but it does not", 1, $ofile_info_HH{"FH"});
+        }
       }
       else { 
         if(exists $family_HR->{$model}) { 
@@ -1312,7 +1368,7 @@ sub parse_modelinfo_file {
     }
   }
 
-  return $master_cmfile;
+  return ($master_cmfile, $master_blastdb_file);
 }
 
 #################################################################
