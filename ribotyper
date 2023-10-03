@@ -462,7 +462,7 @@ elsif(opt_Get("--1blast", \%opt_HH))   { $alg1 = "blastn"; }
 else                                   { $alg1 = "fast"; }
 
 my $alg2 = undef; # can be "hmmonly" or "slow"
-if(! opt_Get("--1slow", \%opt_HH)) { 
+if((! opt_Get("--1slow", \%opt_HH)) && (! opt_Get("--1blast", \%opt_HH))) { 
   if(opt_Get("--2slow", \%opt_HH)) { 
     $alg2 = "slow"; 
   }
@@ -717,7 +717,6 @@ if(! opt_Get("--keep", \%opt_HH)) {
   push(@to_remove_A, $r1_tblout_file . ".time");
 }
 else { 
-  
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1tblout",    $r1_tblout_file,    0, 1, "tabular output file for round 1");
   if($alg1 ne "blastn") { 
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1searchout", $r1_searchout_file, 0, 1, "cmsearch output file for round 1");
@@ -727,19 +726,21 @@ my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds
 $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 ###########################################################################
-# Step 4: Sort round 1 output
+# Step 4: Sort round 1 output (unless --1blast, blastn output is already sorted
 ###########################################################################
-my $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
-my $r1_sort_cmd           = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
-$start_secs = ofile_OutputProgressPrior("Sorting classification results", $progress_w, $log_FH, *STDOUT);
-utl_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
-if(! opt_Get("--keep", \%opt_HH)) { 
-  push(@to_remove_A, $r1_sorted_tblout_file);
+my $r1_sorted_tblout_file = ($alg1 ne "blastn") ? $r1_tblout_file . ".sorted" : $r1_tblout_file;
+if($alg1 ne "blastn") { 
+  my $r1_sort_cmd = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
+  $start_secs = ofile_OutputProgressPrior("Sorting classification results", $progress_w, $log_FH, *STDOUT);
+  utl_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+  if(! opt_Get("--keep", \%opt_HH)) { 
+    push(@to_remove_A, $r1_sorted_tblout_file);
+  }
+  else {
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sortedr1tblout", $r1_sorted_tblout_file, 0, 1, "sorted .tblout file for round 1");
+  }
+  ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 }
-else {
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sortedr1tblout", $r1_sorted_tblout_file, 0, 1, "sorted .tblout file for round 1");
-}
-ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ###########################################################################
 
 ###########################################################################
@@ -775,6 +776,10 @@ else {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_srt_long",   $r1_srt_long_out_file, 0, 1, "round 1 sorted long output file");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_srt_short",  $r1_srt_short_out_file, 0, 1, "round 1 sorted short output file");
   }
+}
+if(! defined $alg2){ 
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "short_out", $final_short_out_file, 1, 1, "Short (6 column) output");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "long_out",  $final_long_out_file,  1, 1, sprintf("Long (%d column) output", determine_number_of_columns_in_long_output_file("final", \%opt_HH, $ofile_info_HH{"FH"})));
 }
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
@@ -1702,7 +1707,8 @@ sub parse_sorted_tbl_file {
       if(scalar(@el_A) < 12) { ofile_FAIL("ERROR found less than 12 columns in blastn tabular output at line: $line", 1, $FH_HR); }
       ($target, $model, $seqfrom, $seqto, $mdlfrom, $mdlto, $evalue, $score) = 
           ($el_A[0], $el_A[1], $el_A[6], $el_A[7], $el_A[8], $el_A[9], $el_A[10],  $el_A[11]);
-      $strand = ($seqfrom <= $seqto) ? "+" : "-";
+      $strand = ($mdlfrom <= $mdlto) ? "+" : "-";
+      printf("HEYA blastn line: target: $target, model: $model seqfrom: $seqfrom seqto: $seqto mdlfrom: $mdlfrom mdlto: $mdlto strand: $strand evalue: $evalue score: $score\n");
     }
 
     $family = $family_HR->{$model};
