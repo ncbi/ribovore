@@ -628,7 +628,7 @@ sub ribo_ProcessSequenceFile {
 #   $time_path:      path to Unix time command (e.g. /usr/bin/time)
 #   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
 #   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
-#   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor arguments to use 
+#   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor or blastn arguments to use 
 #   $info_HR:        ref to hash with output files and arguments for running 
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
 #                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
@@ -724,10 +724,10 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn {
     my $tblout_file = $info_HR->{"OUT-NAME:tblout"};
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
     if(defined $time_path) { 
-      $cmd = "$time_path -p $executable -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
+      $cmd = "$time_path -p $executable $opts -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
     }
     else {
-      $cmd = "$executable -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $stderr_file";
+      $cmd = "$executable $opts -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $stderr_file";
     }
   }
 
