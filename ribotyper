@@ -2231,45 +2231,47 @@ sub output_one_target {
         }
         $out_of_order_str .= "])";
       }
-      else { # hits are in order, determine gaps in between hits
-        #for($i = 0; $i < $nhits; $i++) { 
-        #  printf("seq_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $seq_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
-        #  printf("mdl_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
-        #  printf("seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
-        #  printf("mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
-        #}
-        # determine gaps between all hits
-        for($i = 0; $i < ($nhits-1); $i++) {
-          my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
-          my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
-          my ($seq_cur_start, $seq_cur_stop, $seq_cur_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_cur_idx], $FH_HR);
-          my ($seq_nxt_start, $seq_nxt_stop, $seq_nxt_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_nxt_idx], $FH_HR);
-          if($seq_cur_strand ne $seq_nxt_strand) {
-            ofile_FAIL("ERROR in $sub_name, hits on different strand on second pass", 1, $FH_HR);
-          }
+      else { # hits are in order, determine gaps in between hits, only if we didn't use blast, if we did, then hits may overlap in sequence
+        if(! opt_Get("--1blast", $opt_HHR)) { 
+          #for($i = 0; $i < $nhits; $i++) { 
+          #  printf("seq_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $seq_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
+          #  printf("mdl_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
+          #  printf("seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
+          #  printf("mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
+          #}
+          # determine gaps between all hits
+          for($i = 0; $i < ($nhits-1); $i++) {
+            my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
+            my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
+            my ($seq_cur_start, $seq_cur_stop, $seq_cur_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_cur_idx], $FH_HR);
+            my ($seq_nxt_start, $seq_nxt_stop, $seq_nxt_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_nxt_idx], $FH_HR);
+            if($seq_cur_strand ne $seq_nxt_strand) {
+              ofile_FAIL("ERROR in $sub_name, hits on different strand on second pass", 1, $FH_HR);
+            }
 
-          my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
-          my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
-          my ($mdl_cur_start, $mdl_cur_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_cur_idx], $FH_HR);
-          my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_nxt_idx], $FH_HR);
-          
-          if($gap_types_str ne "") { $gap_types_str .= ","; }
-          my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_stop  + 1 : $seq_cur_stop - 1;
-          my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_nxt_start - 1 : $seq_nxt_stop + 1;
-          my $mdl_gap_start = $mdl_cur_stop  + 1;
-          my $mdl_gap_stop  = $mdl_nxt_start - 1;
-          $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
+            my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
+            my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
+            my ($mdl_cur_start, $mdl_cur_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_cur_idx], $FH_HR);
+            my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_nxt_idx], $FH_HR);
+            
+            if($gap_types_str ne "") { $gap_types_str .= ","; }
+            my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_stop  + 1 : $seq_cur_stop - 1;
+            my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_nxt_start - 1 : $seq_nxt_stop + 1;
+            my $mdl_gap_start = $mdl_cur_stop  + 1;
+            my $mdl_gap_stop  = $mdl_nxt_start - 1;
+            $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
 
-          if((($seq_gap_stop >= $seq_gap_start) && ($seq_cur_strand eq "+")) ||
-             (($seq_gap_stop <= $seq_gap_start) && ($seq_cur_strand eq "-"))) { 
-            if(defined $seqgap_HHAR) {
-              if(! exists $seqgap_HHAR->{$wmodel}) {
-                %{$seqgap_HHAR->{$wmodel}} = ();
+            if((($seq_gap_stop >= $seq_gap_start) && ($seq_cur_strand eq "+")) ||
+               (($seq_gap_stop <= $seq_gap_start) && ($seq_cur_strand eq "-"))) { 
+              if(defined $seqgap_HHAR) {
+                if(! exists $seqgap_HHAR->{$wmodel}) {
+                  %{$seqgap_HHAR->{$wmodel}} = ();
+                }
+                if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
+                  @{$seqgap_HHAR->{$wmodel}{$target}} = ();
+                }
+                push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
               }
-              if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
-                @{$seqgap_HHAR->{$wmodel}{$target}} = ();
-              }
-              push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
             }
           }
         }
@@ -3998,8 +4000,9 @@ sub determine_if_we_have_model_coords {
 
   my $have_model_coords = 0;
   if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_model_coords = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1hmm",   $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1slow",  $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1blast", $opt_HHR)) { $have_model_coords = 1; }
   }
   elsif($round eq "2" || $round eq "final") { 
     $have_model_coords = 1; # always true for round 2
@@ -4038,8 +4041,9 @@ sub determine_if_we_have_evalues {
 
   my $have_evalues = 0;
   if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_evalues = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1hmm",   $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1slow",  $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1blast", $opt_HHR)) { $have_evalues = 1; }
   }
   elsif($round eq "2" || $round eq "final") { 
     $have_evalues = 1; # always true for round 2
