@@ -121,13 +121,12 @@ opt_Add("--smxsize",         "real", undef,                   $g,"--max",   unde
 
 $opt_group_desc_H{++$g} = "options that modify the behavior of --1blast";
 #       option               type   default   group  requires  incompat        preamble-output                                                help-output    
-opt_Add("--blastnws",     "integer",    "7",     $g, "--1blast", undef,        "set blastn --word_size <n> to <n>",                           "set blastn --word_size <n> to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastnws",     "integer",    "11",    $g, "--1blast", undef,        "set blastn --word_size <n> to <n>",                           "set blastn --word_size <n> to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--blastnsc",       "real",     "50.",   $g, "--1blast", undef,        "set blastn minimum HSP bit score to consider to <x>",         "set blastn minimum HSP bit score to consider to <x>", \%opt_HH, \@opt_order_A);
 opt_Add("--blastnrw",     "integer",    "1",     $g, "--1blast", undef,        "set blastn -reward <n> to <n>",                               "set blastn -reward <n> to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--blastnpn",     "integer",   "-2",     $g, "--1blast", undef,        "set blastn -penalty <n> to <n>",                              "set blastn -penalty <n> to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--blastngo",     "integer",    "2",     $g, "--1blast","--blastngdf", "set blastn -gapopen <n> to <n>",                              "set blastn -gapopen <n> to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--blastnge",     "real",       "1",     $g, "--1blast","--blastngdf", "set blastn -gapextend <x> to <x>",                            "set blastn -gapextend <x> to <x>", \%opt_HH, \@opt_order_A);
-opt_Add("--blastngdf",    "boolean",      0,     $g, "--1blast", undef,        "don't use -gapopen/-gapextend w/blastn (use default values)", "don't use -gapopen/-gapextend w/blastn (use default values)", \%opt_HH, \@opt_order_A);
+opt_Add("--blastngo",     "integer",    "2",     $g, "--1blast", undef,        "set blastn -gapopen <n> to <n>",                              "set blastn -gapopen <n> to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastnge",     "real",       "1",     $g, "--1blast", undef,        "set blastn -gapextend <x> to <x>",                            "set blastn -gapextend <x> to <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for parallelizing cmsearch on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
@@ -212,7 +211,6 @@ my $options_okay =
                 'blastnpn=s'   => \$GetOptions_H{"--blastnpn"},
                 'blastngo=s'   => \$GetOptions_H{"--blastngo"},
                 'blastnge=s'   => \$GetOptions_H{"--blastnge"},
-                'blastngdf'    => \$GetOptions_H{"--blastngdf"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -4108,12 +4106,10 @@ sub determine_search_opts {
   }
   elsif($alg eq "blastn") { 
     $alg_opts .= " -word_size " . opt_Get("--blastnws", $opt_HHR);
-    $alg_opts .= " -reward "    . opt_Get("--blastnrw", $opt_HHR);
-    $alg_opts .= " -penalty "   . opt_Get("--blastnpn", $opt_HHR);
-    if(! opt_Get("--blastngdf", $opt_HHR)) { 
-      $alg_opts .= " -gapopen "   . opt_Get("--blastngo", $opt_HHR);
-      $alg_opts .= " -gapextend " . opt_Get("--blastnge", $opt_HHR);
-    }
+    if(opt_IsUsed("--blastnrw", $opt_HHR)) { $alg_opts .= " -reward "    . opt_Get("--blastnrw", $opt_HHR); }
+    if(opt_IsUsed("--blastnpn", $opt_HHR)) { $alg_opts .= " -penalty "   . opt_Get("--blastnpn", $opt_HHR); }
+    if(opt_IsUsed("--blastngo", $opt_HHR)) { $alg_opts .= " -gapopen "   . opt_Get("--blastngo", $opt_HHR); }
+    if(opt_IsUsed("--blastnge", $opt_HHR)) { $alg_opts .= " -gapextend " . opt_Get("--blastnge", $opt_HHR); }
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", 1, $FH_HR);
