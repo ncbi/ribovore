@@ -497,7 +497,7 @@ foreach $family (@family_order_A) {
     if(! opt_IsUsed("--glocal", \%opt_HH)) { 
       $info_H{"OUT-NAME:elfile"}    = $out_root . "." . $family . ".cmalign.elfile";
     }
-    ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "cmalign", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $family_nseq_H{$family}, $family_nnt_H{$family}, $cmalign_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
     if($use_time_program) { 
       $opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($info_H{"OUT-NAME:time"}, $ofile_info_HH{"FH"});
     }

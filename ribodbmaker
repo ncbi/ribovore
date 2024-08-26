@@ -517,7 +517,7 @@ if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) {
   }
 }
 if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
-  $env_srcchk = utl_DirEnvVarValid("SRCCHKDIR");
+  $env_srcchk_dir = utl_DirEnvVarValid("SRCCHKDIR");
   $execs_H{"srcchk"} = $env_srcchk_dir . "/srcchk";
 
   # make sure the tax file exists
