@@ -560,7 +560,7 @@ Ribovore includes a special formatted version of the NCBI taxonomy tree in the f
 ribovore/taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt
 ```
 
-This tree was created using the procedure described below on September 21, 2023.
+This tree was created using the procedure described below on August 26, 2024.
 
 You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
 download `vecscreen_plus_taxonomy` with the following commands:
@@ -632,7 +632,6 @@ $VECPLUSDIR/scripts/assign_levels_to_taxonomy.pl --input_taxa taxonomy_tree.txt 
 ```
 paste taxonomy_tree_wlevels.txt specified_column.txt > updated-ncbi-taxonomy-tree.ribodbmaker.txt
 ```
-
 6. Use the new taxonomy tree file you created with `ribodbmaker` using the `--taxin /path/to/updated-ncbi-taxonomy-tree.ribodbmaker.txt`.
 
 ---
