@@ -147,8 +147,7 @@ echo "Downloading ribovore ... "
 # ----------------------------------------------------------------------------
 git clone https://github.com/ncbi/ribovore.git ribovore
 cd ribovore
-#git checkout release-$VERSION
-git checkout rt-blast
+git checkout release-$VERSION
 rm -rf .git
 cd ..
 # ----------------------------------------------------------------------------
