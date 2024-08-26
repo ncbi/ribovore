@@ -87,6 +87,8 @@ pair of values from columns 2 and 3 of the
 # $RIBOEASELDIR:    /usr/local/src/ribovore-install/infernal/binaries
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 # $VECPLUSDIR:      /usr/local/src/ribovore-install/vecscreen_plus_taxonomy
+# $VECSCREENDIR:    /usr/local/src/ribovore-install/vecscreen_plus_taxonomy/scripts
+# $SRCCHKDIR:       /usr/local/src/ribovore-install/vecscreen_plus_taxonomy/scripts
 #
 # input sequence file:    /usr/local/src/ribovore-install/ribovore/testfiles/fungi-ssu.r10.fa
 # output directory name:  db10
@@ -557,7 +559,7 @@ Ribovore includes a special formatted version of the NCBI taxonomy tree in the f
 ribovore/taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt
 ```
 
-This tree was created using the procedure described below on February 10, 2023.
+This tree was created using the procedure described below on September 21, 2023.
 
 You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
 download `vecscreen_plus_taxonomy` with the following commands:
