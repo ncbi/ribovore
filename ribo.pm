@@ -615,19 +615,20 @@ sub ribo_ProcessSequenceFile {
 }
 
 #################################################################
-# Subroutine: ribo_RunCmsearchOrCmalignOrRRnaSensor
+# Subroutine: ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn
 # Incept:     EPN, Thu Jul  5 15:05:53 2018
 #             EPN, Wed Oct 17 20:45:53 2018 [rRNA_sensor added]
+#             EPN, Tue Oct  3 14:09:16 2023 [blastn added]
 #
-# Purpose:    Run cmsearch, cmalign or rRNA_sensor either locally
-#             or on the farm.
+# Purpose:    Run cmsearch, cmalign, rRNA_sensor or blastn either 
+#             locally or on the farm.
 #
 # Arguments:
 #   $executable:     path to cmsearch or cmalign or rRNA_sensor executable
 #   $time_path:      path to Unix time command (e.g. /usr/bin/time)
 #   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
 #   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
-#   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor arguments to use 
+#   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor or blastn arguments to use 
 #   $info_HR:        ref to hash with output files and arguments for running 
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
 #                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
@@ -640,8 +641,8 @@ sub ribo_ProcessSequenceFile {
 # Dies:     Never
 #
 #################################################################
-sub ribo_RunCmsearchOrCmalignOrRRnaSensor { 
-  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensor()";
+sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn()";
   my $nargs_expected = 8;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
@@ -652,11 +653,11 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 
   # validate %{$info_HR}
   my $program_choice = ofile_RemoveDirPath($executable);
-  ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
+  ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
 
   # IN:seqfile, OUT-NAME:stdout, OUT-NAME:time and OUT-NAME:stderr are required key for all programs (cmsearch, cmalign and rRNA_sensor_script)
   my $seq_file        = $info_HR->{"IN:seqfile"};
-  my $stdout_file     = $info_HR->{"OUT-NAME:stdout"};
+  my $stdout_file     = $info_HR->{"OUT-NAME:stdout"}; # may be undef
   my $time_file       = $info_HR->{"OUT-NAME:time"};
   my $stderr_file     = $info_HR->{"OUT-NAME:stderr"};
   my $qcmdscript_file = $info_HR->{"OUT-NAME:qcmd"};
@@ -718,6 +719,17 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
       $cmd = "$executable $minlen $maxlen $seq_file $classlocal $minid $maxevalue $ncpu $outdir $blastdb > $stdout_file 2> $stderr_file"
     }
   }
+  elsif($executable =~ /blastn$/) { 
+    my $blastdb     = $info_HR->{"blastdb"};
+    my $tblout_file = $info_HR->{"OUT-NAME:tblout"};
+    # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
+    if(defined $time_path) { 
+      $cmd = "$time_path -p $executable $opts -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd"
+    }
+    else {
+      $cmd = "$executable $opts -num_threads 1 -query $seq_file -db $blastdb -outfmt 6 -out $tblout_file 2> $stderr_file";
+    }
+  }
 
   if((defined $qsub_prefix) && (defined $qsub_suffix)) { 
     # write a script to execute on the cluster and execute it
@@ -746,6 +758,9 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
       elsif($executable =~ /cmalign$/) {
         $expected_out_file = $info_HR->{"OUT-NAME:stk"};
       }
+      elsif($executable =~ /blastn$/) {
+        $expected_out_file = $info_HR->{"OUT-NAME:stdout"};
+      }
       # we don't check for output file for rRNA_sensor because it may exist even if command failed
       # we'll catch if it failed later when we try to parse the output (program should exit)
       utl_FileValidateExistsAndNonEmpty($expected_out_file, "expected output file from command $cmd", $sub_name, 1, $FH_HR);
@@ -759,11 +774,11 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 }
 
 #################################################################
-# Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+# Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation()
 # Incept:      EPN, Thu Oct 18 12:32:18 2018
 #
-# Purpose:     Validate that we can run cmsearch, cmalign or rRNA_sensor
-#              by checking that %{$info_HR} is valid.
+# Purpose:     Validate that we can run cmsearch, cmalign, rRNA_sensor
+#              or blastn by checking that %{$info_HR} is valid.
 #
 #              %{$info_HR} uses some key name conventions to include
 #              extra information that pertains to parallel mode only
@@ -781,7 +796,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #              of $info_HR->{"OUT-{NAME,DIR}:<s>"}.
 #
 # Arguments: 
-#  $program_choice:  "cmalign" or "cmsearch" or "rRNA_sensor_script"
+#  $program_choice:  "cmalign" or "cmsearch" or "rRNA_sensor_script" or "blastn"
 #  $info_HR:         ref to hash with output files and arguments for running 
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
 #
@@ -823,6 +838,14 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 #                       "OUT-NAME:stderr":   path to stderr output file
 #                       "OUT-NAME:qcmd":     path to cmd script file for the qsub cmd
 #
+#                    if "blastn", keys must be:
+#                       "IN:seqfile":        name of master sequence file
+#                       "blastdb":           name of blast db                    (cmdline arg 9)
+#                       "OUT-NAME:tblout":   name of tabular output file
+#                       "OUT-NAME:time":     path to time output file
+#                       "OUT-NAME:stderr":   path to stderr output file
+#                       "OUT-NAME:qcmd":     path to cmd script file for the qsub cmd
+#
 #  $opt_HHR:         REF to 2D hash of option values, see top of seqp_opts.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information
 #
@@ -835,8 +858,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensor {
 # Dies: If program_choice is invalid, a required info_key is not set, or an input file does not exist
 #
 ################################################################# 
-sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation { 
-  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorValidation";
+sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation";
   my $nargs_expected = 4;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
@@ -867,6 +890,11 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
     $wait_str = "Final output saved as";
     @reqd_keys_A = ("IN:seqfile", "minlen", "maxlen", "OUT-DIR:classpath", "OUT-DIR:lensum", "OUT-DIR:blastout", "minid", "maxevalue", "ncpu", "OUT-NAME:outdir", "blastdb", "OUT-NAME:stdout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
   }
+  elsif($program_choice eq "blastn") { 
+    $wait_key = "OUT-NAME:tblout";
+    $wait_str = "Final output saved as";
+    @reqd_keys_A = ("IN:seqfile", "blastdb", "OUT-NAME:tblout", "OUT-NAME:time", "OUT-NAME:stderr", "OUT-NAME:qcmd");
+  }
   else { 
     ofile_FAIL("ERROR in $sub_name, chosen executable $program_choice is not cmsearch, cmalign, or rRNA_sensor", 1, $FH_HR);
   }
@@ -885,11 +913,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 }
 
 #################################################################
-# Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper()
+# Subroutine:  ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper()
 # Incept:      EPN, Thu Jul  5 15:24:19 2018
 #              EPN, Wed Oct 17 20:46:10 2018 [rRNA_sensor added]
+#              EPN, Tue Oct  3 14:15:10 2023 [blastn added]
 #
-# Purpose:     Run one or more cmsearch, cmalign or rRNA_sensor jobs 
+# Purpose:     Run one or more cmsearch, cmalign, rRNA_sensor or blastn jobs 
 #              on the farm or locally, after possibly splitting up the input
 #              sequence file. 
 #              The following must all be valid options in opt_HHR:
@@ -898,7 +927,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 #
 # Arguments: 
 #  $execs_HR:        ref to hash with paths to executables
-#  $program_choice:  "cmalign" or "cmsearch" or "rRNA_sensor_script"
+#  $program_choice:  "cmalign" or "cmsearch" or "rRNA_sensor_script" or "blastn"
 #  $qsub_prefix:     qsub command prefix to use when submitting to farm, if -p
 #  $qsub_suffix:     qsub command suffix to use when submitting to farm, if -p
 #  $seqlen_HR:       ref to hash of sequence lengths, key is sequence name, value is length
@@ -923,8 +952,8 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorValidation {
 # 
 # Dies: If an executable doesn't exist, or cmsearch command fails if we're running locally
 ################################################################# 
-sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper { 
-  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper";
+sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper { 
+  my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper";
   my $nargs_expected = 13;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
@@ -946,12 +975,12 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
   }
   
   # validate %{$info_HR}
-  ($wait_key, $wait_str) = ribo_RunCmsearchOrCmalignOrRRnaSensorValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
+  ($wait_key, $wait_str) = ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
   $executable = $execs_HR->{$program_choice};
 
   if(! opt_Get("-p", $opt_HHR)) { 
     # run job locally
-    ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $time_path, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn($executable, $time_path, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
   }
   else { 
     my %wkr_outfiles_HA = (); # hash of arrays of output file names for all jobs, 
@@ -999,7 +1028,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper {
           $wkr_info_H{$info_key} = $info_HR->{$info_key};
         }
       }
-      ribo_RunCmsearchOrCmalignOrRRnaSensor($executable, $time_path, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
+      ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn($executable, $time_path, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
     }
     
     # wait for the jobs to finish

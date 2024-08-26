@@ -142,14 +142,15 @@ echo "Set RIBOINSTALLDIR as current directory ($RIBOINSTALLDIR)."
 echo "------------------------------------------------"
 # ribovore
 echo "Downloading ribovore ... "
-curl -k -L -o $RVERSION.zip https://github.com/ncbi/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
+#curl -k -L -o $RVERSION.zip https://github.com/ncbi/ribovore/archive/$RVERSION.zip; unzip $RVERSION.zip; mv ribovore-$RVERSION ribovore; rm $RVERSION.zip
 # for a test build of a release, comment out above curl and uncomment block below
 # ----------------------------------------------------------------------------
-#git clone https://github.com/ncbi/ribovore.git ribovore
-#cd ribovore
+git clone https://github.com/ncbi/ribovore.git ribovore
+cd ribovore
 #git checkout release-$VERSION
-#rm -rf .git
-#cd ..
+git checkout rt-blast
+rm -rf .git
+cd ..
 # ----------------------------------------------------------------------------
 if [ "$RIBOTYPERONLY" = "yes" ]; then
     rm -rf ribovore/taxonomy
@@ -262,20 +263,20 @@ fi
 ################################
     
 # download blast binaries
+if [ "$INPUTSYSTEM" = "linux" ]; then
+    echo "Downloading BLAST version $BVERSION for Linux"
+    curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz
+else 
+    echo "Downloading BLAST version $BVERSION for Mac/OSX"
+    echo "curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz"
+    curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz
+fi
+tar xfz blast.tar.gz
+rm blast.tar.gz
+mv ncbi-blast-$BVERSION+ ncbi-blast
+echo "------------------------------------------------"
+
 if [ "$RIBOTYPERONLY" != "yes" ]; then
-    if [ "$INPUTSYSTEM" = "linux" ]; then
-        echo "Downloading BLAST version $BVERSION for Linux"
-        curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-linux.tar.gz
-    else 
-        echo "Downloading BLAST version $BVERSION for Mac/OSX"
-        echo "curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz"
-        curl -k -L -o blast.tar.gz https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$BVERSION/ncbi-blast-$BVERSION+-x64-macosx.tar.gz
-    fi
-    tar xfz blast.tar.gz
-    rm blast.tar.gz
-    mv ncbi-blast-$BVERSION+ ncbi-blast
-    echo "------------------------------------------------"
-    
     # if linux, download vecscreen_plus_taxonomy
     if [ "$INPUTSYSTEM" = "linux" ]; then
         curl -k -L -o vecscreen_plus_taxonomy-$RVERSION.zip https://github.com/aaschaffer/vecscreen_plus_taxonomy/archive/$RVERSION.zip; 
@@ -300,15 +301,13 @@ if [ "$DOKEEP" = "no" ]; then
     mkdir infernal
     mv binaries infernal
     # ncbi-blast, we only need blastdbcmd and blastn
-    if [ "$RIBOTYPERONLY" != "yes" ]; then
-        mv ncbi-blast/bin/blastdbcmd ./
-        mv ncbi-blast/bin/blastn ./
-        rm -rf ncbi-blast
-        mkdir ncbi-blast
-        mkdir ncbi-blast/bin
-        mv blastdbcmd ncbi-blast/bin
-        mv blastn ncbi-blast/bin
-    fi
+    mv ncbi-blast/bin/blastdbcmd ./
+    mv ncbi-blast/bin/blastn ./
+    rm -rf ncbi-blast
+    mkdir ncbi-blast
+    mkdir ncbi-blast/bin
+    mv blastdbcmd ncbi-blast/bin
+    mv blastn ncbi-blast/bin
     echo "------------------------------------------------"
 fi
 ########################################################
@@ -330,8 +329,8 @@ echo "export RIBOINFERNALDIR=\"\$RIBOINSTALLDIR/infernal/binaries\""
 echo "export RIBOEASELDIR=\"\$RIBOINSTALLDIR/infernal/binaries\""
 echo "export RIBOSEQUIPDIR=\"\$RIBOINSTALLDIR/sequip\""
 echo "export RIBOTIMEDIR=\"/usr/bin\""
+echo "export RIBOBLASTDIR=\"\$RIBOINSTALLDIR/ncbi-blast/bin\""
 if [ "$RIBOTYPERONLY" != "yes" ]; then
-    echo "export RIBOBLASTDIR=\"\$RIBOINSTALLDIR/ncbi-blast/bin\""
     echo "export RRNASENSORDIR=\"\$RIBOINSTALLDIR/rRNA_sensor\""
     if [ "$INPUTSYSTEM" = "linux" ]; then
         echo "export VECPLUSDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""

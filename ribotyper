@@ -14,6 +14,7 @@ require "ribo.pm";
 my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
+my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
 my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
@@ -21,6 +22,7 @@ $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
+# we'll check for blastn below after we find out if we need it (if --1blast)
 
 # deal with 'time' differently because we can deal if it doesn't exist and
 # we only use it if it does exist and -p is used
@@ -28,8 +30,6 @@ my $env_ribotime_dir = ribo_CheckForTimeExecutable(); # this will return undef i
 if(defined $env_ribotime_dir) {
   $execs_H{"time"} = $env_ribotime_dir . "/time";
 }
-
-utl_ExecHValidate(\%execs_H, undef);
 
 #########################################################
 # Command line and option processing using sqp_opts.pm
@@ -55,86 +55,98 @@ utl_ExecHValidate(\%execs_H, undef);
 my %opt_HH = ();      
 my @opt_order_A = (); 
 my %opt_group_desc_H = ();
+my $g = 0; # option group
 
 # Add all options to %opt_HH and @opt_order_A.
 # This section needs to be kept in sync (manually) with the &GetOptions call below
-$opt_group_desc_H{"1"} = "basic options";
+
+$opt_group_desc_H{++$g} = "basic options";
 #     option            type       default               group   requires incompat    preamble-output                                   help-output    
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                            "display this help",                                  \%opt_HH, \@opt_order_A);
-opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
-opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
-opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
-opt_Add("-i",           "string",  undef,                    1,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-f",           "boolean", 0,                       $g,    undef, undef,      "forcing directory overwrite",                    "force; if <output directory> exists, overwrite it",  \%opt_HH, \@opt_order_A);
+opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
+opt_Add("-n",           "integer", 0,                       $g,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
+opt_Add("-i",           "string",  undef,                   $g,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"2"} = "options for controlling the first round search algorithm";
-#       option               type   default                group  requires incompat    preamble-output                            help-output    
-opt_Add("--1hmm",          "boolean", 0,                       2,  undef,   undef,     "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
-opt_Add("--1slow",         "boolean", 0,                       2,  undef,   undef,     "run first round in slow CM mode",        "run first round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{++$g} = "options for controlling the first round search algorithm";
+#       option               type   default                group  requires incompat          preamble-output                            help-output    
+opt_Add("--1hmm",          "boolean", 0,                      $g,  undef,"--1slow,--1blast", "run first round in slower HMM mode",     "run first round in slower HMM mode", \%opt_HH, \@opt_order_A);
+opt_Add("--1slow",         "boolean", 0,                      $g,  undef,"--1hmm,--1blast",  "run first round in slow CM mode",        "run first round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
+opt_Add("--1blast",        "boolean", 0,                      $g,  undef,"--1slow,--1hmm,--2slow", "run in fastest BLAST mode, no second round", "run in fastest BLAST mode, no second round",  \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"3"} = "options for controlling the second round search algorithm";
+$opt_group_desc_H{++$g} = "options for controlling the second round search algorithm";
 #       option               type   default                group  requires incompat    preamble-output                        help-output    
-opt_Add("--2slow",         "boolean", 0,                       3,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
+opt_Add("--2slow",         "boolean", 0,                      $g,  undef,   "--1slow", "run second round in slow CM mode",    "run second round in slow CM mode that scores structure+sequence",    \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"4"} = "options related to bit score REPORTING thresholds";
-#     option                 type   default                group   requires incompat   preamble-output                                            help-output    
-opt_Add("--minpsc",        "real",   "20.",                   4,  undef,   undef,      "set minimum bit score cutoff for primary hits to <x>",    "set minimum bit score cutoff for primary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--minssc",        "real",   "10.",                   4,  undef,   undef,      "set minimum bit score cutoff for secondary hits to <x>",  "set minimum bit score cutoff for secondary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{++$g} = "options related to cmsearch bit score thresholds";
+#     option                 type   default                group   requires incompat   preamble-output                                                     help-output    
+opt_Add("--minpsc",        "real",   "20.",                  $g,  undef,   undef,      "set minimum cmsearch bit score for primary hits to <x>",    "set minimum cmsearch bit score for primary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--minssc",        "real",   "10.",                  $g,  undef,   undef,      "set minimum cmsearch bit score for secondary hits to <x>",  "set minimum cmsearch bit score for secondary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"5"} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
+$opt_group_desc_H{++$g} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
-opt_Add("--minusfail",  "boolean",   0,                        5,  undef,   undef,      "hits on negative (minus) strand FAIL",                 "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
-opt_Add("--scfail",     "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score threshold FAIL",        "seqs that fall below low score threshold FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--difffail",   "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--covfail",    "boolean",   0,                        5,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--multfail",   "boolean",   0,                        5,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--questfail",  "boolean",   0,                        5,"--inaccept",undef,    "seqs that score best to questionable models FAIL",     "seqs that score best to questionable models FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--shortfail",  "integer",   0,                        5,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--longfail",   "integer",   0,                        5,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
-opt_Add("--esdfail",    "boolean",   0,                        5,"--evalues",undef,     "E-value/score discrepancies FAIL",                     "seqs in which second best hit by E-value has better bit score above threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--minusfail",  "boolean",   0,                       $g,  undef,   undef,      "hits on negative (minus) strand FAIL",                 "hits on negative (minus) strand defined as FAILures", \%opt_HH, \@opt_order_A);
+opt_Add("--scfail",     "boolean",   0,                       $g,  undef,   undef,      "seqs that fall below low score threshold FAIL",        "seqs that fall below low score threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--difffail",   "boolean",   0,                       $g,  undef,   undef,      "seqs that fall below low score diff threshold FAIL",   "seqs that fall below low score difference threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--covfail",    "boolean",   0,                       $g,  undef,   undef,      "seqs that fall below low coverage threshold FAIL",     "seqs that fall below low coverage threshold FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--multfail",   "boolean",   0,                       $g,  undef,   undef,      "seqs that have more than one hit to best model FAIL",  "seqs that have more than one hit to best model FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--questfail",  "boolean",   0,                       $g,"--inaccept",undef,    "seqs that score best to questionable models FAIL",     "seqs that score best to questionable models FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--shortfail",  "integer",   0,                       $g,  undef,   undef,      "seqs that are shorter than <n> nucleotides FAIL",      "seqs that are shorter than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--longfail",   "integer",   0,                       $g,  undef,   undef,      "seqs that are longer than <n> nucleotides FAIL",       "seqs that are longer than <n> nucleotides FAIL", \%opt_HH, \@opt_order_A);
+opt_Add("--esdfail",    "boolean",   0,                       $g,"--evalues",undef,     "E-value/score discrepancies FAIL",                     "seqs in which second best hit by E-value has better bit score above threshold FAIL", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"6"} = "options for controlling thresholds for failure/warning criteria";
+$opt_group_desc_H{++$g} = "options for controlling thresholds for failure/warning criteria";
 #     option                 type    default               group   requires incompat    preamble-output                                            help-output    
-opt_Add("--lowppossc",     "real",   "0.5",                    6,  undef,   undef,      "set minimum bit per position threshold to <x>",           "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--tcov",          "real",   "0.86",                   6,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
-opt_Add("--tshortcov",     "real",   undef,                    6,"--tshortlen",undef,   "set low total coverage for short seqs threshold to <x>",  "set low total coverage threshold for short seqs to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
-opt_Add("--tshortlen",   "integer",  undef,                    6,"--tshortcov",undef,   "set maximum length for short seqs coverage calc to <n>",  "set maximum length for short seq coverage threshold to <n> nucleotides", \%opt_HH, \@opt_order_A);
-opt_Add("--lowpdiff",      "real",   "0.10",                   6,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowpdiff",     "real",   "0.04",                   6,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--absdiff",    "boolean",   0,                        6,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
-opt_Add("--lowadiff",      "real",   "100.",                   6,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--vlowadiff",     "real",   "40.",                    6,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
-opt_Add("--maxoverlap", "integer",   "20",                     6,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--esdmaxsc",   "real",      "0.001",                  6,"--evalues",undef,     "set max allowed bit sc diff for Evalue/score discrepancies to <x>", "set maximum allowed bit score difference for E-value/score discrepancies to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--lowppossc",     "real",   "0.5",                   $g,  undef,   undef,      "set minimum bit per position threshold to <x>",           "set minimum bit per position threshold for reporting suspiciously low scores to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--tcov",          "real",   "0.86",                  $g,  undef,   undef,      "set low total coverage threshold to <x>",                 "set low total coverage threshold to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--tshortcov",     "real",   undef,                   $g,"--tshortlen",undef,   "set low total coverage for short seqs threshold to <x>",  "set low total coverage threshold for short seqs to <x> fraction of target sequence", \%opt_HH, \@opt_order_A);
+opt_Add("--tshortlen",   "integer",  undef,                   $g,"--tshortcov",undef,   "set maximum length for short seqs coverage calc to <n>",  "set maximum length for short seq coverage threshold to <n> nucleotides", \%opt_HH, \@opt_order_A);
+opt_Add("--lowpdiff",      "real",   "0.10",                  $g,  undef,   "--absdiff","set low per-posn score difference threshold to <x>",      "set 'low'      per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowpdiff",     "real",   "0.04",                  $g,  undef,   "--absdiff","set very low per-posn score difference threshold to <x>", "set 'very low' per-posn score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--absdiff",    "boolean",   0,                       $g,  undef,   undef,      "use total score diff threshold, not per-posn",            "use total score difference thresholds instead of per-posn", \%opt_HH, \@opt_order_A);
+opt_Add("--lowadiff",      "real",   "100.",                  $g,"--absdiff",undef,     "set 'low' total sc diff threshold to <x>",                "set 'low'      total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--vlowadiff",     "real",   "40.",                   $g,"--absdiff",undef,     "set 'very low' total sc diff threshold to <x>",           "set 'very low' total score difference threshold to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--maxoverlap", "integer",   "20",                    $g,  undef,   undef,      "set maximum allowed model position overlap to <n>",       "set maximum allowed number of model positions to overlap b/t 2 hits before failure to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--esdmaxsc",   "real",      "0.001",                 $g,"--evalues",undef,     "set max allowed bit sc diff for Evalue/score discrepancies to <x>", "set maximum allowed bit score difference for E-value/score discrepancies to <x>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"7"} = "optional input files";
+$opt_group_desc_H{++$g} = "optional input files";
 #       option               type   default                group  requires incompat  preamble-output                                  help-output    
-opt_Add("--inaccept",     "string",  undef,                   7,  undef,   undef,    "read acceptable/questionable models from <s>",  "read acceptable/questionable domains/models from file <s>", \%opt_HH, \@opt_order_A);
+opt_Add("--inaccept",     "string",  undef,                   $g,  undef,   undef,    "read acceptable/questionable models from <s>",  "read acceptable/questionable domains/models from file <s>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"8"} = "options that modify the behavior of --1slow or --2slow";
+$opt_group_desc_H{++$g} = "options that modify the behavior of --1slow or --2slow";
 #       option               type   default                group  requires incompat    preamble-output                   help-output    
-opt_Add("--mid",          "boolean", 0,                       8,  undef,  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--max",          "boolean", 0,                       8,  undef,  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
-opt_Add("--smxsize",         "real", undef,                   8,"--max",   undef,      "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--mid",          "boolean", 0,                       $g,  undef,  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--max",          "boolean", 0,                       $g,  undef,  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--smxsize",         "real", undef,                   $g,"--max",   undef,     "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"9"} = "options for parallelizing cmsearch on a compute farm";
+$opt_group_desc_H{++$g} = "options that modify the behavior of --1blast";
+#       option               type   default   group  requires  incompat        preamble-output                                                help-output    
+opt_Add("--blastnws",     "integer",    "11",    $g, "--1blast", undef,        "set blastn --word_size <n> to <n>",                           "set blastn --word_size <n> to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastnsc",       "real",     "50.",   $g, "--1blast", undef,        "set blastn minimum HSP bit score to consider to <x>",         "set blastn minimum HSP bit score to consider to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastnrw",     "integer",    "1",     $g, "--1blast", undef,        "set blastn -reward <n> to <n>",                               "set blastn -reward <n> to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastnpn",     "integer",   "-2",     $g, "--1blast", undef,        "set blastn -penalty <n> to <n>",                              "set blastn -penalty <n> to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastngo",     "integer",    "2",     $g, "--1blast", undef,        "set blastn -gapopen <n> to <n>",                              "set blastn -gapopen <n> to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--blastnge",     "real",       "1",     $g, "--1blast", undef,        "set blastn -gapextend <x> to <x>",                            "set blastn -gapextend <x> to <x>", \%opt_HH, \@opt_order_A);
+
+$opt_group_desc_H{++$g} = "options for parallelizing cmsearch on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
-opt_Add("-p",           "boolean", 0,                         9,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
-opt_Add("-q",           "string",  undef,                     9,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
-opt_Add("-s",           "integer", 181,                       9,     "-p", undef,      "seed for random number generator is <n>",                     "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--nkb",        "integer", 100,                       9,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
-opt_Add("--wait",       "integer", 500,                       9,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
-opt_Add("--errcheck",   "boolean", 0,                         9,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
+opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
+opt_Add("-q",           "string",  undef,                    $g,     "-p", undef,      "use qsub info file <s> instead of default",                   "use qsub info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-s",           "integer", 181,                      $g,     "-p", undef,      "seed for random number generator is <n>",                     "seed for random number generator is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--nkb",        "integer", 100,                      $g,     "-p", undef,      "number of KB of seq for each cmsearch farm job is <n>",       "number of KB of sequence for each cmsearch farm job is <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--wait",       "integer", 500,                      $g,     "-p", undef,      "allow <n> minutes for cmsearch jobs on farm",                 "allow <n> wall-clock minutes for cmsearch jobs on farm to finish, including queueing time", \%opt_HH, \@opt_order_A);
+opt_Add("--errcheck",   "boolean", 0,                        $g,     "-p", undef,      "consider any farm stderr output as indicating a job failure", "consider any farm stderr output as indicating a job failure", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"10"} = "options for controlling gap type definitions";
-opt_Add("--mgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in model coordinates is <n>",    "maximum size of a 'small' gap in model coordinates is <n>",    \%opt_HH, \@opt_order_A);
-opt_Add("--sgap",       "integer", 10,                       10,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{++$g} = "options for controlling gap type definitions";
+opt_Add("--mgap",       "integer", 10,                       $g,    undef, undef,      "maximum size of a 'small' gap in model coordinates is <n>",    "maximum size of a 'small' gap in model coordinates is <n>",    \%opt_HH, \@opt_order_A);
+opt_Add("--sgap",       "integer", 10,                       $g,    undef, undef,      "maximum size of a 'small' gap in sequence coordinates is <n>", "maximum size of a 'small' gap in sequence coordinates is <n>", \%opt_HH, \@opt_order_A);
 
-$opt_group_desc_H{"11"} = "options for creating additional output files";
-opt_Add("--outseqs",      "boolean", 0,                      11,  undef,   undef,               "save per-model PASS/FAIL sequences to files",       "save per-model PASS/FAIL sequences to files", \%opt_HH, \@opt_order_A);
-opt_Add("--outhits",      "boolean", 0,                      11,  undef,   undef,               "save per-model PASS/FAIL best hits to files",       "save per-model PASS/FAIL sequences to files", \%opt_HH, \@opt_order_A);
-opt_Add("--outgaps",      "boolean", 0,                      11,  undef,   undef,               "save gap sequences between hits to a file",         "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
-opt_Add("--outxgaps",     "integer", 20,                     11,  undef,   undef,               "save gap sequence file with <n> added nts",         "save gap sequence file with <n> added nts", \%opt_HH, \@opt_order_A);
-opt_Add("--keep",         "boolean", 0,                      11,  undef,   undef,               "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
+$opt_group_desc_H{++$g} = "options for creating additional output files";
+opt_Add("--outseqs",      "boolean", 0,                      $g,  undef,   undef,               "save per-model PASS/FAIL sequences to files",       "save per-model PASS/FAIL sequences to files", \%opt_HH, \@opt_order_A);
+opt_Add("--outhits",      "boolean", 0,                      $g,  undef,   undef,               "save per-model PASS/FAIL best hits to files",       "save per-model PASS/FAIL sequences to files", \%opt_HH, \@opt_order_A);
+opt_Add("--outgaps",      "boolean", 0,                      $g,  undef,   undef,               "save gap sequences between hits to a file",         "save gap sequences between hits to a file", \%opt_HH, \@opt_order_A);
+opt_Add("--outxgaps",     "integer", 20,                     $g,  undef,   undef,               "save gap sequence file with <n> added nts",         "save gap sequence file with <n> added nts", \%opt_HH, \@opt_order_A);
+opt_Add("--keep",         "boolean", 0,                      $g,  undef,   undef,               "keep all intermediate files",                       "keep all intermediate files that are removed by default", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{"12"} = "advanced options";
 #       option               type   default                group  requires incompat             preamble-output                                      help-output    
@@ -158,6 +170,7 @@ my $options_okay =
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
+                '1blast'        => \$GetOptions_H{"--1blast"},
 # first round algorithm options
                 '2slow'         => \$GetOptions_H{"--2slow"},
 # options controlling minimum bit score cutoff 
@@ -191,6 +204,13 @@ my $options_okay =
                 'mid'          => \$GetOptions_H{"--mid"},
                 'max'          => \$GetOptions_H{"--max"},
                 'smxsize=s'    => \$GetOptions_H{"--smxsize"},
+# options for blastn
+                'blastnws=s'   => \$GetOptions_H{"--blastnws"},
+                'blastnsc=s'   => \$GetOptions_H{"--blastnsc"},
+                'blastnrw=s'   => \$GetOptions_H{"--blastnrw"},
+                'blastnpn=s'   => \$GetOptions_H{"--blastnpn"},
+                'blastngo=s'   => \$GetOptions_H{"--blastngo"},
+                'blastnge=s'   => \$GetOptions_H{"--blastnge"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -217,7 +237,7 @@ my $options_okay =
 my $total_seconds     = -1 * ofile_SecondsSinceEpoch(); # by multiplying by -1, we can just add another ofile_SecondsSinceEpoch call at end to get total time
 my $executable        = $0;
 my $date              = scalar localtime();
-my $version           = "1.0.5";
+my $version           = "1.0.5dev";
 my $releasedate       = "Sep 2023";
 my $package_name      = "Ribovore";
 
@@ -311,6 +331,12 @@ if($min_secondary_sc > $min_primary_sc) {
     # this will only happen if the default values in this file are changed so that --minpsc default is less than --minssc default
   }
 }
+
+# now that we know if we need blastn, check for all required executables
+if(opt_Get("--1blast", \%opt_HH)) { 
+  $execs_H{"blastn"} = $env_riboblast_dir . "/blastn";
+}
+utl_ExecHValidate(\%execs_H, undef);
 
 my $cmd         = undef; # a command to be run by utl_RunCommand()
 my @early_cmd_A = (); # array of commands we run before our log file is opened
@@ -448,12 +474,13 @@ if(opt_IsUsed("-p", \%opt_HH)) {
 # determine search methods for rounds 1 and 2
 ##############################################
 my $alg1 = undef; # can be any of "fast", "hmmonly", or "slow"
-if   (opt_Get("--1hmm",  \%opt_HH))   { $alg1 = "hmmonly"; }
-elsif(opt_Get("--1slow", \%opt_HH))   { $alg1 = "slow"; }
-else                                  { $alg1 = "fast"; }
+if   (opt_Get("--1hmm",   \%opt_HH))   { $alg1 = "hmmonly"; }
+elsif(opt_Get("--1slow",  \%opt_HH))   { $alg1 = "slow"; }
+elsif(opt_Get("--1blast", \%opt_HH))   { $alg1 = "blastn"; }
+else                                   { $alg1 = "fast"; }
 
 my $alg2 = undef; # can be "hmmonly" or "slow"
-if(! opt_Get("--1slow", \%opt_HH)) { 
+if((! opt_Get("--1slow", \%opt_HH)) && (! opt_Get("--1blast", \%opt_HH))) { 
   if(opt_Get("--2slow", \%opt_HH)) { 
     $alg2 = "slow"; 
   }
@@ -535,12 +562,24 @@ my %nseq_H        = (); # key is model, value is total number of sequences in $s
 my %totseqlen_H   = (); # key is model, value is total number of nucleotides in all sequences in $seqfile_H{$model}
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
-my $master_model_file = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
+my $master_model_file   = undef; # path to master CM file
+my $master_blastdb_file = undef; # path to master blastn file
+($master_model_file, $master_blastdb_file) = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
 if(! opt_Get("--skipval", \%opt_HH)) { 
-  parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
+  utl_FileValidateExistsAndNonEmpty($master_model_file,   undef, undef, 0, $ofile_info_HH{"FH"});
+  # only check for blast db if we need it
+  if(opt_Get("--1blast", \%opt_HH)) { 
+    utl_FileValidateExistsAndNonEmpty($master_blastdb_file, undef, undef, 0, $ofile_info_HH{"FH"});
+    foreach my $sfx ("ndb", "nhr", "nin", "njs", "not", "nsq", "ntf", "nto") { 
+      utl_FileValidateExistsAndNonEmpty($master_blastdb_file . "." . $sfx, undef, undef, 0, $ofile_info_HH{"FH"});
+    }
+  }
+  else { # only validate model files if we're not using blastn
+    parse_and_validate_model_files($master_model_file, \%family_H, \%indi_cmfile_H, $ofile_info_HH{"FH"});
+  }
 }
 if(opt_Get("--onlyval", \%opt_HH)) { 
   ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
@@ -645,9 +684,21 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # as the command for sorting the output and parsing the output
 ###########################################################################
 # set up defaults
-my $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
-my $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
-my $alg1_opts = determine_cmsearch_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
+my $r1_searchout_file = undef;
+my $r1_tblout_file    = undef;
+if($alg1 ne "blastn") { 
+  $r1_searchout_file = (opt_Get("--keep", \%opt_HH)) ? $out_root . ".r1.cmsearch.out" : "/dev/null";
+  $r1_tblout_file    = $out_root . ".r1.cmsearch.tbl";
+}
+else { 
+  $r1_tblout_file = $out_root . ".r1.blastn.tbl";
+}
+my $alg1_opts = undef;
+$alg1_opts = determine_search_opts($alg1, \%opt_HH, $ofile_info_HH{"FH"});
+if($alg1 ne "blastn") { 
+  $alg1_opts .= " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";
+}
+
 my $sum_cpu_secs = undef; # if -p: summed number of elapsed CPU secs all cmsearch jobs required to finish, '0' if -p was not used
 my $r1_opt_p_sum_cpu_secs = 0.;
 
@@ -655,13 +706,19 @@ if(! opt_Get("--skipsearch", \%opt_HH)) {
   $start_secs = ofile_OutputProgressPrior(sprintf("Classifying sequences%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   my %info_H = (); 
   $info_H{"IN:seqfile"}       = $seq_file;
-  $info_H{"IN:modelfile"}     = $master_model_file;
   $info_H{"OUT-NAME:tblout"}  = $r1_tblout_file;
-  $info_H{"OUT-NAME:stdout"}  = $r1_searchout_file;
   $info_H{"OUT-NAME:time"}    = $r1_tblout_file . ".time";
   $info_H{"OUT-NAME:stderr"}  = $r1_tblout_file . ".err";
   $info_H{"OUT-NAME:qcmd"}    = $r1_tblout_file . ".qcmd";
-  ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+  if($alg1 ne "blastn") { 
+    $info_H{"IN:modelfile"}    = $master_model_file;
+    $info_H{"OUT-NAME:stdout"} = $r1_searchout_file;
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+  }
+  else { # blastn
+    $info_H{"blastdb"} = $master_blastdb_file;
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "blastn", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq, $tot_nnt, $alg1_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+  }
   if($use_time_program) { 
     $r1_opt_p_sum_cpu_secs = ribo_ParseUnixTimeOutput($r1_tblout_file . ".time", $ofile_info_HH{"FH"});
   }
@@ -672,24 +729,33 @@ else {
     ofile_FAIL("ERROR with --skipsearch, tblout file ($r1_tblout_file) should exist and be non-empty but it's not", 1, $ofile_info_HH{"FH"});
   }
 }
+
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_tblout_file);
   push(@to_remove_A, $r1_tblout_file . ".time");
 }
 else { 
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1tblout",    $r1_tblout_file,    0, 1, ".tblout file for round 1");
-  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1searchout", $r1_searchout_file, 0, 1, "cmsearch output file for round 1");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1tblout",    $r1_tblout_file,    0, 1, "tabular output file for round 1");
+  if($alg1 ne "blastn") { 
+    ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1searchout", $r1_searchout_file, 0, 1, "cmsearch output file for round 1");
+  }
 }
 my $extra_desc = opt_Get("-p", \%opt_HH) ? sprintf("(%.1f summed elapsed seconds for all jobs)", $r1_opt_p_sum_cpu_secs) : undef;
 $r1_secs = ofile_OutputProgressComplete($start_secs, $extra_desc, $log_FH, *STDOUT);
 
 ###########################################################################
-# Step 4: Sort round 1 output
+# Step 4: Sort round 1 output (or prune low scoring hits if --1blast)
 ###########################################################################
-my $r1_sorted_tblout_file = $r1_tblout_file . ".sorted";
-my $r1_sort_cmd           = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
-$start_secs = ofile_OutputProgressPrior("Sorting classification results", $progress_w, $log_FH, *STDOUT);
-utl_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+my $r1_sorted_tblout_file = ($alg1 ne "blastn") ? $r1_tblout_file . ".sorted" : $r1_tblout_file . ".pruned";
+if($alg1 ne "blastn") { 
+  my $r1_sort_cmd = determine_sort_cmd($alg1, $r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
+  $start_secs = ofile_OutputProgressPrior("Sorting classification results", $progress_w, $log_FH, *STDOUT);
+  utl_RunCommand($r1_sort_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+}
+else { # blastn
+  $start_secs = ofile_OutputProgressPrior("Pruning low-scoring blastn hits", $progress_w, $log_FH, *STDOUT);
+  prune_blastn_outfmt6($r1_tblout_file, $r1_sorted_tblout_file, \%opt_HH, $ofile_info_HH{"FH"});
+}
 if(! opt_Get("--keep", \%opt_HH)) { 
   push(@to_remove_A, $r1_sorted_tblout_file);
 }
@@ -697,7 +763,6 @@ else {
   ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "sortedr1tblout", $r1_sorted_tblout_file, 0, 1, "sorted .tblout file for round 1");
 }
 ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
-###########################################################################
 
 ###########################################################################
 # Step 5: Parse round 1 sorted output
@@ -732,6 +797,10 @@ else {
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_srt_long",   $r1_srt_long_out_file, 0, 1, "round 1 sorted long output file");
     ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "r1_srt_short",  $r1_srt_short_out_file, 0, 1, "round 1 sorted short output file");
   }
+}
+if(! defined $alg2){ 
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "short_out", $final_short_out_file, 1, 1, "Short (6 column) output");
+  ofile_AddClosedFileToOutputInfo(\%ofile_info_HH, "long_out",  $final_long_out_file,  1, 1, sprintf("Long (%d column) output", determine_number_of_columns_in_long_output_file("final", \%opt_HH, $ofile_info_HH{"FH"})));
 }
 
 $cmd = "sort -n $r1_unsrt_short_out_file >> $r1_srt_short_out_file";
@@ -821,7 +890,7 @@ my $nr2 = 0;                      # number of models we run round 2 searches for
 my $r2_opt_p_sum_cpu_secs = 0.;
 
 if(defined $alg2) { 
-  $alg2_opts = determine_cmsearch_opts($alg2, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";;
+  $alg2_opts = determine_search_opts($alg2, \%opt_HH, $ofile_info_HH{"FH"}) . " -T $min_secondary_sc -Z $Z_value --cpu $ncpu";;
   if(! opt_Get("--skipsearch", \%opt_HH)) { 
     $start_secs = ofile_OutputProgressPrior(sprintf("Searching sequences against best-matching models%s", (opt_Get("-p", \%opt_HH)) ? " in parallel across multiple jobs" : ""), $progress_w, $log_FH, *STDOUT);
   }
@@ -845,7 +914,7 @@ if(defined $alg2) {
         $info_H{"OUT-NAME:time"}    = $r2_tblout_file_A[$midx] . ".time";
         $info_H{"OUT-NAME:stderr"}  = $r2_tblout_file_A[$midx] . ".err";
         $info_H{"OUT-NAME:qcmd"}    = $r2_tblout_file_A[$midx] . ".qcmd";
-        ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
+        ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper(\%execs_H, "cmsearch", $qsub_prefix, $qsub_suffix, \%seqlen_H, $progress_w, $out_root, $nseq_H{$model}, $totseqlen_H{$model}, $alg2_opts, \%info_H, \%opt_HH, \%ofile_info_HH);
         if($use_time_program) { 
           $r2_opt_p_sum_cpu_secs += ribo_ParseUnixTimeOutput($r2_tblout_file_A[$midx] . ".time", $ofile_info_HH{"FH"});
         }
@@ -1161,7 +1230,7 @@ exit(0);
 # determine_if_coverage_is_accurate(): determine if coverage values are accurate based on cmdline options
 # determine_if_we_have_model_coords(): determine if our hit results include model boundaries
 # determine_if_we_have_evalues():      determine if our hit results include E-values
-# determine_cmsearch_opts():           determine options to use for cmsearch
+# determine_search_opts():             determine options to use for cmsearch
 # determine_sort_cmd:                  determine the sort cmd for current round
 # determine_number_of_columns_in_long_output_file: self-explanatory
 #
@@ -1181,6 +1250,8 @@ exit(0);
 # sort_hit_array():         sort an array of regions of hits
 # decompose_region_str():   given a string for a region, return start, stop, strand
 #
+# Functions related to blastn:
+# prune_blastn_outfmt6():   remove hits with scores below threshold from blastn --outfmt 6 output
 #
 #################################################################
 # Subroutine : parse_modelinfo_file()
@@ -1197,7 +1268,10 @@ exit(0);
 #   $opt_HHR:         ref to 2D hash of cmdline options (needed to determine if -i was used)
 #   $FH_HR:           ref to hash of file handles, including "cmd"
 #
-# Returns:     Path to master CM file. Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
+# Returns:     Two values:
+#              1. Path to master CM file (e.g. ribotyper.cm)
+#              2. Path to master blastn db file (e.g. ribotyper.fa)
+#              Fills %{$family_H}, %{$domain_HR}, %{$indi_cmfile_HR}
 # 
 # Dies:        - If $modelinfo_file cannot be opened.
 #              - If $modelinfo_file is not in the correct format.
@@ -1216,13 +1290,14 @@ sub parse_modelinfo_file {
 
   my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
 
-  my $opt_i_used        = opt_IsUsed("-i", $opt_HHR);
-  my $found_master      = 0;     # set to '1' when we find master file line
-  my $master_cmfile     = undef; # name of 'master' CM file with all CMs
-  my $non_df_model_file = undef; # non-default model file
-  my $df_model_file     = undef; # default model file
-  my $in_df;                     # flag for whether we found model file in default dir or not
-  my $in_nondf;                  # flag for whether we found model file in non-default dir or not
+  my $opt_i_used          = opt_IsUsed("-i", $opt_HHR);
+  my $found_master        = 0;     # set to '1' when we find master file line
+  my $master_cmfile       = undef; # name of 'master' CM file with all CMs
+  my $master_blastdb_file = undef; # name of 'master' blastn db file
+  my $non_df_model_file   = undef; # non-default model file
+  my $df_model_file       = undef; # default model file
+  my $in_df;                       # flag for whether we found model file in default dir or not
+  my $in_nondf;                    # flag for whether we found model file in non-default dir or not
 
   # determine directory that $modelinfo_file exists in if -i used, all models must 
   # either be in this directory or in $df_model_dir
@@ -1286,7 +1361,14 @@ sub parse_modelinfo_file {
           ofile_FAIL("ERROR read model $model twice in $modelinfo_file", 1, $ofile_info_HH{"FH"});
         }
         $found_master = 1;
-        $master_cmfile = $cmfile;
+        $master_cmfile       = $cmfile;
+        if($master_cmfile =~ m/\.cm$/) { 
+          $master_blastdb_file = $cmfile;
+          $master_blastdb_file =~ s/\.cm$/.fa/;
+        }          
+        else { 
+          ofile_FAIL("ERROR in $sub_name, master CM file name read on *all* line: $master_cmfile has to end in .cm,  but it does not", 1, $ofile_info_HH{"FH"});
+        }
       }
       else { 
         if(exists $family_HR->{$model}) { 
@@ -1312,7 +1394,7 @@ sub parse_modelinfo_file {
     }
   }
 
-  return $master_cmfile;
+  return ($master_cmfile, $master_blastdb_file);
 }
 
 #################################################################
@@ -1536,12 +1618,12 @@ sub parse_sorted_tbl_file {
   my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $seqgap_HHAR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
 
   # validate search method (sanity check) 
-  if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow")) { 
+  if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow") && ($alg ne "blastn")) { 
     ofile_FAIL("ERROR in $sub_name, invalid search method $alg", 1, $FH_HR);
   }
 
   # determine minimum bit score cutoff
-  my $min_primary_sc = opt_Get("--minpsc", $opt_HHR);
+  my $min_primary_sc = ($alg eq "blastn") ? opt_Get("--blastnsc", $opt_HHR) : opt_Get("--minpsc", $opt_HHR);
   
   # Main data structures: 
   # 'best':   current top scoring model for current sequence
@@ -1629,13 +1711,26 @@ sub parse_sorted_tbl_file {
       $mdlfrom = 1; # irrelevant, but removes uninitialized value warnings
       $mdlto   = 1; # irrelevant, but removes uninitialized value warnings
     }
-    else { # "hmmonly" or "slow"
+    elsif(($alg eq "hmmonly") || ($alg eq "slow")) { # "hmmonly" or "slow"
       ##target name             accession query name           accession mdl mdl from   mdl to seq from   seq to strand trunc pass   gc  bias  score   E-value inc description of target
       ##----------------------- --------- -------------------- --------- --- -------- -------- -------- -------- ------ ----- ---- ---- ----- ------ --------- --- ---------------------
       #lcl|dna_BP444_24.8k:251  -         SSU_rRNA_archaea     RF01959   hmm        3     1443        2     1436      +     -    6 0.53   6.0 1078.9         0 !   -
       if(scalar(@el_A) < 18) { ofile_FAIL("ERROR found less than 18 columns in cmsearch tabular output at line: $line", 1, $FH_HR); }
       ($target, $model, $mdlfrom, $mdlto, $seqfrom, $seqto, $strand, $score, $evalue) = 
           ($el_A[0], $el_A[2], $el_A[5], $el_A[6], $el_A[7], $el_A[8], $el_A[9],  $el_A[14], $el_A[15]);
+    }
+    elsif($alg eq "blastn") { 
+      ## BLASTN 2.14.1+
+      ## Query: 00052::Halobacterium_sp.::AE005128
+      ## Database: /net/intdev/oblast01/infernal/git/nawrockie/ribovore/models/ribotyper.fa
+      ## Fields: query acc.ver, subject acc.ver, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
+      ## 2 hits found
+      #00052::Halobacterium_sp.::AE005128	SSU_rRNA_archaea	82.884	1484	236	15	1	1473	1	1477	0.0	1317
+      #00052::Halobacterium_sp.::AE005128	SSU_rRNA_mitochondria_plant	91.667	48	3	1	1418	1465	1898	1944	7.26e-13	65.8
+      if(scalar(@el_A) < 12) { ofile_FAIL("ERROR found less than 12 columns in blastn tabular output at line: $line", 1, $FH_HR); }
+      ($target, $model, $seqfrom, $seqto, $mdlfrom, $mdlto, $evalue, $score) = 
+          ($el_A[0], $el_A[1], $el_A[6], $el_A[7], $el_A[8], $el_A[9], $el_A[10],  $el_A[11]);
+      $strand = ($mdlfrom <= $mdlto) ? "+" : "-";
     }
 
     $family = $family_HR->{$model};
@@ -2134,45 +2229,47 @@ sub output_one_target {
         }
         $out_of_order_str .= "])";
       }
-      else { # hits are in order, determine gaps in between hits
-        #for($i = 0; $i < $nhits; $i++) { 
-        #  printf("seq_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $seq_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
-        #  printf("mdl_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
-        #  printf("seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
-        #  printf("mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
-        #}
-        # determine gaps between all hits
-        for($i = 0; $i < ($nhits-1); $i++) {
-          my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
-          my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
-          my ($seq_cur_start, $seq_cur_stop, $seq_cur_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_cur_idx], $FH_HR);
-          my ($seq_nxt_start, $seq_nxt_stop, $seq_nxt_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_nxt_idx], $FH_HR);
-          if($seq_cur_strand ne $seq_nxt_strand) {
-            ofile_FAIL("ERROR in $sub_name, hits on different strand on second pass", 1, $FH_HR);
-          }
+      else { # hits are in order, determine gaps in between hits, only if we didn't use blast, if we did, then hits may overlap in sequence
+        if(! opt_Get("--1blast", $opt_HHR)) { 
+          #for($i = 0; $i < $nhits; $i++) { 
+          #  printf("seq_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $seq_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
+          #  printf("mdl_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
+          #  printf("seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
+          #  printf("mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
+          #}
+          # determine gaps between all hits
+          for($i = 0; $i < ($nhits-1); $i++) {
+            my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
+            my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
+            my ($seq_cur_start, $seq_cur_stop, $seq_cur_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_cur_idx], $FH_HR);
+            my ($seq_nxt_start, $seq_nxt_stop, $seq_nxt_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_nxt_idx], $FH_HR);
+            if($seq_cur_strand ne $seq_nxt_strand) {
+              ofile_FAIL("ERROR in $sub_name, hits on different strand on second pass", 1, $FH_HR);
+            }
 
-          my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
-          my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
-          my ($mdl_cur_start, $mdl_cur_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_cur_idx], $FH_HR);
-          my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_nxt_idx], $FH_HR);
-          
-          if($gap_types_str ne "") { $gap_types_str .= ","; }
-          my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_stop  + 1 : $seq_cur_stop - 1;
-          my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_nxt_start - 1 : $seq_nxt_stop + 1;
-          my $mdl_gap_start = $mdl_cur_stop  + 1;
-          my $mdl_gap_stop  = $mdl_nxt_start - 1;
-          $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
+            my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
+            my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
+            my ($mdl_cur_start, $mdl_cur_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_cur_idx], $FH_HR);
+            my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_nxt_idx], $FH_HR);
+            
+            if($gap_types_str ne "") { $gap_types_str .= ","; }
+            my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_stop  + 1 : $seq_cur_stop - 1;
+            my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_nxt_start - 1 : $seq_nxt_stop + 1;
+            my $mdl_gap_start = $mdl_cur_stop  + 1;
+            my $mdl_gap_stop  = $mdl_nxt_start - 1;
+            $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
 
-          if((($seq_gap_stop >= $seq_gap_start) && ($seq_cur_strand eq "+")) ||
-             (($seq_gap_stop <= $seq_gap_start) && ($seq_cur_strand eq "-"))) { 
-            if(defined $seqgap_HHAR) {
-              if(! exists $seqgap_HHAR->{$wmodel}) {
-                %{$seqgap_HHAR->{$wmodel}} = ();
+            if((($seq_gap_stop >= $seq_gap_start) && ($seq_cur_strand eq "+")) ||
+               (($seq_gap_stop <= $seq_gap_start) && ($seq_cur_strand eq "-"))) { 
+              if(defined $seqgap_HHAR) {
+                if(! exists $seqgap_HHAR->{$wmodel}) {
+                  %{$seqgap_HHAR->{$wmodel}} = ();
+                }
+                if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
+                  @{$seqgap_HHAR->{$wmodel}{$target}} = ();
+                }
+                push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
               }
-              if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
-                @{$seqgap_HHAR->{$wmodel}{$target}} = ();
-              }
-              push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
             }
           }
         }
@@ -3901,8 +3998,9 @@ sub determine_if_we_have_model_coords {
 
   my $have_model_coords = 0;
   if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_model_coords = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1hmm",   $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1slow",  $opt_HHR)) { $have_model_coords = 1; }
+    if(opt_Get("--1blast", $opt_HHR)) { $have_model_coords = 1; }
   }
   elsif($round eq "2" || $round eq "final") { 
     $have_model_coords = 1; # always true for round 2
@@ -3941,8 +4039,9 @@ sub determine_if_we_have_evalues {
 
   my $have_evalues = 0;
   if($round eq "1") { 
-    if(opt_Get("--1hmm",  $opt_HHR)) { $have_evalues = 1; }
-    if(opt_Get("--1slow", $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1hmm",   $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1slow",  $opt_HHR)) { $have_evalues = 1; }
+    if(opt_Get("--1blast", $opt_HHR)) { $have_evalues = 1; }
   }
   elsif($round eq "2" || $round eq "final") { 
     $have_evalues = 1; # always true for round 2
@@ -3955,15 +4054,15 @@ sub determine_if_we_have_evalues {
 }
 
 #################################################################
-# Subroutine : determine_cmsearch_opts()
+# Subroutine : determine_search_opts()
 # Incept:      EPN, Thu May  4 13:14:10 2017
 #
-# Purpose:     Determine the CM search options given an algorithm
-#              type of either "fast", "hmmonly", or "slow" and 
-#              a reference to the command line options.
+# Purpose:     Determine the cmsearch or blastn options given an 
+#              algorithm type of either "fast", "hmmonly", "blastn"
+#              or "slow" and a reference to the command line options.
 #
 # Arguments: 
-#   $alg:      algorithm, either "fast", "hmmonly" or "slow"
+#   $alg:      algorithm, either "fast", "hmmonly", "slow" or "blastn"
 #   $opt_HHR:  reference to 2D hash of cmdline options
 #   $FH_HR:    ref to hash of file handles, including "cmd"
 # 
@@ -3972,38 +4071,45 @@ sub determine_if_we_have_evalues {
 # Dies:        If $alg string is invalid.
 # 
 ################################################################# 
-sub determine_cmsearch_opts { 
+sub determine_search_opts { 
   my $nargs_expected = 3;
-  my $sub_name = "determine_cmsearch_opts()";
+  my $sub_name = "determine_search_opts()";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
   my ($alg, $opt_HHR, $FH_HR) = @_;
 
   my $alg_opts = undef;
   if($alg eq "fast") { 
-    $alg_opts .= " --hmmF1 0.02 --hmmF2 0.001 --hmmF3 0.00001 --trmF3 --hmmonly --noali ";
+    $alg_opts = " --hmmF1 0.02 --hmmF2 0.001 --hmmF3 0.00001 --trmF3 --hmmonly --noali ";
   }
   elsif($alg eq "slow") { 
     if(opt_Get("--mid", $opt_HHR)) { 
-      $alg_opts .= " --mid "; 
+      $alg_opts = " --mid "; 
     }
     elsif(opt_Get("--max", $opt_HHR)) { 
-      $alg_opts .= " --max "; 
+      $alg_opts = " --max "; 
       if(opt_IsUsed("--smxsize", $opt_HHR)) { 
         $alg_opts .= " --smxsize " . opt_Get("--smxsize", $opt_HHR) . " ";
       }
     }
     else { # default for slow, --mid nor --max used (use cmsearch --rfam)
-      $alg_opts .= " --rfam --onepass "; 
+      $alg_opts = " --rfam --onepass "; 
     }
     if(opt_Get("--noali", $opt_HHR)) { 
       $alg_opts .= " --noali ";
     }
   }
   elsif($alg eq "hmmonly") { 
-    $alg_opts .= " --hmmonly ";
+    $alg_opts = " --hmmonly ";
     if(opt_Get("--noali", $opt_HHR)) { 
       $alg_opts .= " --noali ";
     }
+  }
+  elsif($alg eq "blastn") { 
+    $alg_opts .= " -word_size " . opt_Get("--blastnws", $opt_HHR);
+    if(opt_IsUsed("--blastnrw", $opt_HHR)) { $alg_opts .= " -reward "    . opt_Get("--blastnrw", $opt_HHR); }
+    if(opt_IsUsed("--blastnpn", $opt_HHR)) { $alg_opts .= " -penalty "   . opt_Get("--blastnpn", $opt_HHR); }
+    if(opt_IsUsed("--blastngo", $opt_HHR)) { $alg_opts .= " -gapopen "   . opt_Get("--blastngo", $opt_HHR); }
+    if(opt_IsUsed("--blastnge", $opt_HHR)) { $alg_opts .= " -gapextend " . opt_Get("--blastnge", $opt_HHR); }
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", 1, $FH_HR);
@@ -4053,6 +4159,9 @@ sub determine_sort_cmd {
     else { 
       $sort_cmd = "grep -v ^\# $in_file | sort -k 1,1 -k 15,15rn -k 16,16g > $out_file";
     }
+  }
+  elsif($alg eq "blastn") { 
+    $sort_cmd = "cat $in_file > $out_file";
   }
   else { 
     ofile_FAIL("ERROR in $sub_name, algorithm is invalid: $alg", 1, $FH_HR);
@@ -5028,5 +5137,49 @@ sub fetch_pass_fail_per_model_gaps {
   }
   fetch_pass_fail_per_model_seqs(\%out_HHA, $execs_HR, $out_root, $type, $opt_HHR, $ofile_info_HHR);
       
+  return;
+}
+
+#################################################################
+# Subroutine: prune_blastn_outfmt6()
+# Incept:     EPN, Wed Oct  4 13:51:12 2023
+#
+# Purpose:    Open a blastn output file in format -outfmt 6 and remove
+#             any hits with scores below the minimum allowed score
+#             from --blastnsc <x>.
+#
+# Args:
+# $in_file:  name of input blastn -outfmt 6 file
+# $out_file: name of output file
+# $opt_HHR:  reference to 2D hash of cmdline options
+# $FH_HR:    ref to hash of file handles, including "cmd"
+#
+# Returns:  void
+#
+# Dies:     if there's a problem parsing $in_file
+#
+sub prune_blastn_outfmt6 {
+  my $sub_name = "prune_blastn_outfmt6";
+  my $nargs_expected = 4;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $out_file, $opt_HHR, $FH_HR) = @_;
+
+  my $minsc = opt_Get("--blastnsc", $opt_HHR);
+  open(IN,       $in_file)  || ofile_FileOpenFailure($in_file,  $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, $sub_name, $!, "writing", $FH_HR);
+  while(my $line = <IN>) { 
+    if($line !~ m/^\#/) { 
+      chomp $line;
+      my @el_A = split(/\t/, $line);
+      my $bitsc = $el_A[11];
+      if($bitsc >= $minsc) { 
+        print OUT $line . "\n";
+      }
+    }
+  }
+  close(IN);
+  close(OUT);
+
   return;
 }
