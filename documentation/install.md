@@ -116,6 +116,8 @@ export RIBOTIMEDIR="/usr/bin"
 export RIBOBLASTDIR="$RIBOINSTALLDIR/ncbi-blast/bin"
 export RRNASENSORDIR="$RIBOINSTALLDIR/rRNA_sensor"
 export VECPLUSDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
+export VECSCREENDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts"
+export SRCCHKDIR="$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts"
 export BLASTDB="$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
 export PERL5LIB="$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
 export PATH="$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
@@ -143,6 +145,8 @@ setenv RIBOTIMEDIR "/usr/bin"
 setenv RIBOBLASTDIR "$RIBOINSTALLDIR/ncbi-blast/bin"
 setenv RRNASENSORDIR "$RIBOINSTALLDIR/rRNA_sensor"
 setenv VECPLUSDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy"
+setenv VECSCREENDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts"
+setenv SRCCHKDIR "$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts"
 setenv BLASTDB "$VECPLUSDIR/univec-files":"$RRNASENSORDIR":"$BLASTDB"
 setenv PERL5LIB "$RIBOSCRIPTSDIR":"$RIBOSEQUIPDIR":"$VECPLUSDIR":"$PERL5LIB"
 setenv PATH "$RIBOSCRIPTSDIR":"$RIBOBLASTDIR":"$RRNASENSORDIR":"$PATH"
@@ -155,9 +159,10 @@ source ~/.cshrc
 (To determine which shell you use, type: 'echo $SHELL')
 ```
 
-For Mac/OSX installations, the `VECPLUSDIR` line will be omitted, 
-the `BLASTDB` lines will not include `$VECPLUSDIR/univec-files`, 
-and the `PERL5LIB` line will not include `$VECPLUSDIR`.
+For Mac/OSX installations, the `VECPLUSDIR`, `VECSCREENDIR` and
+`SRCCHKDIR` lines will be omitted, the `BLASTDB` lines will not
+include `$VECPLUSDIR/univec-files`, and the `PERL5LIB` line will not
+include `$VECPLUSDIR`.
 
 ---
 

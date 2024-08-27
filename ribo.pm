@@ -45,9 +45,9 @@ require $ribo_sequip_dir . "/sqp_utils.pm";
 # ribo_ProcessSequenceFile 
 #
 # Infernal and rRNA_sensor related functions
-# ribo_RunCmsearchOrCmalignOrRRnaSensor
-# ribo_RunCmsearchOrCmalignOrRRnaSensorValidation
-# ribo_RunCmsearchOrCmalignOrRRnaSensorWrapper
+# ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn
+# ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation
+# ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper
 # ribo_MergeAlignmentsAndReorder
 # ribo_WaitForFarmJobsToFinish
 # 
@@ -631,7 +631,7 @@ sub ribo_ProcessSequenceFile {
 #   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor or blastn arguments to use 
 #   $info_HR:        ref to hash with output files and arguments for running 
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
-#                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+#                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation()
 #                    see comments for that subroutine for more details.
 #   $opt_HHR:        ref to 2D hash of cmdline options
 #   $ofile_info_HHR: ref to the ofile info 2D hash
@@ -938,7 +938,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation {
 #  $opts:            string of cmsearch or cmalign options or rRNA_sensor arguments
 #  $info_HR:         ref to hash with output files and arguments for running 
 #                    $program_choice (cmsearch/cmalign/rRNA_sensor_script).
-#                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorValidation()
+#                    Validated by ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation()
 #                    see comments for that subroutine for more details.
 #  $opt_HHR:         REF to 2D hash of option values, see top of sqp_opts.pm for description
 #  $ofile_info_HHR:  REF to 2D hash of output file information

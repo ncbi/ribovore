@@ -11,6 +11,8 @@ require "ribo.pm";
 my $env_riboscripts_dir = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboeasel_dir   = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_vecplus_dir     = undef;
+my $env_vecscreen_dir   = undef;
+my $env_srcchk_dir      = undef;
 my $env_riboblast_dir   = undef;
 my $df_model_dir        = $env_riboscripts_dir . "/models/";
 my $df_tax_dir          = $env_riboscripts_dir . "/taxonomy/";
@@ -506,15 +508,17 @@ $execs_H{"esl-cluster"}  = $env_riboeasel_dir    . "/esl-cluster";
 $execs_H{"ali-apos-to-uapos.pl"} = $env_riboscripts_dir . "/miniscripts/ali-apos-to-uapos.pl";
 
 if($do_ftaxid || $do_ingrup || $do_fvecsc || $do_special || $do_def) { 
-  $env_vecplus_dir = utl_DirEnvVarValid("VECPLUSDIR");
+  $env_vecplus_dir   = utl_DirEnvVarValid("VECPLUSDIR");
+  $env_vecscreen_dir = utl_DirEnvVarValid("VECSCREENDIR");
   if($do_fvecsc) { 
-    $execs_H{"vecscreen"}            = $env_vecplus_dir    . "/scripts/vecscreen"; 
     $execs_H{"parse_vecscreen.pl"}   = $env_vecplus_dir    . "/scripts/parse_vecscreen.pl";
     $execs_H{"combine_summaries.pl"} = $env_vecplus_dir    . "/scripts/combine_summaries.pl";
+    $execs_H{"vecscreen"}            = $env_vecscreen_dir  . "/vecscreen"; 
   }
 }
 if($do_ftaxid || $do_ingrup || $do_special || $do_def) { 
-  $execs_H{"srcchk"} = $env_vecplus_dir . "/scripts/srcchk";
+  $env_srcchk_dir = utl_DirEnvVarValid("SRCCHKDIR");
+  $execs_H{"srcchk"} = $env_srcchk_dir . "/srcchk";
 
   # make sure the tax file exists
   my $df_tax_file = $df_tax_dir . "ncbi-taxonomy-tree.ribodbmaker.txt";
@@ -649,6 +653,8 @@ my %extra_H    = ();
 $extra_H{"\$RIBOSCRIPTSDIR"} = $env_riboscripts_dir;
 $extra_H{"\$RIBOEASELDIR"}   = $env_riboeasel_dir;
 if(defined $env_vecplus_dir)    { $extra_H{"\$VECPLUSDIR"}    = $env_vecplus_dir; }
+if(defined $env_vecscreen_dir)  { $extra_H{"\$VECSCREENDIR"}  = $env_vecscreen_dir; }
+if(defined $env_srcchk_dir)     { $extra_H{"\$SRCCHKDIR"}     = $env_srcchk_dir; }
 if(defined $env_riboblast_dir)  { $extra_H{"\$RIBOBLASTDIR"}  = $env_riboblast_dir; }
 if($use_time_program)           { $extra_H{"\$RIBOTIMEDIR"}   = $env_ribotime_dir; }
 

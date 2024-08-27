@@ -333,6 +333,8 @@ if [ "$RIBOTYPERONLY" != "yes" ]; then
     echo "export RRNASENSORDIR=\"\$RIBOINSTALLDIR/rRNA_sensor\""
     if [ "$INPUTSYSTEM" = "linux" ]; then
         echo "export VECPLUSDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
+        echo "export VECSCREENDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts\""
+        echo "export SRCCHKDIR=\"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts\""
         echo "export BLASTDB=\"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
         echo "export PERL5LIB=\"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$VECPLUSDIR\":\"\$PERL5LIB\""
     else
@@ -370,6 +372,8 @@ if [ "$RIBOTYPERONLY" != "yes" ]; then
     echo "setenv RRNASENSORDIR \"\$RIBOINSTALLDIR/rRNA_sensor\""
     if [ "$INPUTSYSTEM" = "linux" ]; then
         echo "setenv VECPLUSDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy\""
+        echo "setenv VECSCREENDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts\""
+        echo "setenv SRCCHKDIR \"\$RIBOINSTALLDIR/vecscreen_plus_taxonomy/scripts\""
         echo "setenv BLASTDB \"\$VECPLUSDIR/univec-files\":\"\$RRNASENSORDIR\":\"\$BLASTDB\""
         echo "setenv PERL5LIB \"\$RIBOSCRIPTSDIR\":\"\$RIBOSEQUIPDIR\":\"\$VECPLUSDIR\":\"\$PERL5LIB\""
     else

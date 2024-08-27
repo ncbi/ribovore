@@ -7,6 +7,7 @@
 * [Fungal SSU/LSU rRNA model boundaries for candidate RefSeq dataset creation](#spans)
 * [Special considerations for large input datasets](#large)
 * [Creating an updated NCBI taxonomy tree file for `ribodbmaker`](#updatetaxonomy)
+* [If `vecscreen` or `srcchk` commands fail](#execpaths)
 
 ---
 
@@ -87,6 +88,8 @@ pair of values from columns 2 and 3 of the
 # $RIBOEASELDIR:    /usr/local/src/ribovore-install/infernal/binaries
 # $RIBOSCRIPTSDIR:  /usr/local/src/ribovore-install/ribovore
 # $VECPLUSDIR:      /usr/local/src/ribovore-install/vecscreen_plus_taxonomy
+# $VECSCREENDIR:    /usr/local/src/ribovore-install/vecscreen_plus_taxonomy/scripts
+# $SRCCHKDIR:       /usr/local/src/ribovore-install/vecscreen_plus_taxonomy/scripts
 #
 # input sequence file:    /usr/local/src/ribovore-install/ribovore/testfiles/fungi-ssu.r10.fa
 # output directory name:  db10
@@ -557,7 +560,7 @@ Ribovore includes a special formatted version of the NCBI taxonomy tree in the f
 ribovore/taxonomy/ncbi-taxonomy-tree.ribodbmaker.txt
 ```
 
-This tree was created using the procedure described below on February 10, 2023.
+This tree was created using the procedure described below on August 26, 2024.
 
 You can update your local copy of this tree by following the steps below. If you are on Mac/OSX, you'll need to first
 download `vecscreen_plus_taxonomy` with the following commands:
@@ -629,8 +632,34 @@ $VECPLUSDIR/scripts/assign_levels_to_taxonomy.pl --input_taxa taxonomy_tree.txt 
 ```
 paste taxonomy_tree_wlevels.txt specified_column.txt > updated-ncbi-taxonomy-tree.ribodbmaker.txt
 ```
-
 6. Use the new taxonomy tree file you created with `ribodbmaker` using the `--taxin /path/to/updated-ncbi-taxonomy-tree.ribodbmaker.txt`.
+
+---
+
+## <a name="execpaths"></a>If `vecscreen` or `srcchk` commands fail: changing paths to `vecscreen` and `srcchk` executables
+
+The Ribovore installation (on Linux systems) script installs the [`vecscreen_plus_taxonomy`](https://github.com/aaschaffer/vecscreen_plus_taxonomy) software package which includes binary executable programs `vecscreen` and `srcchk`. It is possible that those binaries will not run on your machine. If you see an error like his:
+
+```
+ERROR in utl_RunCommand(), the following command failed:                                                                                                                                                                         
+
+/usr/local/src/ribovore-install/ribovore/vecscreen_plus_taxonomy/scripts/srcchk -i outdir/outdir.ribodbmaker.full.seqlist -f 'taxid,organism,strain' > outdir/outdir ribodbmaker.full.srcchk
+```
+
+Or a similar one indicating that a `vecscreen` command failed, then it may be that the binaries do not work on your machine. If this happens, if you are able to download the NCBI C++ toolkit following instructions[here](https://ncbi.github.io/cxx-toolkit/pages/release_notes#release_notes.Download), you can change two environment variables to point to the location of the new `vecscreen` and `srcchk` executable files with commands like:
+
+```
+export VECSCREENDIR="/path/to/vecscreen"
+export SRCCHKDIR="/path/to/srcchk"
+```
+if you use bash or zsh, or 
+```
+setenv VECSCREENDIR "/path/to/vecscreen"
+setenv SRCCHKDIR "/path/to/srcchk"
+```
+if you use C shell.
+
+(You may want to put these commands in your `.bashrc`, `.zshrc` or `.cshrc` file.) After redefining the `VECSCREENDIR` and `SRCCHKDIR` directories to point to the new binary directories, retry the `ribodbmaker` command that failed.
 
 ---
 
