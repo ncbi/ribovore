@@ -8,6 +8,7 @@
 * [Special considerations for large input datasets](#large)
 * [Creating an updated NCBI taxonomy tree file for `ribodbmaker`](#updatetaxonomy)
 * [If `vecscreen` or `srcchk` commands fail](#execpaths)
+* [Building the NCBI toolkit](#toolkit)
 
 ---
 
@@ -638,7 +639,11 @@ paste taxonomy_tree_wlevels.txt specified_column.txt > updated-ncbi-taxonomy-tre
 
 ## <a name="execpaths"></a>If `vecscreen` or `srcchk` commands fail: changing paths to `vecscreen` and `srcchk` executables
 
-The Ribovore installation (on Linux systems) script installs the [`vecscreen_plus_taxonomy`](https://github.com/aaschaffer/vecscreen_plus_taxonomy) software package which includes binary executable programs `vecscreen` and `srcchk`. It is possible that those binaries will not run on your machine. If you see an error like his:
+The Ribovore installation (on Linux systems) script installs the
+[`vecscreen_plus_taxonomy`](https://github.com/aaschaffer/vecscreen_plus_taxonomy)
+software package which includes binary executable programs `vecscreen`
+and `srcchk`. It is possible that those binaries will not run on your
+machine. If you see an error like his:
 
 ```
 ERROR in utl_RunCommand(), the following command failed:                                                                                                                                                                         
@@ -646,7 +651,13 @@ ERROR in utl_RunCommand(), the following command failed:
 /usr/local/src/ribovore-install/ribovore/vecscreen_plus_taxonomy/scripts/srcchk -i outdir/outdir.ribodbmaker.full.seqlist -f 'taxid,organism,strain' > outdir/outdir ribodbmaker.full.srcchk
 ```
 
-Or a similar one indicating that a `vecscreen` command failed, then it may be that the binaries do not work on your machine. If this happens, if you are able to download the NCBI C++ toolkit following instructions[here](https://ncbi.github.io/cxx-toolkit/pages/release_notes#release_notes.Download), you can change two environment variables to point to the location of the new `vecscreen` and `srcchk` executable files with commands like:
+Or a similar one indicating that a `vecscreen` command failed, then it
+may be that the binaries do not work on your machine. If this happens,
+you can try to download a version of the NCBI C++ toolkit with precompiled binaries following
+instructions[here](https://ncbi.github.io/cxx-toolkit/pages/release_notes#release_notes.Download),
+or you can try to clone the github repo and build the `vecscreen` and `srcchk` executables from source (instructions [below](#toolkit)).
+After doing that, you can change two environment variables to point to the location of
+the new `vecscreen` and `srcchk` executable files with commands like:
 
 ```
 export VECSCREENDIR="/path/to/vecscreen"
@@ -660,6 +671,37 @@ setenv SRCCHKDIR "/path/to/srcchk"
 if you use C shell.
 
 (You may want to put these commands in your `.bashrc`, `.zshrc` or `.cshrc` file.) After redefining the `VECSCREENDIR` and `SRCCHKDIR` directories to point to the new binary directories, retry the `ribodbmaker` command that failed.
+
+---
+
+## <a name="toolkit"></a>Building the NCBI toolkit
+
+If you need to build the `srcchk` and/or `vecscreen` executables for reasons explained above, these steps may
+work for you on Linux to clone the github repo and build the executables from source:
+
+```
+# clone the repo
+git clone https://github.com/ncbi/ncbi-cxx-toolkit-public.git
+cd ncbi-cxx-toolkit-public
+
+# checkout the latest release (at time of writing this is 28.0.8, but
+# you can check if newer releases exist by going to
+# https://github.com/ncbi/ncbi-cxx-toolkit-public and clicking on "Tags")
+git checkout release-28.0.8
+
+# configure with special flags
+./configure --without-gui --without-internal --without-boost --with-flat-makefile
+
+# move into the newly created directory (this may have a different name
+# depending on what compiler and version is on your system)
+cd GCC850-DebugMT64
+make -C build -f Makefile.flat app srcchk.app
+make -C build -f Makefile.flat app vecscreen.app
+```
+
+After running the above commands, the `srcchk` and `vecscreen` files will be in `GCC850-DebugMT64/bin/` directory.
+Again the `GCC850-Debug` directory may have a different name depending on what compiler and
+version are on your system.
 
 ---
 
