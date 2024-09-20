@@ -654,7 +654,7 @@ ERROR in utl_RunCommand(), the following command failed:
 Or a similar one indicating that a `vecscreen` command failed, then it
 may be that the binaries do not work on your machine. If this happens,
 you can try to download a version of the NCBI C++ toolkit with precompiled binaries following
-instructions[here](https://ncbi.github.io/cxx-toolkit/pages/release_notes#release_notes.Download),
+instructions [here](https://ncbi.github.io/cxx-toolkit/pages/release_notes#release_notes.Download),
 or you can try to clone the github repo and build the `vecscreen` and `srcchk` executables from source (instructions [below](#toolkit)).
 After doing that, you can change two environment variables to point to the location of
 the new `vecscreen` and `srcchk` executable files with commands like:
