@@ -1309,11 +1309,13 @@ sub parse_modelinfo_file {
   # actually parse modelinfo file: 
   # example lines:
   # ---
-  # SSU_rRNA_archaea SSU Archaea ribo.0p02.SSU_rRNA_archaea.cm
-  # LSU_rRNA_eukarya LSU Eukarya ribo.0p02.LSU_rRNA_eukarya.cm
-  # *all*            -   -       ribo.0p02.cm
+  # SSU_rRNA_archaea  SSU Archaea ribo.0p02.SSU_rRNA_archaea.cm
+  # LSU_rRNA_eukarya  LSU Eukarya ribo.0p02.LSU_rRNA_eukarya.cm
+  # *all*             -   -       ribo.0p02.cm
+  # SSU_rRNA_bacteria LSU Eukarya -
   # ---
   # exactly one line must have model name as '*all*'
+  # models with '-' values in final column will be fetched from the *all* CM file as needed
   open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
   while(my $line = <IN>) { 
     if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
@@ -1323,37 +1325,39 @@ sub parse_modelinfo_file {
         ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
       }
       my($model, $family, $domain, $cmfile) = (@el_A);
-      
-      # make sure that the model file exists, either in $df_model_dir or, if
-      # -i was used, in the same directory that $modelinfo_file is in
-      $df_model_file = $df_model_dir . $cmfile;
-      if($opt_i_used) { 
-        $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
-        $in_nondf = utl_FileValidateExistsAndNonEmpty($non_df_model_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-        $in_df    = utl_FileValidateExistsAndNonEmpty($df_model_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-        # if it exists in both places, use the -i specified version
-        if(($in_nondf == 0) && ($in_df == 0)) { 
-          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
-        }
-        elsif(($in_nondf == -1) && ($in_df == 0)) { 
-          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty", 1, $ofile_info_HH{"FH"});
-        }
-        elsif(($in_nondf == 0) && ($in_df == -1)) { 
-          ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty", 1, $ofile_info_HH{"FH"});
-        }
-       elsif($in_nondf == 1) { 
-          $cmfile = $non_df_model_file;
-        }
-        elsif($in_df == 1) { 
+
+      if($cmfile ne "-") { 
+        # make sure that the model file exists, either in $df_model_dir or, if
+        # -i was used, in the same directory that $modelinfo_file is in
+        $df_model_file = $df_model_dir . $cmfile;
+        if($opt_i_used) { 
+          $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
+          $in_nondf = utl_FileValidateExistsAndNonEmpty($non_df_model_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          $in_df    = utl_FileValidateExistsAndNonEmpty($df_model_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          # if it exists in both places, use the -i specified version
+          if(($in_nondf == 0) && ($in_df == 0)) { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
+          }
+          elsif(($in_nondf == -1) && ($in_df == 0)) { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty", 1, $ofile_info_HH{"FH"});
+          }
+          elsif(($in_nondf == 0) && ($in_df == -1)) { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty", 1, $ofile_info_HH{"FH"});
+          }
+          elsif($in_nondf == 1) { 
+            $cmfile = $non_df_model_file;
+          }
+          elsif($in_df == 1) { 
+            $cmfile = $df_model_file;
+          }
+          else { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n", 1, $ofile_info_HH{"FH"});
+          }
+        }     
+        else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
+          utl_FileValidateExistsAndNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
           $cmfile = $df_model_file;
         }
-        else { 
-          ofile_FAIL("ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n", 1, $ofile_info_HH{"FH"});
-        }
-      }     
-      else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
-        utl_FileValidateExistsAndNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
-        $cmfile = $df_model_file;
       }
         
       if($model eq "*all*") { 
@@ -1394,6 +1398,13 @@ sub parse_modelinfo_file {
     }
   }
 
+  # go back and replace any individual cm file names of '-' with "fetch:<$master_cmfile>
+  foreach $model (keys %{$family_HR}) { 
+    if($indi_cmfile_HR->{$model} eq "-") {
+      $indi_cmfile_HR->{$model} = "fetch:" . $master_cmfile;
+    }
+  }
+    
   return ($master_cmfile, $master_blastdb_file);
 }
 
@@ -1531,7 +1542,8 @@ sub parse_and_validate_model_files {
   my $indi_cksum_output = undef;
   my @indi_cksum_A = ();
   my $indi_cmfile = undef;
-
+  my $do_fetch = 0;
+  
   my $nnames = scalar(@name_A);
   if($nnames != scalar(@cksum_A)) { 
     ofile_FAIL("ERROR in $sub_name, did not read the same number of names and checksum lines from master model file:\n$master_model_file", 1, $FH_HR); 
@@ -1543,25 +1555,28 @@ sub parse_and_validate_model_files {
   for(my $i = 0; $i < scalar(@name_A); $i++) { 
     $model = $name_A[$i];
     $cksum = $cksum_A[$i];
-    $indi_cmfile = $indi_cmfile_HR->{$model};
+    ($indi_cmfile, $do_fetch) = ribo_ParseStoredIndiCmFileName($indi_cmfile_HR->{$model});
+    
     if(! exists $tmp_family_model_H{$model}) { 
       ofile_FAIL("ERROR read model \"$model\" from model file $master_model_file that is not listed in the model info file.", 1, $FH_HR);
     }
     if($tmp_family_model_H{$model} == 0) { # only check if we haven't seen this name before
-      $indi_cksum_output = `grep -w ^CKSUM $indi_cmfile | awk '{ print \$2 }'`;
-      @indi_cksum_A = split("\n", $indi_cksum_output);
-      if(scalar(@indi_cksum_A) != 2) { 
-        ofile_FAIL("ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model and exactly 2 lines containing the token CKSUM in the entire file", 1, $FH_HR); 
+      if(! $do_fetch) { 
+        $indi_cksum_output = `grep -w ^CKSUM $indi_cmfile | awk '{ print \$2 }'`;
+        @indi_cksum_A = split("\n", $indi_cksum_output);
+        if(scalar(@indi_cksum_A) != 2) { 
+          ofile_FAIL("ERROR in $sub_name, did not read the expected 2 CKSUM lines from $indi_cmfile, it should have exactly 1 model and exactly 2 lines containing the token CKSUM in the entire file", 1, $FH_HR); 
+        }
+        if($indi_cksum_A[0] != $indi_cksum_A[1]) { 
+          ofile_FAIL("ERROR in $sub_name, the two CKSUM lines from $indi_cmfile differ unexpectedly", 1, $FH_HR); 
+        }
+        if($indi_cksum_A[0] != $cksum) { 
+          ofile_FAIL("ERROR in $sub_name, for model $model, checksum mismatch between the master CM file and the individual CM file\nmaster CM file: $master_model_file\nindividual CM file: $indi_cmfile\nAre you sure these models are the same? They are required to be identical.\n", 1, $FH_HR);
+        }
       }
-      if($indi_cksum_A[0] != $indi_cksum_A[1]) { 
-        ofile_FAIL("ERROR in $sub_name, the two CKSUM lines from $indi_cmfile differ unexpectedly", 1, $FH_HR); 
-      }
-      if($indi_cksum_A[0] != $cksum) { 
-        ofile_FAIL("ERROR in $sub_name, for model $model, checksum mismatch between the master CM file and the individual CM file\nmaster CM file: $master_model_file\nindividual CM file: $indi_cmfile\nAre you sure these models are the same? They are required to be identical.\n", 1, $FH_HR);
-      }
+      # if we get here, checksum test has passed, or $do_fetch was TRUE
+      $tmp_family_model_H{$model} = 1;
     }
-    # if we get here, checksum test has passed
-    $tmp_family_model_H{$model} = 1;
   }
 
   foreach $model (keys %tmp_family_model_H) { 

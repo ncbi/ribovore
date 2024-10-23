@@ -61,6 +61,7 @@ require $ribo_sequip_dir . "/sqp_utils.pm";
 # ribo_RemoveListOfDirsWithRmrf
 # ribo_WriteAcceptFile
 # ribo_CheckForTimeExecutable
+# ribo_ParseStoredIndiCmFileName
 #
 #################################################################
 # Subroutine : ribo_CountAmbiguousNucleotidesInSequenceFile()
@@ -1653,6 +1654,42 @@ sub ribo_GetDirPath {
   
   if($orig_file eq "") { return "./";       }
   else                 { return $orig_file; }
+}
+
+#################################################################
+# Subroutine : ribo_ParseStoredIndiCmFileName()
+# Incept:      EPN, Wed Oct 23 14:45:41 2024
+#
+# Purpose:     Parse a stored indi CM file name.
+#              If it matches: "fetch:<filename>" then
+#              we will fetch the model from a CM library file named <filename>
+#
+# Arguments: 
+#   $stored_indi_cmfile: string that is the CM file name, potentially
+#                        starting with 'fetch:'.
+# 
+# Returns:     Two values:
+#              $cmfile:   path to the CM file
+#              $do_fetch: '1' if we should fetch the CM from the $cmfile,
+#                         '0' if $cmfile is a single CM file that we don't
+#                         need to fetch from
+#
+################################################################# 
+sub ribo_ParseStoredIndiCmFileName { 
+  my $narg_expected = 1;
+  my $sub_name = "ribo_ParseStoredIndiCmFileName()";
+  if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+  my $stored_indi_cmfile = $_[0];
+  
+  my $cmfile = $stored_indi_cmfile;
+  my $do_fetch = undef;
+
+  if($cmfile =~ /^fetch\:/) {
+    $cmfile =~ s/^fetch\://;
+    $do_fetch = 1;
+  }
+
+  return ($cmfile, $do_fetch);
 }
 
 ###########################################################################
