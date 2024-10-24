@@ -1321,7 +1321,7 @@ sub parse_modelinfo_file {
       if(scalar(@el_A) != 4) { 
         ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
       }
-      my($model, $family, $domain, $cmfile) = (@el_A);
+      my ($model, $family, $domain, $cmfile) = (@el_A);
 
       if($cmfile ne "-") { 
         # make sure that the model file exists
@@ -1335,6 +1335,16 @@ sub parse_modelinfo_file {
         }
         $found_master = 1;
         $master_cmfile = $cmfile;
+        # ensure the cmfile has been indexed, we need either $master_cmfile.ssi or all 4 of $master_cmfile.i1{m,f,p,i}
+        if(! utl_FileValidateExistsAndNonEmpty($master_cmfile . ".ssi", undef, $sub_name, 0, $FH_HR)) { # don't die if it doesn't exist
+          my $has_i1m = utl_FileValidateExistsAndNonEmpty($master_cmfile . ".i1m", undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $has_i1f = utl_FileValidateExistsAndNonEmpty($master_cmfile . ".i1f", undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $has_i1p = utl_FileValidateExistsAndNonEmpty($master_cmfile . ".i1p", undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          my $has_i1i = utl_FileValidateExistsAndNonEmpty($master_cmfile . ".i1i", undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          if((! $has_i1m) || (! $has_i1f) || (! $has_i1p) || (! $has_i1i)) {
+            ofile_FAIL("ERROR master model file is not indexed.\nEither\n\t$master_cmfile.ssi\nmust exist (creatable by 'cmfetch --index')\n\nOR\n\nAll 4 of\n\t$master_cmfile.i1m\n\t$master_cmfile.i1f\n\t$master_cmfile.i1p\n\t$master_cmfile.i1i\nmust exist (createable by 'cmpress'.", $sub_name, 1, $FH_HR);
+          }
+        }
         if($master_cmfile =~ m/\.cm$/) { 
           $master_blastdb_file = $cmfile;
           $master_blastdb_file =~ s/\.cm$/.fa/;
