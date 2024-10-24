@@ -20,6 +20,7 @@ my $df_model_dir         = $env_riboscripts_dir . "/models/";
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
 $execs_H{"cmalign"}     = $env_riboinfernal_dir . "/cmalign";
+$execs_H{"cmfetch"}     = $env_riboinfernal_dir . "/cmfetch";
 $execs_H{"esl-seqstat"} = $env_riboeasel_dir    . "/esl-seqstat";
 $execs_H{"esl-sfetch"}  = $env_riboeasel_dir    . "/esl-sfetch";
 # we'll check for blastn below after we find out if we need it (if --1blast)
@@ -1401,7 +1402,7 @@ sub parse_modelinfo_file {
   # go back and replace any individual cm file names of '-' with "fetch:<$master_cmfile>
   foreach $model (keys %{$family_HR}) { 
     if($indi_cmfile_HR->{$model} eq "-") {
-      $indi_cmfile_HR->{$model} = "fetch:" . $master_cmfile;
+      $indi_cmfile_HR->{$model} = "model:$model\nfile:" . $master_cmfile;
     }
   }
     
@@ -1543,6 +1544,7 @@ sub parse_and_validate_model_files {
   my @indi_cksum_A = ();
   my $indi_cmfile = undef;
   my $do_fetch = 0;
+  my $parsed_model = undef;
   
   my $nnames = scalar(@name_A);
   if($nnames != scalar(@cksum_A)) { 
@@ -1555,8 +1557,10 @@ sub parse_and_validate_model_files {
   for(my $i = 0; $i < scalar(@name_A); $i++) { 
     $model = $name_A[$i];
     $cksum = $cksum_A[$i];
-    ($indi_cmfile, $do_fetch) = ribo_ParseStoredIndiCmFileName($indi_cmfile_HR->{$model});
-    
+    ($indi_cmfile, $parsed_model, $do_fetch) = ribo_ParseStoredIndiCmFileName($indi_cmfile_HR->{$model});
+    if(($do_fetch) && ($model ne $parsed_model)) { 
+      ofile_FAIL("ERROR problem dealing with parsed model file name read for model $model", 1, $FH_HR);
+    }    
     if(! exists $tmp_family_model_H{$model}) { 
       ofile_FAIL("ERROR read model \"$model\" from model file $master_model_file that is not listed in the model info file.", 1, $FH_HR);
     }

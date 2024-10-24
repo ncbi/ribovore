@@ -627,6 +627,7 @@ sub ribo_ProcessSequenceFile {
 # Arguments:
 #   $executable:     path to cmsearch or cmalign or rRNA_sensor executable
 #   $time_path:      path to Unix time command (e.g. /usr/bin/time)
+#   $cmfetch_path:   path to cmfetch executable
 #   $qsub_prefix:    qsub command prefix to use when submitting to farm, undef to run locally
 #   $qsub_suffix:    qsub command suffix to use when submitting to farm, undef to run locally
 #   $opts:           options to provide to cmsearch or cmalign or rRNA_sensor or blastn arguments to use 
@@ -644,10 +645,10 @@ sub ribo_ProcessSequenceFile {
 #################################################################
 sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn { 
   my $sub_name = "ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn()";
-  my $nargs_expected = 8;
+  my $nargs_expected = 9;
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($executable, $time_path, $qsub_prefix, $qsub_suffix, $opts, $info_HR, $opt_HHR, $ofile_info_HHR) = @_;
+  my ($executable, $time_path, $cmfetch_path, $qsub_prefix, $qsub_suffix, $opts, $info_HR, $opt_HHR, $ofile_info_HHR) = @_;
 
   # we can only pass $FH_HR to ofile_FAIL if that hash already exists
   my $FH_HR = (defined $ofile_info_HHR->{"FH"}) ? $ofile_info_HHR->{"FH"} : undef;
@@ -674,15 +675,20 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn {
   # depending on if $executable is "cmalign" or "cmsearch" or "rRNA_sensor_script"
   # and run the program
   if($executable =~ /cmsearch$/) { 
-    my $model_file     = $info_HR->{"IN:modelfile"};
-    my $tblout_file    = $info_HR->{"OUT-NAME:tblout"};
+    my ($model_file, $model_name, $do_fetch) = ribo_ParseStoredIndiCmFileName($info_HR->{"IN:modelfile"});
+    my $tblout_file = $info_HR->{"OUT-NAME:tblout"};
+    my $fetch_cmd = "";
+    if($do_fetch) {
+      $fetch_cmd = "cmfetch $model_file $model_name | ";
+      $model_file = "-";
+    }
     # Not all implementations of 'time' accept -o (Mac OS/X's sometimes doesn't)
     #$cmd = "$time_path -p -o $time_file $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file";
     if(defined $time_path) { 
-      $cmd = "$time_path -p $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
+      $cmd = "$time_path -p $fetch_cmd $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $tmp_stderr_file;$tail_stderr_cmd;$awk_stderr_cmd;$rm_tmp_cmd;"
     }
     else {
-      $cmd = "$executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file"
+      $cmd = "$fetch_cmd $executable $opts --verbose --tblout $tblout_file $model_file $seq_file > $stdout_file 2> $stderr_file"
     }
   }
   elsif($executable =~ /cmalign$/) { 
@@ -974,6 +980,10 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper {
   if(defined $execs_HR->{"time"}) {
     $time_path = $execs_HR->{"time"};
   }
+  my $cmfetch_path = undef;
+  if(defined $execs_HR->{"cmfetch"}) {
+    $cmfetch_path = $execs_HR->{"cmfetch"};
+  }
   
   # validate %{$info_HR}
   ($wait_key, $wait_str) = ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnValidation($program_choice, $info_HR, $opt_HHR, $ofile_info_HHR);
@@ -981,7 +991,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper {
 
   if(! opt_Get("-p", $opt_HHR)) { 
     # run job locally
-    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn($executable, $time_path, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
+    ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn($executable, $time_path, $cmfetch_path, undef, undef, $opts, $info_HR, $opt_HHR, $ofile_info_HHR); # undefs: run locally
   }
   else { 
     my %wkr_outfiles_HA = (); # hash of arrays of output file names for all jobs, 
@@ -1029,7 +1039,7 @@ sub ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastnWrapper {
           $wkr_info_H{$info_key} = $info_HR->{$info_key};
         }
       }
-      ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn($executable, $time_path, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
+      ribo_RunCmsearchOrCmalignOrRRnaSensorOrBlastn($executable, $time_path, $cmfetch_path, $qsub_prefix, $qsub_suffix, $opts, \%wkr_info_H, $opt_HHR, $ofile_info_HHR); 
     }
     
     # wait for the jobs to finish
@@ -1657,12 +1667,40 @@ sub ribo_GetDirPath {
 }
 
 #################################################################
+# Subroutine : ribo_CreateStoredIndiCmFileName()
+# Incept:      EPN, Wed Oct 23 15:36:59 2024
+#
+# Purpose:     Create a stored indi CM file name string for a CM
+#              that will be fetched from a CM library. The format
+#              defined here should match with
+#              ribo_ParseStoredIndiCmFileName()
+#
+# Arguments: 
+#   $model:    name of model
+#   $cmfile:   name of CM library file
+# 
+# Returns:     string to store for this indi cm file name
+#
+################################################################# 
+sub ribo_CreateStoredIndiCmFileName { 
+  my $narg_expected = 2;
+  my $sub_name = "ribo_CreateStoredIndiCmFileName()";
+  if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, in $sub_name, entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+  my ($model, $cmfile) = (@_);
+  
+  return "model:$model\nfile:$cmfile";
+}
+
+#################################################################
 # Subroutine : ribo_ParseStoredIndiCmFileName()
 # Incept:      EPN, Wed Oct 23 14:45:41 2024
 #
 # Purpose:     Parse a stored indi CM file name.
-#              If it matches: "fetch:<filename>" then
-#              we will fetch the model from a CM library file named <filename>
+#              If it matches this regex: /^model:[^\n]+\nfile:[^\n]+$/
+#              then we will fetch the model from a CM library file and
+#              we return the library file name and model name and $do_fetch=1,
+#              else it is an individual CM file and we return the file name,
+#              undef for the model name and $do_fetch=0
 #
 # Arguments: 
 #   $stored_indi_cmfile: string that is the CM file name, potentially
@@ -1670,6 +1708,7 @@ sub ribo_GetDirPath {
 # 
 # Returns:     Two values:
 #              $cmfile:   path to the CM file
+#              $model:    name of model if $do_fetch is '1' else undef
 #              $do_fetch: '1' if we should fetch the CM from the $cmfile,
 #                         '0' if $cmfile is a single CM file that we don't
 #                         need to fetch from
@@ -1682,14 +1721,15 @@ sub ribo_ParseStoredIndiCmFileName {
   my $stored_indi_cmfile = $_[0];
   
   my $cmfile = $stored_indi_cmfile;
-  my $do_fetch = undef;
+  my $model  = undef;
+  my $do_fetch = 0;
 
-  if($cmfile =~ /^fetch\:/) {
-    $cmfile =~ s/^fetch\://;
+  if($cmfile =~ /^model\:([^\n]+)\nfile\:([^\n]+)$/) { 
+    ($model, $cmfile) = ($1, $2);
     $do_fetch = 1;
   }
 
-  return ($cmfile, $do_fetch);
+  return ($cmfile, $model, $do_fetch);
 }
 
 ###########################################################################
