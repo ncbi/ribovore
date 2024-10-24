@@ -15,7 +15,6 @@ my $env_riboscripts_dir  = utl_DirEnvVarValid("RIBOSCRIPTSDIR");
 my $env_riboinfernal_dir = utl_DirEnvVarValid("RIBOINFERNALDIR");
 my $env_riboeasel_dir    = utl_DirEnvVarValid("RIBOEASELDIR");
 my $env_riboblast_dir    = utl_DirEnvVarValid("RIBOBLASTDIR");
-my $df_model_dir         = $env_riboscripts_dir . "/models/";
 
 my %execs_H = (); # hash with paths to all required executables
 $execs_H{"cmsearch"}    = $env_riboinfernal_dir . "/cmsearch";
@@ -68,6 +67,7 @@ opt_Add("-f",           "boolean", 0,                       $g,    undef, undef,
 opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,      "be verbose",                                     "be verbose; output commands to stdout as they're run", \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 0,                       $g,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                   $g,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
+opt_Add("-m",           "string",  undef,                   $g,    undef, undef,      "model files are in directory <s>, not default",  "model files are in directory <s>, not default", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat          preamble-output                            help-output    
@@ -168,6 +168,7 @@ my $options_okay =
                 'v'            => \$GetOptions_H{"-v"},
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
+                'm=s'          => \$GetOptions_H{"-m"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
@@ -440,7 +441,14 @@ foreach $cmd (@early_cmd_A) {
 }
 
 # make sure the sequence, qsubinfo and modelinfo files exist
-my $df_modelinfo_file = $df_model_dir . "ribotyper.modelinfo";
+my $model_dir = undef;
+if(! opt_IsUsed("-m", \%opt_HH)) { $model_dir = $env_riboscripts_dir . "/models/"; }
+else                             { $model_dir = opt_Get("-m", \%opt_HH); }
+if($model_dir !~ m/\/$/) {
+  $model_dir .= "/";
+}
+
+my $df_modelinfo_file = $model_dir . "ribotyper.modelinfo";
 my $modelinfo_file = undef;
 if(! opt_IsUsed("-i", \%opt_HH)) { $modelinfo_file = $df_modelinfo_file; }
 else                             { $modelinfo_file = opt_Get("-i", \%opt_HH); }
@@ -454,15 +462,13 @@ else { # -i used on the command line
 }
 
 # if -p, check for existence of qsub info file
-my $df_qsubinfo_file = $df_model_dir . "ribo.qsubinfo";
 my $qsubinfo_file = undef;
-
 if(opt_IsUsed("-p", \%opt_HH)) { 
-  if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $df_qsubinfo_file; }
+  if(! opt_IsUsed("-q", \%opt_HH)) { $qsubinfo_file = $model_dir . "ribo.qsubinfo"; }
   else                             { $qsubinfo_file = opt_Get("-q", \%opt_HH); }
 
   if(! opt_IsUsed("-q", \%opt_HH)) {
-    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "default qsub info file", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
+    utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file in model dir ($model_dir)", undef, 1, $ofile_info_HH{"FH"}); # '1' says: die if it doesn't exist or is empty
   }
   else { # -q used on the command line
     utl_FileValidateExistsAndNonEmpty($qsubinfo_file, "qsub info file specified with -q", undef, 1, $ofile_info_HH{"FH"}); # 1 says: die if it doesn't exist or is empty
@@ -565,7 +571,7 @@ my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
 my $master_model_file   = undef; # path to master CM file
 my $master_blastdb_file = undef; # path to master blastn file
-($master_model_file, $master_blastdb_file) = parse_modelinfo_file($modelinfo_file, $df_model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
+($master_model_file, $master_blastdb_file) = parse_modelinfo_file($modelinfo_file, $model_dir, \%family_H, \%domain_H, \%indi_cmfile_H, \%opt_HH, $ofile_info_HH{"FH"});
 
 # parse the model file and make sure that there is a 1:1 correspondence between 
 # models in the models file and models listed in the model info file
@@ -1262,7 +1268,7 @@ exit(0);
 #              
 # Arguments: 
 #   $modelinfo_file:  file to parse
-#   $df_model_dir:    default $RIBOSCRIPTSDIR/models directory, where default models should be
+#   $model_dir:       dir with models
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $indi_cmfile_HR:  ref to hash of CM files, key is model name, value is path to CM file
@@ -1289,24 +1295,14 @@ sub parse_modelinfo_file {
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
+  my ($modelinfo_file, $model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
 
   my $opt_i_used          = opt_IsUsed("-i", $opt_HHR);
   my $found_master        = 0;     # set to '1' when we find master file line
   my $master_cmfile       = undef; # name of 'master' CM file with all CMs
   my $master_blastdb_file = undef; # name of 'master' blastn db file
-  my $non_df_model_file   = undef; # non-default model file
-  my $df_model_file       = undef; # default model file
-  my $in_df;                       # flag for whether we found model file in default dir or not
-  my $in_nondf;                    # flag for whether we found model file in non-default dir or not
-
-  # determine directory that $modelinfo_file exists in if -i used, all models must 
-  # either be in this directory or in $df_model_dir
-  my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
-  if($opt_i_used) { 
-    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
-  }
-
+  my $model_file          = undef; # model file
+  
   # actually parse modelinfo file: 
   # example lines:
   # ---
@@ -1328,45 +1324,17 @@ sub parse_modelinfo_file {
       my($model, $family, $domain, $cmfile) = (@el_A);
 
       if($cmfile ne "-") { 
-        # make sure that the model file exists, either in $df_model_dir or, if
+        # make sure that the model file exists
         # -i was used, in the same directory that $modelinfo_file is in
-        $df_model_file = $df_model_dir . $cmfile;
-        if($opt_i_used) { 
-          $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
-          $in_nondf = utl_FileValidateExistsAndNonEmpty($non_df_model_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-          $in_df    = utl_FileValidateExistsAndNonEmpty($df_model_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
-          # if it exists in both places, use the -i specified version
-          if(($in_nondf == 0) && ($in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
-          }
-          elsif(($in_nondf == -1) && ($in_df == 0)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty", 1, $ofile_info_HH{"FH"});
-          }
-          elsif(($in_nondf == 0) && ($in_df == -1)) { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty", 1, $ofile_info_HH{"FH"});
-          }
-          elsif($in_nondf == 1) { 
-            $cmfile = $non_df_model_file;
-          }
-          elsif($in_df == 1) { 
-            $cmfile = $df_model_file;
-          }
-          else { 
-            ofile_FAIL("ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n", 1, $ofile_info_HH{"FH"});
-          }
-        }     
-        else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
-          utl_FileValidateExistsAndNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
-          $cmfile = $df_model_file;
-        }
+        $cmfile = $model_dir . $cmfile;
+        utl_FileValidateExistsAndNonEmpty($cmfile, "model file read from model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
       }
-        
       if($model eq "*all*") { 
         if($found_master) { 
           ofile_FAIL("ERROR read model $model twice in $modelinfo_file", 1, $ofile_info_HH{"FH"});
         }
         $found_master = 1;
-        $master_cmfile       = $cmfile;
+        $master_cmfile = $cmfile;
         if($master_cmfile =~ m/\.cm$/) { 
           $master_blastdb_file = $cmfile;
           $master_blastdb_file =~ s/\.cm$/.fa/;
@@ -1399,10 +1367,10 @@ sub parse_modelinfo_file {
     }
   }
 
-  # go back and replace any individual cm file names of '-' with "fetch:<$master_cmfile>
+  # go back and replace any individual cm file names of '-' with fetch:<$master_cmfile>
   foreach $model (keys %{$family_HR}) { 
     if($indi_cmfile_HR->{$model} eq "-") {
-      $indi_cmfile_HR->{$model} = "model:$model\nfile:" . $master_cmfile;
+      $indi_cmfile_HR->{$model} = ribo_CreateStoredIndiCmFileName($model, $master_cmfile);
     }
   }
     
