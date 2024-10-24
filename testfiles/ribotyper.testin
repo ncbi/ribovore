@@ -22,4 +22,9 @@ desc: ribotyper-2-100
 out: r100/r100.ribotyper.short.out
 exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/r100.ribotyper.short.out
 rmdir: r100
-
+# test -i with a modelinfo file that doesn't list individual CMs, to test cmfetch capability from master cm file
+command: cp $RIBOSCRIPTSDIR/testfiles/example-16.fa ./; perl $RIBOSCRIPTSDIR/ribotyper -i $RIBOSCRIPTSDIR/testfiles/fetch.ribotyper.modelinfo -f example-16.fa itest-16 > /dev/null;
+desc: ribotyper-i1-16
+out: itest-16/itest-16.ribotyper.short.out
+exp: @RIBOSCRIPTSDIR@/testfiles/expected-files/test-16.ribotyper.short.out
+rmdir: itest-16
