@@ -1,0 +1,24 @@
+# Each non-# prefixed line should have 4 white-space delimited tokens: 
+#<modelname> <family> <domain> <CM-file-with-only-this-model>
+# The first line is special, it indicates the name of the master CM file
+# with all the models in it
+#model                         family domain             cmfile
+*all*                             -   -                  ribotyper.cm
+SSU_rRNA_archaea                  SSU Archaea            -
+SSU_rRNA_bacteria                 SSU Bacteria           -
+SSU_rRNA_eukarya                  SSU Eukarya            -
+SSU_rRNA_microsporidia            SSU Euk-Microsporidia  -
+SSU_rRNA_chloroplast              SSU Chloroplast        -
+SSU_rRNA_mitochondria_metazoa     SSU Mito-Metazoa       -
+SSU_rRNA_cyanobacteria            SSU Bacteria           -
+LSU_rRNA_archaea                  LSU Archaea            -
+LSU_rRNA_bacteria                 LSU Bacteria           -
+LSU_rRNA_eukarya                  LSU Eukarya            -
+SSU_rRNA_apicoplast               SSU Euk-Apicoplast     -
+SSU_rRNA_chloroplast_pilostyles   SSU Chloroplast        -
+SSU_rRNA_mitochondria_amoeba      SSU Mito-Amoeba        -
+SSU_rRNA_mitochondria_chlorophyta SSU Mito-Chlorophyta   -
+SSU_rRNA_mitochondria_fungi       SSU Mito-Fungi         -
+SSU_rRNA_mitochondria_kinetoplast SSU Mito-Kinetoplast   -
+SSU_rRNA_mitochondria_plant       SSU Mito-Plant         -
+SSU_rRNA_mitochondria_protist     SSU Mito-Protist       -
