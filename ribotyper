@@ -1268,7 +1268,7 @@ exit(0);
 #              
 # Arguments: 
 #   $modelinfo_file:  file to parse
-#   $model_dir:       dir with models
+#   $df_model_dir:    default model directory
 #   $family_HR:       ref to hash of family names, key is model name, value is family name
 #   $domain_HR:       ref to hash of domain names, key is model name, value is domain name
 #   $indi_cmfile_HR:  ref to hash of CM files, key is model name, value is path to CM file
@@ -1295,14 +1295,25 @@ sub parse_modelinfo_file {
   my $sub_name = "parse_modelinfo_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
+  my ($modelinfo_file, $df_model_dir, $family_HR, $domain_HR, $indi_cmfile_HR, $opt_HHR, $FH_HR) = @_;
 
   my $opt_i_used          = opt_IsUsed("-i", $opt_HHR);
   my $found_master        = 0;     # set to '1' when we find master file line
   my $master_cmfile       = undef; # name of 'master' CM file with all CMs
   my $master_blastdb_file = undef; # name of 'master' blastn db file
   my $model_file          = undef; # model file
+  my $non_df_model_file   = undef; # non-default model file
+  my $df_model_file       = undef; # default model file
+  my $in_df;                       # flag for whether we found model file in default dir or not
+  my $in_nondf;                    # flag for whether we found model file in non-default dir or not
   
+  # determine directory that $modelinfo_file exists in if -i used, all models must 
+  # either be in this directory or in $df_model_dir
+  my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
+  if($opt_i_used) { 
+    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
+  }
+
   # actually parse modelinfo file: 
   # example lines:
   # ---
@@ -1322,14 +1333,44 @@ sub parse_modelinfo_file {
         ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
       }
       my ($model, $family, $domain, $cmfile) = (@el_A);
-
+      
       if($cmfile ne "-") { 
-        # make sure that the model file exists
+        # make sure that the model file exists, either in $df_model_dir or, if
         # -i was used, in the same directory that $modelinfo_file is in
-        $cmfile = $model_dir . $cmfile;
-        utl_FileValidateExistsAndNonEmpty($cmfile, "model file read from model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
+        $df_model_file = $df_model_dir . $cmfile;
+        if($opt_i_used) { 
+          $non_df_model_file = $non_df_modelinfo_dir . $cmfile;
+          $in_nondf = utl_FileValidateExistsAndNonEmpty($non_df_model_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          $in_df    = utl_FileValidateExistsAndNonEmpty($df_model_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+          # if it exists in both places, use the -i specified version
+          if(($in_nondf == 0) && ($in_df == 0)) { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $df_model_dir (default model directory)\n", 1, $ofile_info_HH{"FH"});
+          }
+          elsif(($in_nondf == -1) && ($in_df == 0)) { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $non_df_model_file but is empty", 1, $ofile_info_HH{"FH"});
+          }
+          elsif(($in_nondf == 0) && ($in_df == -1)) { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file $cmfile, it exists as $df_model_file but is empty", 1, $ofile_info_HH{"FH"});
+          }
+          elsif($in_nondf == 1) { 
+            $cmfile = $non_df_model_file;
+          }
+          elsif($in_df == 1) { 
+            $cmfile = $df_model_file;
+          }
+          else { 
+            ofile_FAIL("ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n", 1, $ofile_info_HH{"FH"});
+          }
+        } # end of 'if($opt_i_used)'
+        else { # $opt_i_used is FALSE, -i not used, models must be in $df_model_dir
+          utl_FileValidateExistsAndNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
+          $cmfile = $df_model_file;
+        }
       }
       if($model eq "*all*") { 
+        if($cmfile eq "-") {
+          ofile_FAIL("ERROR read master model file as -, it must be a valid CM file", 1, $ofile_info_HH{"FH"});
+        }          
         if($found_master) { 
           ofile_FAIL("ERROR read model $model twice in $modelinfo_file", 1, $ofile_info_HH{"FH"});
         }
@@ -1342,7 +1383,7 @@ sub parse_modelinfo_file {
           my $has_i1p = utl_FileValidateExistsAndNonEmpty($master_cmfile . ".i1p", undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
           my $has_i1i = utl_FileValidateExistsAndNonEmpty($master_cmfile . ".i1i", undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
           if((! $has_i1m) || (! $has_i1f) || (! $has_i1p) || (! $has_i1i)) {
-            ofile_FAIL("ERROR master model file is not indexed.\nEither\n\t$master_cmfile.ssi\nmust exist (creatable by 'cmfetch --index')\n\nOR\n\nAll 4 of\n\t$master_cmfile.i1m\n\t$master_cmfile.i1f\n\t$master_cmfile.i1p\n\t$master_cmfile.i1i\nmust exist (createable by 'cmpress'.", $sub_name, 1, $FH_HR);
+            ofile_FAIL("ERROR master model file is not indexed.\nEither\n\t$master_cmfile.ssi\nmust exist (creatable by 'cmfetch --index')\n\nOR\n\nAll 4 of\n\t$master_cmfile.i1m\n\t$master_cmfile.i1f\n\t$master_cmfile.i1p\n\t$master_cmfile.i1i\nmust exist (createable by 'cmpress').", 1, $ofile_info_HH{"FH"});
           }
         }
         if($master_cmfile =~ m/\.cm$/) { 
@@ -1383,7 +1424,7 @@ sub parse_modelinfo_file {
       $indi_cmfile_HR->{$model} = ribo_CreateStoredIndiCmFileName($model, $master_cmfile);
     }
   }
-    
+
   return ($master_cmfile, $master_blastdb_file);
 }
 
