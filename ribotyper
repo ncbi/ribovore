@@ -68,6 +68,7 @@ opt_Add("-v",           "boolean", 0,                       $g,    undef, undef,
 opt_Add("-n",           "integer", 0,                       $g,    undef, "-p",       "use <n> CPUs",                                   "use <n> CPUs", \%opt_HH, \@opt_order_A);
 opt_Add("-i",           "string",  undef,                   $g,    undef, undef,      "use model info file <s> instead of default",     "use model info file <s> instead of default", \%opt_HH, \@opt_order_A);
 opt_Add("-m",           "string",  undef,                   $g,    undef, undef,      "model files are in directory <s>, not default",  "model files are in directory <s>, not default", \%opt_HH, \@opt_order_A);
+opt_Add("-l",           "boolean", 0,                       $g,    undef, undef,      "hits can be subsequences within input sequences","hits can be subsequences within input sequences", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling the first round search algorithm";
 #       option               type   default                group  requires incompat          preamble-output                            help-output    
@@ -169,6 +170,7 @@ my $options_okay =
                 'n=s'          => \$GetOptions_H{"-n"},
                 'i=s'          => \$GetOptions_H{"-i"},
                 'm=s'          => \$GetOptions_H{"-m"},
+                'l'            => \$GetOptions_H{"-l"},
 # first round algorithm options
                 '1hmm'          => \$GetOptions_H{"--1hmm"},
                 '1slow'         => \$GetOptions_H{"--1slow"},
@@ -312,7 +314,12 @@ if(opt_IsUsed("--outxgaps", \%opt_HH)) {
     die "ERROR with --outxgaps <n>, <n> must be >= 1";
   }
 }
-   
+if(opt_IsUsed("-l", \%opt_HH)) {
+  if((! opt_IsUsed("--1slow", \%opt_HH)) && (! opt_IsUsed("--1hmm", \%opt_HH))) {
+    die "ERROR -l requires either --1slow or --1hmm";
+  }
+}
+
 my $min_primary_sc   = opt_Get("--minpsc", \%opt_HH);
 my $min_secondary_sc = opt_Get("--minssc", \%opt_HH);
 if($min_secondary_sc > $min_primary_sc) { 
@@ -775,6 +782,40 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 # Step 5: Parse round 1 sorted output
 ###########################################################################
 $start_secs = ofile_OutputProgressPrior("Processing classification results", $progress_w, $log_FH, *STDOUT);
+
+if(opt_IsUsed("-l", \%opt_HH)) {
+  my @kept_region_A = ();
+  my $new_r1_sorted_tblout_file = $r1_sorted_tblout_file . ".new";
+  open(NEWR1, ">", $new_r1_sorted_tblout_file) || die "ERROR unable to open $new_r1_sorted_tblout_file";
+  open(R1,    "<", $r1_sorted_tblout_file)     || die "ERROR unable to open $r1_sorted_tblout_file";
+  while(my $line = <R1>) {
+    chomp $line;
+    print("line: $line");
+    my @el_A = split(/\s+/, $line);
+    my $cur_region = $el_A[7] . "." . $el_A[8];
+    my $found_overlap = 0;
+    foreach my $region (@kept_region_A) {
+      my ($noverlap, $overlap_reg) = get_overlap($cur_region, $region, $ofile_info_HH{"FH"});
+      if($noverlap > 0) {
+        $found_overlap = 1;
+      }
+    }
+    if(! $found_overlap) { 
+      # make new line, modify first token (seq name)
+      my $new_line = $line;
+      my $new_seqname = $el_A[0] . "." . $cur_region;
+      $seqlen_H{$new_seqname} = $seqlen_H{$el_A[0]};
+      $new_line =~ s/^\S+//;
+      $new_line =  $new_seqname . " " . $new_line;
+      print NEWR1 $new_line . "\n";
+      push(@kept_region_A, $cur_region);
+    }
+  }
+  close(R1);
+  close(NEWR1);
+  $r1_sorted_tblout_file = $new_r1_sorted_tblout_file;
+}
+
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
                       \%family_H, \%domain_H, \%accept_H, \%question_H, undef, $r1_unsrt_long_out_FH, $r1_unsrt_short_out_FH, $ofile_info_HH{"FH"});
 
@@ -4671,7 +4712,7 @@ sub update_one_ufeature_sequence {
 # Incept:     EPN, Mon Apr 24 15:47:13 2017
 #
 # Purpose:    Determine if there is overlap between two regions
-#             defined by strings of the format <d1>-<d2> where
+#             defined by strings of the format "<d1>.<d2>" where
 #             <d1> is the beginning of the region and <d2> is the
 #             end. If strand is "+" then <d1> <= <d2> and if strand
 #             is "-" then <d1> >= <d2>.
@@ -5177,6 +5218,669 @@ sub prune_blastn_outfmt6 {
   }
   close(IN);
   close(OUT);
+
+  return;
+}
+
+#################################################################
+# Subroutine : output_one_longtarget()
+# Incept:      EPN, Thu Mar 20 11:47:18 2025
+#
+# Purpose:     Output information for current sequence in short 
+#              and/or long mode (depending on whether $short_FH 
+#              and $long_FH are defined or not). At least one
+#              of $short_FH and $long_FH must be defined or we die.
+#
+#              Similar to output_one_target() but for -l case,
+#              when input sequences are long and may contain
+#              multiple hits. 
+#              
+# Arguments: 
+#   $short_FH:               file handle to output short output to (can be undef, in which case short output is not done)
+#   $long_FH:                file handle to output long output to (can be undef, in which case long output is not done)
+#   $opt_HHR:                reference to 2D hash of cmdline options
+#   $round:                  '1' or '2', what round of searching we are in
+#   $have_accurate_coverage: '1' if we have accurate coverage, '0' if not
+#   $have_model_coords:      '1' if we have model coordinates, '0' if not
+#   $have_evalues:           '1' if we have E-values, '0' if not
+#   $sort_by_evalues:        '1' if we are sorting by E-values, '0' if not
+#   $width_HR:               hash, key is "model" or "target", value 
+#                            is width (maximum length) of any target/model
+#   $domain_HR:              reference to domain hash
+#   $accept_HR:              reference to the 'accept' hash, key is "model"
+#                            value is '1' if model is acceptable and 0 if
+#                            hits to model should have unacceptable_model
+#                            unexpected_feature and therefore, FAIL
+#   $question_HR:            reference to the 'question' hash, key is "model"
+#                            value is '1' if hits to model should have questionable_model
+#                            unexpected_feature, 0 if not
+#   $target:                 target name
+#   $seqidx:                 index of target sequence
+#   $seqlen:                 length of target sequence in nucleotides
+#   $nhits_HHR:              reference to hash of num hits (no threshold) per model (key 1), strand (key 2)
+#   $nhits_at_HHR:           reference to hash of num hits above threshold per model (key 1), strand (key 2)
+#   $nnts_HHR:               reference to hash of num nucleotides (no threshold) in all hits per model (key 1), strand (key 2)
+#   $nnts_at_HHR:            reference to hash of num nucleotides above threshold in all hits per model (key 1), strand (key 2)
+#   $tbits_HHR:              reference to hash of total (summed) bit score in all hits per model (key 1), per strand (key 2)
+#   $mdl_bd_HHAR:            reference to hash of hash of array of model boundaries per hits, per model (key 1), per strand (key 2)
+#   $seq_bd_HHAR:            reference to hash of hash of array of sequence boundaries per hits, per model (key 1), per strand (key 2)
+#   $best_model_HHR:         hit stats for best model (best model)
+#   $second_model_HHR:       hit stats for second model (second-best model)
+#   $seqgap_HHAR:            2D hash of arrays, 1D key is CM model name, 2K key is sequence name, 
+#                            value is array of sequence start/stop regions of gaps
+#                            to sfetch for researching with intron models
+#
+# Returns:     Nothing.
+# 
+# Dies:        - If neither $short_FH or $long_FH is defined.
+#              - It is round 2 and there is more than one model matching the target.
+#
+################################################################# 
+sub output_one_longtarget { 
+  my $nargs_expected = 26;
+  my $sub_name = "output_one_longtarget";
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($short_FH, $long_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
+      $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, $target, 
+      $seqidx, $seqlen, $nhits_HHR, $nhits_at_HHR, $nnts_HHR, $nnts_at_HHR, $tbits_HHR, $mdl_bd_HHAR, $seq_bd_HHAR, 
+      $best_model_HHR, $second_model_HHR, $seqgap_HHAR, $FH_HR) = @_;
+
+  utl_HHDump("best_model_HHR", $best_model_HHR, *STDOUT);
+  utl_HHDump("second_model_HHR", $best_model_HHR, *STDOUT);
+  utl_HHADump("seq_bd_HHAR", $best_model_HHR, *STDOUT);
+  utl_HHADump("mdl_bd_HHAR", $best_model_HHR, *STDOUT);
+  
+  exit(1);
+  
+  if((! defined $short_FH) && (! defined $long_FH)) { 
+    ofile_FAIL("ERROR in $sub_name, neither short nor long file handles are defined", 1, $FH_HR); 
+  }
+
+  # determine the winning family
+  my $wfamily = undef;
+  my $better_than_winning = 0;
+  foreach my $family (keys %{$best_model_HHR}) { 
+    $better_than_winning = 0;
+    # determine if this hit is better than our winning clan
+    if(! defined $wfamily) { 
+      $better_than_winning = 1; 
+    }
+    elsif($sort_by_evalues) { 
+      if(($best_model_HHR->{$family}{"evalue"} < $best_model_HHR->{$wfamily}{"evalue"}) || # this E-value is better than (less than) our current winning E-value
+         ($best_model_HHR->{$family}{"evalue"} eq $best_model_HHR->{$wfamily}{"evalue"} && $best_model_HHR->{$family}{"score"} > $best_model_HHR->{$wfamily}{"score"})) { # this E-value equals current 'one' E-value, but this score is better than current winning score
+        $better_than_winning = 1;
+      }
+    }
+    else { # we are not sorting by E-values
+      if($best_model_HHR->{$family}{"score"} > $best_model_HHR->{$wfamily}{"score"}) { # score is better than current winning score
+        $better_than_winning = 1;
+      }
+    }
+    if($better_than_winning) { 
+      $wfamily = $family;
+    }
+  }
+  my $wmodel  = $best_model_HHR->{$wfamily}{"model"};
+  my $wstrand = $best_model_HHR->{$wfamily}{"strand"};
+  my $nfams_fail_str = $wfamily; # used only if we FAIL because there's 
+                                 # more than one hit to different families for this sequence
+  my $nhits     = $nhits_HHR->{$wmodel}{$wstrand};
+  my $nhits_at  = $nhits_at_HHR->{$wmodel}{$wstrand};
+  my $one_tbits = $tbits_HHR->{$wmodel}{$wstrand};
+  my $two_tbits = undef;
+
+  if(defined $second_model_HHR->{$wfamily}{"model"}) { 
+    $two_tbits = $tbits_HHR->{$second_model_HHR->{$wfamily}{"model"}}{$second_model_HHR->{$wfamily}{"strand"}};
+    if($round eq "2") { # sanity check
+      ofile_FAIL("ERROR in $sub_name, round 2, but we have hits to more than one model", 1, $FH_HR); 
+    }
+  }
+
+  # determine if we have hits on both strands, and if so, build up failure string
+  my $both_strands_fail_str = "";
+  # add a '.' followed by <d>, where <d> is number of hits on opposite strand of best hit, if <d> > 0
+  my $other_strand = ($wstrand eq "+") ? "-" : "+";
+  if(exists $nhits_at_HHR->{$wmodel}{$other_strand} && 
+     $nhits_at_HHR->{$wmodel}{$other_strand} > 0) { 
+    $nhits_at += $nhits_at_HHR->{$wmodel}{$other_strand};
+    $both_strands_fail_str  = "BothStrands:(" . $wstrand . ":";
+    $both_strands_fail_str .= $nhits_at_HHR->{$wmodel}{$wstrand} . "_hit(s)"; 
+    if($have_accurate_coverage) { 
+      $both_strands_fail_str .= "[" . $nnts_at_HHR->{$wmodel}{$wstrand} . "_nt]";
+    }
+    $both_strands_fail_str .= "," . $other_strand . ":";
+    $both_strands_fail_str .= $nhits_HHR->{$wmodel}{$other_strand} . "_hit(s)";
+    if($have_accurate_coverage) { 
+      $both_strands_fail_str .= "[" . $nnts_at_HHR->{$wmodel}{$other_strand} . "_nt])";
+    }
+  }
+
+  # determine if we have distinct hits that overlap on the model by more than maximum allowed amount
+  my $duplicate_model_region_str = "";
+  if($have_model_coords) { # we can only do this if search output included model coords
+    $nhits = scalar(@{$mdl_bd_HHAR->{$wmodel}{$wstrand}});
+    my $noverlap_allowed = opt_Get("--maxoverlap", $opt_HHR);
+    for(my $i = 0; $i < $nhits; $i++) { 
+      for(my $j = $i+1; $j < $nhits; $j++) { 
+        my $mdl_bd1 = $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i];
+        my $mdl_bd2 = $mdl_bd_HHAR->{$wmodel}{$wstrand}[$j];
+        my $seq_bd1 = $seq_bd_HHAR->{$wmodel}{$wstrand}[$i];
+        my $seq_bd2 = $seq_bd_HHAR->{$wmodel}{$wstrand}[$j];
+        my ($noverlap, $overlap_str) = get_overlap($mdl_bd1, $mdl_bd2, $FH_HR);
+        if($noverlap > $noverlap_allowed) { 
+          if($duplicate_model_region_str eq "") { 
+            $duplicate_model_region_str .= "DuplicateRegion:"; 
+          }
+          else { 
+            $duplicate_model_region_str .= ",";
+          }
+          $duplicate_model_region_str .= "(" . $overlap_str . ")_hits_" . ($i+1) . "_and_" . ($j+1) . "(M:$mdl_bd1,$mdl_bd2,S:$seq_bd1,$seq_bd2)";
+        }
+      }
+    }
+  }
+    
+  # determine if hits are out of order between model and sequence
+  # and types of gaps in between hits
+  my $out_of_order_str = "";
+  my $gap_types_str = "";
+  my $small_mgap_size = opt_Get("--mgap", $opt_HHR);
+  my $small_sgap_size = opt_Get("--sgap", $opt_HHR);
+  if($have_model_coords) { # we can only do this if search output included model coords
+    if($nhits > 1) { 
+      my $i;
+      my @seq_hit_order_A = (); # array of sequence boundary hit indices in sorted order [0..nhits-1] values are in range 1..nhits
+      my @mdl_hit_order_A = (); # array of model    boundary hit indices in sorted order [0..nhits-1] values are in range 1..nhits
+      my $seq_hit_order_str = sort_hit_array($seq_bd_HHAR->{$wmodel}{$wstrand}, \@seq_hit_order_A, 0, $FH_HR); # 0 means duplicate values in best array are not allowed
+      my $mdl_hit_order_str = sort_hit_array($mdl_bd_HHAR->{$wmodel}{$wstrand}, \@mdl_hit_order_A, 1, $FH_HR); # 1 means duplicate values in best array are allowed
+      # check if the hits are out of order we don't just check for equality of the
+      # two strings because it's possible (but rare) that there could be duplicates in the model
+      # order array (but not in the sequence array), so we need to allow for that.
+      my $out_of_order_flag = 0;
+      for($i = 0; $i < $nhits; $i++) { 
+        my $x = $mdl_hit_order_A[$i];
+        my $y = $seq_hit_order_A[$i];
+        # check to see if hit $i is same order in both mdl and seq coords
+        # or if it is not, it's okay if it is identical to the one that is
+        # example: 
+        # hit 1 seq 1..10   model  90..99
+        # hit 2 seq 11..20  model 100..110
+        # hit 3 seq 21..30  model 100..110
+        # seq order: 1,2,3
+        # mdl order: 1,3,2 (or 1,2,3) we want both to be ok (not FAIL)
+        if(($x ne $y) && # hits are not the same order
+           ($mdl_bd_HHAR->{$wmodel}{$wstrand}[($x-1)] ne
+            $mdl_bd_HHAR->{$wmodel}{$wstrand}[($y-1)])) { # hit is not identical to hit in correct order
+          $out_of_order_flag = 1;
+          $i = $nhits; # breaks 'for i' loop, slight optimization
+        }
+      }
+      if($out_of_order_flag) { 
+        $out_of_order_str = "*InconsistentHits:seq_order(" . $seq_hit_order_str . "[";
+        for($i = 0; $i < $nhits; $i++) { 
+          $out_of_order_str .= $seq_bd_HHAR->{$wmodel}{$wstrand}[$i]; 
+          if($i < ($nhits-1)) { $out_of_order_str .= ","; }
+        }
+        $out_of_order_str .= "]),mdl_order(" . $mdl_hit_order_str . "[";
+        for($i = 0; $i < $nhits; $i++) { 
+          $out_of_order_str .= $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i]; 
+          if($i < ($nhits-1)) { $out_of_order_str .= ","; }
+        }
+        $out_of_order_str .= "])";
+      }
+      else { # hits are in order, determine gaps in between hits, only if we didn't use blast, if we did, then hits may overlap in sequence
+        if(! opt_Get("--1blast", $opt_HHR)) { 
+          #for($i = 0; $i < $nhits; $i++) { 
+          #  printf("seq_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $seq_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
+          #  printf("mdl_bd_HHAR->{" . $wmodel . "}{" . $wstrand . "}[$i]: " . $mdl_bd_HHAR->{$wmodel}{$wstrand}[$i] . "\n");
+          #  printf("seq_hit_order_A[$i]: $seq_hit_order_A[$i]\n");
+          #  printf("mdl_hit_order_A[$i]: $mdl_hit_order_A[$i]\n");
+          #}
+          # determine gaps between all hits
+          for($i = 0; $i < ($nhits-1); $i++) {
+            my $seq_cur_idx = ($seq_hit_order_A[$i] - 1);
+            my $seq_nxt_idx = ($seq_hit_order_A[($i+1)] - 1);
+            my ($seq_cur_start, $seq_cur_stop, $seq_cur_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_cur_idx], $FH_HR);
+            my ($seq_nxt_start, $seq_nxt_stop, $seq_nxt_strand) = decompose_region_str($seq_bd_HHAR->{$wmodel}{$wstrand}[$seq_nxt_idx], $FH_HR);
+            if($seq_cur_strand ne $seq_nxt_strand) {
+              ofile_FAIL("ERROR in $sub_name, hits on different strand on second pass", 1, $FH_HR);
+            }
+
+            my $mdl_cur_idx = ($mdl_hit_order_A[$i] - 1);
+            my $mdl_nxt_idx = ($mdl_hit_order_A[($i+1)] - 1);
+            my ($mdl_cur_start, $mdl_cur_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_cur_idx], $FH_HR);
+            my ($mdl_nxt_start, $mdl_nxt_stop, undef) = decompose_region_str($mdl_bd_HHAR->{$wmodel}{$wstrand}[$mdl_nxt_idx], $FH_HR);
+            
+            if($gap_types_str ne "") { $gap_types_str .= ","; }
+            my $seq_gap_start = ($seq_cur_strand eq "+") ? $seq_cur_stop  + 1 : $seq_cur_stop - 1;
+            my $seq_gap_stop  = ($seq_cur_strand eq "+") ? $seq_nxt_start - 1 : $seq_nxt_stop + 1;
+            my $mdl_gap_start = $mdl_cur_stop  + 1;
+            my $mdl_gap_stop  = $mdl_nxt_start - 1;
+            $gap_types_str .= classify_gap($seq_gap_start, $seq_gap_stop, $seq_cur_strand, $mdl_gap_start, $mdl_gap_stop, $small_sgap_size, $small_mgap_size, $FH_HR);
+
+            if((($seq_gap_stop >= $seq_gap_start) && ($seq_cur_strand eq "+")) ||
+               (($seq_gap_stop <= $seq_gap_start) && ($seq_cur_strand eq "-"))) { 
+              if(defined $seqgap_HHAR) {
+                if(! exists $seqgap_HHAR->{$wmodel}) {
+                  %{$seqgap_HHAR->{$wmodel}} = ();
+                }
+                if(! exists $seqgap_HHAR->{$wmodel}{$target}) {
+                  @{$seqgap_HHAR->{$wmodel}{$target}} = ();
+                }
+                push(@{$seqgap_HHAR->{$wmodel}{$target}}, $seq_gap_start . "." . $seq_gap_stop);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  my $nnts  = $nnts_HHR->{$wmodel}{$wstrand};
+  # build up 'other_hits_string' string about other hits in other clans, if any
+  my $other_hits_string = "";
+  my $nfams = 1;
+  foreach my $family (keys %{$best_model_HHR}) { 
+    if($family ne $wfamily) { 
+      if(exists($best_model_HHR->{$family}{"model"})) { 
+        if($other_hits_string ne "") { $other_hits_string .= ","; }
+        if($have_evalues) { 
+          $other_hits_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
+                                   $family, $best_model_HHR->{$family}{"model"}, $best_model_HHR->{$family}{"evalue"}, $best_model_HHR->{$family}{"score"}, 
+                                   $best_model_HHR->{$family}{"start"}, $best_model_HHR->{$family}{"stop"}, $best_model_HHR->{$family}{"strand"});
+        }
+        else { # we don't have E-values
+          $other_hits_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
+                                   $family, $best_model_HHR->{$family}{"model"}, $best_model_HHR->{$family}{"score"}, 
+                                   $best_model_HHR->{$family}{"start"}, $best_model_HHR->{$family}{"stop"}, $best_model_HHR->{$family}{"strand"});
+        }
+        $nfams++;
+        $nfams_fail_str .= "+" . $family;
+      }
+    }
+  }
+  if(! defined $wfamily) { ofile_FAIL("ERROR wfamily undefined for $target", 1, $FH_HR); }
+  my $best_coverage = (abs($best_model_HHR->{$wfamily}{"stop"} - $best_model_HHR->{$wfamily}{"start"}) + 1) / $seqlen;
+  my $tot_coverage  = $nnts / $seqlen;
+  my $one_evalue2print = ($have_evalues) ? sprintf("%8g  ", $best_model_HHR->{$wfamily}{"evalue"}) : "";
+  my $two_evalue2print = undef;
+  if(defined $second_model_HHR->{$wfamily}{"model"}) { 
+    $two_evalue2print = ($have_evalues) ? sprintf("%8g  ", $second_model_HHR->{$wfamily}{"evalue"}) : "";
+  }
+  
+  # if we have a second-best model, determine score difference between best and second-best model
+  my $do_ppos_score_diff = 1; # true unless --absdiff option used
+  if(opt_IsUsed("--absdiff", $opt_HHR)) { 
+    $do_ppos_score_diff = 0;
+  }
+  my $score_total_diff = undef; # score total difference 
+  my $score_ppos_diff  = undef; # score per position difference (absolute value)
+  my $diff_low_thresh  = undef; # bit score difference for 'low difference' warning/failure
+  my $diff_vlow_thresh = undef; # bit score difference for 'very low difference 'warning/failure
+  my $diff_low_str     = undef; # string that explains low bit score difference warning/failure
+  my $diff_vlow_str    = undef; # string that explains very low bit score difference warning/failure
+
+  if(defined $second_model_HHR->{$wfamily}{"score"}) { 
+    # determine score difference threshold
+    $score_total_diff = abs($best_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"});
+    # $best_model_HHR->{$wfamily}{"score"} - $second_model_HHR->{$wfamily}{"score"} can be negative if
+    # $sort_by_evalues and second hit by E-value bit score exceeds top hit by E-value
+    # sanity check
+    if(($second_model_HHR->{$wfamily}{"score"} > $best_model_HHR->{$wfamily}{"score"}) && (! $sort_by_evalues)) { 
+      ofile_FAIL(sprintf("ERROR in $sub_name, second best hit has higher score than best hit (%.2f > %2.f) and sort_by_evalues is FALSE", 
+                         $second_model_HHR->{$wfamily}{"score"}, $best_model_HHR->{$wfamily}{"score"}), 1, $FH_HR);
+    }
+    $score_ppos_diff  = $score_total_diff / (abs($best_model_HHR->{$wfamily}{"stop"} - $best_model_HHR->{$wfamily}{"start"}) + 1);
+    if($do_ppos_score_diff) { 
+      # default: per position score difference, dependent on length of hit
+      $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
+      $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
+      $diff_low_str     = $diff_low_thresh . "_bits_per_posn";
+      $diff_vlow_str    = $diff_vlow_thresh . "_bits_per_posn";
+    }
+    else { 
+      # absolute score difference, regardless of length of hit
+      $diff_low_thresh  = opt_Get("--lowadiff", $opt_HHR); 
+      $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR); 
+      $diff_low_str     = $diff_low_thresh . "_total_bits";
+      $diff_vlow_str    = $diff_vlow_thresh . "_total_bits";
+    }
+  }
+
+  # Determine if there are any unusual features 
+  # and if the sequence PASSes or FAILs.
+  # 
+  # Possible unusual feature criteria are listed below. 
+  # A FAILure occurs if either the criteria is a strict failure criterion
+  # or if it is a optional criterion and the relevant command line option is used.
+  # 
+  # Four strict failure criteria:
+  # - no hits (THIS WILL NEVER HAPPEN HERE, THEY'RE HANDLED BY output_one_hitless_target())
+  # - number of hits to different families is higher than one (e.g. SSU and LSU hit)
+  # - hits to best model on both strands 
+  # - hits overlap on model (duplicate model region)
+  # - inconsistent hit order
+  # 
+  # Optional failure criteria, require a specific command line option to cause a failure
+  #  but always get printed to unusual_features columns)
+  # - winning hit is to unacceptable model (requires --inaccept to FAIL or get reported)
+  # - hit is on minus strand (requires --minusfail to FAIL, always reported))
+  # - low score, bits per position below threshold (requires --scfail)
+  # - low coverage (requires --covfail)
+  # - score difference between top two models is below $diff_thresh (requires --difffail)
+  # - number of this to best model is > 1 (requires --multfail)
+  # 
+  # Optional unusual features, these will automatically cause a sequence if FAIL if
+  # reported
+  # - sequence is less than <n1> nucleotides (requires --shortfail <n1>)
+  # - sequence is more than <n2> nucleotides (requires --longfail <n2>)
+  #
+  # We start optimistically and suppose the sequence will PASS and then look for 
+  # reasons that it may FAIL.
+  #
+  my $pass_fail = "PASS";
+  my $unusual_features = "";
+
+  # check/enforce strict failure criteria
+  # hits to more than one family?
+  if($nfams > 1) { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*MultipleFamilies:($nfams_fail_str,$other_hits_string);";
+  }
+  # hits on both strands to best model?
+  if($both_strands_fail_str ne "") { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*" . $both_strands_fail_str . ";";
+  }    
+  # duplicate model region
+  if($duplicate_model_region_str ne "") { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*" . $duplicate_model_region_str . ";";
+  }    
+  # hits in inconsistent order
+  if($out_of_order_str ne "") { 
+    $pass_fail = "FAIL";
+    $unusual_features .= $out_of_order_str . ";";
+  }
+
+  # check/enforce optional failure criteria
+
+  # determine if the sequence's best hit is to an questionable or unacceptable model
+  if($question_HR->{$wmodel} == 1) { 
+    if(opt_Get("--questfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= "QuestionableModel:(" . $wmodel . ");";
+  }
+  elsif($accept_HR->{$wmodel} != 1) { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*UnacceptableModel:(" . $wmodel . ");";
+  }
+  # determine if sequence is on opposite strand
+  if($wstrand eq "-") { 
+    if(opt_Get("--minusfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= "MinusStrand;";
+  }
+  # determine if the sequence has a 'low_score'
+  # it does if bits per position (of entire sequence not just hit)
+  # is below the threshold (--lowppossc) minimum
+  my $bits_per_posn = $one_tbits / $seqlen;
+  if($bits_per_posn < opt_Get("--lowppossc", $opt_HHR)) { 
+    if(opt_Get("--scfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= sprintf("LowScore:(%.2f<%.2f);", $bits_per_posn, opt_Get("--lowppossc", $opt_HHR));
+  }
+  # determine if coverage is low
+  my $cov_thresh = undef;
+  if(opt_IsUsed("--tshortlen", $opt_HHR)) { 
+    # threshold depends on length
+    $cov_thresh = ($seqlen <= opt_Get("--tshortlen", $opt_HHR)) ? opt_Get("--tshortcov", $opt_HHR) : opt_Get("--tcov", $opt_HHR);
+  }
+  else { 
+    # threshold does not depend on length
+    $cov_thresh = opt_Get("--tcov", $opt_HHR);
+  }
+  if($tot_coverage < $cov_thresh) { 
+    if(opt_Get("--covfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= sprintf("LowCoverage:(%.3f<%.3f);", $tot_coverage, $cov_thresh);
+  }
+  # determine if the sequence has a low score difference between the top
+  # two matches to a model wihin the same family
+  if(defined $second_model_HHR->{$wfamily}{"model"}) { 
+    # determine score difference threshold
+    $score_total_diff = $one_tbits - $two_tbits; 
+    $score_ppos_diff  = $score_total_diff / $nnts;
+    if($do_ppos_score_diff) { 
+      # default: per position score difference, dependent on length of hit
+      $diff_vlow_thresh = opt_Get("--vlowpdiff", $opt_HHR);
+      $diff_low_thresh  = opt_Get("--lowpdiff",  $opt_HHR);
+      if($score_ppos_diff < $diff_vlow_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
+        $unusual_features .= sprintf("VeryLowScoreDifference:(%.3f<%.3f_bits_per_posn);", $score_ppos_diff, $diff_vlow_thresh);
+      }
+      elsif($score_ppos_diff < $diff_low_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
+        $unusual_features .= sprintf("LowScoreDifference:(%.3f<%.3f_bits_per_posn);", $score_ppos_diff, $diff_low_thresh);
+      }
+    }
+    else { 
+      # absolute score difference, regardless of length of hit
+      $diff_vlow_thresh = opt_Get("--vlowadiff", $opt_HHR);
+      $diff_low_thresh  = opt_Get("--lowadiff",  $opt_HHR);
+      if($score_total_diff < $diff_vlow_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
+        $unusual_features .= sprintf("VeryLowScoreDifference:(%.3f<%.3f_total_bits);", $score_total_diff, $diff_vlow_thresh);
+      }
+      elsif($score_total_diff < $diff_low_thresh) { 
+        if(opt_Get("--difffail", $opt_HHR)) { 
+          $pass_fail = "FAIL"; 
+          $unusual_features .= "*";
+        }
+        $unusual_features .= sprintf("LowScoreDifference:(%.3f<%.3f_total_bits);", $score_total_diff, $diff_low_thresh);
+      }
+    }
+  }
+  # determine if there is more than one hit to the best model
+  $nhits = $nhits_HHR->{$wmodel}{$wstrand};
+  if($nhits > 1) {
+    if(opt_Get("--multfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= sprintf("MultipleHits:($nhits%s);", ($gap_types_str eq "") ? "" : ":" . $gap_types_str);
+  }
+  # if $sort_by_evalues: 
+  # determine if the second best hit has a higher bit score than the best sequence
+  if($sort_by_evalues && ((-1 * $score_total_diff) > opt_Get("--esdmaxsc", $opt_HHR))) { 
+    if(opt_Get("--esdfail", $opt_HHR)) { 
+      $pass_fail = "FAIL";
+      $unusual_features .= "*";
+    }
+    $unusual_features .= sprintf("EvalueScoreDiscrepancy:(second_hit_by_evalue_bit_score_exceeds_top_hit_by_evalue_bit_score_by_%.3f>%.3_bits", (-1 * $score_total_diff), opt_Get("--esdmaxsc", $opt_HHR));
+  }
+  # optional unusual features (if any)
+  if((opt_IsUsed("--shortfail", $opt_HHR)) && ($seqlen < opt_Get("--shortfail", $opt_HHR))) { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*TooShort:($seqlen<" . opt_Get("--shortfail", $opt_HHR) . ");";
+  }
+  if((opt_IsUsed("--longfail", $opt_HHR)) && ($seqlen > opt_Get("--longfail", $opt_HHR))) { 
+    $pass_fail = "FAIL";
+    $unusual_features .= "*TooLong:($seqlen>" . opt_Get("--longfail", $opt_HHR) . ");";
+  }
+
+
+  # if there are no unusual features, set the unusual feature string as '-'
+  if($unusual_features eq "") { $unusual_features = "-"; }
+
+  # finally, output
+  if(defined $short_FH) { 
+    printf $short_FH ("%-*s  %-*s  %-*s  %-5s  %s  %s\n", 
+                      $width_HR->{"index"}, $seqidx,
+                      $width_HR->{"target"}, $target, 
+                      $width_HR->{"classification"}, $wfamily . "." . $domain_HR->{$wmodel}, 
+                      ($wstrand eq "+") ? "plus" : "minus", 
+                      $pass_fail, $unusual_features);
+  }
+  if(defined $long_FH) { 
+    printf $long_FH ("%-*s  %-*s  %4s  %*d  %3d  %-*s  %-*s  %-*s  %-5s  %3d  %6.1f  %6.1f  %4.2f  %s%5.3f  %5.3f  %*d  %*d  ", 
+                     $width_HR->{"index"}, $seqidx,
+                     $width_HR->{"target"}, $target, 
+                     $pass_fail, 
+                     $width_HR->{"length"}, $seqlen, 
+                     $nfams, 
+                     $width_HR->{"family"}, $wfamily, 
+                     $width_HR->{"domain"}, $domain_HR->{$wmodel}, 
+                     $width_HR->{"model"}, $wmodel, 
+                     ($wstrand eq "+") ? "plus" : "minus", 
+                     $nhits, 
+                     $one_tbits,
+                     $best_model_HHR->{$wfamily}{"score"}, 
+                     $bits_per_posn, 
+                     $one_evalue2print, 
+                     $tot_coverage, 
+                     $best_coverage, 
+                     $width_HR->{"length"}, $best_model_HHR->{$wfamily}{"start"}, 
+                     $width_HR->{"length"}, $best_model_HHR->{$wfamily}{"stop"});
+    if($have_model_coords) { 
+      printf $long_FH ("%5d  %5d  ", 
+                       $best_model_HHR->{$wfamily}{"mdlstart"},
+                       $best_model_HHR->{$wfamily}{"mdlstop"});
+    }
+
+    if($round ne "2") { # we never have info for a second model if round is 2
+      if(defined $second_model_HHR->{$wfamily}{"model"}) { 
+        printf $long_FH ("%6.1f  %6.3f  %-*s  %6.1f  %s", 
+                         $score_total_diff, 
+                         $score_ppos_diff,
+                         $width_HR->{"model"}, $second_model_HHR->{$wfamily}{"model"}, 
+                         $two_tbits,
+                         $two_evalue2print);
+      }
+      else { 
+        printf $long_FH ("%6s  %6s  %-*s  %6s  %s", 
+                         "-" , 
+                         "-" , 
+                         $width_HR->{"model"}, "-", 
+                         "-", 
+                         ($have_evalues) ? "       -  " : "");
+      }
+    }
+    
+    if($unusual_features eq "") { 
+      $unusual_features = "-";
+    }
+    
+    print $long_FH ("$unusual_features\n");
+  }
+
+  return;
+}
+
+#################################################################
+# Subroutine: utl_HHADump()
+# Incept:     EPN, Tue Apr 21 05:59:05 2020
+#
+# Purpose:    Dump the contents of a hash of hashes of arrays,
+#             probably for debugging purposes.
+#
+# Args:       $name2print:  name of hash of hashes of hashes
+#             $HHAR:        ref of the hash of hashes of arrays
+#             $FH:          file handle to print (often *STDOUT)
+#
+# Returns:    void
+# 
+#################################################################
+sub utl_HHADump { 
+  my $sub_name = "utl_HHADump()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+ 
+  my ($name2print, $HHAR, $FH) = @_;
+
+  printf $FH ("in $sub_name, printing %s:\n", (defined $name2print) ? $name2print : "undefined");
+
+  my $undef2print = "!SEQUIP:undef!";
+  foreach my $key1 (sort keys %{$HHAR}) { 
+    if(! defined $HHAR->{$key1}) { 
+      print $FH ("*H*HA{$key1}: $undef2print\n");
+    }
+    else { 
+      printf $FH ("*H*HA{$key1}\n");
+      foreach my $key2 (sort keys %{$HHAR->{$key1}}) { 
+        if(! defined $HHAR->{$key1}{$key2}) { 
+          print $FH ("H*H*A{$key1}{$key2}: $undef2print\n");
+        }        
+        else { 
+          printf $FH ("\tH*H*A{$key1}{$key2}\n");
+          my $nel3 = scalar(@{$HHAR->{$key1}{$key2}});
+          for(my $i3 = 0; $i3 < $nel3; $i3++) { 
+            printf $FH ("\t\tHH*A*{$key1}{$key2}[$i3]: %s\n", (defined $HHAR->{$key1}{$key2}[$i3]) ? $HHAR->{$key1}{$key2}[$i3] : $undef2print);
+          }
+        }
+        printf $FH ("\n");
+      }
+    }
+    printf $FH ("\n");
+  }
+
+  return;
+}
+#################################################################
+# Subroutine: utl_HHDump()
+# Incept:     EPN, Thu Dec 20 13:36:00 2018
+#
+# Purpose:    Dump the contents of  hashes of hashes,
+#             probably for debugging purposes.
+#
+# Args:       $name2print:  name of array of hashes of hashes
+#             $HHR:         ref of the hash of hashes
+#             $FH:          file handle to print (often *STDOUT)
+#
+# Returns:    void
+# 
+#################################################################
+sub utl_HHDump { 
+  my $sub_name = "utl_HHDump()";
+  my $nargs_expected = 3;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+ 
+  my ($name2print, $HHR, $FH) = @_;
+
+  printf $FH ("in $sub_name, printing %s:\n", (defined $name2print) ? $name2print : "undefined");
+  
+  my $undef2print = "!SEQUIP:undef!";
+  foreach my $key1 (sort keys %{$HHR}) { 
+    if(! defined $HHR->{$key1}) { 
+      print $FH ("*H*H{$key1}: $undef2print\n");
+    }
+    else { 
+      printf $FH ("*H*H{$key1}\n");
+      my $nel = scalar(keys %{$HHR->{$key1}});
+      foreach my $key2 (sort keys %{$HHR->{$key1}}) { 
+        printf $FH ("\tH*H*{$key1}{$key2}: %s\n", (defined $HHR->{$key1}{$key2}) ? $HHR->{$key1}{$key2} : $undef2print);
+      }
+    }
+    printf $FH ("\n");
+  }
 
   return;
 }
