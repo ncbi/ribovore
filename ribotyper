@@ -130,6 +130,10 @@ opt_Add("--blastnpn",     "integer",   "-2",     $g, "--1blast", undef,        "
 opt_Add("--blastngo",     "integer",    "2",     $g, "--1blast", undef,        "set blastn -gapopen <n> to <n>",                              "set blastn -gapopen <n> to <n>", \%opt_HH, \@opt_order_A);
 opt_Add("--blastnge",     "real",       "1",     $g, "--1blast", undef,        "set blastn -gapextend <x> to <x>",                            "set blastn -gapextend <x> to <x>", \%opt_HH, \@opt_order_A);
 
+$opt_group_desc_H{++$g} = "options that modify the behavior of -l";
+#       option               type   default   group  requires  incompat        preamble-output                                                help-output    
+opt_Add("--l_noverlap",   "integer",    "0",     $g,     "-l", undef,          "set maximum allowed number of overlapping nucleotides to <n>","set maximum allowed number of overlapping nucleotides to <n>", \%opt_HH, \@opt_order_A);
+
 $opt_group_desc_H{++$g} = "options for parallelizing cmsearch on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
 opt_Add("-p",           "boolean", 0,                        $g,    undef, undef,      "parallelize cmsearch on a compute farm",                      "parallelize cmsearch on a compute farm",              \%opt_HH, \@opt_order_A);
@@ -215,6 +219,8 @@ my $options_okay =
                 'blastnpn=s'   => \$GetOptions_H{"--blastnpn"},
                 'blastngo=s'   => \$GetOptions_H{"--blastngo"},
                 'blastnge=s'   => \$GetOptions_H{"--blastnge"},
+# options for -l
+                'l_noverlap=s' => \$GetOptions_H{"--l_noverlap"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -340,6 +346,7 @@ if($min_secondary_sc > $min_primary_sc) {
     # this will only happen if the default values in this file are changed so that --minpsc default is less than --minssc default
   }
 }
+my $do_longtarget = opt_IsUsed("-l", \%opt_HH);
 
 # now that we know if we need blastn, check for all required executables
 if(opt_Get("--1blast", \%opt_HH)) { 
@@ -783,38 +790,12 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 ###########################################################################
 $start_secs = ofile_OutputProgressPrior("Processing classification results", $progress_w, $log_FH, *STDOUT);
 
+my $r1_deolap_sorted_tblout_file = $r1_sorted_tblout_file . ".deoverlapped";
+
 my %opt_l_renamed_H = ();
-if(opt_IsUsed("-l", \%opt_HH)) {
-  my @kept_region_A = ();
-  my $new_r1_sorted_tblout_file = $r1_sorted_tblout_file . ".new";
-  open(NEWR1, ">", $new_r1_sorted_tblout_file) || die "ERROR unable to open $new_r1_sorted_tblout_file";
-  open(R1,    "<", $r1_sorted_tblout_file)     || die "ERROR unable to open $r1_sorted_tblout_file";
-  while(my $line = <R1>) {
-    chomp $line;
-    print("line: $line");
-    my @el_A = split(/\s+/, $line);
-    my $cur_region = $el_A[7] . "." . $el_A[8];
-    my $found_overlap = 0;
-    foreach my $region (@kept_region_A) {
-      my ($noverlap, $overlap_reg) = get_overlap($cur_region, $region, $ofile_info_HH{"FH"});
-      if($noverlap > 0) {
-        $found_overlap = 1;
-      }
-    }
-    if(! $found_overlap) { 
-      # make new line, modify first token (seq name)
-      my $new_line = $line;
-      my $new_seqname = $el_A[0] . "." . $cur_region;
-      $opt_l_renamed_H{$new_seqname} = $el_A[0];
-      $new_line =~ s/^\S+//;
-      $new_line =  $new_seqname . " " . $new_line;
-      print NEWR1 $new_line . "\n";
-      push(@kept_region_A, $cur_region);
-    }
-  }
-  close(R1);
-  close(NEWR1);
-  $r1_sorted_tblout_file = $new_r1_sorted_tblout_file;
+if($do_longtarget) { 
+  longtarget_remove_overlaps_from_sorted_tbl_file($r1_sorted_tblout_file, $r1_deolap_sorted_tblout_file, \%opt_l_renamed_H, \%opt_HH, $ofile_info_HH{"FH"});
+  $r1_sorted_tblout_file = $r1_deolap_sorted_tblout_file;
 }
 
 parse_sorted_tbl_file($r1_sorted_tblout_file, $alg1, 1, \%opt_HH, \%width_H, \%seqidx_H, \%seqlen_H, 
@@ -1635,7 +1616,7 @@ sub parse_and_validate_model_files {
 #   $seqgap_HHAR:     2D hash of arrays, 1D key is CM model name, 2K key is sequence name, 
 #                     value is array of sequence start/stop regions of gaps
 #                     to sfetch for researching with intron models
-#   $opt_l_rename_HR: ref to hash of with original names for seqs renamed if -l
+#   $opt_l_renamed_HR:ref to hash of with original names for seqs renamed if -l
 #   $long_out_FH:     file handle for long output file, already open
 #   $short_out_FH:    file handle for short output file, already open
 #   $FH_HR:           ref to hash of file handles, including "cmd"
@@ -1655,7 +1636,7 @@ sub parse_sorted_tbl_file {
   my $sub_name = "parse_sorted_tbl_file";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $seqgap_HHAR, $opt_l_rename_HR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
+  my ($sorted_tbl_file, $alg, $round, $opt_HHR, $width_HR, $seqidx_HR, $seqlen_HR, $family_HR, $domain_HR, $accept_HR, $question_HR, $seqgap_HHAR, $opt_l_renamed_HR, $long_out_FH, $short_out_FH, $FH_HR) = @_;
 
   # validate search method (sanity check) 
   if(($alg ne "fast") && ($alg ne "hmmonly") && ($alg ne "slow") && ($alg ne "blastn")) { 
@@ -1784,8 +1765,8 @@ sub parse_sorted_tbl_file {
 
     # two sanity checks:
     # make sure we have sequence length information for this sequence
-    my $target2lookup = ((defined $opt_l_rename_HR) && (defined $opt_l_rename_HR->{$target})) ?
-        $opt_l_rename_HR->{$target} : $target;
+    my $target2lookup = ((defined $opt_l_renamed_HR) && (defined $opt_l_renamed_HR->{$target})) ?
+        $opt_l_renamed_HR->{$target} : $target;
     if(! exists $seqlen_HR->{$target2lookup}) { 
       ofile_FAIL("ERROR found sequence $target we didn't read length information for in $seqstat_file", 1, $FH_HR);
     }
@@ -1804,8 +1785,8 @@ sub parse_sorted_tbl_file {
     # for new sequence just read
     if((defined $prv_target) && ($prv_target ne $target)) { 
       if($nhits_above_thresh > 0) { 
-        my $prv_target2lookup = ((defined $opt_l_rename_HR) && (defined $opt_l_rename_HR->{$prv_target})) ?
-            $opt_l_rename_HR->{$prv_target} : $prv_target;
+        my $prv_target2lookup = ((defined $opt_l_renamed_HR) && (defined $opt_l_renamed_HR->{$prv_target})) ?
+            $opt_l_renamed_HR->{$prv_target} : $prv_target;
         output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
                           $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
                           $prv_target, $prv_target2lookup, $seqidx_HR->{$prv_target2lookup}, abs($seqlen_HR->{$prv_target2lookup}), 
@@ -1877,11 +1858,11 @@ sub parse_sorted_tbl_file {
 
   # output data for final sequence
   if($nhits_above_thresh > 0) { 
-    if((defined $opt_l_rename_HR) && (defined $opt_l_rename_HR->{$prv_target})) {
-      $prv_target = $opt_l_rename_HR->{$prv_target};
+    if((defined $opt_l_renamed_HR) && (defined $opt_l_renamed_HR->{$prv_target})) {
+      $prv_target = $opt_l_renamed_HR->{$prv_target};
     }
-    my $prv_target2lookup = ((defined $opt_l_rename_HR) && (defined $opt_l_rename_HR->{$prv_target})) ?
-        $opt_l_rename_HR->{$prv_target} : $prv_target;
+    my $prv_target2lookup = ((defined $opt_l_renamed_HR) && (defined $opt_l_renamed_HR->{$prv_target})) ?
+        $opt_l_renamed_HR->{$prv_target} : $prv_target;
     output_one_target($short_out_FH, $long_out_FH, $opt_HHR, $round, $have_accurate_coverage, $have_model_coords, $have_evalues, 
                       $sort_by_evalues, $width_HR, $domain_HR, $accept_HR, $question_HR, 
                       $prv_target, $prv_target2lookup, $seqidx_HR->{$prv_target2lookup}, abs($seqlen_HR->{$prv_target2lookup}), 
@@ -5214,6 +5195,7 @@ sub fetch_pass_fail_per_model_gaps {
 #
 # Dies:     if there's a problem parsing $in_file
 #
+#################################################################
 sub prune_blastn_outfmt6 {
   my $sub_name = "prune_blastn_outfmt6";
   my $nargs_expected = 4;
@@ -5240,3 +5222,63 @@ sub prune_blastn_outfmt6 {
   return;
 }
 
+#################################################################
+# Subroutine: longtarget_remove_overlaps_from_sorted_tbl_file()
+# Incept:     EPN, Thu Mar 20 13:40:32 2025
+#
+# Purpose:    Open a sorted tbl out file and remove lower scoring
+#             overlaps and create a new file with only the
+#             surviving hits.
+#
+# Args:
+# $in_file:          name of input sorted tblout file 
+# $out_file:         name of output file with overlapping hits removed
+# $opt_l_renamed_HR: ref to hash of renamed sequences, key is <newname>
+#                    value is <originalname>, <newname> = <originalname><start>.<stop>
+# $opt_HHR:          ref to 2D hash of cmdline options
+# $FH_HR:            ref to hash of file handles, including "cmd"
+#
+# Returns:  void
+#
+# Dies:     if there's a problem parsing $in_file
+#
+#################################################################
+sub longtarget_remove_overlaps_from_sorted_tbl_file {
+  my $sub_name = "longtarget_remove_overlaps_from_sorted_tbl_file";
+  my $nargs_expected = 5;
+  if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
+
+  my ($in_file, $out_file, $opt_l_renamed_HR, $opt_HHR, $FH_HR) = @_;
+
+  open(IN,  "<", $in_file)  || ofile_FileOpenFailure($in_file,  $sub_name, $!, "reading", $FH_HR);
+  open(OUT, ">", $out_file) || ofile_FileOpenFailure($out_file, $sub_name, $!, "writing", $FH_HR);
+
+  my $noverlap_thresh = opt_IsUsed("--l_noverlap", $opt_HHR) ?
+      opt_Get("--l_noverlap", $opt_HHR) : 0;
+
+  my @kept_region_A = ();
+  while(my $line = <IN>) {
+    chomp $line;
+    my @el_A = split(/\s+/, $line);
+    my ($seqname, $start, $end) = ($el_A[0], $el_A[7], $el_A[8]);
+    my $cur_region = $start . "." . $end;
+    my $found_overlap = 0;
+    foreach my $region (@kept_region_A) {
+      my ($noverlap, $overlap_reg) = get_overlap($cur_region, $region, $FH_HR);
+      if($noverlap > $noverlap_thresh) {
+        $found_overlap = 1;
+      }
+    }
+    if(! $found_overlap) { 
+      # make new line, modify first token (seq name)
+      my $new_seqname = $seqname . "." . $cur_region;
+      $opt_l_renamed_HR->{$new_seqname} = $seqname;
+      $line =~ s/^\S+//;
+      $line =  $new_seqname . " " . $line;
+      print OUT $line . "\n";
+      push(@kept_region_A, $cur_region);
+    }
+  }
+  close(IN);
+  close(OUT);
+}
