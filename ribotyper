@@ -119,6 +119,7 @@ $opt_group_desc_H{++$g} = "options that modify the behavior of --1slow or --2slo
 #       option               type   default                group  requires incompat    preamble-output                   help-output    
 opt_Add("--mid",          "boolean", 0,                       $g,  undef,  "--max",    "use --mid instead of --rfam",   "with --1slow/--2slow use cmsearch --mid option instead of --rfam", \%opt_HH, \@opt_order_A);
 opt_Add("--max",          "boolean", 0,                       $g,  undef,  "--mid",    "use --max instead of --rfam",   "with --1slow/--2slow use cmsearch --max option instead of --rfam", \%opt_HH, \@opt_order_A);
+opt_Add("--anytrunc",     "boolean", 0,                       $g,  undef,   undef,     "use cmsearch --anytrunc option","with --1slow/--2slow use cmsearch --anytrunc option", \%opt_HH, \@opt_order_A);
 opt_Add("--smxsize",         "real", undef,                   $g,"--max",   undef,     "with --max, use --smxsize <x>", "with --max also use cmsearch --smxsize <x>", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options that modify the behavior of --1blast";
@@ -133,6 +134,7 @@ opt_Add("--blastnge",     "real",       "1",     $g, "--1blast", undef,        "
 $opt_group_desc_H{++$g} = "options that modify the behavior of -l";
 #       option               type   default   group  requires  incompat        preamble-output                                                help-output    
 opt_Add("--l_noverlap",   "integer",    "0",     $g,     "-l", undef,          "set maximum allowed number of overlapping nucleotides to <n>","set maximum allowed number of overlapping nucleotides to <n>", \%opt_HH, \@opt_order_A);
+opt_Add("--l_anyoverlap", "boolean",      0,     $g,     "-l", "--l_noverlap", "do not remove overlapping hits",                              "do not remove overlapping hits", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for parallelizing cmsearch on a compute farm";
 #     option            type       default                group   requires incompat    preamble-output                                                help-output    
@@ -211,6 +213,7 @@ my $options_okay =
 # options that affect --1slow and --2slow
                 'mid'          => \$GetOptions_H{"--mid"},
                 'max'          => \$GetOptions_H{"--max"},
+                'anytrunc'     => \$GetOptions_H{"--anytrunc"},
                 'smxsize=s'    => \$GetOptions_H{"--smxsize"},
 # options for blastn
                 'blastnws=s'   => \$GetOptions_H{"--blastnws"},
@@ -221,6 +224,7 @@ my $options_okay =
                 'blastnge=s'   => \$GetOptions_H{"--blastnge"},
 # options for -l
                 'l_noverlap=s' => \$GetOptions_H{"--l_noverlap"},
+                'l_anyoverlap' => \$GetOptions_H{"--l_anyoverlap"},
 # options for parallelization
                 'p'            => \$GetOptions_H{"-p"},
                 'q=s'          => \$GetOptions_H{"-q"},
@@ -296,6 +300,12 @@ if(opt_Get("--max", \%opt_HH)) {
   if((! opt_Get("--1slow", \%opt_HH)) &&
      (! opt_Get("--2slow", \%opt_HH))) { 
     die "ERROR, --max requires one of --1slow or --2slow";
+  }
+}
+if(opt_IsUsed("--anytrunc", \%opt_HH)) {
+  if((! opt_IsUsed("--1slow", \%opt_HH)) &&
+     (! opt_IsUsed("--2slow", \%opt_HH))) {
+    die "ERROR, --anytrunc requires one of --1slow or --2slow";
   }
 }
 if(opt_IsUsed("--lowpdiff",\%opt_HH) || opt_IsUsed("--vlowpdiff",\%opt_HH)) { 
@@ -1770,10 +1780,13 @@ sub parse_sorted_tbl_file {
     if(! exists $seqlen_HR->{$target2lookup}) { 
       ofile_FAIL("ERROR found sequence $target we didn't read length information for in $seqstat_file", 1, $FH_HR);
     }
-    # make sure we haven't output information for this sequence already
-    if((($round == 1) && ($seqlen_HR->{$target2lookup} < 0)) || 
-       (($round == 2) && ($seqlen_HR->{$target2lookup} > 0)))  { 
-      ofile_FAIL("ERROR found line with target $target previously output, did you sort by sequence name?", 1, $FH_HR);
+    # make sure we haven't output information for this sequence already (unless -l)
+    printf("HEYA round: $round target2lookup: $target2lookup seqlen_HR->{target2lookup}: $seqlen_HR->{$target2lookup}\n");
+    if(! $do_longtarget) { 
+      if((($round == 1) && ($seqlen_HR->{$target2lookup} < 0)) || 
+         (($round == 2) && ($seqlen_HR->{$target2lookup} > 0)))  { 
+        ofile_FAIL("ERROR found line with target $target previously output, did you sort by sequence name?", 1, $FH_HR);
+      }
     }
     # finished parsing data for this line
     ######################################################
@@ -4134,6 +4147,10 @@ sub determine_search_opts {
     if(opt_Get("--noali", $opt_HHR)) { 
       $alg_opts .= " --noali ";
     }
+    if(opt_Get("--anytrunc", $opt_HHR)) { 
+      $alg_opts = " --anytrunc "; 
+    }
+
   }
   elsif($alg eq "hmmonly") { 
     $alg_opts = " --hmmonly ";
@@ -5255,23 +5272,30 @@ sub longtarget_remove_overlaps_from_sorted_tbl_file {
 
   my $noverlap_thresh = opt_IsUsed("--l_noverlap", $opt_HHR) ?
       opt_Get("--l_noverlap", $opt_HHR) : 0;
-
+  my $do_anyoverlap = opt_IsUsed("--l_anyoverlap", $opt_HHR);
+  
   my @kept_region_A = ();
   while(my $line = <IN>) {
     chomp $line;
     my @el_A = split(/\s+/, $line);
-    my ($seqname, $start, $end) = ($el_A[0], $el_A[7], $el_A[8]);
+    my ($seqname, $mdlname, $start, $end) = ($el_A[0], $el_A[2], $el_A[7], $el_A[8]);
     my $cur_region = $start . "." . $end;
+    my $cur_strand = ($start <= $end) ? "+" : "-";
     my $found_overlap = 0;
-    foreach my $region (@kept_region_A) {
-      my ($noverlap, $overlap_reg) = get_overlap($cur_region, $region, $FH_HR);
-      if($noverlap > $noverlap_thresh) {
-        $found_overlap = 1;
+    if(! $do_anyoverlap) { 
+      foreach my $region (@kept_region_A) {
+        my ($kept_start, $kept_stop, $kept_strand) = decompose_region_str($region, $FH_HR);
+        if($cur_strand eq $kept_strand) { 
+          my ($noverlap, $overlap_reg) = get_overlap($cur_region, $region, $FH_HR);
+          if($noverlap > $noverlap_thresh) {
+            $found_overlap = 1;
+          }
+        }
       }
     }
     if(! $found_overlap) { 
       # make new line, modify first token (seq name)
-      my $new_seqname = $seqname . "." . $cur_region;
+      my $new_seqname = $seqname . "." . $mdlname . "." . $cur_region;
       $opt_l_renamed_HR->{$new_seqname} = $seqname;
       $line =~ s/^\S+//;
       $line =  $new_seqname . " " . $line;
