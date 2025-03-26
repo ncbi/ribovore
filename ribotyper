@@ -4177,7 +4177,7 @@ sub determine_search_opts {
 # Incept:      EPN, Thu Jan  4 15:40:44 2018
 #
 # Purpose:     Determine the unix sort command to properly sort
-#              the tblout file given an algorihtm type of either
+#              the tblout file given an algorithm type of either
 #              "fast", "hmmonly", or "slow" and a reference to the 
 #              command line options.
 #
