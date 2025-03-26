@@ -217,6 +217,7 @@ ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
 
 # run ribotyper for each library
 my $lkey;
+my @longfile_A = ();
 foreach $lkey (@lkey_A) {
   my $ribotyper_dir_out    = $dir_out . "/" . $dir_out_tail . "." . $lkey;
   my $ribotyper_stdoutfile = $dir_out . "/" . $dir_out_tail . "." . $lkey . ".out";
@@ -227,7 +228,18 @@ foreach $lkey (@lkey_A) {
   $start_secs = ofile_OutputProgressPrior("Running ribotyper for library $lkey on full sequence file", $progress_w, $log_FH, *STDOUT);
   utl_RunCommand($ribotyper_cmd, opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
   $ribotyper_secs = ofile_OutputProgressComplete($start_secs, undef, $log_FH, *STDOUT);
+  push(@longfile_A, $ribotyper_longfile);
 }
+
+# combine long out files for each
+my $combined_longfile_unsorted = $dir_out . "/" . $dir_out_tail . ".long.out.unsorted";
+my $combined_longfile = $dir_out . "/" . $dir_out_tail . ".long.out";
+for(my $f = 0; $f < scalar(@longfile_A); $f++) { 
+  my $append_char = ($f == 0) ? ">" : ">>";
+  utl_RunCommand("grep -v ^\# $longfile_A[$f] $append_char $combined_longfile_unsorted", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
+}
+# sort by sequence, and then sequence position 
+utl_RunCommand("cat $combined_longfile_unsorted | sort -k 2,2 -k 17,17n > $combined_longfile", opt_Get("-v", \%opt_HH), 0, $ofile_info_HH{"FH"});
 
 ##########
 # Conclude
