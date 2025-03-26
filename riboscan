@@ -220,7 +220,7 @@ my $lkey;
 foreach $lkey (@lkey_A) {
   my $ribotyper_dir_out    = $dir_out . "/" . $dir_out_tail . "." . $lkey;
   my $ribotyper_stdoutfile = $dir_out . "/" . $dir_out_tail . "." . $lkey . ".out";
-  my $ribotyper_cmd        = $execs_H{"ribotyper"} . " -m " . $lkey_ldir_H{$lkey} . " -i " . $lkey_info_H{$lkey} . " $seq_file $ribotyper_dir_out > $ribotyper_stdoutfile";
+  my $ribotyper_cmd        = $execs_H{"ribotyper"} . " -m " . $lkey_ldir_H{$lkey} . " -i " . $lkey_info_H{$lkey} . " " . $lkey_opts_H{$lkey} . " $seq_file $ribotyper_dir_out > $ribotyper_stdoutfile";
   my $ribotyper_secs       = 0.; # total number of seconds elapsed for ribotyper stage
   my $ribotyper_longfile   = $ribotyper_dir_out . "/" . $dir_out_tail . "." . $lkey . ".ribotyper.long.out";
   my $ribotyper_logfile    = $ribotyper_dir_out . "/" . $dir_out_tail . "." . $lkey . ".ribotyper.log";
