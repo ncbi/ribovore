@@ -276,21 +276,34 @@ sub ribo_ParseSeqstatCompTblFile {
 #   $family_modellen_HR:   reference to hash, key is family name, value is consensus model length, FILLED HERE
 #   $family_rtname_HAR     reference to hash, key is family name, value is array of ribotyper model 
 #                          names to align with this model, FILLED HERE
+#   $opt_i_used:           '1' if -i used to specify non-default modelinfo file, else '0'
 #   $FH_HR:                ref to hash of file handles
 #
 # Returns:     void; 
 #
 ################################################################# 
 sub ribo_ParseRAModelinfoFile { 
-  my $nargs_expected = 7;
+  my $nargs_expected = 8;
   my $sub_name = "ribo_ParseRAModelinfoFile";
   if(scalar(@_) != $nargs_expected) { printf STDERR ("ERROR, $sub_name entered with %d != %d input arguments.\n", scalar(@_), $nargs_expected); exit(1); } 
 
-  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR, $FH_HR) = @_;
+  my ($modelinfo_file, $env_ribo_dir, $family_order_AR, $family_modelfile_HR, $family_modellen_HR, $family_rtname_HAR, $opt_i_used, $FH_HR) = @_;
 
   open(IN, $modelinfo_file) || ofile_FileOpenFailure($modelinfo_file, $sub_name, $!, "reading", $FH_HR);
 
   my %family_exists_H = ();
+
+  # determine directory that $modelinfo_file exists in if -i used, all models must 
+  # either be in this directory or in $env_ribo_dir
+  my $non_df_modelinfo_dir = undef; # directory with modelinfo file, if -i used
+  if($opt_i_used) { 
+    $non_df_modelinfo_dir = ribo_GetDirPath($modelinfo_file);
+  }
+  my $in_df;    # true if model file exists in default model dir
+  my $in_nondf; # true if model file exists in non-default model dir
+  my $df_model_file = undef;
+  my $non_df_model_file = undef;
+
   while(my $line = <IN>) { 
     ## each line has information on 1 family and at least 4 tokens: 
     ## token 1: family.domain name in ribotyper output files, referred to as the 'family' below (e.g. SSU.Bacteria)
@@ -320,13 +333,46 @@ sub ribo_ParseRAModelinfoFile {
       if(defined $family_exists_H{$family}) {
         ofile_FAIL("ERROR in $sub_name, family $family (first token) exists in more than one line in $modelinfo_file", 1, $FH_HR);  
       }
+      # make sure that $modelfile exists, either in $env_ribo_dir or, if
+      # -i was used, in the same directory that $modelinfo_file is in
+      $df_model_file = $env_ribo_dir . $modelfile;
+      if($opt_i_used) {   
+        $non_df_model_file = $non_df_modelinfo_dir . $modelfile;
+        $in_nondf = utl_FileValidateExistsAndNonEmpty($non_df_model_file, undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+        $in_df    = utl_FileValidateExistsAndNonEmpty($df_model_file,     undef, $sub_name, 0, $FH_HR); # don't die if it doesn't exist
+        # if it exists in both places, use the -i specified version
+        if(($in_nondf == 0) && ($in_df == 0)) { 
+          ofile_FAIL("ERROR in $sub_name, looking for model file $modelfile, did not find it in the two places it's looked for:\ndirectory $non_df_modelinfo_dir (where model info file specified with -i is) AND\ndirectory $env_ribo_dir (default model directory)\n", 1, $FH_HR);
+        }
+        elsif(($in_nondf == -1) && ($in_df == 0)) { 
+          ofile_FAIL("ERROR in $sub_name, looking for model file $modelfile, it exists as $non_df_model_file but is empty", 1, $FH_HR);
+        }
+        elsif(($in_nondf == 0) && ($in_df == -1)) { 
+          ofile_FAIL("ERROR in $sub_name, looking for model file $modelfile, it exists as $df_model_file but is empty", 1, $FH_HR);
+        }
+       elsif($in_nondf == 1) { 
+          $modelfile = $non_df_model_file;
+        }
+        elsif($in_df == 1) { 
+          $modelfile = $df_model_file;
+        }
+        else { 
+          ofile_FAIL("ERROR in $sub_name, looking for model file, unexpected situation (in_nondf: $in_nondf, in_df: $in_df)\n", 1, $FH_HR);
+        }
+      }     
+      else { # $opt_i_used is FALSE, -i not used, models must be in $env_ribo_dir
+        utl_FileValidateExistsAndNonEmpty($df_model_file, "model file name read from default model info file", $sub_name, 1, $FH_HR); # die if it doesn't exist
+        $modelfile = $df_model_file;
+      }
       push(@{$family_order_AR}, $family);
-      $family_modelfile_HR->{$family}  = $env_ribo_dir . "/" . $modelfile;
+      $family_modelfile_HR->{$family}  = $modelfile;
       $family_modellen_HR->{$family}   = $modellen;
       @{$family_rtname_HAR->{$family}} = (@rtname_A);
       $family_exists_H{$family} = 1;
     }
   }
+
+
   close(IN);
 
   return;

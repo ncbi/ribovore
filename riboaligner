@@ -318,7 +318,7 @@ my %family_rtname_HA   = (); # key is family name (e.g. "SSU.Archaea") from @fam
 my $family;
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
-ribo_ParseRAModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelfile_H, \%family_modellen_H, \%family_rtname_HA, $ofile_info_HH{"FH"});
+ribo_ParseRAModelinfoFile($modelinfo_file, $df_model_dir, \@family_order_A, \%family_modelfile_H, \%family_modellen_H, \%family_rtname_HA, opt_Get("-i", \%opt_HH), $ofile_info_HH{"FH"});
 # NOTE: the array of ribotyper models in family_rtname_HA for each family should match the models that are assigned to 
 # family $family in ribotyper, as encoded in the ribotyper model file, but THIS IS NOT CURRENTLY CHECKED FOR!
 
