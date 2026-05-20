@@ -11,3 +11,4 @@
 # Fourth token is the ribotyper accept file name for that mode.
 16S 16S_centroids      ribotyper.modelinfo ribosensor.ssu-arc-bac.accept
 18S 18S_centroids.1091 ribotyper.modelinfo ribosensor.ssu-euk.accept
+23S LSU_prokaryote_rRNA ribotyper.modelinfo ribosensor.lsu-arc-bac.accept
