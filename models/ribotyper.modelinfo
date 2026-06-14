@@ -14,6 +14,7 @@ SSU_rRNA_cyanobacteria            SSU Bacteria           rt.SSU_rRNA_cyanobacter
 LSU_rRNA_archaea                  LSU Archaea            rt.LSU_rRNA_archaea.enone.cm
 LSU_rRNA_bacteria                 LSU Bacteria           rt.LSU_rRNA_bacteria.enone.cm
 LSU_rRNA_eukarya                  LSU Eukarya            rt.LSU_rRNA_eukarya.enone.cm
+LSU_rRNA_microsporidia            LSU Euk-Microsporidia  rt.LSU_rRNA_microsporidia.cm
 SSU_rRNA_apicoplast               SSU Euk-Apicoplast     rt.SSU_rRNA_apicoplast.enone.cm
 SSU_rRNA_chloroplast_pilostyles   SSU Chloroplast        rt.SSU_rRNA_chloroplast_pilostyles.enone.cm
 SSU_rRNA_mitochondria_amoeba      SSU Mito-Amoeba        rt.SSU_rRNA_mitochondria_amoeba.enone.cm
@@ -22,3 +23,12 @@ SSU_rRNA_mitochondria_fungi       SSU Mito-Fungi         rt.SSU_rRNA_mitochondri
 SSU_rRNA_mitochondria_kinetoplast SSU Mito-Kinetoplast   rt.SSU_rRNA_mitochondria_kinetoplast.enone.cm  
 SSU_rRNA_mitochondria_plant       SSU Mito-Plant         rt.SSU_rRNA_mitochondria_plant.enone.cm  
 SSU_rRNA_mitochondria_protist     SSU Mito-Protist       rt.SSU_rRNA_mitochondria_protist.enone.cm  
+LSU_rRNA_mito_vertebrate                 LSU Mito-Vertebrate           rt.LSU_rRNA_mito_vertebrate.cm
+LSU_rRNA_mito_bilateria                  LSU Mito-Bilateria            rt.LSU_rRNA_mito_bilateria.cm
+LSU_rRNA_mito_arthropod                  LSU Mito-Arthropod            rt.LSU_rRNA_mito_arthropod.cm
+LSU_rRNA_mito_eukaryote                  LSU Mito-Eukaryote            rt.LSU_rRNA_mito_eukaryote.cm
+LSU_rRNA_mito_plant                      LSU Mito-Plant                rt.LSU_rRNA_mito_plant.cm
+LSU_rRNA_mito_nematode                   LSU Mito-Nematode             rt.LSU_rRNA_mito_nematode.cm
+LSU_rRNA_mito_kinetoplast                LSU Mito-Kinetoplast          rt.LSU_rRNA_mito_kinetoplast.cm
+LSU_rRNA_chloroplast                     LSU Chloroplast               rt.LSU_rRNA_chloroplast.cm
+LSU_rRNA_apicoplast                      LSU Euk-Apicoplast            rt.LSU_rRNA_apicoplast.cm
