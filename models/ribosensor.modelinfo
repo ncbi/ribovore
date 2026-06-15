@@ -16,3 +16,7 @@
 16S 16S_centroids       ribotyper.modelinfo ribosensor.ssu-arc-bac.accept 2000
 18S 18S_centroids.1091  ribotyper.modelinfo ribosensor.ssu-euk.accept     2000
 23S LSU_prokaryote_rRNA ribotyper.modelinfo ribosensor.lsu-arc-bac.accept 7500
+16S_LSU 16S_LSU_centroids  ribotyper.modelinfo ribosensor.16S_LSU.accept   3000
+23S_LSU 23S_LSU_centroids  ribotyper.modelinfo ribosensor.23S_LSU.accept   7500
+28S 28S_centroids          ribotyper.modelinfo ribosensor.28S.accept       7500
+12S 12S_centroids          ribotyper.modelinfo ribosensor.12S.accept       2000
