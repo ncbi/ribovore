@@ -149,7 +149,7 @@ BX569694.1/342339-340856               ACAACGGAGAGUUUGAUCCUGGCUCAGGAUGAACGCUGGCG
 #=GR BX569694.1/342339-340856       PP ********************************************************************.........8889.........9999..............8888.........*******************************************************************************
 CP000240.1/1447557-1449029             GACACGGAGAGUUUGAUCCUGGCUCAGGAUGAACGCUGGCGGUAUGCUUAACACAUGCAAGUCGCACG.......gACACC.........UUCG..............GGUGU.......uAGUGGCGGACGGGUGAGUAACACGUAGGAAUCUACCCUCAGGCGGGGGAUAACAGCUGGAAACGGCUGCUAAUACCCCA
 #=GR CP000240.1/1447557-1449029     PP ********************************************************************.......999999.........****..............99999.......8*******************************************************************************
-#=GC SS_cons                           ::::::::<<<<<_______>>>>>,{{{{-{{{{{{,{{{{{{{{{----{{{-{{{,,<<<--<<<........<<<<<.........____..............>>>>>........>>>>>>,,,,,,[[[,,,,,,((((((((-((---(((((((,<<<<----<<<<<<<____>>>>>>>----->>>>,
+#=GC SS_cons                           ::::::::<<<<<___AAA_>>>>>,{{{{-{{{{{{,{{{{{{{{{----{{{-{{{,,<<<--<<<........<<<<<.........____..............>>>>>........>>>>>>,,,,,,[[[,,,,,,((((((((-((---(((((((,<<<<----<<<<<<<____>>>>>>>----->>>>,
 #=GC RF                                aaaAuGGAGaGccUGAUCCUggCuCAGGauGaaCGCuGGCGGcguGCuUAACaCAuGCAAGcCGAaCg........gggcc.........uucG..............ggccc........cGuGgCGGACGGGuGAGUAACgCGcGgGcAuCUgcCcccaGGacgGGGAuAgCggccGGAAACggccGcUAAuACCcgA
 
 ABRS01000102.1/5081-3594               UAAG.CC.UUCG...GGU.AAAA.GA.UUUA.UUGCCCCAAGAGGAGCUCGCGUCUGAUUAGCUAGUUGGUG.AGGUAAGAGCUCACCAAGGCAGCGAUCAGUAGCUGGUCUGAGAGGACGAUCAGCCACACUGGGACUGAGACACGGCCCAGACUCCUACGGGAGGCAGCAGUGGGGAAUUUUCCGCAAUGGG....CG
@@ -351,7 +351,7 @@ BX569694.1/342339-340856               AAAGCCUGACGGAGCAACGCCGCGUGAGGGAUGA.AGGCCU
 #=GR BX569694.1/342339-340856       PP **********************************.*****************************************............****************************************************************************************************************
 CP000240.1/1447557-1449029             CAAGCCUGACGGAGCAAUACCGCGUGAGGGAGGA.AGGCCCUUGGGUUGUAAACCUCUUUUCUGGGGGACGAAA-G............CUGACGGUACCCCAGGAAUAAGCCUCGGCUAACUCCGUGCCAGCAGCCGCGGUAAGACGGAGGAGGCAAGCGUUAUCCGGAAUUAUUGGGCGUAAAGGGUACGUAGGCGGCU
 #=GR CP000240.1/1447557-1449029     PP **********************************.************************************886.5............79**************************************************************************************************************
-#=GC SS_cons                           ___>>>>>->>>>,}}-}}}}}},,<<<<-----.-<<<<____>>>>----->>>>,,,<<<<<<<---<_____............____>---->>>>>>--->,,<<<<<------<<<<<-----<<____>>------->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{{-----{,[[[[-[-[[[,<<<
+#=GC SS_cons                           ___>>>>>->>>>,}}-}}}}}},,<<<<-----.-<<<<____>>>>----->>>>,,,<<<<<<<---<_____............____>---->>>>>>--->,,<<<<<BBB---<<<<<-----<<_bbb>>------->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{{CC---{,[[[[-[-[[[,<<<
 #=GC RF                                AAAGCCcgACGGaGCaAcgCCGCGUGaGGGAgGA.AggccuuUGggccGUAAACCuCUUUccucagGGAAGAAgau............aUGACGGUACcugagGAAgaAGCcuCGGCUAAcuCCGUGCCAGCAGCCGCGGUAAuACGGagGagGCAaGCGuuauCCGGAAUuAUUGGGCGUAAAGcGucCGcAgGcGGcc
 
 ABRS01000102.1/5081-3594               AUUCAAGUCUGCUGUCAAAGCACGGGGCUUAACUCCGUUAAGGCAGUGGAAACUGAAUAGCUAGAGUGCCGUAGGGGUAGAGGGAAUUCCCGGUGUAGCGGUGAAAUGCGUAGAGAUCGGGAAGAACAUCGGUGGCGAAAGCGCUCUACUGGACGGCAACUGACACUCAG.GGACGAAAGCUAGGGGAGCGAAUGGGAUU
@@ -553,7 +553,7 @@ BX569694.1/342339-340856               AGAUACCCCUGUAGUCCUGGCCGUAA.ACGAUGAACACUAG
 #=GR BX569694.1/342339-340856       PP **************************.*****************************************************************************************************************************************************************************
 CP000240.1/1447557-1449029             AGAUACCCCAGUAGUCCUAGCCGUAA.ACGAUGGACACUAGACGUUGGCCGUAUCGACCCGGUCAGUGUCGGAGCUAACGCGUUAAGUGUCCCGCCUGGGGAGUACGCACGCAAGUGUGAAACUCAAAGGAAUUGACGGGGGCCCGCACAAGCGGUGGAGCAUGUGGUUUAAUUCGAUGCAACGCGAAGAACCUUACCAG
 #=GR CP000240.1/1447557-1449029     PP **************************.*****************************************************************************************************************************************************************************
-#=GC SS_cons                           ______>>>>--->>>>>>>>,,,,,.,,,,,((((((,,<<<<<<<<<<<<______>>>>>>>>>>>>,,,<<____>>,,,,,))))))}}}},<<<------<<<<____>>>>---->>>,,,,,,,,{{{{{-{{{{{{{-{{,,{{{{{{{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{
+#=GC SS_cons                           ______>>>>--->>>>>>>>,,,,,.,,,,,((((((,,<<<<<<<<<<<<______>>>>>>>>>>>>,,,<<__cc>>,,,,,))))))}}}},<<<------<<<<____>>>>---->>>,,,aaa,,{{{{{-{{{{{{{-{{,,{{{{{{{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{
 #=GC RF                                AGAUACCCCaGUAGcCCugGCcGUAA.ACGAUGgacaCUAGgcgcgGcgcGgAUCGACcCgcgCcgcgcCGuAGCuAACGCGUUAAGugucCCGCCUGgGGAGUACgCacGCAAguGcGAAACcCAAAGGAAUuGaCgGgGGCCCGCaCAAGCGguGgaGuacGuGGuUUAAuuCGAUGCAAcGCGaaGAACCUUACCag
 
 ABRS01000102.1/5081-3594               GGCUUGACAUGUCCGGAACCCCGGUGAAAGCUGGGGGUGCCUUCGGGAGCCGGAACACAGGUGGUGCAUGGCUGUCGUCAGCUCGUGUCGUGAGAUGUUGGGUUAAGUCCCGCAACGAGCGCAACCCUCGUCUUUAGUUGCCAGCA.UU.AAGUUGGGCACUCUAGAGAGACUGCCGGUGACAAACCGGAGGAAGGUGGG

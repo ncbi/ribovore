@@ -284,7 +284,7 @@ X75522.1/2-1511                  GCCUGCAGAGAG.UU.YGAUCCUGGCUCAGGAUGAACGCUAG.CGGU
 #=GR X75522.1/2-1511          PP 9***********.**.**************************.*******************************.............................999988878999*...........****9****.........*.************************************.*********.******
 X81903.1/2-1499                  UGCUGCAGAGAG.UUuCGAUCCUGGCUCAGGAUGAACGCUGG.CGGUAUGCUUAACACAUGCAAGUCGUACGGA.............................AGUUGUCA....................aAACU.........U.UAGUGGCGGACGGGUGAGAACAACAUAAGAAUCUGC.UUUUAGGAA.GAGGAU
 #=GR X81903.1/2-1499          PP ************.9956*************************.*******************************.............................****9988....................8****.........*.************************************.*********.******
-#=GC SS_cons                     :::::::::<<<.<<._______>>>>>,{{{{-{{{{{{,{.{{{{{{{{----{{{-{{{,,<<<--<<<<<.............................<<<<____.....................>>>>.........>.>>>>>>>,,,,,,[[[,,,,,,((((((((-((---.(((((((,<.<<<---
+#=GC SS_cons                     :::::::::<<<.<<.___AAA_>>>>>,{{{{-{{{{{{,{.{{{{{{{{----{{{-{{{,,<<<--<<<<<.............................<<<<____.....................>>>>.........>.>>>>>>>,,,,,,[[[,,,,,,((((((((-((---.(((((((,<.<<<---
 #=GC RF                          uuucaugGAGaG.uc.UGAUCCUggCuCAGGauGaaCGCuGG.CGGcauGCuUAACaCAuGCAAGucGaaCggg.............................gggcuuuu.....................gccc.........c.ccGuggCGgACGGGuGAGUAAcgCGcgaGcAccUgC.CcuugGGag.gGGgAu
 
 AB001684.1/22299-23791           AACCAUUGGAAACG.AUGGCUAAUACCUCGUAU......uGC.U......................GA.GA...AGUGAAA.GAU..............................................GAAA.AUCGCCAAUAGAUGGGCUUGCGG.CUGAUUA..GCUU....GUUGG.UG.AGGUAAUGGCUUAC
@@ -857,7 +857,7 @@ X75522.1/2-1511                  GA.GAUGACG..GUACCUGAAGA.AcUAAGCAUCGGCUAAaCCCCGU
 #=GR X75522.1/2-1511          PP **.*******..***********.9789*********9866***********************.***********************************************************.**********.*.**************************.******.**..*.**.********.**********
 X81903.1/2-1499                  U-.UUUGACG..GUACCCAACGA.A.UAAGCAUCGGCUAA.CUCCGUGCCAGCAGCCGCGGUAA.UACGGAGGAUGCAAGCGUUAUCCGGAAUCAUUGGGCGUAAAGCGUCUGUAGGUGGUUUU.UUAAGUCUAU.U.GUUAAAUAUUAAGGCUUAACCUUGAU.UCAGCA.UU..G.GA.AACUGUUA.AACUAGAGUA
 #=GR X81903.1/2-1499          PP 7..789****..***********.*.**************.***********************.***********************************************************.**********.*.**************************.******.**..*.**.********.**********
-#=GC SS_cons                     __._____>-..--->>>>>>--.>.,,,<<<<<------.<<<<<-----<<____>>-----.-->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{{-----{,[[[[-[-[[[,<<<<<.<<-<<<<<<<.<.<<<----<<<<<<<_____>>>>>>>.-->>>>.>>..>.>>.-->>>>>>.>>>,,,((((
+#=GC SS_cons                     __._____>-..--->>>>>>--.>.,,,<<<<<BBB---.<<<<<-----<<_bbb>>-----.-->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{{CC---{,[[[[-[-[[[,<<<<<.<<-<<<<<<<.<.<<<----<<<<<<<_____>>>>>>>.-->>>>.>>..>.>>.-->>>>>>.>>>,,,((((
 #=GC RF                          au.aaUGACG..GUAcCugagGA.a.UAAGCauCGGCUAA.CuCcGUGCCAGCAGCCGCGGUAA.uACgGaGGauGCAaGCGuuauCCGGAAUuAUUGGGCGUAAAGcGuCuGcAgGugGcuug.gcAaGuccgc.c.GucAAAucccagGGCUuAACCcuggg.caggCg.gc..g.ga.AACugcca.agCUaGaGuc
 
 AB001684.1/22299-23791           UGGUAGGGGCAGAGGGAAUUCCCGGUGGAGCGGUGAAAUGCGUAGAGAUCGGGAGGAACACCAA...AGGCGAAAGCAC.UCUGCUG.......GGCCAUAACUGAC..............................................................ACUGAGAGACGAAAGCGAGGGG.AGCAAAAG
@@ -1239,7 +1239,7 @@ X75522.1/2-1511                  GGAUUAGAUACCCCAGUAGUCCUGGCCGUAAACGAUGGAUACCAAGC
 #=GR X75522.1/2-1511          PP ************************************************.*******...**.***.*....**...................................................................................................****************************
 X81903.1/2-1499                  GGAUUAGAUACCCCAGUAGUCUUAGCCGUAAACGAUGGAUACUAGAUG.UUGUGCA..cUA.UUA.A....GU...................................................................................................UGUAUAGUAUCGUAGCUAACGCGUUAAG
 #=GR X81903.1/2-1499          PP ************************************************.*******..555.888.9....99...................................................................................................****************************
-#=GC SS_cons                     <<_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<.<<<<<<<...__.___._....__...................................................................................................>>>>>>>>>>>,,,<<____>>,,,,,)
+#=GC SS_cons                     <<_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<.<<<<<<<...__.___._....__...................................................................................................>>>>>>>>>>>,,,<<__cc>>,,,,,)
 #=GC RF                          GGAUUAGAuACCCCaGUAGuCCuaGCcGUAAACgAUGGauaCUAggcg.cuGcgcg...ua.uua.a....au...................................................................................................cgcgCagcgccguAGCUAACGCGUuAAG
 
 AB001684.1/22299-23791           UAUCCCGCCUGGGGAGUAUGCUCGCAAGAGUGAAACUCAAAGGAAUUGACGGGGGCCCGCACAAG.CGGUGGAGCAUGUGGUUUAAUUCGAUGCAACGCGAAGAACCUUACCAGGACUUGACAUG..CCACU..U-.......UUUCC..CU..GAAA..GG.G.GAAGU.U---...................-CCA..
@@ -1430,7 +1430,7 @@ X75522.1/2-1511                  UAUCCCGCCUGGGGAGUACGCUCGCAAGAGUGAAACUCAAAGGAAUU
 #=GR X75522.1/2-1511          PP *****************************************************************.***********************************************************..*****..**.......*****..**..****..**.*.*****.****...................****..
 X81903.1/2-1499                  UAUCCCGCCUGGGAAGUAUGCUCGCAAGAGUGAAACUCAAAGGAAUUGACGGGGGCCCGCACAAG.CGGUGGAGCAUGUGGUUUAAUUCGAUGCAACGCGAAGAACCUUACCAAAAUUUGACAUA..UCGUG..AA.......UUUUUagUU..GAAA..GAuG.AGAAG.UGCC...................UUAG..
 #=GR X81903.1/2-1499          PP *****************************************************************.***********************************************************..*****..**.......999983356..9999..6538.99***.****...................****..
-#=GC SS_cons                     )))))}}}},<<<------<<<<____>>>>---->>>,,,,,,,,{{{{{-{{{{{{{-{{,,{.{{{{{{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{{{{,,,,,(((..(((((..,,.......<<<<<..<<..____..>>.>.>>>>,.<<<<...................____..
+#=GC SS_cons                     )))))}}}},<<<------<<<<____>>>>---->>>,,,aaa,,{{{{{-{{{{{{{-{{,,{.{{{{{{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{{{{,,,,,(((..(((((..,,.......<<<<<..<<..____..>>.>.>>>>,.<<<<...................____..
 #=GC RF                          uauCCCGCCUGgGgAGUAugcucGCAAgaguGAAACuCAAAGGAAUuGaCgGgGGCCCGCaCAAG.CGguGcaGcauGuGGuUUAAuuCGAUGCAAcGCGaaGAACCUUACCaGggcUUGAcgug..ccgcg..aA.......ccccc..cc..gAAA..gg.g.ggggg.uccc...................uucg..
 
 AB001684.1/22299-23791           ........---G..A..GUGGACACAGGUGGUGCAUGGCUGUCGUCAGC.UCGUGUCUUGAGAUGUUGGGUUAAGUCCCGCAACGAGCGCAACCCUUGUUU..UGAAUUGCCA.....GU...A-...-A................................................UGG.GA.AAUUCAAAAGAC...
