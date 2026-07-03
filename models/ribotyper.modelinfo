@@ -16,7 +16,7 @@ LSU_rRNA_bacteria                 LSU Bacteria           rt.LSU_rRNA_bacteria.en
 LSU_rRNA_eukarya                  LSU Eukarya            rt.LSU_rRNA_eukarya.enone.cm
 LSU_rRNA_microsporidia            LSU Euk-Microsporidia  rt.LSU_rRNA_microsporidia.cm
 SSU_rRNA_apicoplast               SSU Euk-Apicoplast     rt.SSU_rRNA_apicoplast.enone.cm
-SSU_rRNA_chloroplast_pilostyles   SSU Chloroplast        rt.SSU_rRNA_chloroplast_pilostyles.enone.cm
+SSU_rRNA_chloroplast_pilostyles   SSU Chloroplast-Pilostyles rt.SSU_rRNA_chloroplast_pilostyles.enone.cm
 SSU_rRNA_mitochondria_amoeba      SSU Mito-Amoeba        rt.SSU_rRNA_mitochondria_amoeba.enone.cm
 SSU_rRNA_mitochondria_chlorophyta SSU Mito-Chlorophyta   rt.SSU_rRNA_mitochondria_chlorophyta.enone.cm  
 SSU_rRNA_mitochondria_fungi       SSU Mito-Fungi         rt.SSU_rRNA_mitochondria_fungi.enone.cm  
