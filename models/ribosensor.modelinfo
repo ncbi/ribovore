@@ -1,13 +1,22 @@
 # Model info file for ribosensor.
 # Contains information on name of modelinfo file and accept
-# file to use with ribotyper and BLAST database to use 
+# file to use with ribotyper and BLAST database to use
 # with rRNA_sensor.
-# 
-# Each non-# prefixed line has 4 tokens, separated by a space.
+#
+# Each non-# prefixed line has 4 or 5 tokens, separated by whitespace.
 # First token is a shorthand name for a mode, these are acceptable
 #   arguments to the ribosensor -m option.
 # Second token is the rRNA_sensor BLAST DB name for that mode.
 # Third token is the ribotyper modelinfo file name for that mode.
 # Fourth token is the ribotyper accept file name for that mode.
-16S 16S_centroids      ribotyper.modelinfo ribosensor.ssu-arc-bac.accept
-18S 18S_centroids.1091 ribotyper.modelinfo ribosensor.ssu-euk.accept
+# Fifth token (optional, added 2026-05) is the per-mode default for
+#   --Smaxlen (rRNA_sensor maximum sequence length). If omitted, the
+#   global default for --Smaxlen (2000) is used. The CLI value of
+#   --Smaxlen, if supplied, always overrides this per-mode default.
+16S 16S_centroids       ribotyper.modelinfo ribosensor.ssu-arc-bac.accept 2000
+18S 18S_centroids.1091  ribotyper.modelinfo ribosensor.ssu-euk.accept     2000
+23S LSU_prokaryote_rRNA ribotyper.modelinfo ribosensor.lsu-arc-bac.accept 7500
+16S_LSU 16S_LSU_centroids  ribotyper.modelinfo ribosensor.16S_LSU.accept   3000
+23S_LSU 23S_LSU_centroids  ribotyper.modelinfo ribosensor.23S_LSU.accept   7500
+28S 28S_centroids          ribotyper.modelinfo ribosensor.28S.accept       7500
+12S 12S_centroids          ribotyper.modelinfo ribosensor.12S.accept       2000

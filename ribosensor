@@ -67,7 +67,7 @@ $opt_group_desc_H{"1"} = "basic options";
 #     option            type       default               group   requires incompat    preamble-output                                    help-output    
 opt_Add("-h",           "boolean", 0,                        0,    undef, undef,      undef,                                               "display this help",                                       \%opt_HH, \@opt_order_A);
 opt_Add("-f",           "boolean", 0,                        1,    undef, undef,      "forcing directory overwrite",                       "force; if <output directory> exists, overwrite it",       \%opt_HH, \@opt_order_A);
-opt_Add("-m",           "string",  "16S",                    1,    undef, undef,      "set mode to <s>",                                   "set mode to <s>, possible <s> values are \"16S\" and \"18S\"", \%opt_HH, \@opt_order_A);
+opt_Add("-m",           "string",  "16S",                    1,    undef, undef,      "set mode to <s>",                                   "set mode to <s>, possible <s> values are \"16S\", \"18S\", \"23S\", \"16S_LSU\", \"23S_LSU\", \"28S\", and \"12S\"", \%opt_HH, \@opt_order_A);
 opt_Add("-c",           "boolean", 0,                        1,    undef, undef,      "assert that sequences are from cultured organisms", "assert that sequences are from cultured organisms",            \%opt_HH, \@opt_order_A);
 opt_Add("-n",           "integer", 0,                        1,    undef, "-p",       "use <n> CPUs",                                      "use <n> CPUs",                                            \%opt_HH, \@opt_order_A);
 opt_Add("-v",           "boolean", 0,                        1,    undef, undef,      "be verbose",                                        "be verbose; output commands to stdout as they're run",    \%opt_HH, \@opt_order_A);
@@ -330,7 +330,7 @@ open($combined_out_FH,      ">", $combined_out_file)      || ofile_FileOpenFailu
 open($combined_genbank_FH,    ">", $combined_genbank_file)    || ofile_FileOpenFailure($combined_genbank_file,    "ribosensor::main()", $!, "writing", $ofile_info_HH{"FH"});
 
 # parse the model info file
-my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_rrnasensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
+my ($sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file, $mode_smaxlen) = parse_modelinfo_file($modelinfo_file, $execs_H{"blastdbcmd"}, opt_Get("-m", \%opt_HH), $df_model_dir, $env_rrnasensor_dir, \%opt_HH, $ofile_info_HH{"FH"});
 
 my $qsub_prefix   = undef; # qsub prefix for submitting jobs to the farm
 my $qsub_suffix   = undef; # qsub suffix for submitting jobs to the farm
@@ -462,7 +462,11 @@ my @sensor_minid_A               = (); # [0..$i..$nseq_parts-1], minimum identit
 my $sensor_cmd = undef;                # command used to run sensor
 
 my $sensor_minlen    = opt_Get("--Sminlen",    \%opt_HH);
-my $sensor_maxlen    = opt_Get("--Smaxlen",    \%opt_HH);
+# --Smaxlen resolution: CLI value wins; otherwise per-mode default from
+# modelinfo (if specified); otherwise the global opt_Add default (2000).
+my $sensor_maxlen    = (opt_IsUsed("--Smaxlen", \%opt_HH) || (! defined $mode_smaxlen))
+                       ? opt_Get("--Smaxlen", \%opt_HH)
+                       : $mode_smaxlen;
 my $sensor_maxevalue = opt_Get("--Smaxevalue", \%opt_HH);
 my $sensor_secs      = 0.; # total number of seconds elapsed for rRNA_sensor stage
 my $sensor_p_secs    = 0.; # if -p: summed number of seconds elapsed for all rRNA_sensor jobs
@@ -2519,10 +2523,12 @@ sub human_to_genbank_fail_message {
 #   $opt_HHR:           ref to 2D hash of cmdline options (needed to determine if -i was used)
 #   $FH_HR:             ref to hash of file handles, including "cmd"
 #
-# Returns:     3 values:
+# Returns:     4 values:
 #              $sensor_blastdb:      name of BLAST DB to supply to rRNA_sensor
 #              $ribo_modelinfo_file: path to ribotyper model info file to supply to ribotyper
 #              $ribo_accept_file:    path to ribotyper accept file to supply to ribotyper
+#              $mode_smaxlen:        per-mode default for --Smaxlen, or undef if not
+#                                    specified in the modelinfo file (legacy 4-token line)
 # 
 # Dies:        - If $modelinfo_file cannot be opened.
 #              - If BLAST DB read from relevant line of $modelinfo_file is not in $BLASTDB path
@@ -2546,6 +2552,7 @@ sub parse_modelinfo_file {
   my $ret_ribo_modelinfo_file = undef;
   my $ret_ribo_accept_file = undef;
   my $ret_sensor_blastdb   = undef;
+  my $ret_mode_smaxlen     = undef;
 
   # determine directory that $modelinfo_file exists in if -i used, all files must 
   # either be in this directory or in $ribo_model_dir
@@ -2566,16 +2573,22 @@ sub parse_modelinfo_file {
     if($line !~ m/^\#/ && $line =~ m/\w/) { # skip comment lines and blank lines
       chomp $line;
       my @el_A = split(/\s+/, $line);
-      if(scalar(@el_A) != 4) { 
-        ofile_FAIL("ERROR didn't read 4 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
+      my $nel = scalar(@el_A);
+      if($nel != 4 && $nel != 5) {
+        ofile_FAIL("ERROR didn't read 4 or 5 tokens in model info input file $modelinfo_file, line $line", 1, $FH_HR);
       }
-      my($mode, $sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = (@el_A);
+      my($mode, $sensor_blastdb, $ribo_modelinfo_file, $ribo_accept_file) = @el_A[0..3];
+      my $mode_smaxlen = ($nel == 5) ? $el_A[4] : undef;
+      if(defined $mode_smaxlen && $mode_smaxlen !~ /^\d+$/) {
+        ofile_FAIL("ERROR in $sub_name, 5th token (per-mode --Smaxlen default) is not a non-negative integer: $mode_smaxlen, line $line", 1, $FH_HR);
+      }
       if($mode eq $in_mode) { # we found our mode, now verify that required files exist
-        if($found_mode) { 
+        if($found_mode) {
           ofile_FAIL("ERROR in $sub_name, two lines match mode $in_mode", 1, $ofile_info_HH{"FH"});
         }
         $found_mode = 1;
         $ret_sensor_blastdb = $sensor_blastdb; # we don't verify that this exists
+        $ret_mode_smaxlen   = $mode_smaxlen;
         # make sure this blastdb exists, if this command does not fail, then it does
         utl_RunCommand("$blastdbcmd -info -db $ret_sensor_blastdb > /dev/null", opt_Get("-v", $opt_HHR), 0, $ofile_info_HH{"FH"});
 
@@ -2651,5 +2664,5 @@ sub parse_modelinfo_file {
     }
   }
 
-  return ($ret_sensor_blastdb, $ret_ribo_modelinfo_file, $ret_ribo_accept_file);
+  return ($ret_sensor_blastdb, $ret_ribo_modelinfo_file, $ret_ribo_accept_file, $ret_mode_smaxlen);
 }

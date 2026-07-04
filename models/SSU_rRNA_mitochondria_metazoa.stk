@@ -251,7 +251,7 @@ AY819344.1/20-946                  CAAAGGCUUAGUCC.UGG.CCU...UAAAAUCAAUU.UU.UU.CC
 #=GR AY819344.1/20-946          PP **************.***.***...***********.**.**.*************.*******..*******************..***.*******..999.....877777................888.89******************..*96.5..333........358****************......*
 DQ852711.1/1-906                   AACUGCCUUGGCCC.UGG.GCA...CACCCCUGUCA.CC.CC.CAACGAUUACACA.UGCAAGC..AUCCACACUCCUGUGAGGA..CCC.----CAA..---......-CCCA................----------AUACGAUAUCAGGC..GCG.CUCUAUc......GGCUGCCCACGACAUCUAGC......U
 #=GR DQ852711.1/1-906           PP **************.***.***...***********.**.**.*************.*******..*******************..954.....122............2222..........................356***********..***.******9......********************......7
-#=GC SS_cons                       :::<<<<<______._>>.>>>...,{{{{{{{{{{.,{.{{.{{{{{[---[[[-.[[[,,<<..____>>,,,,,,(((,,,,..,<<.<<<----..<<<......_____................>>>---->>>->>,<<<--<-<<<..--<.<<_____......>>>->>>----->>>>,,<<......_
+#=GC SS_cons                       :::<<<<<___AAA._>>.>>>...,{{{{{{{{{{.,{.{{.{{{{{[---[[[-.[[[,,<<..____>>,,,,,,(((,,,,..,<<.<<<----..<<<......_____................>>>---->>>->>,<<<--<-<<<..--<.<<_____......>>>->>>----->>>>,,<<......_
 #=GC RF                            aAAaGgcuUGGUCC.Uag.cCu...Uccuguuaucu.uu.ug.cuaaaaUUAcACA.UGCAAGc..aUCcgCaccCCaGUGAaaA..ugc.CCuuaaa..ccc......uaaaa................ggguaaaaGGAgcaGGuAUcAGGc..ACa.ccaaua.......gguAgCCcAaaAgaCCUaGc......u
 
 AY656755.1/70-1023                 AA....GCCACACCCCCACGGGAUA...CAGCA...GUGAUAAAAAUUAAGC.CAUAAAC.............GAAAGUUUGA.CUAAG.CCAUACUAAAUA-...........GGGUUGGUAAA.UU.U.C.GUGCCAGCCACCGCGGUCAUACGA...UU....AACCCAAACUAAUAGG......cCUACGGCGUAA
@@ -420,7 +420,7 @@ AY819344.1/20-946                  AC....GCCACGCCCUCAAGGGUUA..uCAGCA...GUGAUAAAC
 #=GR AY819344.1/20-946          PP **....******************9..******...***************..59*****.............**********.*****.***********9............***********.**.*.*.************************...**....****************.......9999....888
 DQ852711.1/1-906                   AA...uGCCACGCCCCCACGGAACU...CAGCA...GUGAUUAACUUUUGGC.CAUGAGC.............UCACGCUCGA.CCAAG.AGAAAGGACUAAA..........aGAGCCGGCCAA.CC.C.C.GUGCCAGCCGCCGCGGUUACACGU...GG....GGCUCAAGACAACAAC.......ACCCGGCGUAA
 #=GR DQ852711.1/1-906           PP 77...7*******************...*****...****************.*******.............**********.*****.*********9999..........9***********.**.*.*.************************...**....****************.......***********
-#=GC SS_cons                       __....>>))),<<<<____>>>>,...,,]]]...]]]-],,,,,<-<<<-.--<<<<<.............____>>>>>-.>>>>,.}}-}}}}}},,,,...........<<<<<------.<<.<.<.<-----<<____>>------->>>...>>....>>>>>,}}}}}}}}}}.......,,,,[[[,,,,
+#=GC SS_cons                       __....>>))),<<<<____>>>>,...,,]]]...]]]-],,,,,<-<<<-.--<<<<<.............____>>>>>-.>>>>,.}}-}}}}}},,,,...........<<<<<BBB---.<<.<.<.<-----<<_bbb>>------->>>...>>....>>>>>,}}}}}}}}}}.......,,,,[[[CC,,
 #=GC RF                            ua....gCCACAccccCAcGggggu...CAGCA...GUgAuaAAcAUUgggC.aAUgaGc.............gaAAgCucGA.cccAG.uuAuagcaaaaaa...........ggGccGGUaAA.cc.u.c.GUGCCAGcCACCgCGGUUAuACga...gg....ggCccAagauaacagg.......aaaCGGCGUAA
 
 AY656755.1/70-1023                 AG..CGUGUU..CAAGA...............--UACUUUUACACUAAAGU......UAAA.ACUUAA.CU....AAGCCGUAA.AA..AGCUAC....AGUUA..UC.AU-.AAAAUAAAC.CACGAAA.GUGACUUUAUAAUA--........--AUCUGACUACACGA.UAGCUAAG.A.CCCAAAC.UGGGAUUAG
@@ -758,7 +758,7 @@ AY819344.1/20-946                  AUACCCUACUAUGCCAG.AUAGUAAACA----.------.....-
 #=GR AY819344.1/20-946          PP *****************.*********8.................5789998...........9....**************8.89...**********************************.***************************.************.****.*************.*****.......9.6*
 DQ852711.1/1-906                   AUACCCUACUAUGCCCU.GGCAUAAACCACGG.C-----.....---CAU--....---UGCCC.GCCAGAACACUACACGCGAAA...GCUUAAAACUCAAAGGGCUUGACGGUGUCUUACA.CCCACUUAGAGGAGCCUGUCCAAUAAU.CGAUACCCCACG.AAAA.ACCCCACCGCCUC.UUGCA.......CCAC
 #=GR DQ852711.1/1-906           PP *****************.**************.8.............233.........48***.*********************...**********************************.***************************.************.****.*************.*****.......****
-#=GC SS_cons                       ____>>>>--->>>>>>.>>,,,,,,,,,,<<.<<<<<_.....________....>>>>>>>,.]]],<<<------<<<<____...>>>>---->>>,,,,,,,,{{{{{-{{{{{{{--.-{{,,{{{{{[[[[[[[[[[[[,,,<<.<<________>>.>>,,.,,,,,,(((((((.-----.......----
+#=GC SS_cons                       ____>>>>--->>>>>>.>>,,,,,,,,,,<<.<<<<<_.....____cc__....>>>>>>>,.]]],<<<------<<<<____...>>>>---->>>,,,aaa,,{{{{{-{{{{{{{--.-{{,,{{{{{[[[[[[[[[[[[,,,<<.<<________>>.>>,,.,,,,,,(((((((.-----.......----
 #=GC RF                            AUACCCcACUAUGCcca.GcCaUAAACuaagg.caguua.....aauaACaa....aacugccC.GCCAGggaAcUACaaGCaAaA...GCuuAAAAccCAAAGGACUUGgCGGugccccAcA.uCcacCUAGAGGAGCCuGUccuAUAAu.CGAUAauCCaCG.aUaa.ACCUcACCccccc.UuGCc.......aauu
 
 AY656755.1/70-1023                 CAGUCUAUAUACCGCCAUCUU.CAGCAAACCCUC..AAAAGG..UA....GAACAG.UA.AGCACAAU..CAU......-UUUAC............................................................AUAAAAAAGUUAGGUCAAGGUGUA.....ACUUAU.GAG.G.UGGG.A.AGAAAU

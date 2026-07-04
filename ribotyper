@@ -83,6 +83,8 @@ $opt_group_desc_H{++$g} = "options related to cmsearch bit score thresholds";
 #     option                 type   default                group   requires incompat   preamble-output                                                     help-output    
 opt_Add("--minpsc",        "real",   "20.",                  $g,  undef,   undef,      "set minimum cmsearch bit score for primary hits to <x>",    "set minimum cmsearch bit score for primary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
 opt_Add("--minssc",        "real",   "10.",                  $g,  undef,   undef,      "set minimum cmsearch bit score for secondary hits to <x>",  "set minimum cmsearch bit score for secondary hits to include to <x> bits", \%opt_HH, \@opt_order_A);
+opt_Add("--minpscpp",      "real",   "0.15",                 $g,  undef,   undef,      "set minimum per-position (bits/nt) score for a competing family hit to <x>", "set minimum per-position (bits/nt) score for a non-winning family's hit to count toward *MultipleFamilies to <x>", \%opt_HH, \@opt_order_A);
+opt_Add("--abspsc",        "boolean", 0,                      $g,  undef,   undef,      "skip the per-position *MultipleFamilies filter, use only absolute bit score", "skip the new per-position (--minpscpp) filter when deciding if a non-winning family's hit competes for *MultipleFamilies", \%opt_HH, \@opt_order_A);
 
 $opt_group_desc_H{++$g} = "options for controlling which sequences PASS/FAIL (turning on optional failure criteria)";
 #     option                 type   default                group   requires incompat    preamble-output                                          help-output    
@@ -178,6 +180,8 @@ my $options_okay =
 # options controlling minimum bit score cutoff 
                 'minpsc=s'    => \$GetOptions_H{"--minpsc"},
                 'minssc=s'    => \$GetOptions_H{"--minssc"},
+                'minpscpp=s'  => \$GetOptions_H{"--minpscpp"},
+                'abspsc'      => \$GetOptions_H{"--abspsc"},
 # options controlling which sequences PASS/FAIL
                 'minusfail'    => \$GetOptions_H{"--minusfail"},
                 'scfail'       => \$GetOptions_H{"--scfail"},
@@ -2319,22 +2323,30 @@ sub output_one_target {
   # build up 'other_hits_string' string about other hits in other clans, if any
   my $other_hits_string = "";
   my $nfams = 1;
-  foreach my $family (keys %{$best_model_HHR}) { 
-    if($family ne $wfamily) { 
-      if(exists($best_model_HHR->{$family}{"model"})) { 
-        if($other_hits_string ne "") { $other_hits_string .= ","; }
-        if($have_evalues) { 
-          $other_hits_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
-                                   $family, $best_model_HHR->{$family}{"model"}, $best_model_HHR->{$family}{"evalue"}, $best_model_HHR->{$family}{"score"}, 
-                                   $best_model_HHR->{$family}{"start"}, $best_model_HHR->{$family}{"stop"}, $best_model_HHR->{$family}{"strand"});
+  foreach my $family (keys %{$best_model_HHR}) {
+    if($family ne $wfamily) {
+      if(exists($best_model_HHR->{$family}{"model"})) {
+        # this hit already cleared the (unchanged) absolute --minpsc admission check in
+        # parse_sorted_tbl_file to get into %best_model_HHR at all; here we apply an
+        # additional, stricter per-position (bits/nt) check before letting it count as a
+        # competing family for *MultipleFamilies purposes (--abspsc skips this 2nd check)
+        my $family_span = abs($best_model_HHR->{$family}{"stop"} - $best_model_HHR->{$family}{"start"}) + 1;
+        my $family_pp   = $best_model_HHR->{$family}{"score"} / $family_span;
+        if((opt_Get("--abspsc", $opt_HHR)) || ($family_pp >= opt_Get("--minpscpp", $opt_HHR))) {
+          if($other_hits_string ne "") { $other_hits_string .= ","; }
+          if($have_evalues) {
+            $other_hits_string .= sprintf("%s:%s:%g:%.1f/%d-%d:%s",
+                                     $family, $best_model_HHR->{$family}{"model"}, $best_model_HHR->{$family}{"evalue"}, $best_model_HHR->{$family}{"score"},
+                                     $best_model_HHR->{$family}{"start"}, $best_model_HHR->{$family}{"stop"}, $best_model_HHR->{$family}{"strand"});
+          }
+          else { # we don't have E-values
+            $other_hits_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
+                                     $family, $best_model_HHR->{$family}{"model"}, $best_model_HHR->{$family}{"score"},
+                                     $best_model_HHR->{$family}{"start"}, $best_model_HHR->{$family}{"stop"}, $best_model_HHR->{$family}{"strand"});
+          }
+          $nfams++;
+          $nfams_fail_str .= "+" . $family;
         }
-        else { # we don't have E-values
-          $other_hits_string .= sprintf("%s:%s:%.1f/%d-%d:%s",
-                                   $family, $best_model_HHR->{$family}{"model"}, $best_model_HHR->{$family}{"score"}, 
-                                   $best_model_HHR->{$family}{"start"}, $best_model_HHR->{$family}{"stop"}, $best_model_HHR->{$family}{"strand"});
-        }
-        $nfams++;
-        $nfams_fail_str .= "+" . $family;
       }
     }
   }
