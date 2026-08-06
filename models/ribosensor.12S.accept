@@ -15,4 +15,4 @@
 #
 # Mode 12S: animal mitochondrial small-subunit (mt-SSU / "12S") rRNA.
 # First-gen policy: all acceptable.
-SSU_rRNA_mitochondria_metazoa acceptable
+SSU_rRNA_mito_metazoa acceptable
