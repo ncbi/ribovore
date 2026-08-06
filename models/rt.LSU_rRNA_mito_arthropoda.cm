@@ -1,5 +1,5 @@
 INFERNAL1/a [1.1.5 | Sep 2023]
-NAME     LSU_rRNA_mito_arthropod
+NAME     LSU_rRNA_mito_arthropoda
 STATES   4343
 NODES    1218
 CLEN     1393
@@ -5593,7 +5593,7 @@ CM
      E  4342  4341 3    -1     0     0     0     0     0                                                 
 //
 HMMER3/f [3.4 | Aug 2023]
-NAME     LSU_rRNA_mito_arthropod
+NAME     LSU_rRNA_mito_arthropoda
 LENG  1393
 MAXL  1477
 ALPH  RNA

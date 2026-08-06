@@ -1,5 +1,5 @@
 INFERNAL1/a [1.1.5 | Sep 2023]
-NAME     LSU_rRNA_mito_nematode
+NAME     LSU_rRNA_mito_nematoda
 STATES   3020
 NODES    842
 CLEN     972
@@ -3894,7 +3894,7 @@ CM
      E  3019  3018 3    -1     0     0     0     0     0                                                 
 //
 HMMER3/f [3.4 | Aug 2023]
-NAME     LSU_rRNA_mito_nematode
+NAME     LSU_rRNA_mito_nematoda
 LENG  972
 MAXL  1159
 ALPH  RNA

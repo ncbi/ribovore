@@ -1,5 +1,5 @@
 INFERNAL1/a [1.1.5 | Sep 2023]
-NAME     LSU_rRNA_mito_plant
+NAME     LSU_rRNA_mito_embryophyta
 STATES   8728
 NODES    2351
 CLEN     2803
@@ -11111,7 +11111,7 @@ CM
      E  8727  8726 3    -1     0     0     0     0     0                                                 
 //
 HMMER3/f [3.4 | Aug 2023]
-NAME     LSU_rRNA_mito_plant
+NAME     LSU_rRNA_mito_embryophyta
 LENG  2803
 MAXL  6947
 ALPH  RNA

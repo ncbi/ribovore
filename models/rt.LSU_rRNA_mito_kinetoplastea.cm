@@ -1,5 +1,5 @@
 INFERNAL1/a [1.1.5 | Sep 2023]
-NAME     LSU_rRNA_mito_kinetoplast
+NAME     LSU_rRNA_mito_kinetoplastea
 STATES   3600
 NODES    1078
 CLEN     1172
@@ -4710,7 +4710,7 @@ CM
      E  3599  3598 3    -1     0     0     0     0     0                                                 
 //
 HMMER3/f [3.4 | Aug 2023]
-NAME     LSU_rRNA_mito_kinetoplast
+NAME     LSU_rRNA_mito_kinetoplastea
 LENG  1172
 MAXL  1202
 ALPH  RNA

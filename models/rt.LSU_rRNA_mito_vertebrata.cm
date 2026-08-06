@@ -1,5 +1,5 @@
 INFERNAL1/a [1.1.5 | Sep 2023]
-NAME     LSU_rRNA_mito_vertebrate
+NAME     LSU_rRNA_mito_vertebrata
 STATES   4909
 NODES    1373
 CLEN     1570
@@ -6314,7 +6314,7 @@ CM
      E  4908  4907 3    -1     0     0     0     0     0                                                 
 //
 HMMER3/f [3.4 | Aug 2023]
-NAME     LSU_rRNA_mito_vertebrate
+NAME     LSU_rRNA_mito_vertebrata
 LENG  1570
 MAXL  1740
 ALPH  RNA
