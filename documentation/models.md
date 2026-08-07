@@ -55,13 +55,13 @@ files, and the model-name lists in `models/scripts/*.sh`):
 
 ## <a name="table"></a>Covariance model (CM) files that include a single CM and profile HMM
 
-Ribovore includes 35 models: 22 SSU and 13 LSU. Seven derive from Rfam; the
+Ribovore includes 34 models: 21 SSU and 13 LSU. Seven derive from Rfam; the
 rest were created or expanded during Ribovore development, several from CRW
 database ([reference below](#crwref)) alignments. `nseq`/`eff_nseq`/`clen`/`W`
 are from [`cmstat`](#cmstat) on the current `ribotyper.cm`; `ra.*.edf.cm`
 column is `-` where no riboaligner (`edf`-filter) CM exists for that model.
 
-### SSU models (22)
+### SSU models (21)
 
 | model name | label | `rt.*` CM | `ra.*` CM | nseq | clen | Rfam accession |
 |---|---|---|---|---|---|---|
@@ -79,14 +79,22 @@ column is `-` where no riboaligner (`edf`-filter) CM exists for that model.
 | `SSU_rRNA_mito_fungi` | Mito-Fungi | `rt.SSU_rRNA_mito_fungi.enone.cm` | `ra.SSU_rRNA_mito_fungi.edf.cm` | 90 | 1454 | - |
 | `SSU_rRNA_mito_kinetoplastea` | Mito-Kinetoplastea | `rt.SSU_rRNA_mito_kinetoplastea.enone.cm` | `ra.SSU_rRNA_mito_kinetoplastea.edf.cm` | 17 | 624 | - |
 | `SSU_rRNA_mito_embryophyta` | Mito-Embryophyta | `rt.SSU_rRNA_mito_embryophyta.enone.cm` | `ra.SSU_rRNA_mito_embryophyta.edf.cm` | 88 | 1649 | - |
-| `SSU_rRNA_mito_ciliophora` | Mito-Ciliophora | `rt.SSU_rRNA_mito_ciliophora.enone.cm` | - | 15 | 1669 | - |
-| `SSU_rRNA_mito_bigyra` | Mito-Bigyra | `rt.SSU_rRNA_mito_bigyra.enone.cm` | - | 5 | 1662 | - |
-| `SSU_rRNA_mito_oomycota` | Mito-Oomycota | `rt.SSU_rRNA_mito_oomycota.enone.cm` | - | 70 | 1503 | - |
-| `SSU_rRNA_mito_cryptophyceae` | Mito-Cryptophyceae | `rt.SSU_rRNA_mito_cryptophyceae.enone.cm` | - | 10 | 1483 | - |
-| `SSU_rRNA_mito_choanoflagellata` | Mito-Choanoflagellata | `rt.SSU_rRNA_mito_choanoflagellata.enone.cm` | - | 1 | 1596 | - |
-| `SSU_rRNA_mito_protist_other` | Mito-Protist-Other | `rt.SSU_rRNA_mito_protist_other.enone.cm` | - | 88 | 1588 | - |
-| `SSU_rRNA_mito_jakobea` | Mito-Jakobea | `rt.SSU_rRNA_mito_jakobea.enone.cm` | - | 12 | 1485 | - |
-| `SSU_rRNA_mito_protostomia` | Mito-Protostomia | `rt.SSU_rRNA_mito_protostomia.enone.cm` | - | 90 | 711 | - |
+| `SSU_rRNA_mito_ciliophora` | Mito-Ciliophora | `rt.SSU_rRNA_mito_ciliophora.enone.cm` | `ra.SSU_rRNA_mito_ciliophora.edf.cm` | 15 | 1669 | - |
+| `SSU_rRNA_mito_bigyra` | Mito-Bigyra | `rt.SSU_rRNA_mito_bigyra.enone.cm` | `ra.SSU_rRNA_mito_bigyra.edf.cm` | 5 | 1662 | - |
+| `SSU_rRNA_mito_oomycota` | Mito-Oomycota | `rt.SSU_rRNA_mito_oomycota.enone.cm` | `ra.SSU_rRNA_mito_oomycota.edf.cm` | 70 | 1503 | - |
+| `SSU_rRNA_mito_cryptophyceae` | Mito-Cryptophyceae | `rt.SSU_rRNA_mito_cryptophyceae.enone.cm` | `ra.SSU_rRNA_mito_cryptophyceae.edf.cm` | 10 | 1483 | - |
+| `SSU_rRNA_mito_choanoflagellata` | Mito-Choanoflagellata | `rt.SSU_rRNA_mito_choanoflagellata.enone.cm` | `ra.SSU_rRNA_mito_choanoflagellata.edf.cm` | 1 | 1596 | - |
+| `SSU_rRNA_mito_protist_other` | Mito-Protist-Other | `rt.SSU_rRNA_mito_protist_other.enone.cm` | `ra.SSU_rRNA_mito_protist_other.edf.cm` | 88 | 1588 | - |
+| `SSU_rRNA_mito_protostomia` | Mito-Protostomia | `rt.SSU_rRNA_mito_protostomia.enone.cm` | `ra.SSU_rRNA_mito_protostomia.edf.cm` | 90 | 711 | - |
+
+> `SSU_rRNA_mito_jakobea` (`rt.SSU_rRNA_mito_jakobea.enone.cm` /
+> `ra.SSU_rRNA_mito_jakobea.edf.cm`) is built and retained on disk in
+> `models/` (for the Rfam submission / standalone jakobid-mito use), but is
+> **excluded from the production `ribotyper`/`riboaligner` library** as of
+> brief 26_0518-140: its bacterial-scaffolded CM proved promiscuous
+> (false-flagged bacterial 16S fragments and near-noise sequences as
+> Mito-Jakobea). Not counted in the 21 SSU above. Exclusion is reversible,
+> pending a possible future re-inclusion.
 
 ### LSU models (13)
 
@@ -129,19 +137,18 @@ models are built with `cmbuild`'s entropy weighting feature turned on
 they increased classification accuracy (`ribotyper`) or alignment-endpoint
 accuracy (`riboaligner`) in internal testing, respectively.
 
-Not every `ribotyper` model has a corresponding `riboaligner` model: the 8
-SSU mito models added by the A3 registry regen (`mito_ciliophora`,
-`mito_bigyra`, `mito_oomycota`, `mito_cryptophyceae`,
-`mito_choanoflagellata`, `mito_protist_other`, `mito_jakobea`,
-`mito_protostomia`) have only a `ribotyper` (`enone`) CM — no `edf`-filter
-CM has been built for them, so they have no `riboaligner.modelinfo` row.
+Every one of the 21 production SSU `ribotyper` models has a corresponding
+`riboaligner.modelinfo` row (1-to-1 SSU coverage). `mito_jakobea` also has an
+`edf`-filter CM built, but is excluded from the production library entirely
+(no `ribotyper.modelinfo` or `riboaligner.modelinfo` row), per the note
+above. No LSU model has a `riboaligner` counterpart.
 
 ---
 
 ## <a name="cmlibrary"></a> `ribotyper.cm` a multi-model CM library file
 
 The `ribotyper.cm` file is a CM library of all models that begin with
-`rt` in the tables [above](#table) (currently 35: 22 SSU + 13 LSU). This
+`rt` in the tables [above](#table) (currently 34: 21 SSU + 13 LSU). This
 file is used in the first stage of `ribotyper` to classify sequences.
 
 ---
@@ -193,12 +200,11 @@ model or models in a CM file. For example, below is the output of
     27  SSU_rRNA_mito_cryptophyceae  -                10     10.00   1483   1793   435    28     cm  1.279  1.125
     28  SSU_rRNA_mito_embryophyta  -                88     88.00   1649   7937   446    29     cm  1.632  1.575
     29  SSU_rRNA_mito_fungi   -                90     90.00   1454   9725   334    26     cm  1.038  0.860
-    30  SSU_rRNA_mito_jakobea  -                12     12.00   1485   2485   426    31     cm  1.463  1.331
-    31  SSU_rRNA_mito_kinetoplastea  -                17     17.00    624   1154    68     5     cm  1.316  1.289
-    32  SSU_rRNA_mito_metazoa  -                83     83.00    954   1406   254    20     cm  1.089  0.971
-    33  SSU_rRNA_mito_oomycota  -                70     70.00   1503   2110   451    30     cm  1.821  1.791
-    34  SSU_rRNA_mito_protist_other  -                88     88.00   1588   2266   232    20     cm  1.061  0.969
-    35  SSU_rRNA_mito_protostomia  -                90     90.00    711   2033   191    13     cm  0.855  0.652
+    30  SSU_rRNA_mito_kinetoplastea  -                17     17.00    624   1154    68     5     cm  1.316  1.289
+    31  SSU_rRNA_mito_metazoa  -                83     83.00    954   1406   254    20     cm  1.089  0.971
+    32  SSU_rRNA_mito_oomycota  -                70     70.00   1503   2110   451    30     cm  1.821  1.791
+    33  SSU_rRNA_mito_protist_other  -                88     88.00   1588   2266   232    20     cm  1.061  0.969
+    34  SSU_rRNA_mito_protostomia  -                90     90.00    711   2033   191    13     cm  0.855  0.652
 ```
 
 For more information on `cmstat` see the [Infernal user's guide](http://eddylab.org/infernal/Userguide.pdf)
