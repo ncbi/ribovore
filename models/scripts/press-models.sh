@@ -36,7 +36,6 @@ for m in \
     SSU_rRNA_mito_cryptophyceae \
     SSU_rRNA_mito_choanoflagellata \
     SSU_rRNA_mito_protist_other \
-    SSU_rRNA_mito_jakobea \
     SSU_rRNA_mito_protostomia \
     ; do
     ./cmpress rt.$m.enone.cm

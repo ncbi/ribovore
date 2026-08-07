@@ -28,7 +28,6 @@ SSU_rRNA_mito_oomycota            SSU Mito-Oomycota      rt.SSU_rRNA_mito_oomyco
 SSU_rRNA_mito_cryptophyceae       SSU Mito-Cryptophyceae rt.SSU_rRNA_mito_cryptophyceae.enone.cm
 SSU_rRNA_mito_choanoflagellata    SSU Mito-Choanoflagellata rt.SSU_rRNA_mito_choanoflagellata.enone.cm
 SSU_rRNA_mito_protist_other       SSU Mito-Protist-Other rt.SSU_rRNA_mito_protist_other.enone.cm
-SSU_rRNA_mito_jakobea             SSU Mito-Jakobea       rt.SSU_rRNA_mito_jakobea.enone.cm
 SSU_rRNA_mito_protostomia         SSU Mito-Protostomia   rt.SSU_rRNA_mito_protostomia.enone.cm
 LSU_rRNA_mito_vertebrata                 LSU Mito-Vertebrata           rt.LSU_rRNA_mito_vertebrata.cm
 LSU_rRNA_mito_bilateria                  LSU Mito-Bilateria            rt.LSU_rRNA_mito_bilateria.cm
