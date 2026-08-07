@@ -9,9 +9,9 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Jul 30 16:15:25 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_jakobea -o cmbuild_ribovore.log jakobea_ribovore.cm jakobea_final_seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile jakobea_ribovore.cm.calib.1 jakobea_ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 jakobea_ribovore.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_jakobea CM SEED
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile jakobea_ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5841,8 +5841,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Thu Jul 30 16:15:27 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_jakobea -o cmbuild_ribovore.log jakobea_ribovore.cm jakobea_final_seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_jakobea -o cmbuild_ribovore.log jakobea_ribovore.cm jakobea_final_seed.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_jakobea CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_jakobea CM SEED
 NSEQ  12
 EFFN  12.000000
 CKSUM 3734157625

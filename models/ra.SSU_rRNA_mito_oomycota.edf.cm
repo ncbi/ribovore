@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:03:36 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand -n SSU_rRNA_mito_oomycota /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_oomycota.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-oomycota-nodetrunc-rebuild-116/S0.raw.reformatted.stk
+COM      [1] cmbuild -F --hand -n SSU_rRNA_mito_oomycota CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5873,7 +5873,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:03:38 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand -n SSU_rRNA_mito_oomycota /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_oomycota.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-oomycota-nodetrunc-rebuild-116/S0.raw.reformatted.stk
+COM   [1] cmbuild -F --hand -n SSU_rRNA_mito_oomycota CM SEED
 NSEQ  70
 EFFN  1.004028
 CKSUM 1841462818

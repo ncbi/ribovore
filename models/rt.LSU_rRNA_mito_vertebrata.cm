@@ -9,9 +9,9 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Fri Jun 12 06:37:12 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/CM1_vertebrate.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/CM1_vertebrate.refrag.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 --part 1 --pfile cc1v_ns_pf.1 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/nosymfrac-calibrate/CM1_vertebrate.nosymfrac.calibrated.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 --proot cc1v_ns_pf /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/nosymfrac-calibrate/CM1_vertebrate.nosymfrac.calibrated.cm
+COM      [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --ptot 160 --part 1 --pfile cc1v_ns_pf.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 --proot cc1v_ns_pf CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6324,8 +6324,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Fri Jun 12 06:37:15 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/CM1_vertebrate.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/CM1_vertebrate.refrag.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/CM1_vertebrate.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM1_vertebrate/CM1_vertebrate.outdir/CM1_vertebrate.refrag.stk
+COM   [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F --p7ml --enone --fraggiven CM SEED
 NSEQ  20
 EFFN  20.000000
 CKSUM 2156608562

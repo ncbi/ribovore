@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:07:23 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_chlorophyta /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_chlorophyta.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-chlorophyta-regrowth-124/step8/final/chlorophyta.final47.seed.stk
+COM      [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_chlorophyta CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5118,7 +5118,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:07:36 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_chlorophyta /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_chlorophyta.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-chlorophyta-regrowth-124/step8/final/chlorophyta.final47.seed.stk
+COM   [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_chlorophyta CM SEED
 NSEQ  47
 EFFN  3.726379
 CKSUM 1587177130

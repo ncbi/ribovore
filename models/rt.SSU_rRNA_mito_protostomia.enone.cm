@@ -9,9 +9,9 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Wed Jul 29 16:41:17 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_mitochondria_protostome /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.ribovore.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.final.mingap.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile protostome.ribovore.cm.calib.1 protostome.ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 protostome.ribovore.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_mitochondria_protostome CM SEED
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile protostome.ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -2818,8 +2818,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Wed Jul 29 16:41:22 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_mitochondria_protostome /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.ribovore.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.final.mingap.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_mitochondria_protostome /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.ribovore.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.final.mingap.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_mitochondria_protostome CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --fraggiven -n SSU_rRNA_mitochondria_protostome CM SEED
 NSEQ  90
 EFFN  90.000000
 CKSUM 543884342

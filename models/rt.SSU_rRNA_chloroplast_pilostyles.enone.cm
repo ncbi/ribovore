@@ -9,9 +9,9 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Fri Jul 31 12:28:35 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n SSU_rRNA_chloroplast_pilostyles --hand --p7ml --enone --fraggiven chloroplast_pilostyles.ribovore.cm chloroplast_pilostyles.expanded.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile chloroplast_pilostyles.ribovore.cm.calib.1 chloroplast_pilostyles.ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 chloroplast_pilostyles.ribovore.cm
+COM      [1] cmbuild -F -n SSU_rRNA_chloroplast_pilostyles --hand --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile chloroplast_pilostyles.ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6002,8 +6002,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Fri Jul 31 12:28:42 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n SSU_rRNA_chloroplast_pilostyles --hand --p7ml --enone --fraggiven chloroplast_pilostyles.ribovore.cm chloroplast_pilostyles.expanded.seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n SSU_rRNA_chloroplast_pilostyles --hand --p7ml --enone --fraggiven chloroplast_pilostyles.ribovore.cm chloroplast_pilostyles.expanded.seed.stk
+COM   [1] cmbuild -F -n SSU_rRNA_chloroplast_pilostyles --hand --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F -n SSU_rRNA_chloroplast_pilostyles --hand --p7ml --enone --fraggiven CM SEED
 NSEQ  4
 EFFN  4.000000
 CKSUM 2222789389

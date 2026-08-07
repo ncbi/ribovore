@@ -9,8 +9,8 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Mon Jul 20 21:29:43 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine stk/cilio.ribovore.refined.RECOMMENDED.stk final/cilio.ribovore.refined.cm stk/cilio.finalseed.RECOMMENDED.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-ciliophora-rebuild-tpyriformis-108/final/cilio.ribovore.refined.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --refine stk/cilio.ribovore.refined.RECOMMENDED.stk CM SEED
+COM      [2] cmcalibrate --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6571,8 +6571,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Mon Jul 20 21:29:44 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine stk/cilio.ribovore.refined.RECOMMENDED.stk final/cilio.ribovore.refined.cm stk/cilio.finalseed.RECOMMENDED.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine stk/cilio.ribovore.refined.RECOMMENDED.stk final/cilio.ribovore.refined.cm stk/cilio.finalseed.RECOMMENDED.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --refine stk/cilio.ribovore.refined.RECOMMENDED.stk CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --refine stk/cilio.ribovore.refined.RECOMMENDED.stk CM SEED
 NSEQ  15
 EFFN  15.000000
 CKSUM 1084238581

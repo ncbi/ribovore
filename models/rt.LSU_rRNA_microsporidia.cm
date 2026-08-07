@@ -9,9 +9,9 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Sun Jun 14 07:15:24 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n LSU_rRNA_microsporidia --p7ml --enone --fraggiven CM_microsporidia.cm seed.frag.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 --cpu 0 --part 1 --pfile ccmic_p.1 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM_microsporidia/cmcalibrate/CM_microsporidia.calibrated.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 --proot ccmic_p /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM_microsporidia/cmcalibrate/CM_microsporidia.calibrated.cm
+COM      [1] cmbuild -F -n LSU_rRNA_microsporidia --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --ptot 160 --cpu 0 --part 1 --pfile ccmic_p.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 --proot ccmic_p CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -10321,8 +10321,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Sun Jun 14 07:15:30 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n LSU_rRNA_microsporidia --p7ml --enone --fraggiven CM_microsporidia.cm seed.frag.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n LSU_rRNA_microsporidia --p7ml --enone --fraggiven CM_microsporidia.cm seed.frag.stk
+COM   [1] cmbuild -F -n LSU_rRNA_microsporidia --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F -n LSU_rRNA_microsporidia --p7ml --enone --fraggiven CM SEED
 NSEQ  6
 EFFN  6.000000
 CKSUM 63827660

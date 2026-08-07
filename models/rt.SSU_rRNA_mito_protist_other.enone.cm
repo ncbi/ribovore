@@ -9,9 +9,9 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Jul 30 19:04:00 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven final/mito_protist_residual.target100_nonrhodoanchor.ribovore.cm idf/target100_nonrhodo_anchor/thinned.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile mito_protist_residual.target100_nonrhodoanchor.ribovore.cm.calib.1 mito_protist_residual.target100_nonrhodoanchor.ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 mito_protist_residual.target100_nonrhodoanchor.ribovore.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile mito_protist_residual.target100_nonrhodoanchor.ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6348,8 +6348,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Thu Jul 30 19:04:02 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven final/mito_protist_residual.target100_nonrhodoanchor.ribovore.cm idf/target100_nonrhodo_anchor/thinned.seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven final/mito_protist_residual.target100_nonrhodoanchor.ribovore.cm idf/target100_nonrhodo_anchor/thinned.seed.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --fraggiven CM SEED
 NSEQ  88
 EFFN  88.000000
 CKSUM 268307756

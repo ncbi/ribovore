@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:03:03 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand -n SSU_rRNA_mito_bigyra /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_bigyra.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-bigyra-crw-pilot-082/bigyra.final.seed.stk
+COM      [1] cmbuild -F --hand -n SSU_rRNA_mito_bigyra CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6496,7 +6496,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:03:06 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand -n SSU_rRNA_mito_bigyra /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_bigyra.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-bigyra-crw-pilot-082/bigyra.final.seed.stk
+COM   [1] cmbuild -F --hand -n SSU_rRNA_mito_bigyra CM SEED
 NSEQ  5
 EFFN  1.479492
 CKSUM 3618945556

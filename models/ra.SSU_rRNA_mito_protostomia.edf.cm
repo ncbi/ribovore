@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:05:48 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_protostomia /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_protostomia.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.final.mingap.stk
+COM      [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_protostomia CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -2812,7 +2812,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:05:50 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_protostomia /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_protostomia.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-protostome-rebuild-125/step6/final/protostome.final.mingap.stk
+COM   [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_protostomia CM SEED
 NSEQ  90
 EFFN  7.434998
 CKSUM 543884342

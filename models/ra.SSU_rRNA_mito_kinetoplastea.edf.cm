@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:11:20 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_kinetoplastea /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_kinetoplastea.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-tier2-audit-reruns-130/mitochondria_kinetoplast/mitochondria_kinetoplast.expanded.seed.stk
+COM      [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_kinetoplastea CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -2515,7 +2515,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:11:20 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_kinetoplastea /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_kinetoplastea.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-tier2-audit-reruns-130/mitochondria_kinetoplast/mitochondria_kinetoplast.expanded.seed.stk
+COM   [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_kinetoplastea CM SEED
 NSEQ  17
 EFFN  1.299072
 CKSUM 4181789523

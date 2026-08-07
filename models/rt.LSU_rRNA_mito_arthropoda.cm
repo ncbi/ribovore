@@ -9,9 +9,9 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Fri Jun 12 06:37:56 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/CM3_arthropod.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/CM3_arthropod.refrag.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 --part 1 --pfile cc3a_ns_pf.1 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/nosymfrac-calibrate/CM3_arthropod.nosymfrac.calibrated.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 --proot cc3a_ns_pf /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/nosymfrac-calibrate/CM3_arthropod.nosymfrac.calibrated.cm
+COM      [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --ptot 160 --part 1 --pfile cc3a_ns_pf.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 --proot cc3a_ns_pf CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5603,8 +5603,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Fri Jun 12 06:37:58 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/CM3_arthropod.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/CM3_arthropod.refrag.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/CM3_arthropod.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM3_arthropod/CM3_arthropod.outdir/CM3_arthropod.refrag.stk
+COM   [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F --p7ml --enone --fraggiven CM SEED
 NSEQ  5
 EFFN  5.000000
 CKSUM 617852523

@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:04:04 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand -n SSU_rRNA_mito_cryptophyceae /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_cryptophyceae.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-cryptophyceae-nodetrunc-rebuild-116/S0.raw.reformatted.stk
+COM      [1] cmbuild -F --hand -n SSU_rRNA_mito_cryptophyceae CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5791,7 +5791,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:04:06 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand -n SSU_rRNA_mito_cryptophyceae /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_cryptophyceae.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-cryptophyceae-nodetrunc-rebuild-116/S0.raw.reformatted.stk
+COM   [1] cmbuild -F --hand -n SSU_rRNA_mito_cryptophyceae CM SEED
 NSEQ  10
 EFFN  1.430664
 CKSUM 2971972093

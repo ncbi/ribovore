@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:05:24 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_jakobea /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_jakobea.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-jakobea-grow-build-128/step7_build/jakobea_final_seed.stk
+COM      [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_jakobea CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5835,7 +5835,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:05:26 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_jakobea /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_jakobea.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-jakobea-grow-build-128/step7_build/jakobea_final_seed.stk
+COM   [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_jakobea CM SEED
 NSEQ  12
 EFFN  1.092773
 CKSUM 3734157625

@@ -9,9 +9,9 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Fri Jun 12 06:39:34 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/CM5_plant.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/CM5_plant.refrag.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 --part 1 --pfile cc5p_ns_pf.1 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/nosymfrac-calibrate/CM5_plant.nosymfrac.calibrated.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --gtailn 225 --ptot 160 --proot cc5p_ns_pf /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/nosymfrac-calibrate/CM5_plant.nosymfrac.calibrated.cm
+COM      [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --ptot 160 --part 1 --pfile cc5p_ns_pf.1 CM
+COM      [3] cmcalibrate --merge --gtailn 225 --ptot 160 --proot cc5p_ns_pf CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -11121,8 +11121,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Fri Jun 12 06:41:43 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/CM5_plant.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/CM5_plant.refrag.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/CM5_plant.nosymfrac.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM5_plant/CM5_plant.outdir/CM5_plant.refrag.stk
+COM   [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F --p7ml --enone --fraggiven CM SEED
 NSEQ  2
 EFFN  2.000000
 CKSUM 1016664951

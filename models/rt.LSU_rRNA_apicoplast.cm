@@ -9,9 +9,9 @@ RF       no
 CONS     yes
 MAP      yes
 DATE     Wed Jun 10 09:09:58 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven cm-build/CM_apicoplast/expanded6/CM_apicoplast.p7ml.cm cm-build/CM_apicoplast/expanded6/combined.frag.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 80 --part 1 --pfile ccap_p7_pf.1 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/CM_apicoplast/expanded6/p7ml-calibrate/CM_apicoplast.p7ml.calibrated.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 80 --proot ccap_p7_pf CM_apicoplast.p7ml.calibrated.cm
+COM      [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --ptot 80 --part 1 --pfile ccap_p7_pf.1 CM
+COM      [3] cmcalibrate --merge --ptot 80 --proot ccap_p7_pf CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -10698,8 +10698,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Wed Jun 10 09:10:31 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven cm-build/CM_apicoplast/expanded6/CM_apicoplast.p7ml.cm cm-build/CM_apicoplast/expanded6/combined.frag.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --p7ml --enone --fraggiven cm-build/CM_apicoplast/expanded6/CM_apicoplast.p7ml.cm cm-build/CM_apicoplast/expanded6/combined.frag.stk
+COM   [1] cmbuild -F --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F --p7ml --enone --fraggiven CM SEED
 NSEQ  6
 EFFN  6.000000
 CKSUM 1719752926

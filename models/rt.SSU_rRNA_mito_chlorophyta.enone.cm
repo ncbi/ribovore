@@ -9,9 +9,9 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Tue Jul 28 08:43:52 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n mito_chlorophyta_regrown124 step8/final/chlorophyta.ribovore.cm step8/final/chlorophyta.final47.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile chlorophyta.ribovore.cm.calib.1 chlorophyta.ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 chlorophyta.ribovore.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven -n mito_chlorophyta_regrown124 CM SEED
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile chlorophyta.ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5124,8 +5124,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Tue Jul 28 08:44:05 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n mito_chlorophyta_regrown124 step8/final/chlorophyta.ribovore.cm step8/final/chlorophyta.final47.seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --fraggiven -n mito_chlorophyta_regrown124 step8/final/chlorophyta.ribovore.cm step8/final/chlorophyta.final47.seed.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --fraggiven -n mito_chlorophyta_regrown124 CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --fraggiven -n mito_chlorophyta_regrown124 CM SEED
 NSEQ  47
 EFFN  47.000000
 CKSUM 1587177130

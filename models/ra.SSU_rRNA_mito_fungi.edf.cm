@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Aug  6 21:08:06 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_fungi /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_fungi.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-fungi-nodetrunc-rebuild-123/step7/thinned.seed.stk
+COM      [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_fungi CM SEED
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -5758,7 +5758,7 @@ CONS  yes
 CS    yes
 MAP   yes
 DATE  Thu Aug  6 21:10:29 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_fungi /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-edf-rebuild-138/ra.SSU_rRNA_mito_fungi.edf.cm /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-mito-fungi-nodetrunc-rebuild-123/step7/thinned.seed.stk
+COM   [1] cmbuild -F --hand --fraggiven -n SSU_rRNA_mito_fungi CM SEED
 NSEQ  90
 EFFN  4.056702
 CKSUM 3616397668

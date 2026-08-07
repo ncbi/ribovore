@@ -10,8 +10,8 @@ CONS     yes
 MAP      yes
 DATE     Mon Jul 27 10:49:25 2026
 COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven cm-build/ssu-mito-plant-anchor-fix-120/final/plant.ribovore.cm cm-build/ssu-mito-plant-anchor-fix-120/step3/run/thinned.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile plant.ribovore.cm.calib.1 plant.ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 plant.ribovore.cm
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile plant.ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07

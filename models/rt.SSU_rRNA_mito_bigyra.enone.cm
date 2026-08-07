@@ -9,8 +9,8 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Jul  9 03:22:29 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine bigyra.ribovore.refined.stk bigyra.ribovore.refined.cm bigyra.final.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-bigyra-crw-pilot-082/bigyra.ribovore.refined.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --refine bigyra.ribovore.refined.stk CM SEED
+COM      [2] cmcalibrate --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6501,8 +6501,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Thu Jul  9 03:22:31 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine bigyra.ribovore.refined.stk bigyra.ribovore.refined.cm bigyra.final.seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine bigyra.ribovore.refined.stk bigyra.ribovore.refined.cm bigyra.final.seed.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --refine bigyra.ribovore.refined.stk CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --refine bigyra.ribovore.refined.stk CM SEED
 NSEQ  5
 EFFN  5.000000
 CKSUM 3618945556

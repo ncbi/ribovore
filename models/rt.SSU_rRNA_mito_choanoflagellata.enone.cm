@@ -9,8 +9,8 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Jul  9 06:19:36 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk choano.ribovore.refined.cm choano.expanded.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --ptot 160 /net/intdev/oblast01/infernal/notebook/26_0518_ribo_sensor_expansion/cm-build/ssu-choanoflagellata-crw-pilot-086/choano.ribovore.refined.cm
+COM      [1] cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk CM SEED
+COM      [2] cmcalibrate --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -6260,8 +6260,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Thu Jul  9 06:19:38 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk choano.ribovore.refined.cm choano.expanded.seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk choano.ribovore.refined.cm choano.expanded.seed.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk CM SEED
 NSEQ  1
 EFFN  1.000000
 CKSUM 3975233758

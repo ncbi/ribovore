@@ -9,9 +9,9 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Fri Jul 31 12:30:25 2026
-COM      [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n SSU_rRNA_mitochondria_amoeba --hand --p7ml --enone --fraggiven mitochondria_amoeba.ribovore.cm mitochondria_amoeba.expanded.seed.stk
-COM      [2] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile mitochondria_amoeba.ribovore.cm.calib.1 mitochondria_amoeba.ribovore.cm
-COM      [3] /home/nawrocke/src/infernal-1.1.5/src/cmcalibrate --merge --ptot 160 mitochondria_amoeba.ribovore.cm
+COM      [1] cmbuild -F -n SSU_rRNA_mitochondria_amoeba --hand --p7ml --enone --fraggiven CM SEED
+COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile mitochondria_amoeba.ribovore.cm.calib.1 CM
+COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -7406,8 +7406,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Fri Jul 31 12:30:27 2026
-COM   [1] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n SSU_rRNA_mitochondria_amoeba --hand --p7ml --enone --fraggiven mitochondria_amoeba.ribovore.cm mitochondria_amoeba.expanded.seed.stk
-COM   [2] /home/nawrocke/src/infernal-1.1.5/src/cmbuild -F -n SSU_rRNA_mitochondria_amoeba --hand --p7ml --enone --fraggiven mitochondria_amoeba.ribovore.cm mitochondria_amoeba.expanded.seed.stk
+COM   [1] cmbuild -F -n SSU_rRNA_mitochondria_amoeba --hand --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F -n SSU_rRNA_mitochondria_amoeba --hand --p7ml --enone --fraggiven CM SEED
 NSEQ  16
 EFFN  16.000000
 CKSUM 1406787247
