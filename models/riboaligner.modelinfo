@@ -24,3 +24,11 @@ SSU.Mito-Chlorophyta  ra.SSU_rRNA_mito_chlorophyta.edf.cm   1282 SSU_rRNA_mito_c
 SSU.Mito-Fungi        ra.SSU_rRNA_mito_fungi.edf.cm         1454 SSU_rRNA_mito_fungi
 SSU.Mito-Kinetoplastea  ra.SSU_rRNA_mito_kinetoplastea.edf.cm    624 SSU_rRNA_mito_kinetoplastea
 SSU.Mito-Embryophyta        ra.SSU_rRNA_mito_embryophyta.edf.cm         1649 SSU_rRNA_mito_embryophyta
+SSU.Mito-Ciliophora   ra.SSU_rRNA_mito_ciliophora.edf.cm    1669 SSU_rRNA_mito_ciliophora
+SSU.Mito-Bigyra        ra.SSU_rRNA_mito_bigyra.edf.cm         1662 SSU_rRNA_mito_bigyra
+SSU.Mito-Oomycota      ra.SSU_rRNA_mito_oomycota.edf.cm       1503 SSU_rRNA_mito_oomycota
+SSU.Mito-Cryptophyceae ra.SSU_rRNA_mito_cryptophyceae.edf.cm  1483 SSU_rRNA_mito_cryptophyceae
+SSU.Mito-Choanoflagellata ra.SSU_rRNA_mito_choanoflagellata.edf.cm 1596 SSU_rRNA_mito_choanoflagellata
+SSU.Mito-Protist-Other ra.SSU_rRNA_mito_protist_other.edf.cm  1588 SSU_rRNA_mito_protist_other
+SSU.Mito-Jakobea       ra.SSU_rRNA_mito_jakobea.edf.cm        1485 SSU_rRNA_mito_jakobea
+SSU.Mito-Protostomia   ra.SSU_rRNA_mito_protostomia.edf.cm    711 SSU_rRNA_mito_protostomia
