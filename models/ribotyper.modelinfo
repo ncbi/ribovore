@@ -1,4 +1,4 @@
-# Each non-# prefixed line should have 4 white-space delimited tokens: 
+# Each non-# prefixed line should have 4 white-space delimited tokens:
 #<modelname> <family> <domain> <CM-file-with-only-this-model>
 # The first line is special, it indicates the name of the master CM file
 # with all the models in it
@@ -8,27 +8,33 @@ SSU_rRNA_archaea                  SSU Archaea            rt.SSU_rRNA_archaea.eno
 SSU_rRNA_bacteria                 SSU Bacteria           rt.SSU_rRNA_bacteria.enone.cm
 SSU_rRNA_eukarya                  SSU Eukarya            rt.SSU_rRNA_eukarya.enone.cm
 SSU_rRNA_microsporidia            SSU Euk-Microsporidia  rt.SSU_rRNA_microsporidia.enone.cm
-SSU_rRNA_chloroplast              SSU Chloroplast        rt.SSU_rRNA_chloroplast.enone.cm
-SSU_rRNA_mitochondria_metazoa     SSU Mito-Metazoa       rt.SSU_rRNA_mitochondria_metazoa.enone.cm
+SSU_rRNA_chloroplast              SSU Plast-Chloroplast  rt.SSU_rRNA_chloroplast.enone.cm
+SSU_rRNA_mito_metazoa             SSU Mito-Metazoa       rt.SSU_rRNA_mito_metazoa.enone.cm
 SSU_rRNA_cyanobacteria            SSU Bacteria           rt.SSU_rRNA_cyanobacteria.enone.cm
 LSU_rRNA_archaea                  LSU Archaea            rt.LSU_rRNA_archaea.enone.cm
 LSU_rRNA_bacteria                 LSU Bacteria           rt.LSU_rRNA_bacteria.enone.cm
 LSU_rRNA_eukarya                  LSU Eukarya            rt.LSU_rRNA_eukarya.enone.cm
 LSU_rRNA_microsporidia            LSU Euk-Microsporidia  rt.LSU_rRNA_microsporidia.cm
-SSU_rRNA_apicoplast               SSU Euk-Apicoplast     rt.SSU_rRNA_apicoplast.enone.cm
-SSU_rRNA_chloroplast_pilostyles   SSU Chloroplast-Pilostyles rt.SSU_rRNA_chloroplast_pilostyles.enone.cm
-SSU_rRNA_mitochondria_amoeba      SSU Mito-Amoeba        rt.SSU_rRNA_mitochondria_amoeba.enone.cm
-SSU_rRNA_mitochondria_chlorophyta SSU Mito-Chlorophyta   rt.SSU_rRNA_mitochondria_chlorophyta.enone.cm  
-SSU_rRNA_mitochondria_fungi       SSU Mito-Fungi         rt.SSU_rRNA_mitochondria_fungi.enone.cm  
-SSU_rRNA_mitochondria_kinetoplast SSU Mito-Kinetoplast   rt.SSU_rRNA_mitochondria_kinetoplast.enone.cm  
-SSU_rRNA_mitochondria_plant       SSU Mito-Plant         rt.SSU_rRNA_mitochondria_plant.enone.cm  
-SSU_rRNA_mitochondria_protist     SSU Mito-Protist       rt.SSU_rRNA_mitochondria_protist.enone.cm  
-LSU_rRNA_mito_vertebrate                 LSU Mito-Vertebrate           rt.LSU_rRNA_mito_vertebrate.cm
+SSU_rRNA_apicoplast               SSU Plast-Apicoplast   rt.SSU_rRNA_apicoplast.enone.cm
+SSU_rRNA_chloroplast_pilostyles   SSU Plast-Chloroplast-Pilostyles rt.SSU_rRNA_chloroplast_pilostyles.enone.cm
+SSU_rRNA_mito_amoebozoa           SSU Mito-Amoebozoa     rt.SSU_rRNA_mito_amoebozoa.enone.cm
+SSU_rRNA_mito_chlorophyta         SSU Mito-Chlorophyta   rt.SSU_rRNA_mito_chlorophyta.enone.cm
+SSU_rRNA_mito_fungi               SSU Mito-Fungi         rt.SSU_rRNA_mito_fungi.enone.cm
+SSU_rRNA_mito_kinetoplastea       SSU Mito-Kinetoplastea rt.SSU_rRNA_mito_kinetoplastea.enone.cm
+SSU_rRNA_mito_embryophyta         SSU Mito-Embryophyta   rt.SSU_rRNA_mito_embryophyta.enone.cm
+SSU_rRNA_mito_ciliophora          SSU Mito-Ciliophora    rt.SSU_rRNA_mito_ciliophora.enone.cm
+SSU_rRNA_mito_bigyra              SSU Mito-Bigyra        rt.SSU_rRNA_mito_bigyra.enone.cm
+SSU_rRNA_mito_oomycota            SSU Mito-Oomycota      rt.SSU_rRNA_mito_oomycota.enone.cm
+SSU_rRNA_mito_cryptophyceae       SSU Mito-Cryptophyceae rt.SSU_rRNA_mito_cryptophyceae.enone.cm
+SSU_rRNA_mito_choanoflagellata    SSU Mito-Choanoflagellata rt.SSU_rRNA_mito_choanoflagellata.enone.cm
+SSU_rRNA_mito_protist_other       SSU Mito-Protist-Other rt.SSU_rRNA_mito_protist_other.enone.cm
+SSU_rRNA_mito_protostomia         SSU Mito-Protostomia   rt.SSU_rRNA_mito_protostomia.enone.cm
+LSU_rRNA_mito_vertebrata                 LSU Mito-Vertebrata           rt.LSU_rRNA_mito_vertebrata.cm
 LSU_rRNA_mito_bilateria                  LSU Mito-Bilateria            rt.LSU_rRNA_mito_bilateria.cm
-LSU_rRNA_mito_arthropod                  LSU Mito-Arthropod            rt.LSU_rRNA_mito_arthropod.cm
+LSU_rRNA_mito_arthropoda                 LSU Mito-Arthropoda           rt.LSU_rRNA_mito_arthropoda.cm
 LSU_rRNA_mito_eukaryote                  LSU Mito-Eukaryote            rt.LSU_rRNA_mito_eukaryote.cm
-LSU_rRNA_mito_plant                      LSU Mito-Plant                rt.LSU_rRNA_mito_plant.cm
-LSU_rRNA_mito_nematode                   LSU Mito-Nematode             rt.LSU_rRNA_mito_nematode.cm
-LSU_rRNA_mito_kinetoplast                LSU Mito-Kinetoplast          rt.LSU_rRNA_mito_kinetoplast.cm
-LSU_rRNA_chloroplast                     LSU Chloroplast               rt.LSU_rRNA_chloroplast.cm
-LSU_rRNA_apicoplast                      LSU Euk-Apicoplast            rt.LSU_rRNA_apicoplast.cm
+LSU_rRNA_mito_embryophyta                LSU Mito-Embryophyta          rt.LSU_rRNA_mito_embryophyta.cm
+LSU_rRNA_mito_nematoda                   LSU Mito-Nematoda             rt.LSU_rRNA_mito_nematoda.cm
+LSU_rRNA_mito_kinetoplastea               LSU Mito-Kinetoplastea       rt.LSU_rRNA_mito_kinetoplastea.cm
+LSU_rRNA_chloroplast                     LSU Plast-Chloroplast         rt.LSU_rRNA_chloroplast.cm
+LSU_rRNA_apicoplast                      LSU Plast-Apicoplast          rt.LSU_rRNA_apicoplast.cm

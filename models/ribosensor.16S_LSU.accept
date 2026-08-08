@@ -15,7 +15,7 @@
 #
 # Mode 16S_LSU: animal mitochondrial large-subunit (mt-LSU / "16S") rRNA.
 # First-gen policy: all acceptable.
-LSU_rRNA_mito_vertebrate acceptable
+LSU_rRNA_mito_vertebrata acceptable
 LSU_rRNA_mito_bilateria acceptable
-LSU_rRNA_mito_arthropod acceptable
-LSU_rRNA_mito_nematode acceptable
+LSU_rRNA_mito_arthropoda acceptable
+LSU_rRNA_mito_nematoda acceptable

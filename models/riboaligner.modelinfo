@@ -1,6 +1,6 @@
 # each line has information on 1 family and has 4 or more tokens:
 # token 1: Name of ribotyper classification <f>.<d> for family <f> (e.g. 'SSU') and domain <d> (e.g. Bacteria) in
-#          ribotyper output short file for passing sequences that should be aligned with this model 
+#          ribotyper output short file for passing sequences that should be aligned with this model
 # token 2: CM file name for this family
 # token 3: integer, consensus length for the CM for this family
 # tokens 4 to N: model name(s) from the ribotyper modelinfo file (column 1 in that file)
@@ -14,14 +14,20 @@ SSU.Eukarya           ra.SSU_rRNA_eukarya.edf.cm                    1851 SSU_rRN
 LSU.Archaea           ra.LSU_rRNA_archaea.edf.cm                    2990 LSU_rRNA_archaea
 LSU.Bacteria          ra.LSU_rRNA_bacteria.edf.cm                   2925 LSU_rRNA_bacteria
 SSU.Euk-Microsporidia ra.SSU_rRNA_microsporidia.edf.cm              1312 SSU_rRNA_microsporidia
-LSU.Eukarya           ra.LSU_rRNA_eukarya.edf.cm                    3401 LSU_rRNA_eukarya 
-SSU.Chloroplast       ra.SSU_rRNA_chloroplast.edf.cm                1488 SSU_rRNA_chloroplast
-SSU.Chloroplast-Pilostyles ra.SSU_rRNA_chloroplast_pilostyles.edf.cm     1531 SSU_rRNA_chloroplast_pilostyles
-SSU.Mito-Metazoa      ra.SSU_rRNA_mitochondria_metazoa.edf.cm        955 SSU_rRNA_mitochondria_metazoa
-SSU.Euk-Apicoplast    ra.SSU_rRNA_apicoplast.edf.cm                 1463 SSU_rRNA_apicoplast
-SSU.Mito-Amoeba       ra.SSU_rRNA_mitochondria_amoeba.edf.cm        1861 SSU_rRNA_mitochondria_amoeba
-SSU.Mito-Chlorophyta  ra.SSU_rRNA_mitochondria_chlorophyta.edf.cm   1282 SSU_rRNA_mitochondria_chlorophyta
-SSU.Mito-Fungi        ra.SSU_rRNA_mitochondria_fungi.edf.cm         1454 SSU_rRNA_mitochondria_fungi
-SSU.Mito-Kinetoplast  ra.SSU_rRNA_mitochondria_kinetoplast.edf.cm    624 SSU_rRNA_mitochondria_kinetoplast
-SSU.Mito-Plant        ra.SSU_rRNA_mitochondria_plant.edf.cm         1649 SSU_rRNA_mitochondria_plant
-SSU.Mito-Protist      ra.SSU_rRNA_mitochondria_protist.edf.cm       1588 SSU_rRNA_mitochondria_protist
+LSU.Eukarya           ra.LSU_rRNA_eukarya.edf.cm                    3401 LSU_rRNA_eukarya
+SSU.Plast-Chloroplast       ra.SSU_rRNA_chloroplast.edf.cm                1488 SSU_rRNA_chloroplast
+SSU.Plast-Chloroplast-Pilostyles ra.SSU_rRNA_chloroplast_pilostyles.edf.cm     1531 SSU_rRNA_chloroplast_pilostyles
+SSU.Mito-Metazoa      ra.SSU_rRNA_mito_metazoa.edf.cm        955 SSU_rRNA_mito_metazoa
+SSU.Plast-Apicoplast    ra.SSU_rRNA_apicoplast.edf.cm                 1463 SSU_rRNA_apicoplast
+SSU.Mito-Amoebozoa       ra.SSU_rRNA_mito_amoebozoa.edf.cm        1861 SSU_rRNA_mito_amoebozoa
+SSU.Mito-Chlorophyta  ra.SSU_rRNA_mito_chlorophyta.edf.cm   1282 SSU_rRNA_mito_chlorophyta
+SSU.Mito-Fungi        ra.SSU_rRNA_mito_fungi.edf.cm         1454 SSU_rRNA_mito_fungi
+SSU.Mito-Kinetoplastea  ra.SSU_rRNA_mito_kinetoplastea.edf.cm    624 SSU_rRNA_mito_kinetoplastea
+SSU.Mito-Embryophyta        ra.SSU_rRNA_mito_embryophyta.edf.cm         1649 SSU_rRNA_mito_embryophyta
+SSU.Mito-Ciliophora   ra.SSU_rRNA_mito_ciliophora.edf.cm    1669 SSU_rRNA_mito_ciliophora
+SSU.Mito-Bigyra        ra.SSU_rRNA_mito_bigyra.edf.cm         1662 SSU_rRNA_mito_bigyra
+SSU.Mito-Oomycota      ra.SSU_rRNA_mito_oomycota.edf.cm       1503 SSU_rRNA_mito_oomycota
+SSU.Mito-Cryptophyceae ra.SSU_rRNA_mito_cryptophyceae.edf.cm  1483 SSU_rRNA_mito_cryptophyceae
+SSU.Mito-Choanoflagellata ra.SSU_rRNA_mito_choanoflagellata.edf.cm 1596 SSU_rRNA_mito_choanoflagellata
+SSU.Mito-Protist-Other ra.SSU_rRNA_mito_protist_other.edf.cm  1588 SSU_rRNA_mito_protist_other
+SSU.Mito-Protostomia   ra.SSU_rRNA_mito_protostomia.edf.cm    711 SSU_rRNA_mito_protostomia

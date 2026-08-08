@@ -19,7 +19,7 @@
 LSU_rRNA_archaea acceptable
 LSU_rRNA_bacteria acceptable
 LSU_rRNA_mito_eukaryote acceptable
-LSU_rRNA_mito_plant acceptable
-LSU_rRNA_mito_kinetoplast acceptable
+LSU_rRNA_mito_embryophyta acceptable
+LSU_rRNA_mito_kinetoplastea acceptable
 LSU_rRNA_chloroplast acceptable
 LSU_rRNA_apicoplast acceptable
