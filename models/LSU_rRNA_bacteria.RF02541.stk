@@ -138,7 +138,7 @@ AFNU01000062.1/241-3124        GGU--UAAGU---UAA--UAAGAGCGCA-CGGUGAAUGCC-U-AGGC-A
 FP565575.1/1585575-1582548     GGU--CAAGC---UAC--UAAGAGUGUA-CGGUGGAUGCC-U-UGGC-AUCAGCAGGCGAUGAA-GGGCGU--GGUA-AGCUGCGAUAAG-CCUCGGGUAGUCGCA------CACAGACGCUA--AUCCGAGGAUGCCC-GAAUGGGG---AAACCCGAUCCGA------------------------------------
 EF203797.1/2365-5248           GGU--CAAGU---AAU--UAAGAGCAUG-UGGUGGAUGCC-U-UGGC-AAUGAUAGGCGAUGAA-GGACGU--GGAA-GCCUGCGAUAAG-CUUCGGGGAGCUGGC------AACGAGCUGUG--AUCCGGAGAUUUCC-GAAUGGGG---GAACCUACCC---------------------------------------
 CP002683.1/863851-860827       GGC--CAAGC---UAC--UAAGGGCCAG-CGGUGGAUGCC-U-CGGG-CGCAGGAGGCGAGGAA-GGGCGU--GGCA-AGCUGCGAAAAG-CCACGGGGAGCCGCA------AGCAGGCGUUG--AUCCGUGGAUGCCC-GAAUGGGG---GAACCCGGCCAGG------------------------------------
-#=GC SS_cons                   {{{..{{{{{...,,,..,,,{{{{{{{.{{{-----{{{.,.,{{{.{{{{{{{{[[,,,,,(.(((<<<..____.____>>>,,,,,.<<<<<<<--<<<___......____>>>----..->>>>>>>,,,))).),,,<<<_...___>>><<<<<<<....................................
+#=GC SS_cons                   {{{..{{{{{...,,,..,,,{{{{{{{.{{{-----{{{.,.,{{{.{{{{{{{{[[,,,,,(.(((<<<.._AA_.BBBC>>>,,,c,.<<<<<<<--<<<bbb......_aa_>>>----..->>>>>>>,,,))).),,,<<<_...___>>><<<<<<<....................................
 #=GC RF                        ggu..caagc...uau..uAAggGCgcg.cGGuGGAUGCC.U.uGGc.gccgggaggCGAuGAg.GGaCGc..Ggua.agCugCGAuAAG.CcccGgggAGccGca......AacAggCuuuG..AccCgggGAUuuCC.cAAUgGGG...aAACCcgcccggg....................................
 
 X68433.1/1-2932                -------------------------------------------------------------------------------------------------------------------------GUAAUG--GAG-CAGUA-UCC-A-U--AUCUGAAUUCA--------------------UA------------------G
@@ -453,7 +453,7 @@ AFNU01000062.1/241-3124        UGGGGUUGUAG-GA-CCUUCAACAA---------------------AUG
 FP565575.1/1585575-1582548     CGGGGUUGAGG-GGUCUUGCCUGAUUCUAGUACG--GUAGAGUCGAAGAGUGAUAAAUC-UC--A-CU-CCU---AAUUGAAC-G-A-U-CUGGAAA-GGUCGGCCAU--AGAAGGUGACAGCCCUGUAGAGUAAAGGAG---U----GAGACUCUUU--GCGCAGGAUA--CCC-AAGUACCAUAGGACACGUG-AAAU
 EF203797.1/2365-5248           ---------------GCAAGAG-------------------------------AUAGCG-GU--U-UU-UUU---AGCAGAAC-G-A-U-UUUGAAA-GGUCGGCCGU--AGUGGGUGAUAGCCCCGUAUGCGAAAAGAA---G----ACCGUGGUACUGAGUUUGCGAC------AAGUAGGGCGGGACACGUG-AAAU
 CP002683.1/863851-860827       CGGGGUAGAGG-GGGCACACUGGAGGAGGCUAGGG-ACUCCUCGGGGAGUAAGAAAACC-GC--U-UG-GCU---AGCCGAAG-GCA-C-CUGGAAU-GGUCCGCCGU--AGAGGGUGAGAGCCCCGUAGGCGAAAGCUG---A----GUGGACUCCCU-GGGUGUGCUA--CCC-AAGUAGCACGGGGCACGAG-GAAU
-#=GC SS_cons                   >>>,,,,,,((.(-.(((((--...........................-----(((((.((..(.((.(((...-(((,,,<.<.<.<.<______.>>>>>,,<__.._>,<<<_______>>>,,,)))---)))))...)....)))))))--.....)))))---..))).,,,,,<<<<<<<<<_____.__>>
+#=GC SS_cons                   >>>,,,,,,((.(-.(((((--...........................-----(((((.((..(.((.(((...-(((,,,<.<.<.<.<______.>>>>>DD<__.._>,<<<_____dd>>>,,,)))---)))))...)....)))))))--.....)))))---..))).,,,,,<<<<<<<<<_____.__>>
 #=GC RF                        cgGGGUugugG.Ga.cccccaa...........................auuaagagcc.cc..c.cg.gcu...AgccGAAc.g.g.c.cUGGAAa.ggccgaCCau..AGagGGUGAuAGuCCcGUAggcgaAagccg...g....ggggcucuu.....ggggguau..CCc.gAGUAgggCggggcAcGuG.aAgc
 
 X68433.1/1-2932                UCCGUCGGAAUCC-GGGAGGACCAU--CUCCCAAGGCUAAAUACUCCCUAGUGACCGAUAGUGAAC-CAGUACCGUGAGGGAAAGGUGAAA-AGCACCCCGG-AAGGGGAGUGAAAGAGAUCC-UGAAACCGU-GUGCCUAC-AAG-UAGUCAGAGCCCG----------------------------------------
@@ -558,7 +558,7 @@ AFNU01000062.1/241-3124        CCGGUCGGAAUCU-GCGAGGACCAU--CUCGCAAGGCUAAAUACUACCU
 FP565575.1/1585575-1582548     CCUGUGGGAAUCC-GGGGGGACCGC--CCUCCAAGGCUAAACACUCGCUGAUGACCGAUAGUGAAC-CAGUACCGUGAGGGAAAGGUGAAA-AGCACCCCUGUGAGGGGAGUGAAAUAGUACC-UGAAACCGU-ACACUUAC-AAG-CAGUCGAAGGGCUAUGCUCG---------------------------------
 EF203797.1/2365-5248           CCUGUCUGAAGAU-GGGGGGACCAU--CCUCCAAGGCUAAAUACUCAUCAUUGACCGAUAGUGAAC-AAGUACCGUGAGGGAAAGGUGAAA-AGAACCCCGG-GAGGGGAGUGAAAUAGAACC-UGAAACCGC-AUGCUUAC-AAA-AAGUAGGAGCCCG----------------------------------------
 CP002683.1/863851-860827       CCCGUGUGAAUCA-GGGGGGACCAC--CCUCCAAGGCUAAAUACUCCCUGCGCACCGAUAGAGCAU-AAGUACCGUGAGGGAAAGGUGAAA-AGAACCCCGG-GAGGGGAGUGAAAUAGAGCC-UGAAACCGC-UGGCCUAC-AAG-CAGUCGGAGCCUGC---------------------------------------
-#=GC SS_cons                   >>>>>>>,,,,,,.<<<<<______..>>>>>,,]]]],,},,}}-}}}}}}}-}},,,,,,,,,,.,,,,,<<____>>,,,,}},,,,,.,,,,<<<<_____>>>>,,,,,,,,,,,,,}.-----}}}}.}}}}}},,.,,,.{,<<<<<<<<<<<_.......................................
+#=GC SS_cons                   >>>>>>>,,,,,,.<<<<<__EEEE..>>>>>,,]]]],,},,}}-}}}}}}}-}},,,,,,,,,,.,,,,,<<____>>,,,,}},,,,,.,,,,<<<<_____>>>>,,,,,,,,,,,,,}.-----}}}}.}}}}}},,.,,,.{,<<<<<<<<<<<_.......................................
 #=GC RF                        cccGcccGAAuau.gggggGACCAc..cccccAAGgCuAAaUAcuccccggcgACCGAUAGuGaAc.uAGUACCGUGAGGGAAAGGUGAAA.AGaACCCcggugAgGGGAGUGAAAuAGaaCC.UGAAACCgc.gcGCccAC.AAg.caGucGcggcccga.......................................
 
 X68433.1/1-2932                --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1188,7 +1188,7 @@ AFNU01000062.1/241-3124        CCACCUCGGGAUACUGAGCAUAAUCAAACUCCGAAUGCCGG-UA--AUA
 FP565575.1/1585575-1582548     CUCACA-AGGGUACCAAACUCAACCAAACUCCGAAUGCCGU-CA-ACUGG---AAUUGCGGGAGUCAGAC-UGUGGGGGCUAAGCUCCAU-GGUCGAGA-GGGAAACAGCCCAGACCACCAGCUAAG-GUCCUGGAGUGCAGG-C-UAAGUGGG-------AAAGGAUGUCAGAUUACUUAGACAACCAGGAGGUUGGCU
 EF203797.1/2365-5248           UCAUGGCGACUUACCAAACCAAUGCAAACUCCGAAUACCAG-CG--AGUA---GAGCCUGGGAGACAGAGCACCGGGUGCUAACGUCCGG-ACUCAAGA-GGGAAACAACCCAGACCGCCAGCUAAG-GUCCCCAAA-AUUGG-C-UAAGUGGG-------AAACGAAGUGGGAAGGCUAAAACAGUCAGGAUGUUGGCU
 CP002683.1/863851-860827       CUUACC-GGCCUACCGAACCCCGGCAAACUCCGAAUACCGU-CA--GAAG---GACCCUGGGAGUGAGCC-GCUGGGUGAUAAAGUCCAG-CGACGAGA-GGGGAACAACCCAGACCGCCAGCUAAG-GUCCCGAAGUACUGG-C-UAAGUGGU-------AAAGGAGGUGGCCCUGCUUAGACAACCAGGAUGUUGGCU
-#=GC SS_cons                   <<____.>>>>>->>--->>>>->>>-->>->---->>>>>.>>..>>>-...->>>>>>>>->,,,<<<.<<<<<<<______>>>>>>.>>>>,,,,.<<<______>>>,,,((((-(((---(.((------(-(((((.(.--------.......---(((-((((((((((-------(((((,<<<--<<<_
+#=GC SS_cons                   <<____.>>>>>->>--->>>>->>>-->>->---->>>>>.>>..>>>-...->>>>>>>>->,,,<<<.<<<<<<<______>>>>>>.>>>>,,,,.<<<______>>>,,,((((-(((---(.((FF----(-(((((.(.--------.......---(((-((((((((((-------(((((,<<<--<<<_
 #=GC RF                        ccuaaa.ggccuACcaAacccaaccaAACuccGAAUgccgg.gg..ggga...aagcccggcAGucAgac.cgcgggcGaUAAgguccgc.ggucgAgA.GGGaAAcAaCCCAGAcCgcCagcUAAG.GuCCCuAAgugcggG.c.UAAGUGgg.......AAAGGcuGuggggccgCuaAgACAaCcaGGAgGUUGGCU
 
 X68433.1/1-2932                UAGAAGCAGCCAC-CAUUUAAAGAGUGCGUAAUAGCUCACUGGU-----CG-A--GU-GACUCUGCGCCGAAAAUGUACCGGGGCU-AA--ACGUAUCACCGAAGCUGCGGACUGUUC-----UUGC-------------------------------------------------------------------------
@@ -1293,7 +1293,7 @@ AFNU01000062.1/241-3124        UAGAAGCAGCCAU-CCUUUAAAGAGUGCGUAAUAGCUCACUAGU-----
 FP565575.1/1585575-1582548     UAGAGGCAGCCAU-CCUUUAAAGAGUGCGUAACAGCUCACUGGU-----CA-A--GU-GUUCUGGCGCCGAUAAUGUAACGGGGCUCAA--GCCUGCCACCGACGCUGUGGGAUUUCGU---UCGCUUCG----------------------------------------------------------------------
 EF203797.1/2365-5248           UAGAAGCAGCCAU-CAUUUAAAGAAAGCGUAAUAGCUCACUGAU-----CG-A--GU-CGUUCUGCGCGGAAGAUGUAACGGGGCU-AA--GCCAGUUACCGAAGCUGCGGAUUCGCAA----GGAA-------------------------------------------------------------------------
 CP002683.1/863851-860827       UAGAAGCAGCCAU-CAUUUAAAGAGUGCGUAACAGCUCACUGGU-----CG-A--GC-GGGGCUGCGCCGAAAAUACCACGGGGCUUAA--GCCAGUCGCCGAAGCUGCGGACUCAUGC--UGAGAG-------------------------------------------------------------------------
-#=GC SS_cons                   ________>>>--.>>><___><---<<______>>->,))))).....--.-..)).)))))))))))--------------------..))))))))))---)))))))<<<<<<<<..._____.........................................................................
+#=GC SS_cons                   ________>>>--.>>><___><---<<______>>->,))))).....--.-..)).)))))))))))------------ff------..))))))))))---)))))))<<<<<<<<..._____.........................................................................
 #=GC RF                        UAGAAGCAGCCAU.CcUuuAAaGAguGCGUAAuAGCUCACugGu.....Ca.A..Gc.ggccccgCgCCGAaAAUguaaCGGGGCUcAA..gCccgccaCCGAAgcugcGggcucgcgg...uuuaa.........................................................................
 
 X68433.1/1-2932                --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1608,7 +1608,7 @@ AFNU01000062.1/241-3124        CGU-UCUAAC-AUCGGAGAAGGUAG-ACC-GG-AAGGA---CUACUGGA
 FP565575.1/1585575-1582548     CAU-UCUGCA-AUCAGUGAAGCUGG-ACG-GU-GACGA---CCGGUGGAGAG--UGCAGAAGCGAUUAUGC-CGGCCUAAGUA-AC-GAU-AAACUAGGU--GAAAAACCUAGUCGCC-GUA---AAUCUAAGGUUUCC-UGGGG-------AAGGUUAAUCCGCCCA-GGGUUAGUCGGU-UCCUAAGCU-GAGGCC--
 EF203797.1/2365-5248           CGU-UCUGUAAGCCUGUGAAGGUGC-GUC-GG-GAGGC---GUGCUGGAGGU--AUCAGAAGUGCGAAUGC-UGACAUGAGUA-GC-GUU-AAAGGGGGU--GAAAAGCCCCCUCGCC-GAA---AGCGCAAGGUUUUC-UACGC-------AACGUUCAUCGGCGUA-GAGUGAGUCGGC-CCCUAAGGC-GAGGCA--
 CP002683.1/863851-860827       CAC-UCUGAC-UGCGUAGAAGGGUGAUCC-GU-GAGGG---CACCUGGAGUG--GUCGGAGGAGAGAAUCC-GGGCACGAGUA-GC-GAU-AAAGAGGGU--GAGAAUCCCUCUCGCC-GUA---AGCCCAAGGUUUCC-UGGGG-------AAGGGUCGUCCGCCCA-GGGUUAGCCGGA-CCCUAAGGC-GAGGCC--
-#=GC SS_cons                   <-<.<<<<<<.<<<------<<<<<.<<<.__.__>>>...>>>>>--->>>..>>>>>>>-->,,,,,}}.}}}}{{-----.{{.,,,.,,<<<<<<_..______>>>>>>{{{{.,,,...,{{{{,,{{,,,<<.<<<<-.......--<<_____>>->>>>.>>,,,,,,[[[[.,<<---<<<.-<-<<<..
+#=GC SS_cons                   <-<.<<<<<<.<<<------<<<<<.<<<.__.__>>>...>>>>>--->>>..>>>>>>>-->,,,,,}}.}}}}{{-----.{{.,,,.,,<<<<<<_..______>>>>>>{{{{.,,,...,{{{{,,{{,,,<<.<<<<-.......--<<_____>>->>>>.>>,,,,GG[[[[.,<<---<<<.-<-<<<..
 #=GC RF                        Cgu.uccgcc.cgcgguGAAggcgc.ccc.Gu.aAggg...gcgccGGAgcg..ggcggaaGuGAgaAUGc.cGgcacgAGUA.gC.GAu.AAgggggGU..GAGAAuCcccccCGCC.GaA...AgcCcAAGGuUUCC.ugggu.......AAgGuUaaUCcgccca.GGGUuAGuCGgg.aCCUAAGgc.GaGGcc..
 
 X68433.1/1-2932                -GA-----AA--G-GC-GUAG-GCGA-UGG-ACAA-CAGG-UU-GAUAUUCCUGUACCACCUCCUC---ACCAU---------------------------------------------------------------------------------------------------UUGAGC--AAUGGGGGGACGCAGGAGG
@@ -1713,7 +1713,7 @@ AFNU01000062.1/241-3124        -GA-----AA--A-GC-GUAG-CCGA-UGG-ACAA-CAGG-UA-GAAAU
 FP565575.1/1585575-1582548     -UA-----AG--G-GC-GUAA-GCGA-AGG-GCAA-CAGG-UU-AAUAUUCCUGUACUACUG-GAC---GACGACA------------------------------------------------------------------------------------------------AAGACGC--GAUGGGGGGACGCAGAAGG
 EF203797.1/2365-5248           -GA-----GA--U-GC-GUAG-CUGA-UGG-GAAA-CAGG-UU-AAUAUUCCUGUACCGACG-UGU---AGU---------------------------------------------------------------------------------------------------------GC--GAUGUGGGGACGGAGAAGG
 CP002683.1/863851-860827       -GG-----AA--G-GC-GUAG-CCGA-UGG-GAAGAGGGG-UC-AACAAUCCCCCGCCACCU-GAG---UGG-------------------------------------------------------------------------------------------------------AGGC--CAAGGGGUGACGCAGGAGG
-#=GC SS_cons                   .__.....__..>.>>.->->.>>--.->>.,,,<.<<<<.__.______>>>>>,,(((((.(((...(((--....................................................................................................---((..--((((((---((((--((
+#=GC SS_cons                   .__.....__..>.>>.->->.>>--.->>.,,,<.<<<<.__.______>>>>>gg(((((.(((...(((--....................................................................................................---((..--((((((---((((--((
 #=GC RF                        .GA.....aA..g.gC.GuAg.cCGA.UGG.aaAg.cgGG.Uu.AAuAuUCCcgcaCcgccc.ggg...gccuu....................................................................................................uaagc..gacGgggcGACgcagaagg
 
 X68433.1/1-2932                A-UA--GGGUA-AGCGCGG-UA-UUGGAUAU-CCGCGU-CC--AAGCAG--UUAGGC------UGGGAAAU----AGGCAAAUCC--------GUUUCCCGUAA-----GGCUGAG-CUGU-GAU-------GGC-GA------GCGAA--AUAUA-------GUA-G-C-----G-AA--G---UUC-CU-GAU--UCC
@@ -2028,7 +2028,7 @@ AFNU01000062.1/241-3124        ----------------------GCAAGCCGCA-GUGAA-AAGGCCCAAG
 FP565575.1/1585575-1582548     -UUCACCCUGCAA--AGCCCCGGGAGGUCGCA-GUGAA-UCGGGCCAAGCGACUGUUUAAUAAAAACACAGGUCCGUGC-UAAGCCGA---A-A--GGCGAUGUAUACGGACUGACGCCUGCCCGGUGCCGGACGGUU-AACAGGAGGGGUCAUUCG-------------------------------------------
 EF203797.1/2365-5248           GAGCUGG--------------AAGGGGUUGCAAAAGAA-AUGGUGGCUGCGACUGUUUAAUAAAAACACAGCACUCUGC-AAACACGA---A-A--GUGGACGUAUAGGGUGUGACGCCUGCCCGGUGCUGGAAGAUU-AAAUGAUGGGGU-------------------------------------------------
 CP002683.1/863851-860827       -GCUGGC---------------GUGGGUUGCA-GGGAA-UCGGCGGUGGCGACUGUUUACCAAAAACACAGGACUCUGC-GAAGUCGU---A-A--GACGACGUAUAGGGUCUGACGCCUGCCCGGUGCCGGAAGGUG-AAGGGUCCGGGUUAGGGGGC-----------------------------------------
-#=GC SS_cons                   .>>>>>>...............>>>>>><___.>,,,,.,,,[[[[[[[[[,,<<<_________>>>,,<<<<<<<<<.--<<<<__..._._..>>>>-->-->>>>>>>>,,((((,<<<--<<<<<<<--<<<-.--<<-<<<<<<<--<<.............................................
+#=GC SS_cons                   .>>>>>>...............>>>>>><___.>,,,,.,,,[[[[[[[[[,,<<<____H____>>>,,<<<<<<<<<.--<<<<__..._._..>>>>-->-->>>>>>>>,,((((,<<<--<<<<<<<--<<<-.--<<-<<<<<<<--<<.............................................
 #=GC RF                        .gcccgg...............gggGGccGCA.gagAa.uaGGcccgggCGACUGuUUAccAAAAaCACAggccucugC.uAagucGu...A.A..gacgAuGUAuaggggcuGAcGCCUGCCCGGUgCcgGAAGGuU.AAgggccgggGuuAgc.............................................
 
 X68433.1/1-2932                --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2343,7 +2343,7 @@ AFNU01000062.1/241-3124        UCGGUGAAAUCAUAGUACCUGUGAAGAUGCAGGUUACCCGCGACAGGAC
 FP565575.1/1585575-1582548     UCGGUGAAAUUGUAGUACCGGUGAAGAUGCCGGUUACCCGCAGCUAGACGGAAAGACCCCGUGAACCUUUACUGUAGCUUGGCAUUGGAUCUUGGUGUGGUUUGUGUAGGAUAGGUGGGAGGCUUUGAAGCGGGGGCGCUAGCCCU-CGUGGAGCCAUC-CUUGAAAUACCACCCUUUCUACUCUGGGCUUCUAACCC--
 EF203797.1/2365-5248           UCAGCGAAAUUGAAAUGUUUGUGAUGAUGCAAUCUCCCCGCGGAAAGACGGAAAGACCCCAUGAACCUUUACUGUAGCUUUGUAUUGGAUUUUGAACAGAUCUGUGUAGGAUAGGUGGGAGGCUAAGAUGCAAGGUUGCUAGAUCU-UGUGGAGCCAAC-GUUGAAAUACCACCCUGGUGUGUUUGAGGUUCUAACCU--
 CP002683.1/863851-860827       CCAGCGAAACUGUAGUCUCGGUGAAGAUGCCGGGUACCCGCGGUGGGACGGAAAGACCCCGUGAAGCUUUACUGCAGCUUGGCAUUGCACUUCGGUGCAGGAUGUGCAGGAUAGGUGGGAGGCUGAGAAGCCCGGGCGCCAGCUCG-GGUGGAGCCGUC-CUUGAGAUACCACCCUUCCUGCAUCGGGGUGCUAACCU--
-#=GC SS_cons                   }}}}}----}}},,,,<<<<<________>>>>>,,{{{{{{{{-{{{-{{,,,,,,{{{{-{{{{{{{,((((---(((((((,,<<<<<<<<<<<<<<<<<<---------<<<<<--<<<------<<<<<<<<____>>>>>.>>>--->>>---.--------->>>>>>>>>>>>>>>>>>>>>>>,,,<<<..
+#=GC SS_cons                   }}}}}----}}},,,,<<<<<________>>>>>,,{{{{{{{{-{{{-{{,,,,,,{{{{-{{{{{{{,((((---(((((((,,<<<<<<<<<<<<<<<<<<-IJ---K--<<<<<--<<<------<<<<<<<<____>>>>>.>>>--->>>---.----ij-k->>>>>>>>>>>>>>>>>>>>>>>,,,<<<..
 #=GC RF                        cCgGcGAAAguguAgUgccgGUgAAGAUGCcggcUaCcCgCggcugGACgGAAAGACCCCGUGgAcCUUUACUguAgccuggcauUGgcccccggcgcggcccGUguAGgAUAgGuGGGAGgCuuuGAAgccggggcgcuAgcccc.ggcGGAGcCaac.guUGAaAUACCaCcCgggccgcgccgggggcCUAACcc..
 
 X68433.1/1-2932                G-CUG-CCC-UUAUC-GGGCAG-GGAGACAGUGUCAGGUGGGCAGUUUGACUGGGGCGGUCGCCUCCUAAAAGGUAACGGAGGCGCCCA-AAGGUUCCCUCAGAAUGGUUGGAAAUCAUUCGCA---GAGUGUAAAGGCA-CA-AGGGAGCUUGACUGCGAGACCUACAAGUCGAGCAGGGACGAAAGUCGGGCUUAGUG
@@ -2448,7 +2448,7 @@ AFNU01000062.1/241-3124        A-CAG-CCG-UAAUC-CGGUUG-GGGGACAGUGUCAGGUGGGCAGUUUG
 FP565575.1/1585575-1582548     G-GAC-CUGUGAAGC-CAGGUC-GGGGACAAUGUCAGGUGGGCAGUUUGACUGGGGCGGUCGCCUCCUAAAGAGUAACGGAGGCGCCCA-AAGGUUCCCUCAGCACGGUCGGCAAUCGUGCGUU---GAGUGCAAAGGCA-UA-AGGGAGCUUAACUGCGAGACCUACAAGUCAAGCAGGUGCGAAAGCAGGGCUUAGUG
 EF203797.1/2365-5248           A-GGU-CCA-UAAGC-UGGACU-GGGGACAGUGCAUGGUAGGCAGUUUGACUGGGGCGGUCUCCUCCCAAAGCGUAACGGAGGAGUUCG-AAGGUACGCUAGUUACGGUCGGAAAUCGUGACGA---UAGUGCAAUGGCA-AA-AGCGUGCUUGACUGCGAGACUGACAAGUCGAGCAGGUGCGAAAGCAGGACAUAGUG
 CP002683.1/863851-860827       G-GAG-GGG-UAAGC-CUCCUC-AGGGACAGUGCCUGGUGGGCAGUUUGACUGGGGCGGUCGCCUCCUGAAAGGUAACGGAGGCGUCCA-AAGGUACCCUCAGGCGGAUUGGAAACCCGCCGUU---GAGUGCAAGGGCA-GA-AGGGUGCUUGACUGCGAGGCCGACGGGCCGAGCAGGGACGAAAGUCGGGCCUAGUG
-#=GC SS_cons                   -.<<<.<<<._____.>>>>>>.>>>,,,,,)))))))----)))),,<<<<_____>>>><<<<<<___________>>>>>>{,[[,.,,,((((((<<-<<<<<<_______>>>>>>---...>><<______>>,.,,.,)))))),,,,<<<<<<<<<______>>>>>>>>>,<<<____>>>,]],,,,,,,
+#=GC SS_cons                   -.<<<.<<<._____.>>>>>>.>>>,,,,,)))))))----)))),,<<<<_____>>>><<<<<<___________>>>>>>{L[[,.,,,((((((<<-<<<<<<_______>>>>>>---...>><<lM_NNN>>,.,,.,)))))),,,,<<<<<<<<<___O__>>>>>>>>>,<<<____>>>,]]nnn,m,,
 #=GC RF                        a.gcc.ccg.uaAuc.cggggc.ggGGACagugccagguGGGcAGUUUGaCuGGGGCgGuCgCCUCCuAAAgaGUAACGGAGGcGcgCa.AAGGuuccCUCAgcgcGguuGGaAAcCgcgcgua...GAGcGcAAaggCA.uA.AGggagCuUgACuGcccGacugACAaguCgggCaGaggCGAAAGccGGccuUAGUG
 
 X68433.1/1-2932                AUCCGGUGGUU-CCGCAUGGAAGGGCCAUCGCUCAACGGAUAAAAGCUACCCCGGGGAUAACAGGCUUAUCUCCCCCAAGAGCUCCACAUCGACGGGGAGGUUUGGCACCUCGAUGUCGGCUCAUCGCAUCCUGGGGCUGUAGUCGGUCCCAAGGGUUGGGCUGUUCGCCCAUUAA-AGCGGUACGCGAGCUGGGUUCAG
@@ -2553,7 +2553,7 @@ AFNU01000062.1/241-3124        AUCCGGCGGUA-CCGAAUGGAAGGGCCGUCGCUCAACGGAUAAAAGCUA
 FP565575.1/1585575-1582548     AUCCGGUGGUC-CCGAGUGGAAGGGCCAUCGCUCAACGGAUAAAAGGUACUCCGGGGAUAACAGGCUUAUCUCCCCCAAGAG-UCCACAUCGACGGGGAGGUUUGGCACCUCGAUGUCGGCUCAUCGCAUCCUGGGGCUGAAGCAGGUCCCAAGGGUUGGGCUGUUCGCCCAUUAA-AGCGGUACGCGAGCUGGGUUUAG
 EF203797.1/2365-5248           AUCCGGUGGUA-CUGUAUGGAAAGGCCAUCGCUCAACGGAUAAAAGGUACUCUGGGGAUAACAGGCUGAUACCGCCCAAGAG-UUCAUAUCGACGGCGGUGUUUGGCACCUCGAUGUCGGCUCAUCUCAUCCUGGGGCUGUAGCAGGUCCCAAGGGUAUGGCUGUUCGCCAUUUAA-AGAGGUACGUGAGCUGGGUUUAA
 CP002683.1/863851-860827       AUCCGGCGGUG-CCGAGUGGAAGGGCCGUCGCUCAACGGAUAAAAGUUACUCCGGGGAUAACAGGCUGAUCGCUCCCAAGAG-UUCACAUCGACGGAGCGGUUUGGCACCUCGAUGUCGGCUCAUCCCAUCCUGGGGCUGGAGAAGGUCCCAAGGGUCGGGCUGUUCGCCCGUUAA-AGGGGUACGUGAGCUGGGUUCAG
-#=GC SS_cons                   ,,,<<<<<<<-.<<________>>>>>>>>>,,,,,},,,,,,}}}}}--}}}}}},,,,,,,,<<<-<<<<<<<<---<<_.______>>--->>>>>>>-->>>>,,,,,,,,,,(((((((((((,,<<-<<<<<<______>>>>>>--->>,<<<<<_____>>>>>,,,,.,)))))--)--))))-),,,,,<
+#=GC SS_cons                   ,,,<<<<<<<-.<<__eeee__>>>>>>>>>,,,,,}o,,,,,}}}}}--}}}}}},,,,,,,,<<<-<<<<<<<<---<<_.______>>--->>>>>>>-->>>>,,,,,,,,,,(((((((((((,,<<-<<<<<<______>>>>>>--->>,<<<<<_____>>>>>,,,,.,)))))--)--))))-),,,h,<
 #=GC RF                        AUCCggcGGcu.ccgagUGGaAgggCCgucGCUCAACGGAUAAAAGgUACcCCGGGGAUAACAGGCugAucccccCCAAGaG.UuCAuAuCGACGggggggUUUgGCACCUCGAUGUCgGCUCauCgCAUCCUGGGgCuGgAGuAgGuCCCAAGGGUucGGCUGUUCGCCgaUUAA.AGcGguACGuGAGCuGGGUUcAG
 
 X68433.1/1-2932                AACGUCGUGAGACAGUUCGGUCC-CUAUCCGUCGCGGGCG-CAGGAAAUU-UGA-GAGGAGCUGUCCUUAGUACGAGA-GGACCGGGAUGGACGCACCGCUGGUGUA-CCAGUUGUUCU--GCC-AAGGGCA-UCGCUGGGUAGCUA-UGUGCGGACGGGAUAAGUGCUGAAAGCAUC-UAAGCAUGAAGCCCCCCUCAA
@@ -2658,7 +2658,7 @@ AFNU01000062.1/241-3124        AACGUCGUGAGACAGUUCGGUCC-CUAUCCGUCGUGGGCG-CAGGAAGU
 FP565575.1/1585575-1582548     AACGUCGUGAGACAGUUCGGUCC-CUAUCUGCUGCGGGCG-UAGGAGAUU-UGC-GGGGAUCUGUCCCUAGUACGAGA-GGACCGGGAUGGACGAACCUCUAGUGUG-CCAGUUGUUCU--GCC-AAGGGCA-UCGCUGGGUAGCUA-UGUUCGGAAGGGAUAAACGCUGAAAGCAUC-UAAGUGCGAAGCCCACCCCAA
 EF203797.1/2365-5248           AACGUCGUGAGACAGUUUGGUCC-CUAUCUUCCGUGGGCG-UUGCAGAUU-UGA-GGAAGCCUGCUCCUAGUACGAGA-GGACCGGAGUGGACACACCUCUGGUGUA-UCGGUUGUCAC--GCC-AGUGGCA-UAGCCGAGUAGCUA-AGUGUGGAAGAGAUAACCGCUGAAAGCAUC-UAAGCGGGAAACUCGUUCCAA
 CP002683.1/863851-860827       AACGUCGUGAGACAGUUCGGUCC-CUAUCCACCGUGGGCG-UAGGAGGCU-UGA-GAGGAGCUGCCCCUAGUACGAGA-GGACCGGGGUGGACGCACCGCUGGUGGA-CCGGUUGUGGCUGGCC-UGCCGCA-CAGCCGGGUAGCCA-UGUGCGGAAGGGAUAACCGCUGAAAGCAUC-UAAGCGGGAAGCCCUCCUCAA
-#=GC SS_cons                   <<<<<<____>>>->>>>,,,,}.}--}}}}}}}}}}},,.,,(((((((.(--.((((,,<<<<<<<__________._____>>>>>>><<<<<<---<<<----.<<<<<<<<<<<..___._>>>>>>.-->>>>>---->>>.->>>>>>,,<<<----<<<<<_________.__>>>>>---->>>,))))--
+#=GC SS_cons                   <<<<<<____>>>->>>>,,,,}.}--}}}}}}}}}}}P,.,,(((((((.(--.((((,,<<<<<<<__________._____>>>>>>><<<<<<---<<<----.<<<<<<<<<<<..___._>>>>>>.-->>>>>---->>>.->>>>>>,,<<<----<<<<<_________.__>>>>>---->>>,))))--
 #=GC RF                        aaCGUCGUGAGACAGuuCGGUCC.cUAUCcgccGcGgGcG.uaGGaggcc.UGA.ggGgauccgccccUAGUACGAGA.GGACCggggcgggCggaCCucugGUGua.cCgGuuGucgc..GCc.AgcggCa.uugCcGgGUAGCca.uGuccGcaaggGAUAAcCGCUGAAaGCAUC.UAAGCGgGAAgCccacCccAA
 
 X68433.1/1-2932                GAUGAGAUUUCCCAUUCC-------UAUA----------------------------------------------------------------------------------------AGGAA----GU-AAGAUCCCUGAAAGAUGAUCAGGUUGAUAGGUCUGAGGUGGAAGUGUG---GCGA--CAC-AU--G-GAGC
@@ -2763,7 +2763,7 @@ AFNU01000062.1/241-3124        GAUGAGACUUCCCAUCC---------GUA--------------------
 FP565575.1/1585575-1582548     GAUGAGAUCUCCCGGGC--------GAAA----------------------------------------------------------------------------------------GCCCC----UA-AAGACUCCUUGCAGAUCACAAGGUUGAUAGGCCAGGUGUGUAAGCGCA---GGAA--UGC-GU--U-UAGC
 EF203797.1/2365-5248           GAUGAGAUCUGCCU-----------------------------------------------------------------------------------------------------------------G-AAGAGCCGUUCAAGACUAGGACGUUGAUAGGUCGGGUGUGUAAGGCGU---GUAA--GCG-CU--U-CAGC
 CP002683.1/863851-860827       GAUGAGGCCUCCCGAGA---------CAGGGGAG------------------------------------------------------------------------------ACCCUGUCCC----CG-AAGGGCCCAGGGAGACUACCUGGUAGAUAGGCCGGAGGUGGAAGCCCA---GCAA--UGG-GU--G-GAGC
-#=GC SS_cons                   ----)))))))),,<<<.........___........................................................................................__>>>....,(.--((((<<<<<_______>>>>>,,,,<<<<<<<<<<<--<--<<<<<...____..>>>.>>..>.--->
+#=GC SS_cons                   p---)))))))),,<<<.........___........................................................................................__>>>....,(.--((((<<<<<_______>>>>>,,,,<<<<<<<<<<<--<--<<<<<...____..>>>.>>..>.--->
 #=GC RF                        GAuaAggccuCCcucgg.........uaa........................................................................................auccg....uu.aAGgccccuggaAGAcuAccaggUuGAuaGgccggcgGUGcAAgcgcg...GuAA..cgc.gc..g.uAGC
 
 X68433.1/1-2932                UGACAG-AUACUAAU-CGAUCG--A-GG-ACUU-A-ACCUA

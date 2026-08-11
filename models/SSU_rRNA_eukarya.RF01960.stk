@@ -127,7 +127,7 @@ AJ278035.1/3-1807          UAUCUGGUUGAUCCUGC---CAGUAGUC-AUAUGCUUGUCUCAAAGAUUAAGC
 AF070445.1/1-1802          AACCUGGUUGAUCCUGC---CAGUAGUC-AUAUGCUUGUCUCAAAGAUUAAGC-CAUGCAUGUCUAAGU------------------------------AUAAACAA-UUCU---------------AUACUGU-GAA-ACUGCCAAUGGCUCAUUA-AAUCAGUUAUAG-UU-UAUUUGAUAA----------------
 EF050072.1/12-1709         AACCUGGUUGCUCCUGC---CAGUAGUC-AUACGCUUGUCUCAAAGAUUAAGC-CAUGCAUGUCUAAGU------------------------------ACAAGCCC---UU---------------GUACGGU-GAA-ACUGCGAAUGGCUCAAUA-AAUCGGUUUUAA-GA-CACUUGAUAG----------------
 AJ564772.1/7-1816          UACCUGGUUGAUCCUGC---CAGUAGUC-AUAUGCUUGUCUCAAAGAUUAAGC-CAUGCAUGUCUAAGU------------------------------AUACACCU---UU---------------ACACGGU-GAG-ACUGCGAAUGGCUCAUUA-AAUCAGUUAUAG-UU-UAUUUGAUAG----------------
-#=GC SS_cons               :::<<<<<_______>>...>>>,{{{-.{{{{{{{,{{{{{{{{{-----{{.{-{{{,,<<---<<<..............................----<<__..___..............._____>>.---.>>>>>,,,,,,[[[,,,,.,,((((--((--.((.----((((,,................
+#=GC SS_cons               :::<<<<<___AAA_>>...>>>,{{{-.{{{{{{{,{{{{{{{{{-----{{.{-{{{,,<<---<<<..............................----<<__..___..............._____>>.---.>>>>>,,,,,,[[[,,,,.,,((((--((--.((.----((((,,................
 #=GC RF                    uACCUGGUUGAUCCUGC...CAGUaguc.aUAcgCUUcucUccaAGAUUAAGC.CAUGCAUGUcUAaGu..............................acAaacuu..aUu...............auAcggu.GAA.aCuGCGaAuGGCUCAUUA.aAucAGUuauaa.uc.uauuugauau................
 
 DQ248314.1/1-1801          -------------------------------------------------------UACCUUACUACAUGGA-UAACCGU-GGUAAUUCUAGAGCUAAUACAUGCUAAAA----ACCUCGACU------------------------------------------------------------------UC-GGAA--G-G
@@ -597,7 +597,7 @@ AJ278035.1/3-1807          -C-ACGAGGAUCAAUUGGAGGGCAA-GUC-UGGUGCCAGCAGCCGC-GGUAAU
 AF070445.1/1-1802          -A-UCGAGUAUCAAUUGGAGGGCAA-GUC-UGGUGCCAGCAGCCGC-GGUAAUUCC--AGCUCCA-AUA-GC-GUAUAUUAA-AGUUGUUG-CAGUUAAA---A--------AGCUC-GUAGUUGGAUUUUGGA--UU---GCGUCUAACGGUCGGCCGUGAGGUUCGUACUGUUGGGUGCUUUCUUCUUCUCGAAGACC
 EF050072.1/12-1709         -A-UCGAGGACCCAUUGGAGGGCAA-GUC-UGGUGCCAGCAGCCGC-GGUAAUUCC--AGCUCCA-AUA-GC-GUAUAUUAA-AGUUGUUG-CAGUUAAA---A--------AGCUC-GUAGUUGAAUUUCGGGUUUC---CGGCGCUCCCGCUUCAUUGCGGGGACACGGGGACCCUCCUCGCCUU-------------
 AJ564772.1/7-1816          -A-UCGAGUAUCAAUUGGAGGGCAA-GUC-UGGUGCCAGCAGCCGC-GGUAAUUCC--AGCUCCA-AUA-GC-GUAUAUUAA-AGUUGUUG-CAGUUAAA---A--------AGCUC-GUAGUUGGAUCUCAGGGUGA---GCUCAGUUGGUCAGCCUAAUUGGUCAGAACUGGCUGACUCUCCCUUGUUUCUGAAUCCC
-#=GC SS_cons               .-.>>,,,,,,,,,<<<<<<-----.--<.<<<-----<<____>>.------->>..>>>>>>>.>,}.}}.}}}}}}},,.,,,,,,,,.[[[-----...[........,((((.---(((--------------...-----------------------------------------------------------
+#=GC SS_cons               .-.>>,,,,,,,,,<<<<<<BBB--.--<.<<<-----<<_bbb>>.------->>..>>>>>>>.>,}.}}.}}}}}}},,.,,,,,,,,.[[[CC---...[........,((((.---(((--------------...-----------------------------------------------------------
 #=GC RF                    .a.acGAGgAuCaAuuGGAGGGCAA.GUC.UGGUGCCAGCAGCCGC.GGUAAUUCC..AGCUCCa.aUA.Gc.gUAuacuAA.aGUUGUUG.cgGUUAAA...A........aGcuC.GUAgUuGaauuuaaguuuuu...uuuuuuguuuuauuuuauuuuuuuuuuuauuguuuuuuuauuuuuuuuuuuuuuuuauu
 
 DQ248314.1/1-1801          CGCAUGCCCUUCACUGGGUGU----------------------------------------------------------------------------------------------------------------------------------------------GUCGGGGAACCAGGACUUUUACUUU-GAAAAAAUUAG
@@ -1067,7 +1067,7 @@ AJ278035.1/3-1807          ----------------UACGGGAAACUA--AAGUCUUUGGGU--------UCC
 AF070445.1/1-1802          ----------------UAUGAGAAAUCA--AAGUUUUUGGGU--------UCCGGGGG-GA-G--UAUGG-UCGCAAGG-CUGAAA--C-UU-AAAGG-AAUUGACGG-AAGGGCA-C-CACCA-GGA-GUGGAG-CCUG-CGGC-UUAAUUUGACUCAACACGGGAAAA-CUCA-CCAGGUCCG-G------ACAUAG-
 EF050072.1/12-1709         ----------------UAUGAUAAAUCA--AAGUCUUUGGGU--------UCCGGGGG-GA-G--UAUGG-UCGCAAGG-CUGAAA--C-UU-AAAGG-AAUUGACGG-AAGGGCA-C-CACCA-GGA-GUGGAG-CCUG-CGGC-UUAAUUUGACUCAACACGGGGAAA-CUUA-CCAGGUCCA-G------ACAUAG-
 AJ564772.1/7-1816          ----------------UACGAGAAAUCA--AAGUUUUUGGGU--------UCCGGGGG-GA-G--UAUGG-UCGCAAGG-CUGAAA--C-UU-AAAGG-AAUUGACGG-AGGGGCA-C-CACCA-GGA-GUGGAG-CCUG-CGGC-UUAAUUUGACUCAACACGGGAAAA-CUUA-CCAGGUCCA-G------ACAUAG-
-#=GC SS_cons               ................,,,<<____>>,..,,)))----)))........]]]],<<<.--.-..---<<.<<____>>.>>----..>.>>.,,,,,.,,,{{{{{-.{{{{{{{.-.-{{,,.{{{.{{{{{{.{{{{.{{{{.,,,,<<<<________>>>>,,,,.,,,,.{{{{{{{,,.,......,<<<<<.
+#=GC SS_cons               ................,,,<<__cc>>,..,,)))----)))........]]]],<<<.--.-..---<<.<<____>>.>>----..>.>>.,,,aa.a,,{{{{{-.{{{{{{{.-.-{{,,.{{{.{{{{{{.{{{{.{{{{.,,,,<<<<________>>>>,,,,.,,,,.{{{{{{{,,.,......,<<<<<.
 #=GC RF                    ................uacGgGAAAcCa..AAGuuUUUGggc........UCcgGGGG.GA.G..UAUgG.ucGCAAgg.CuGAAA..C.UU.AAAGG.AAUUGACGG.AAGGGCA.C.CACcA.GGa.GUGGAG.ccUG.CGGC.UUAAuuuGACUCAACACgggaAAA.CUuA.CCaGgcCcG.G......Acaccg.
 
 DQ248314.1/1-1801          UAAGGAUUGA-CA-GA---------UUGAGAGCUCUU-UCU-UGAUU-AUGUGGG-UGGUGGUGCAUGGCCGUU-CUUAGU-UGG-UGGA--GUGA-UUUGUCUGC--UUAAUU-GCGA-UAACGA-ACGAGACCUUAAC-CUGCUAAA-U-AGCCCGGUCCGCUU----------------------------------

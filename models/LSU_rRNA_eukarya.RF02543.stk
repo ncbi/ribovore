@@ -214,7 +214,7 @@ AJ298079.1/5-4031            UGAGGG--UUCA--U-CAUUUUC----------------------------
 Y11506.1/699-3910            U---GA--GUGU--C-CUUG--------------------------------------------GGUGGG-UC------AGUGCGGG-CAAGU-CU-UCUGGAAUGAAG----C-------------------GCCAUGGA-GGGUGAGAGC---------------------------------------CCCGUCCA-
 ADAS01005276.1/8554-11800    CUCAGG--CUCU--U-UCAG--------------------------------------------AGUCCG-AG------UUGAGAAC---UGU-UU-UCAGUGCUGGCA---GC-------------------AUCAUUGA-GGGUGAUAUGGA----------------------------------CUACCAGUGC--
 ACBR01000224.1/7956-3957     UUGAAU--UGUA----CUCUUGUAGG--------------------------------CCUCACAGGUGA-AAU----GAAUAUAUA-GAAGUAAA-GUAGGAAUACUU----C-------------------CUCAUAGA-GGGUGAAAGG---------------------------------------CCCGUAU--
-#=GC SS_cons                 ,,,,((..((((..-.((((............................................-(((((.((......-(((((((.,,,<-.<<.<<______>>>>....>...................,,<___>,.,<<_______.......................................>>,,,,,..
+#=GC SS_cons                 ,,,,((..((((..-.((((............................................-(((((.((......-(((((((.,,,<-.<<.<<______>>>>....>...................AA<___>,.,<<_____aa.......................................>>,,,,,..
 #=GC RF                      Uauagg..ggcc..u.ccuc............................................agccgc.gg......cccccgcc.uAAgU.cc.ccUgGAAugggg....c...................accAuAgA.GGGUGAgAgu.......................................CCcGUau..
 
 ABBC01002983.1/694-4056      ----UGGCUGCUGGA----------CC--GCGCC-CAUGC--GAAG------UUCC-UUCGAC-----GAGUCGAGUUGUUUGG-GAAUGCAGCUCUAAG-U-GGGUG---GUAAAUUUCAUCUAAAGCUAAAUAUUGGCCGG-AGACCGAUAGCGCACAAGUAGAGUGAUCGAAAGGUUAAA-AGCACCUUGAAAAGGG
@@ -305,7 +305,7 @@ AJ298079.1/5-4031            -----CUUCC-CACA----------AU--UGUAG-AAAAU--GAUG-----
 Y11506.1/699-3910            ----UCCCGC-ACAG----------GA--UCCAU-UCGUA--CAAG-----GACGC-UUCAAC----CGAGUCGGGUAGCUUGG-GAAUGCUGCUCUAAU---UGGUG---GUAAAUCUCAUCAAAGGCUAAAUAGUGGUGGG-AGACCGAUAGCGAACAAGUACCGUGAGGGAAAGAUGGAA-AGAACUUUGAAAAGAG
 ADAS01005276.1/8554-11800    -----AUGUU-CAUG----------AU-AUGGAC-UACCA------------AGAG-UCGAGU----UGUUUCGAGUUGUUUGGGGAAUGCAGCUCAAAG-U-GGGUG---GUAAAUUCCAUCUAGAGGGAAAGAUGAAAGG------------------------------AAAAGAUGAAA-AGAAGU--------AC
 ACBR01000224.1/7956-3957     -----CAUAU-AUCA----------UU--UCGUG-GGCUU-UGGAG------UAUU-UAUAUUUUACUGAGUAGUGUUCUUUGA-GAUUGGAGCACAAAU-UGGUGUG---AUACAUUUCACAUAAAGCUAAAUAUGUACAGG-AGACCGAUAGCGAACAAGUACCGUGAGGGAAAGAUGAAAUAGUACUCAGGAAUGAG
-#=GC SS_cons                 .....))))).))--..........))..))))).-----..))))......)))).-)),,,.....,,,,,<<<<<<<____.____>>>>>>>,,,,.,.<<<<<...________>>>>>,,]]]],,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,<<____>>,,,,,,,,,,,.,,,,<<<<____>>>>
+#=GC SS_cons                 .....))))).))--..........))..))))).-----..))))......)))).-)),,,.....,,,,,<<<<<<<____.____>>>>>>>,,,,.,.<<<<<...__BBBBBB>>>>>,,]]]],,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,<<____>>,,,,,,,,,,,.,,,,<<<<____>>>>
 #=GC RF                      .....ggcgg.ggua..........cc..gcggc.uuuau..gagg......ggcc.uccaaa.....GAGUCGgGuugcUUGg.gAaUgcagCcCaAAg.U.gGguG...GUAaAuUuCauCcAAgGCUAAAUAuuagcaaG.AGACCGAUAGcgaACAAGUAccGUGAggGAAAGaUGAAA.AGaACucuGAAaagaG
 
 ABBC01002983.1/694-4056      -AGUUAAA-UAGCACGUGAAAUUGUUGAAAGG--GAAGCGCUUG-CAACCA---GACUC--GGUCGUGGG-GGCUCAGCGGGCAUGCG--UGCC----------------------------------------------------------------------------------------------------------
@@ -1397,7 +1397,7 @@ AJ298079.1/5-4031            ---------------------------------------------------
 Y11506.1/699-3910            -------------------------------------------------------------------------AGCCU-A-CUCUUU--GAAAAACG------UCGGCCCUGUGGGCC-A-CUUUUGGUAAGCAGAACUGGCGAUAAGGGAUGAACCUUAAGCGCGGUUAAGGCGCCUCAUUA--CCCGCUUAU----AG
 ADAS01005276.1/8554-11800    -------------------------------------------------------------------------AACGU-G-GGCAUG--UGAAUGAG------AGUCUUUAGUGGGCC-A--UUUUGGUAAGCAGAACUGGCGAUGCGGGAUGAACCGAACGUGAGGUUAAGGUGCCGGAAUA--UACACUCAU-C--AG
 ACBR01000224.1/7956-3957     -------------------------------------------------------------------------UAUUU-C-ACUUUGGCGUAAAUAAG---AUAACUCCAAGUGGGCC-A-UUUUUGGUAAGCAGAACUGGCGAUGAGGGAUGCUCCUAACGCCUGGAUAAGGUGCCUAAAUA--UUCGCUCAU---GAG
-#=GC SS_cons                 .........................................................................>>>>>.>.>>>,,,..,,,,,,,,......))))))),,,,,<<<.<.<<<<<<_____>>>>>>>>>>,,,,<<<______>>>,,,(((((-(---(((------(-(..--(((----.-.---
+#=GC SS_cons                 .........................................................................>>>>>.>.>>>,,,..,,,,,,,,......))))))),,,,,<<<.<.<<<<<<_____>>>>>>>>>>,,,,<<<______>>>,,,(((((-(---(((CC----(-(..--(((----.-.---
 #=GC RF                      .........................................................................aaccg.g.ggcauu..uaAuauaa......agcuccaAGUGGGCC.A.cUUuUGGUAAGCAgAAgUGGCGAUGcGGGAUGAACCgAAcGccggGuUAAGGuGCcuaAgUg..cacgCUcAU.c.uAG
 
 ABBC01002983.1/694-4056      ACACCACAAAAGGUGUUAGUUCAUCUAGACAGCCCGACGGUGGCCAUG-GAAGUCGGAAUCCGCUAAGGAGUGUGUAACA---ACUCACGGGC-CGAAUGAACUA-GCCCUGAAAAUGGAUG-GCGCU-CA-AGCGUG-----CU-ACCCAUACCUCGCCGUCGG--GGU-AGAAACGAA--------------------
@@ -1488,7 +1488,7 @@ AJ298079.1/5-4031            AUCCCAUAAAAGGUGUUGGUUCAUAAUGACAGUAGGACGGUGGUCAUG-GA
 Y11506.1/699-3910            ACCCCACAAAAGGUGUUGAUUCAUAUAGACAGCAGGACGGUGGCCAUG-GAAGUCGGAAUCCGCUAAGGAGUGUGUAACA---ACUCACCUGC-CGAAUGAAUUA-GCCCUGAAAAUGGAUG-GCGCU-AA-AGCGGG-----UA-GCCGACACCGCGCCGUUCC--GGC--GAGACGAG--------------------
 ADAS01005276.1/8554-11800    ACACUACAAA-GGUGUUAGUUCAUCUAGACAGCCGCACGGUGGCCAUG-GAAGUCGGAAUCCGCUAAGGAGUGUGUAACA---ACUCAACGGC-CGAAUGAACUA-GCCUG--AAAUGGAUG-GCGCU-UA-AGUGUA-----UU-ACCCAUACCUCACCAUUAA--UAU-UGUUGUUAU--------------------
 ACBR01000224.1/7956-3957     AUCCCAUAAAAGGUGUUGGUUCAUAAUGACAGUAGGACGAUGGUCAUG-GAAGUCGAAAUUCGCUUAGGAGUGUGUAACA---ACUCACCUAC-CGAAUGAACUA-GCCCUGAAAAUGGAUG-GCGCU-AA-AGCGAA-----UU-ACCGAUACCGGGCCAUAAG--AAG-GUAGAAAUUAUAAAUGUUAA---------
-#=GC SS_cons                 ----------(((-((((((((((-------(((((,<<<--<<<___.______>>>-->>><___><---<<______...>>->,))))).---)))))))).)))))-----------.-----.--.-)))--.....)).)))---)-)))))<<<<<<..<<<._________....................
+#=GC SS_cons                 ----------(((-((((((((((-------(((((,<<<--<<<___.______>>>-->>><___><---<<______...>>->,))))).---)))))))).)))))-----------.cc---.--.-)))--.....)).)))---)-)))))<<<<<<..<<<._________....................
 #=GC RF                      AuaCCAuAAAaGGUGUuggUucaUauaGACAGCaGgAcGGUGgccAUG.GAAGUCggaAUCCgCUAAGGAGUGUGUAACA...ACUCAcCuGC.CGAAugaAcca.GCCCuGAAAAUGGAUG.GCGCU.uA.AGcgua.....cc.aCCuAUaCccggCCgucgg..ggc.Aaauuuaau....................
 
 ABBC01002983.1/694-4056      ----------------------GCCCCGA-CGAGUAGGC-------AG-G--CGUGGAGGUU-UG-U----------GACG-AAGCC---UUGGGA-GUGAUCCCGGGUCGA---AC-AG-CCUCUAGUGCAGAUCUUGGU-GGUAGUAGCAAAUACUCAAA-UGAG-------A-ACUUUGAGGACUGA-AGUGGGGAA
@@ -1670,7 +1670,7 @@ AJ298079.1/5-4031            GGGUUUCUUG--CCAACUUUGAUUGUUCAAGAGUUAGCCGCUCCUAAGGG-
 Y11506.1/699-3910            GGGUUCCACG--CAAACAUUGAUUGGGCGUGGGUGAGUCGUUCCUAAGCC-GAGUGG-CAAU-UGC-U--AAG-------------------------------------------------------------------------------------------------------------------------------
 ADAS01005276.1/8554-11800    AGGUUCCAUG--GUAACAGCAGUUGGACAUGGGUUAGUCGGUCCUAAGA--AUA-GG-GAAC-CUC-C--GUUUAA--AGA---AUGCUCUGUUA---------------------------------------------------------------------------------------------------------
 ACBR01000224.1/7956-3957     GGGUUUCUUG--UCAACUAUGUUUGUACAAGAGUUAGCCACUCCUAAGGG-AUA-GC-UGAA-AAG-U--GUUUAA--AAG---AAGUAAGAUAUUAUAUGGAAAU----------------------------------------------------------------------------------------------
-#=GC SS_cons                 {{,,,<<<<<..<---<<_____>>->>>>>>,,,,,,{{{,((---((<.<<-.<<.<___._>>.>..>>>,,,..,,,...<<<________.........................................................................................................
+#=GC SS_cons                 {{,,,<<<<<..<---<<_____>>->>>>>>,,,,DD{{{,((---((<.<<-.<<.<___._>>.>..>>>,,,..,,,...<<<________.........................................................................................................
 #=GC RF                      GGGUUcCgug..ugAACaGuAgUuGaacacGgGUuAGUCGgUCCUAAGgc.acA.gg.guAa.ucc.c..guguua..aag...gggaauuuuuu.........................................................................................................
 
 ABBC01002983.1/694-4056      ----------------------------GCGC----CGUUUGUCGAAAGGGAAGCCGGUUAAUAUU-CCGGCACCUGG-------------------------------------AUGUGGAU-------UCU--CCACGGCAA-------------------------------------------------CGUA---
@@ -1761,7 +1761,7 @@ AJ298079.1/5-4031            ----------------UGUUGUGUCUUUUCC------CGGUCCCAAAAGGG
 Y11506.1/699-3910            -------------------------------------UAGCGGCGAAAGGGAAGCGGGUUAAAAUU-CCCGCACACGG-------------------------------------AUAUGG-----------A---GGCGGCGA-------------------------------------------------CGCA---
 ADAS01005276.1/8554-11800    ---------------------------GCAUC----CACCUAUCGAAAGGGAAUGUAGUUAAAAUU-CUACAACUGGG-------------------------------------AUACAGAU-------UUG---AACGGCAA-------------------------------------------------CGUG---
 ACBR01000224.1/7956-3957     -----------------AUAUAAUUAGAUCU------UCGUCUCAAAAGGGAAACAGGUUAAUAUU-CCUGUGCCA---------------------------------------AAUAGAAG------UAAG---GGUGUGAAUAAAGAAAGAU---------------------------GGUAACAUACAUACA---
-#=GC SS_cons                 ..........................._>>>......,,,,,))----)),,,<<<<<________.>>>>>,,[[[[.....................................-[[[[[[[.......,,,..,<<<<____.................................................>>>>...
+#=GC SS_cons                 ..........................._>>>......,,,,,))----)),,,<<<<<________.>>>>>dd[[[[.....................................-[[[[[[[.......,,,..,<<<<____.................................................>>>>...
 #=GC RF                      ...........................uccc......auuuacCGAAAGGGAAgcgGGUUAAuAUU.CCcgcACcugg.....................................acguggau.......uuu..augcgGuAA.................................................cgca...
 
 ABBC01002983.1/694-4056      AC-UGAACGCGGAGACGUCG-GCAGGAGUCCUGGG-AAGAGUUCUCUUUUCUUCUUGA-CGG-CC------UAUC-------AC---CCUGAAAUCGGU-UUGUCCGGAGC--UAG-G---GU-UUCAU------------G-G-CCGGCAGAGCCCCGCA----CCUU-------------------------------
@@ -2307,7 +2307,7 @@ AJ298079.1/5-4031            ---------------------------------------------------
 Y11506.1/699-3910            ------------------------------------------------------------------------------------------------------------CCUU-CAG--CAU---AU-CCCAGACUAGAACUGCA-ACGGGCAAAGGGAAUCCGACUGUUU-AAUUAAAACAAAGCAUUGCG-A-AGGCCG
 ADAS01005276.1/8554-11800    -------------------------------------------------------------------------------------------GUUAUUGC--AUCUGGCAAGC-AUU--UAA---CU-GUCAACUAUGAACUGGU-ACGGACAAGGGGAAUCUGACUGUCU-AAUUAAAACAUAGCAUUGUG-A-UGGCCA
 ACBR01000224.1/7956-3957     -----------------------------------------------------------------------------------UAAUUUUAGUUACUUA--AAUUUUUUGAU-AUA--UAU---AAUGUUAACUCAGAACUGAA-ACGGACAAGGGGAAUCCGACUGUUU-AAUUAAAACAUAGCAUUGUGAA-AAACCA
-#=GC SS_cons                 ...............................................................................................----..-->>>>>>>>>.---..---...>>.>>>-->>>>>>>>><__._>,,,,,,,[[[[[[[[[,,<<<__._______>>>,,<<<<<<<<.-.<-<<<<
+#=GC SS_cons                 ...............................................................................................----..-->>>>>>>>>.---..---...>>.>>>-->>>>>>>>><__._>,,,,,,,[[[[[[[[[,,<<<__.__E____>>>,,<<<<<<<<.-.<-<<<<
 #=GC RF                      ...............................................................................................uuuu..uuccggcgggc.aau..uAA...ca.gCcAAcUcAGAACUGGu.ACGGACaAGgGGAAUCcGACUGUuU.AAUUAAAACAuAGcAUugcG.A.cGgccc
 
 ABBC01002983.1/694-4056      GAAAGUGGUG--U-UGACGCAAUGUGAUUUCUGCCCAGUGCUCUGAAUGUCAAAGUGAAGAAA--UUCAACCAA--GCGCGGGUAAACGGCGGGAGUAACUAUGACUCUCUUAA--------------------------------------------------------------------------------------
@@ -2671,7 +2671,7 @@ AJ298079.1/5-4031            GGG-AAAGAAGACCCUGUUGAGCUU-UACUCUAGUCUGGCU---UUGUGAA
 Y11506.1/699-3910            GGG-AAAGAAGACCCUGUUGAGCUU-GACUCUAUUCUAAUU---UUGUGAAGCAAGUUAGGAGGUGUAGAAUAGGUGG---GA--GC-UUCG----------------------------------------GCAACCGUGAAAUACCACUACUCUUAAUCUUGCUUU-ACUUA-GGGCG-UGAGGCUGU-AC-GG-CCG
 ADAS01005276.1/8554-11800    GGCUAAAGAAGACCCUGUUGAGCUU-GACU-CAGUUUGACA---UUGUGAAAAGACAUAGAGGGUGUAGAAUAAGUGG---GA--GC-GUAA----------------------------------------GCGCCAGUGAAAUACCACUACCUUUAUUGUCUUUUUUACUUA-UUCAA-UGAAGCAGA-GAAC-----
 ACBR01000224.1/7956-3957     GGG-AAAGAAGACCCUGUUGAGCUU-UACUCUAGUCUGGCU---UUGUGAAACGACUUAGAAGGUGUAGUAUAAGUGG---GA--GUACAAAGAAGGGAUCGAAAACUAAU--UCGAUCUUUAUGUUUUUGUACACAAAUGAAAUACCACUACUUUUACAGUUGUUUU-ACUUA-UCUAU-UAAUAGGGA-AAUAU-AUU
-#=GC SS_cons                 {{{.-{{,,,,,,{{{{-{{{{{{{.,[[[[---[[[[[[[...,,<<<<<<<<<<<<<<<<<<---------<<<<<...--..<<______.......................................>>------------>>>>>>>>>>>>>->>>>>>>>.>>,,,.(((((.-----((((.,,,,<.<<<
+#=GC SS_cons                 {{{.-{{,,,,,,{{{{-{{{{{{{.,[[[[---[[[[[[[...,,<<<<<<<<<<<<<<<<<<-FG---H--<<<<<...--..<<______.......................................>>-------fg-h->>>>>>>>>>>>>->>>>>>>>.>>,,,.(((((.-----((((.,,,,<.<<<
 #=GC RF                      GGG.AAAGAAGACCCUgUUGAGCUU.GACUCUAGucuGgca...UUGugaagcgacauggggGgUGUAGaAUAaGUGG...GA..Gcuuuuag.......................................gCGccagUGAAAUACCACuaCccccauugucgcuuc.aCUUA.cuccg.UuAagcggg.aauug.ggc
 
 ABBC01002983.1/694-4056      U-UA---------------------------------------------------CCGCCCAACUUCUAGC-GUU--AAGGUCC-----UUCGC----------------------------------------------------------------------------------------------------------
@@ -2944,7 +2944,7 @@ AJ298079.1/5-4031            ---------------------------------------------------
 Y11506.1/699-3910            ---------------------------------------------------------------------------CG-CGUGA-ACAGCG----CGCCC-AACACAUUUAGGAGGGGAGUUUGGCUGGGGCGGCACAUCUUCUACAAGACAACGAAGGUGUCCAAAGAUAAGC-UCAGUGAG-AACAGAAA-UCUCACGU
 ADAS01005276.1/8554-11800    ---------------------------------------------------------------------------GG-GCUGA-UCUGGG----UUGAA-GACAUUGUCAGGUGGG-AGUUUGGCUGGGGCGGCACAUCUGUUAAAU-AUAACGCAGGUGUCCUAA-GGGGAC-UCAUUGAG-AACAGAAA-UCUCAAGU
 ACBR01000224.1/7956-3957     ---------------------------------------------------------------------------AU-AUUUC-UCCCAUUUCUAUGGA-GACAUAGCCAGGUGGGGAGUUUGACUGGGGCGGUACAUCUGUUAAAAAAUAACGCAGAUGUCCAAAGACAAGC-UCAAUGAG-AACAGAAA-UCUCGUGU
-#=GC SS_cons                 ...........................................................................>>.>>>,,.))))--....))))).,,,,,]]]]]]]----]]]],,<<<<_____>>>-><<<<<<___________>>>>>>,,[[,,,,((((((.<<-<<<<<.<_______.>>>>>>--
+#=GC SS_cons                 ...........................................................................>>.>>>,,.))))--....))))).,,,,,]]]]]]]----]]]],,<<<<_____>>>-><<<<<<___________>>>>>>,I[[,,,,((((((.<<-<<<<<.<_______.>>>>>>--
 #=GC RF                      ...........................................................................gg.gccgA.cccggg....cggag.GACAuugcCaggUGGGGAGUUUGgCuGGGGCgGcACAuCuGuuAAAuaAUAACgCaGgUGUCCUAAGGcgaGC.UCAgcGaG.gACAGAAA.cCuCgcGU
 
 ABBC01002983.1/694-4056      AGAACA--AAAGGGUAAAAGUCCCCUUGAUUUUGAUUUUCAGUGUGAAUACAA---ACCAUGAAAGUGUGGCCUAUCGAUCCUUUAGU--------CCCUCGAAAUU-U-------------------------------------------------------------------------------------------
@@ -3035,7 +3035,7 @@ AJ298079.1/5-4031            AGACUA--AAAGGGGAAAAGCUUGUUUGAUUUCUAUUUUCAGAAAAAGUAG
 Y11506.1/699-3910            AGCGCA--AAAGGGUAAAAGCUUGUUUGAUUUUGAUUUUCAGUGUGAGUUGAA---AACGCGAAAGCGUGGCCUAUCGAUCCUUUCAC--------GAUUCGAGAUU-U-------------------------------------------------------------------------------------------
 ADAS01005276.1/8554-11800    AGAAC---AAAGGGUAAA-GUCCCCUUGAUUUUGAUUU-CAGUGUGAAUACAA---ACCAUGAA-GUGUGGCCUAUCGAUCCUUUAGU--------CCUUUAGAAUU-U-------------------------------------------------------------------------------------------
 ACBR01000224.1/7956-3957     AGACUA--AAAGGGGAAAAGCUUGUUUGAUUUCUAUUUUCAGAAAGAAUAGAA---AACGUGAAAGCGUGGCCUAUCGAUCCUUUAUU--------UUUGCAAAAUG-UAUUAAUAACA---------------------------------------------------------------------------------
-#=GC SS_cons                 ->><<_.._____>>,,,,)))))),,,,<<<<<<<<<_______>>>>>>>>...>,<<<____>>>,]],,,,,,,,,,<<<<<<-........-<<<<______._...........................................................................................
+#=GC SS_cons                 ->><<i..J_KKK>>,,,,)))))),,,,<<<<<<<<<___LM__>>>>>>>>...>,<<<____>>>,]]kkk,j,,,,,<<<<<<-........-<<<<_bbbbb.b...........................................................................................
 #=GC RF                      aGAgcA..AAAGGgcAAAAGCucgCUUGAUuuccauucUCAGUAugaauggaa...AccgcGAAAgcgUGGCCUAUCGAUCCUuuagu........ucuucaaAaUU.U...........................................................................................
 
 ABBC01002983.1/694-4056      --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -3217,7 +3217,7 @@ AJ298079.1/5-4031            ---------------------------------------------------
 Y11506.1/699-3910            -----------------------------------------------------------------------------------------------------------------------------------------------------------------GAAGCGAGAGGUGUCAGAA-AAGUUACCACAGGGAUAAC
 ADAS01005276.1/8554-11800    ------------------------------------------------------------------------------------------------------------------------------------------------------------------AAGCUAGAGGUGCCAG-A-AAGUUACCACAGGGAUAAC
 ACBR01000224.1/7956-3957     -------------------------------------------------------------------------------------------------------------------------------------------------------UUCUGACUGUGCAUAUAAAGGUGUCUGAA-AAGUUACCACAGGGAUAAC
-#=GC SS_cons                 .................................................................................................................................................................>>>>>>>>>>,,,,,,,,,.}}}}}--}}}}}},,,,,,
+#=GC SS_cons                 .................................................................................................................................................................>>>>>>>>>>,,,,lm,,,.}}}}}--}}}}}},,,,,,
 #=GC RF                      .................................................................................................................................................................gaagcuagAGGUGUCAGAA.AAGUUACCAcAGGGAUAAC
 
 ABBC01002983.1/694-4056      UGGCUUGUGGCAGCCAAGCGUUCAUAGCGACGUUGCUUUUUGAUCCUUCGAUGUCGGCUCUUCCUAUCAUAC-CGAAGCAGAAUUCGGUAAGCGUUGGAUUGUUC-----------------------------------------------------------------------------------------------
@@ -3490,7 +3490,7 @@ AJ298079.1/5-4031            ---------------------------------------------------
 Y11506.1/699-3910            ------------------------------------------------------------------------------------ACCCGCCAAC-AGGGAACGUGAGCUGGGUUUAGACCGUCGUGAGACAGGUUAGUUUUAUCCUACCGAUGAG--------------------------------UUGUUGCCGCGGC
 ADAS01005276.1/8554-11800    ------------------------------------------------------------------------------------ACCCACUAAU-AGGGAACGUGAGCUGGGUUUAGACCGUCGUGAGACAGGUUAGUUUUACCCUACUGAUGGA--------------------------------GUGUCAUUGUAAU
 ACBR01000224.1/7956-3957     ------------------------------------------------------------------------------------ACCCGCUAAU-AGGGAACGUGAGCUGGGUUUAGACCGUCGUGAGACAGGUUAGUUUUACCCUACUGAUGAAUUUUAUUAUAUUUUUUAUAUAUAUAUAUACAUAUAAUAUUGUGAC
-#=GC SS_cons                 ....................................................................................>>>>>,,,,,.)))))--)--))))-),,,,,<<<<<<<____>>>->>>>,,,,}}--}}}}}}}}}}},................................,,((((((((--(
+#=GC SS_cons                 ....................................................................................>>>>>,,,,,.)))))--)--))))-),,,e,<<<<<<<____>>>->>>>,,,,}}--}}}}}}}}}}},................................,,((((((((--(
 #=GC RF                      ....................................................................................AcCCaCuAAU.AGGGAACGUGAGCUGGGUUUAGACCGUCGUGAGACAGGUUAGUUUUACCCUaCUgaugga................................augucguugcaAc
 
 ABBC01002983.1/694-4056      GGUAAUUCAAUUUAGUACGAGA--GGAAC--CGUUGAUUCAGAUAAUUGGUUUUUGCGGCUGUCUGACC--AGGCAGUGCCGCGAAG--CUA-CCAUCUGC----CGGAU---UAUGGCUGAACGCCUCU-AAGUCAGAAUCCGUACCGGA--AC---------GCGGCGAU-----------GUUGCCCC-GCACGUUG

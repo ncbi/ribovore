@@ -121,7 +121,7 @@ HQ530525.1/1-1478            AUUCCGGUUGAUUCUGCCGGAGGCUACUGCUCUGGGAGUCGGAUUAAGCCA
 AEIX01000219.1/3680-2194     AUUCCGGUUGAUCCUGCCGGAGACUACCGCUAUCGGAGUCCGAUUUAGCCAUGCUAGUC-CACCG-------AACC---UU---------U----GGUU-------CGG--GGCGGAAAGCUGAG-UAACACGUGGCCAACCUACCCUGUGGACAGGAAUAACCU--C-G-GGAAACUGAGGA-UAAUGCCUGAUAGCAG
 M32222.1/1572-3051           ACUCCGUUUGAUCCUGGCGGAGGCCACUGCUAUGGGGGUCCGACUAAGCCAUGCAAGUC-GAACG-------GGCC---UU--------G-----UGCC-------CGU--GGCGAACGGCUCAG-UAACACGUGGACAACCUACCCUGGGGUCCGGGAUAACCC--C-G-GGAAACUGGGGC-UAAUCCCGGAUAGGCG
 JF449412.1/5-1475            AUUCCGGUUGAUCCUGCCGGAGGCCAUUGCUCUCGGGGUCCGCCUUAGCCAUGCUAGUC-GUACG--------GGC---UC--------GG----ACC--------CGU--GGCGAACAGCUCAG-UAACACGUGGCCAAACUACCCUCGAGACCGGGAUAACCU--C-G-GAAAACUGAGGC-UAAUCCCGGAUAGCGG
-#=GC SS_cons                 :::<<<<<_______>>>>>,{{{{{{{{{{,{{{{{{{{{{-----{{{-{{{,,<<<.--<<<.......<<<<...__........__....>>>>.......>>>..>>>,,,,,,[[[,,.,,,,((((((((--((---(((((((,<<<<----<<<<..<.<.<____>>>>>>>.----->>>>,,,,<<<
+#=GC SS_cons                 :::<<<<<___AAA_>>>>>,{{{{{{{{{{,{{{{{{{{{{-----{{{-{{{,,<<<.--<<<.......<<<<...__........__....>>>>.......>>>..>>>,,,,,,[[[,,.,,,,((((((((--((---(((((((,<<<<----<<<<..<.<.<____>>>>>>>.----->>>>,,,,<<<
 #=GC RF                      AuUCcGguUGAUCCUgcCgGAggccaccgCuAucGGgguccGauUaAGCCAuGcuAGuc.gagcg.......ccgc...uu........au....gcgg.......cgc..ggCguAcaGCucAG.UAACgCGcgGccAAccUAcCCucggGacggggAUAccCc..C.g.GGAAACuGgGgg.UAAUacccgAUAgggg
 
 CP002839.1/427707-426237     UCUCAC-CCUGGAGU---GGGGAGAACGUGAAAUGC-------------UCCG------------------GCGCCAGAGGAUGUGGCUGCGGCCGAUUA-GGUAGACGGUGGGGUAACGGCCCACCGUGCCAGUAAUCGGUACGGGUUGUGAGAGCAA-GAGCCCGGAGACGGUAUCUGAGACAAGAUACCGGGCCCUA
@@ -299,7 +299,7 @@ HQ530525.1/1-1478            CG-GGGCGCAGCAGGUGCGAAAAUUCCGCAAUGCGUGCAAGCGCGACGGAG
 AEIX01000219.1/3680-2194     CG-GGGCGCAGCAGGCACGAAACCUUUACAAUGCACGCGAGUGCGAUAGGGGGACUCC-GA-GUGCGUUCUUCCC-A-C-A-AGGAAGGACGCUUUUCUGCACUGU--AAGGAGGUGCAGG-AAC-AAGGGGUGGGCAAGA-CUGCUGCCAGC-CGCCGCGGUAAUAGCAGCACCCCGAGUGGUAGUCGUUAUUAUUGGG
 M32222.1/1572-3051           CG-GGGCGCAGCAGGCGCGAAAACUCCGCAAUGCGCGAAAGCGCGACGGGGGGACCCC-CA-GUGCCACUCC---GU-A-A----GGAGUGGCUUUUCCGGAGUGU--AAAAAGCUCCGGG-AAU-AAGGGCUGGGCAAGA-CCGGUGCCAGC-CGCCGCGGUAACACCGGCAGCCCGAGUGGUGGCCGCGUUUAUUGGG
 JF449412.1/5-1475            CG-GGGCGCAGCAGGCGCGAAACGUUUACACUGCGCGAGAGCGCGAUAACGGGACCCC-GA-GCGCGAGGGC---AU-A-UC---GCCCUCGCUUUUCCGGACCGU--AAUGUGGUCCGGG-AAC-AAGGGCUGGGCAAGA-CCGGUGCCAGC-CGCCGCGGUAAUACCGGCAGCCCGAGUGAUGGCCGCGAUUACUGGG
-#=GC SS_cons                 __.>>>>,,,}}}}}}-},,,,,<-<<<---<<<<<____>>>>>->>>>,}}}}}}}.}}.,,<<<<<<<<...__._.__...>>>>>>>>,,,<<<<<<<<__.._____>>>>>>>-.-->.,,<<<<<<-------.<<<<-----<<.____>>------->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{
+#=GC SS_cons                 __.>>>>,,,}}}}}}-},,,,,<-<<<---<<<<<____>>>>>->>>>,}}}}}}}.}}.,,<<<<<<<<...__._.__...>>>>>>>>,,,<<<<<<<<__.._____>>>>>>>-.-->.,,<<<<<<BBB----.<<<<-----<<._bbb>>------->>>>>>>>>>,}}}}}}}}}},,,,,,,,,,{{
 #=GC RF                      CG.GGGCGCAgCaGGCgCGAAAacUccgCAaugCgcGaaAgcGcgAcgggGggaccCC.ga.GUGccgccgc...au.a.ua...gcggcggCUuUcccccggcgU..AAaaagccggggG.AAg.AAGgGgcGGGcAAGa.CcGGUGuCAGC.CGCCGCGGUAAuACCgGCgcCcCgaGcgguggccauuaUUAuUGGG
 
 CP002839.1/427707-426237     CCUAAAGCGUCCGUAGCUGGCCAGGCAA-GUCCAUCGGGAAAUCCGCGCGCCCAACGC-GCGGGCGUCCGGUGGAACCUGC-UU--GGCUUGGG-ACCGGAAGACCUG-AGGGGUACGUCCGGGGUAGGAGUGAAAUCCCGUAAUCCUGGACGGACCACCGGUGGCGAAAGCGCCUCAGGAAGACGGAUCCGACGGUGAG
@@ -388,7 +388,7 @@ HQ530525.1/1-1478            CCUAAAGCGUCCGUAGCCGGACUGGCAA-GUCCCUUGUGAAAUCGGGCGGC
 AEIX01000219.1/3680-2194     CUUAAAGUGUACGUAGCCGGACCUGUAA-GUCUGUUGUGAAAUCCACGCGCUUAACGCAGUGGAAGCGCAACGGAUACUAC-AG--GUCUAGGG-ACCGGAGGACGCC-GAGGCUAUUCCAUGGGUAGGAGUGAAAUCCUAAGAUCCAUGGAGGAGCACCAGUGGCGAAAGCGCUCGGCGACUACGGAUCCGACGGUGAG
 M32222.1/1572-3051           CCUAAAGCGUCCGUAGCCGGUCCGGUAA-GUCUCCGGUGAAAGCCCGCAGCUCAACUG-CGGGAGUAGCCGGAGAUACUGC-CG--GACUUGGG-GCCGGGAGAGGCC-GGAGGUACCCCCGGGGUAGGGGUGAAAUCCUGUAAUCCCGGGGGGACCACCUGUGGCGAAGGCGUCCGGCUGGAACGGGCCCGACGGUGAG
 JF449412.1/5-1475            CCUAAAGCGUCCGUAGCCGGCCGGGCAA-GUCCGUCGGGAAAUCCGCGCGCCCAACGC-GCGGGCGUCCGGCGGAAACUGC-UC--GGCUAGGG-ACCGGGAGACCUG-CGGGGUACGUCCGGGGUAGGAGUGAAAUCCCGUAAUCCCGGACGGACCGCCGAUGGCGAAAGCACCGCAGGAGACCGGAUCCGACGGUGAG
-#=GC SS_cons                 {-----{,[[[[-[-[[[,<<<<<<<-<.<<<<<<<<<<----<<<<<<<_____>>>.>>>>--->>>>>>>>>-->>>>.>>..>>>,,,((.(((((((--((((.(((<<--<<<<<<<<---<<<______>>>------>>>>>>>>-->>,,,,<--<<____>>>)))))))-))))))-))),,,]]]]--
+#=GC SS_cons                 {CC---{,[[[[-[-[[[,<<<<<<<-<.<<<<<<<<<<----<<<<<<<_____>>>.>>>>--->>>>>>>>>-->>>>.>>..>>>,,,((.(((((((--((((.(((<<--<<<<<<<<---<<<______>>>------>>>>>>>>-->>,,,,<--<<____>>>)))))))-))))))-))),,,]]]]--
 #=GC RF                      CcUAAAGcGucCGcAgCcGGcccggcAa.GucccccgggAAAuCcgcggGCUcAACcc.gcgGacgcccgggggauACugc.cg..ggCUuGGG.gccGgccGAggcc.ggggGUAcucccgGGGUAGggGugAAAccCuaUaAUCCcgggagGACcACCacUGGCGAAaGCgcccggccaggcCggacCCGACgGugAG
 
 CP002839.1/427707-426237     GGACGAAAGCUCGGGUCACGAACCGGAUUAGAUACCCGGGUAGUCCGAGCUGUAAACGAUGUCUGCUAGGUGUGGCACAGGC-UA-C-GAGCCUGUGCUGUGCCGUAGGGAAGCCGUGAAGCAGACCGCCUGGGAAGUACGUCCGCAA-------------------------------------GGAUGAAA-------
@@ -477,7 +477,7 @@ HQ530525.1/1-1478            GGACGAAAGCCAGAGGAGCGAACCGGAUUAGAUACCCGGGUAGUUCCGGCC
 AEIX01000219.1/3680-2194     GUACGAAAGCCAGGGGAGCAAAACGGAUUAGAUACCCGUGUAGUCCUGGCCGUCAACAUUGUCCGCUCGACAUGGCCCAACC-UU-U-GUGGUUUGGCUGUGUCCAAGUGAAAACGUUAAGCGGACCGCCUGGGUAGUACGGUCGCAA-------------------------------------GGCUGAAA-------
 M32222.1/1572-3051           GGACGAAAGCCAGGGGAGCGAACCGGAUUAGAUACCCGGGUAGUCCUGGCCGUAAACGAUGCGGACUUGGUGUUGGGGCAAC-CU-C-GAGUUGCCCCAGUGCCGAAGGGAAGCCGUUAAGUCCGCCGCCUGGGGAGUACGGCCGCAA-------------------------------------GGCUGAAA-------
 JF449412.1/5-1475            GGACGAAAGCCGGGGUCACGAACCGGAUUAGAUACCCGGGUAGUCCCGGCCGUAAACGAUGCCCGCUAGGUGUGGCGCGGGG-UA-C-GACCCCGCGCUAUGCCGCAGCGAAGGCGCUAAGCGGGCCGCCUGGGAAGUACGUCCGCAA-------------------------------------GGAUGAAA-------
-#=GC SS_cons                 ]]]],,,,<<<<<<---<<---<<<<_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<<<<<<<<<<<.__._.__>>>>>>>>>>>>>>,,,<<____>>,,,,,))))))}}}},<<<------<<<<____.....................................>>>>----.......
+#=GC SS_cons                 ]]]],,,,<<<<<<---<<---<<<<_________>>>>--->>>>>>>>,,,,,,,,,,((((((,,<<<<<<<<<<<<<<.__._.__>>>>>>>>>>>>>>,,,<<__cc>>,,,,,))))))}}}},<<<------<<<<____.....................................>>>>----.......
 #=GC RF                      GgaCGAAAGCcgGGGgagCgAAccGGAUUAGAUACCCggGUAGcCCcgGCuGUAAACgaUGcggGcUaggugccgggcgggc.uu.c.GagcccgcccggcgccGuAGgGAAGcCGuuAAgCccgCCGCCUggGgAGUACggcCGCAA.....................................GgcuGAAA.......
 
 CP002839.1/427707-426237     -------------------------------------------------------------------------------------------------------------------------------------CUUAAAGGAAUUGGCGGGGGAGCACUACAACCGGAGGA-GCCUGCGGUUUAAUUGGACUCAACGCCG
@@ -566,7 +566,7 @@ HQ530525.1/1-1478            ---------------------------------------------------
 AEIX01000219.1/3680-2194     -------------------------------------------------------------------------------------------------------------------------------------CUUAAAGGAAUUGACGGGGGAGCACCACAACCGGUGGG-GGCUGCGGUUUAAUUAGAUCAAACGCAG
 M32222.1/1572-3051           -------------------------------------------------------------------------------------------------------------------------------------CUUAAAGGAAUUGGCGGGGGAGCACCACAACGCGUGGA-GCCUGCGGUUUAAUUGGAUUCAACGCCG
 JF449412.1/5-1475            -------------------------------------------------------------------------------------------------------------------------------------CUUAAAGGAAUUGGCGGGGGAGCACUACAACCGGAGGA-GCCUGCGGUUUAAUUGGACUCAACGCCG
-#=GC SS_cons                 .....................................................................................................................................>>>,,,,,,,,{{{{{-{{{{{{{--{{,,{{{{{{{{.{{{{{{{{{,,,,<<<<________>>>
+#=GC SS_cons                 .....................................................................................................................................>>>,,,aaa,,{{{{{-{{{{{{{--{{,,{{{{{{{{.{{{{{{{{{,,,,<<<<________>>>
 #=GC RF                      .....................................................................................................................................CuuAAAGGAAUuGGCgGgGGaGCaCcaCAAcggguGca.GccuGCGGuUUAAccgGAuUCAACGCcg
 
 CP002839.1/427707-426237     GACAUCU-CACCAGCAUCGACAGC-AGGAGUGACGAUCAGGUUGAUGACCU-UAUC-AGA----CCUGCUGAGAGGAGGUGCAUGGCCGCCGUC----------------------------------------------------------------------------------------------------------
