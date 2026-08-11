@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Mon Jul 27 19:41:03 2026
-COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven step8/final/fungi.ribovore.cm step7/thinned.seed.stk
+COM      [1] cmbuild -F --hand --p7ml --enone --fraggiven CM SEED
 COM      [2] cmcalibrate --cpu 1 --ptot 160 --part 1 --pfile fungi.ribovore.cm.calib.1 CM
 COM      [3] cmcalibrate --merge --ptot 160 CM
 PBEGIN   0.05
@@ -5764,8 +5764,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Mon Jul 27 19:43:01 2026
-COM   [1] cmbuild -F --hand --p7ml --enone --fraggiven step8/final/fungi.ribovore.cm step7/thinned.seed.stk
-COM   [2] cmbuild -F --hand --p7ml --enone --fraggiven step8/final/fungi.ribovore.cm step7/thinned.seed.stk
+COM   [1] cmbuild -F --hand --p7ml --enone --fraggiven CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --fraggiven CM SEED
 NSEQ  90
 EFFN  90.000000
 CKSUM 3616397668
