@@ -20,7 +20,7 @@ KP054475.2                                                            CUAUAUAGAC
 #=GR KP054475.2                                                    PP 77777788888875258**.************************************.87516.8****************9776888....8776666............................................................................77655669******************
 MF508648.1                                                            UUUUUUAAACAAUU-AUGA-GUUUGAUUCUGGCUCAGAGUGAAUGCUC-GGGUAUG-CCU-A-ACACAUGCUAGUUUAAAGA----------------AAAUAAAUU---------------------------------------------------------UAUUUUAUAA------UCUUAGCGCAUAGGUGAGUA
 #=GR MF508648.1                                                    PP 9*************.****.***************************7.699****.***.*.****************996................444555666.........................................................6666666555......499*****************
-MF563604.1                                                            -GUAUAAACAACUA-UUGG-GUUUUAUUCUGGCUCCGAGUGAACGCUGGUAACAUA-UUUUA-ACACAUGCAAAUCGAACGAAAAG------CAAUGC-------------------------------------------------------------------------------UUUAAGUGGUGACCUGGUGAGUA
+MF563604.1                                                            ~GUAUAAACAACUA-UUGG-GUUUUAUUCUGGCUCCGAGUGAACGCUGGUAACAUA-UUUUA-ACACAUGCAAAUCGAACGAAAAG------CAAUGC-------------------------------------------------------------------------------UUUAAGUGGUGACCUGGUGAGUA
 #=GR MF563604.1                                                    PP .77777888899**.****.************************************.87516.8*****************999*9......755555...............................................................................9999*******************
 MH094141.1                                                            UUUUUUAGACAGU--AUGA-GUUUGAUCCUGGCUCAGAGUGAACGCUAGUGGUAUGCCUU-G-ACACAUGCUAGUUGAACGUAA--------------CUUAUAAAUUUUUUUUAUUUAAAACAAAUAUUUUAAUUAAACUUAAAAUAAAAUUUUAAAUAAAAAAAAUUCAAAG----UUAAGUGGCGUAAGGGUGAGUA
 #=GR MH094141.1                                                    PP 8888899988766..79**.************************************5599.*.******************987..............6788899*********************************************************************....789*******************
@@ -38,13 +38,13 @@ NC_013986.1                                                           UUUGUAAAAC
 #=GR NC_013986.1                                                   PP 9999**********.****.************************************.***.*.************************....9976666............................................................................9..***********************
 NC_027736.1                                                           UUUCUAAUUUAAUA-ACGA-GUUUGAUUCUGGCUCCGAGUGAAUGCUAGCGAAAGG-CUU-AAACACAUGCGAAUCGAACGAUGCAUAUUUUUAUUAU-------------------------------------------------------------------------------GCAUAGUGGUGUCUUGGUGAGUA
 #=GR NC_027736.1                                                   PP 9999**********.****.************************************.**9.637***********************99999966677...............................................................................***********************
-NC_031417.1                                                           -----------CUU-UUUAUGUUUUAUCCUAGCUAUGAGUGAACGCUAGUAAUCUA-CUU-U-ACACAUGCAAGUCUAUAUAUAUUUA--GAAUUUAA-------------------------------------------------------------------------------AUAUAUGGGCGUAACGGUGAGUA
+NC_031417.1                                                           ~~~~~~~~~~~CUU-UUUAUGUUUUAUCCUAGCUAUGAGUGAACGCUAGUAAUCUA-CUU-U-ACACAUGCAAGUCUAUAUAUAUUUA--GAAUUUAA-------------------------------------------------------------------------------AUAUAUGGGCGUAACGGUGAGUA
 #=GR NC_031417.1                                                   PP ...........333.33444************************************.***.*.*************************..99775666...............................................................................89*********************
 NC_040955.1                                                           UAUUUAAUACUAUA-UUGA-GUUUGAUCCUAGCUCAGAGUGAAUGCUAGCGGUCUG-CCU-A-ACACAUGCAAGUCAAACGCGAGUAAAUUUUUUUAU-------------------------------------------------------------------------------UUCGAGUGGCGUACGGGUGAGUA
 #=GR NC_040955.1                                                   PP 99************.****.************************************.***.*.***********************999999988889...............................................................................9**********************
-NC_068853.1                                                           ------GAAUAAAG-UUGA-GUUUGAUCCUGGCUCCGAGUGAAUGCUAGUGGUGUG-CUU-U-ACACAUGCAAGUCGAACGAAAACUC-AAAAAAUAG-------------------------------------------------------------------------------UUUUAGUGGCGUAUUGGUGAGUA
+NC_068853.1                                                           ~~~~~~GAAUAAAG-UUGA-GUUUGAUCCUGGCUCCGAGUGAAUGCUAGUGGUGUG-CUU-U-ACACAUGCAAGUCGAACGAAAACUC-AAAAAAUAG-------------------------------------------------------------------------------UUUUAGUGGCGUAUUGGUGAGUA
 #=GR NC_068853.1                                                   PP ......77888888.9***.************************************.***.*.*************************.*98655555...............................................................................***********************
-00847::mitochondria_Dictyostelium_discoideum::D16466_AB000109         -----AAGAAAAAA-AUGA-GUUUGAUUCUGGCUCCGAAUGAAUGCUAUCAGUGGG-CUU-U-AUACAUGCAAGUUGAACGCUAU-------UGAAAA-------------------------------------------------------------------------------AUAGAGUAGCAAAAAGGUGAGUA
+00847::mitochondria_Dictyostelium_discoideum::D16466_AB000109         ~~~~~AAGAAAAAA-AUGA-GUUUGAUUCUGGCUCCGAAUGAAUGCUAUCAGUGGG-CUU-U-AUACAUGCAAGUUGAACGCUAU-------UGAAAA-------------------------------------------------------------------------------AUAGAGUAGCAAAAAGGUGAGUA
 #=GR 00847::mitochondria_Dictyostelium_discoideum::D16466_AB000109 PP .....*********.****.************************************.***.*.**********************.......**8888...............................................................................8**********************
 00849::Mitochondrion_Physarum_polycephalum::X75592                    GUUUUAAUAUAAUA-AUGA-GUUUGAUCCUGGCUCCGAGAGAAUGCUAGCAACUUA-CUU-G-AUACAUGCUAGUCGAACGCUU----------AUAU--------------------------------------------------------------------------------GAGCGUGGCGUACGAGCGACAA
 #=GR 00849::Mitochondrion_Physarum_polycephalum::X75592            PP **************.****.************************************.***.*.*********************..........****................................................................................**********************
@@ -479,7 +479,7 @@ MF563604.1                                                            GCGGUAGGGG
 #=GR MF563604.1                                                    PP *********************************
 MH094141.1                                                            GCCGUAGAGGAAUUUGUGGCUGGAUGAAAAUAA
 #=GR MH094141.1                                                    PP *********************************
-MK518072.1                                                            GUGGUAGGGGAACCUGCUGCUGGAUCGA-----
+MK518072.1                                                            GUGGUAGGGGAACCUGCUGCUGGAUCGA~~~~~
 #=GR MK518072.1                                                    PP ****************************.....
 NC_002508.1                                                           GUGGUAGAAGAAUCUGCUGCUGGACCAUUAUUA
 #=GR NC_002508.1                                                   PP *********************************
@@ -499,7 +499,7 @@ NC_040955.1                                                           GCCGUAGAGG
 #=GR NC_040955.1                                                   PP *********************************
 NC_068853.1                                                           GUUGUAGGGGAACCUGCAGCUGGCUUAAAAAUA
 #=GR NC_068853.1                                                   PP *********************************
-00847::mitochondria_Dictyostelium_discoideum::D16466_AB000109         GCUGUUGGGGAACCAGUAGCUGGAAGUA-----
+00847::mitochondria_Dictyostelium_discoideum::D16466_AB000109         GCUGUUGGGGAACCAGUAGCUGGAAGUA~~~~~
 #=GR 00847::mitochondria_Dictyostelium_discoideum::D16466_AB000109 PP ****************************.....
 00849::Mitochondrion_Physarum_polycephalum::X75592                    GUGGUAGAAGAAUCUGCUGCUGGACCAUUAUUA
 #=GR 00849::Mitochondrion_Physarum_polycephalum::X75592            PP *********************************
