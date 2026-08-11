@@ -1,5 +1,5 @@
 INFERNAL1/a [1.1.3 | Nov 2019]
-NAME     ribo.0p15.SSU_rRNA_cyanobacteria
+NAME     SSU_rRNA_cyanobacteria
 STATES   4620
 NODES    1168
 CLEN     1487
@@ -5819,7 +5819,7 @@ CM
      E  4619  4618 3    -1     0     0     0     0     0                                                 
 //
 HMMER3/f [3.3 | Nov 2019]
-NAME  ribo.0p15.SSU_rRNA_cyanobacteria
+NAME  SSU_rRNA_cyanobacteria
 LENG  1487
 MAXL  1804
 ALPH  RNA
