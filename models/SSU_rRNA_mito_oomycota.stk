@@ -283,7 +283,7 @@ NC_080886.1/45811-44282         ------------------------------------------------
 #=GR NC_080886.1/45811-44282 PP ..................................................................................................444......457899999999999999999..99999999999999999999964***********************************************
 P.infestans_CRW_anchor          --------A--------------------U-----------------------UA-------------AAU----------------------A-GAGUUUGAUCCU--------------------------------------------GGCUCAGAAUAAAUGCUAUCGGUAUGCUUAACACAUGCAAGUUGAAUGU
 #=GR P.infestans_CRW_anchor  PP ........*....................*.......................**.............***......................*.************............................................*************************************************
-#=GC SS_cons                    ........:....................:.......................::.............:::......................:.<<<<<_______~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>>>,{{{{-{{{{{{,{{{{{{{{,,,,,{{{-{{{,,<<<--<<<<
+#=GC SS_cons                    ........:....................:.......................::.............:::......................:.<<<<<___AAA_~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>>>,{{{{-{{{{{{,{{{{{{{{,,,,,{{{-{{{,,<<<--<<<<
 #=GC RF                         ........A....................U.......................UA.............AAU......................A.GaGccUGAUCCU~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ggCuCAGaauAaauGCuAuCGGuauGCUUAACaCAuGCAAGcuGAauGu
 
 NC_002387.1/5172-6706           UU----UU-A----AAACAUAGCGAACGGGUGAGUAACACGUGAAUUAUCUACCUUUUAAUUCGGAAUAAUUAGUU-U-UCUAAAAA-U-UCGG---AAUAAAUAAAUUAAAGUUUU-U-U-AACGUUAAAAGAUGAGUUUGCGCAAGAUU-AUGGUAGUUGGUAGUUUAAAAGAC-UACAAAGCCUAUUAUCUUUAGCU
@@ -998,7 +998,7 @@ NC_080886.1/45811-44282         AUUCAAAGGAAUUGACGGGAGUCUACACAAGCGGUGGAGCAUGUGGUU
 #=GR NC_080886.1/45811-44282 PP **************************************************************************************.*****************..99*.******************************************************************************************
 P.infestans_CRW_anchor          AUUCAAAGGAAUUGACGGGAGUCUACACAAGCGGUGGAGCAUGUGGUUUAAUCCGAUAAUACGCGCAGAACCUUACCAACUCUUGC-UAAUUUUUAUAUAAAAU--A-U-UAUAUAAAAAACAGGCGUUGCAUGGCUGUCGUCAGCUCGUGUUGUGAAAUGUUUGGUUAAAUCCUUUAACGAGCGCAACCCCUAUUGUUA
 #=GR P.infestans_CRW_anchor  PP **************************************************************************************.*****************..*.*.******************************************************************************************
-#=GC SS_cons                    ->>>,,,,,,,,{{{{{-{{{{{{{,,,,{{{{{{,{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{{{{,,,,.,<<<<<<<<<<<<<___.._.>.>>>>>>>>>>>>,[[-[[[[--[[[[[[[[[,,,((((((<<<____>>>,,<<<<______>>>>,,)))))),,,,,(((((<<<<<<
+#=GC SS_cons                    ->>>,,,aaa,,{{{{{-{{{{{{{,,,,{{{{{{,{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,{{{{{{{,,,,.,<<<<<<<<<<<<<___.._.>.>>>>>>>>>>>>,[[-[[[[--[[[[[[[[[,,,((((((<<<____>>>,,<<<<______>>>>,,)))))),,,,,(((((<<<<<<
 #=GC RF                         AuuCAAAGGAAUuGaCgGgaGuCcaCACAaGCGguGgaGCacGuGGuUUAAugCGAUAAUACGCGcaGAACCUUACCaaCuCUUGC.UgguuuuuauauaaAAU..A.u.uauauaaaaaccAGGCGccgCAuGgCuGcCGUCAGCuCGuguuGUGAaacGUccGGUUAAAUCCggUAaCGaGCGCAACCCCcauuGuua
 
 NC_002387.1/5172-6706           GUUGCUAUUUUAUU--AAAA-A-A---------------AAUAAA-AGCACUCUAACAAAAAAAUUAAUGAUAGGUUAAUGGAAGGUGGGGAUGACGUCAAGUCUUCAUGGCCCUUAUGAGUUGGGCUACACACGUGCUACAAUGAUAAU-UACAAUGAGAAGCAAUAAUG-AU-C--A--AAGUUGGAGCAAAUCUUUA
