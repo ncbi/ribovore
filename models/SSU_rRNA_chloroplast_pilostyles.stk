@@ -5,7 +5,7 @@
 #=GS KT981956.1                                      DE Pilostyles hamiltonii voucher K. Dixon 1039 (PERTH) plastid, complete genome
 #=GS NC_029235.1                                     DE Pilostyles aethiopica voucher S. Bellot 28 (M) plastid, complete genome
 
-EU512422.1                                              -----------------------GCCAGAAUGAUCGCUAACGGUAUGCAUU-CACAUGCCAGUUACAUUAUUAUUU------UAAAUAUUU------------AAAAUAAUAAAUU-G-----UAGCGAACGGGUGAGUAACGUAUAAGAAUCUGCUAUUA----UUUUU----AAUAAUGAGCUUAUAUCUAAUUAGUU
+EU512422.1                                              ~~~~~~~~~~~~~~~~~~~~~~~GCCAGAAUGAUCGCUAACGGUAUGCAUU-CACAUGCCAGUUACAUUAUUAUUU------UAAAUAUUU------------AAAAUAAUAAAUU-G-----UAGCGAACGGGUGAGUAACGUAUAAGAAUCUGCUAUUA----UUUUU----AAUAAUGAGCUUAUAUCUAAUUAGUU
 #=GR EU512422.1                                      PP .......................9************************765.***********9766555555554......555666666............3588888888776.4.....49***********************************5....77777....**************************
 KT981956.1                                              UUUUUUAUCGAGUUUAAUCCUGGCUCAGAAUGAACGCUAACGGUAUGCAUUACACAUGCAAGUUAUUCAGCUUUUUAAUAUUUGAUA----------GAUAUUUA-------UUUUGUCUGGGUAGCGAACGGGUGAGUAAUAUAUAAGAAUCUACUAUUAAU--UUUUUUUUUAAUAAUGAGCUUAUAUCUAAUUAGUU
 #=GR KT981956.1                                      PP *******************************************************************99997777766666544333..........44444433.......2233158999**************************************554..444555689**************************
@@ -104,7 +104,7 @@ NC_029235.1                                             CAUGAAGUUGGAAUCAUU------
 #=GC SS_cons                                            >>>--->,,,,,}}}}},,,,,,,,,,,<<<<<<<__.______>>>>>>>,,,,,,,,}},,<<<<______~~~~~~~~~~~~~~~~~~~~......>>>>,,,,,,,..}}}}}}}}}}-}},,,,<<-<<-<-<<<<<<<<--<<--<<<<<<<<----.<<<<<<<<<.___>>>>>>>>>--->>>>>>>>>>-
 #=GC RF                                                 CauGAAGUUGAAauCGuAUUUUGAAGUAauCGuaaAA.AGGUCCuuaCGguGAAGAUUUGuUUuaaaUUUUUU~~~~~~~~~~~~~~~~~~~~......uuuaUUUCGUA..aaGguuuCGuACaUACUGcCCGUCACguucCgaUGauUAcguuuuaCUUAA.aguuuuuCC.UAAGGaaagaugAAUGuaaaauuguC
 
-EU512422.1                                              UCUG--------------------------------------------------------
+EU512422.1                                              UCUG~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #=GR EU512422.1                                      PP 59**........................................................
 KT981956.1                                              UCUGUAAUGAAGUCGUAACAAGGUAGCCGUACUGGAAGGUGUGGCUGGAUUUUUUAAAUA
 #=GR KT981956.1                                      PP ************************************************************
