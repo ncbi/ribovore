@@ -15,6 +15,6 @@
 #
 # Mode 28S: eukaryotic nuclear large-subunit (28S/25S) rRNA.
 # First-gen policy: all acceptable (microsporidia treatment is an open
-# question for Aaron -- see README).
+# question, pending review with the requesting group).
 LSU_rRNA_eukarya acceptable
 LSU_rRNA_microsporidia acceptable
