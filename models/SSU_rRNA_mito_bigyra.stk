@@ -24,7 +24,7 @@ NC_027962.1/4579-2977           -----AAU------------AUCUAUUUUAUUAGAUAUUUAAAUAAUU
 #=GR NC_027962.1/4579-2977   PP .....555............456777888999*****************************977765.....9*********************9845.8***********9.89*996.6666666766666663....35555666667777777778999****************99975..68**.....*****
 NC_044635.1/41141-42781         ----AAAA------------AAUAUAAAAAUAUAUAUUUUUUUAGUGUGUGGGUUUGAUCCUGGCUC-----AGAAUGAAUGCUUACAACAUGCUU-A-ACACAUGCAAGUUUAACA--AUUA-----------AAUAAAUAUAUU-----------UAA-AAGUAGCGUACGGGUGAGUAUGAC-AUUAAUUGAAGAUU
 #=GR NC_044635.1/41141-42781 PP ....3333............24588999**********************************98865.....************************.*.****************94..4433...........333333333333...........333.46**********************.***7333335899*
-#=GC SS_cons                    ::::::::<<<<<_______~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>>>,{{{{-{{{{{{,{{{{{{{{,,,.,.,{{{-{{{,,<<<--<<<<--<<<<<<<<<<<<<<<__________>>>>>>>>>>>>>>>->>>>>>>,,,,,,[[[,,,,,,((.((((.....((((-
+#=GC SS_cons                    ::::::::<<<<<___AAA_~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>>>,{{{{-{{{{{{,{{{{{{{{,,,.,.,{{{-{{{,,<<<--<<<<--<<<<<<<<<<<<<<<__________>>>>>>>>>>>>>>>->>>>>>>,,,,,,[[[,,,,,,((.((((.....((((-
 #=GC RF                         AAUUAAAUGgGccUGAUCCU~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ggCcCAGaguGaaCGCuUcuGguguGCUU.U.ACaCAuGCAAGcuUAaugaGAaaaaGaauaauauuaUUGAUCUUUUuaauauuauuCuuuuAucauagCGAACGGGuGAGUAAAgg.Cuuu.....uuucU
 
 NC_000946.1/38440-40127         ACCAAUCAAUUUAAGAA-AUUCGUGCAA-------------------UAUGAAAAUCUUAAAU---AAAAAAAUUUUUUUAGGAAAAUUUGUAAAAGAC-UAUACGUUGUUGAUUGAUGAAAAAAG--A--AAGUAUUAGGUUGUUGGUUUU---------------CCAAGCCGAAGAUGCUUAGUUGGUCUGAGAGGA
@@ -89,7 +89,7 @@ NC_027962.1/4579-2977           CAUCAAAUAUUAAAAGUUAACACG-UUAAAUAUUUCGCCUGGGGAGUA
 #=GR NC_027962.1/4579-2977   PP *****999999764499****998.5388**********************************************************98.799******************************************************64..444.34444444444444444444434567..................9
 NC_044635.1/41141-42781         -----AAUGAUUAA-GCUAACGCAUU-AAACAUUCCACCUGGGGACUACGAUCGCAAGAUUAGAACUCAAAGGAAUUGGCGGGGGCUUUUUACAAACGGUGGAGCAUGUGGUUUAAUCCGAUAAUCCGCGUAAAAUCUUACCAAUUU-------A----------------------UAUUA----------------AA
 #=GR NC_044635.1/41141-42781 PP .....*********.********735.88**********************************************************************************************************************.......7......................77653................36
-#=GC SS_cons                    ~~~~~>>>>>>,,,.<<____>>,.,.,,)))))),}}},<<<------<<<<____>>>>---->>>,,,,,,,,{{{{{-{{{{{{{,,,,,{{{{{{,{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,[[[[[[[.......-......................----..................-
+#=GC SS_cons                    ~~~~~>>>>>>,,,.<<____>>,.,.,,)))))),}}},<<<------<<<<____>>>>---->>>,,,aaa,,{{{{{-{{{{{{{,,,,,{{{{{{,{{{{{{{{{{{,,,,<<<<________>>>>,,,,,,,,[[[[[[[.......-......................----..................-
 #=GC RF                         ~~~~~guuuuuAUA.acUAACguG.U.AAauaCccCGCCUGgGGACUACgGuCGCAAGaCcAAAACcCAAAGGAAUuGaCgGcGgCcCuUUACAaaCGguGgaGCacguGGuUUAAuccGAUAAUCCGCggaAAACCUUACCaGuuC.......U......................AACU..................C
 
 NC_000946.1/38440-40127         GGUGUUGCAUGGCUGUCGUCAGCCCGUGUUGUGAAAUGUAGUGCUU----GGGCAUUCAACGGGCAAGACCCUCAAUAAAAUUUUAUAUAAAUUUUAGAAAGAUAGUUUAAG-GAGGAGUGAUUAUUCUUUGGGAAUCA----AAGGAUUAUUUGCGUAAAAGCUUAUAAUUUAGAAUCCCUAUUUUAAAAAAGUAAGUA
