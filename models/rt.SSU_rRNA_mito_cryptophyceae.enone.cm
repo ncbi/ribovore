@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Fri Jul 24 16:32:31 2026
-COM      [1] cmbuild -F --hand --p7ml --enone --miss --refine final/crypto.refine.stk CM SEED
+COM      [1] cmbuild -F --hand --p7ml --enone --miss --refine REFINED CM SEED
 COM      [2] cmcalibrate --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
@@ -5796,8 +5796,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Fri Jul 24 16:32:33 2026
-COM   [1] cmbuild -F --hand --p7ml --enone --miss --refine final/crypto.refine.stk CM SEED
-COM   [2] cmbuild -F --hand --p7ml --enone --miss --refine final/crypto.refine.stk CM SEED
+COM   [1] cmbuild -F --hand --p7ml --enone --miss --refine REFINED CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --miss --refine REFINED CM SEED
 NSEQ  10
 EFFN  10.000000
 CKSUM 2971972093

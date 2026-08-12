@@ -9,7 +9,7 @@ RF       yes
 CONS     yes
 MAP      yes
 DATE     Thu Jul  9 06:19:36 2026
-COM      [1] cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk CM SEED
+COM      [1] cmbuild -F --hand --p7ml --enone --refine REFINED CM SEED
 COM      [2] cmcalibrate --ptot 160 CM
 PBEGIN   0.05
 PEND     0.05
@@ -6260,8 +6260,8 @@ CONS  yes
 CS    yes
 MAP   no
 DATE  Thu Jul  9 06:19:38 2026
-COM   [1] cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk CM SEED
-COM   [2] cmbuild -F --hand --p7ml --enone --refine choano.ribovore.refined.stk CM SEED
+COM   [1] cmbuild -F --hand --p7ml --enone --refine REFINED CM SEED
+COM   [2] cmbuild -F --hand --p7ml --enone --refine REFINED CM SEED
 NSEQ  1
 EFFN  1.000000
 CKSUM 3975233758
