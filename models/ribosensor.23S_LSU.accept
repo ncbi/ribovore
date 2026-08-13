@@ -14,8 +14,8 @@
 # unusual feature reported for it.
 #
 # Mode 23S_LSU: bacterial + archaeal + non-animal organellar LSU rRNA.
-# First-gen policy: all acceptable (chloroplast/apicoplast policy is an
-# open question, pending review with the requesting group).
+# First-gen policy: all acceptable; the chloroplast/apicoplast policy
+# is under review and may be narrowed in a future release.
 LSU_rRNA_archaea acceptable
 LSU_rRNA_bacteria acceptable
 LSU_rRNA_mito_eukaryote acceptable
