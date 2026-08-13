@@ -136,7 +136,7 @@ You should see something like the following output:
 # $RIBOINFERNALDIR:  /usr/local/src/ribovore-install/infernal/binaries
 # $RIBOSCRIPTSDIR:   /usr/local/src/ribovore-install/ribovore
 #
-# target sequence input file:  /Users/nawrockie/tmp/ribovore-install/ribovore/testfiles/example-ra-11.fa
+# target sequence input file:  /usr/local/src/ribovore-install/ribovore/testfiles/example-ra-11.fa
 # output directory name:       test-ra
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Validating input files                           ... done. [    0.0 seconds]
